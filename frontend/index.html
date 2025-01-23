@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Taxi Path with Mapbox</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div id="ui_container">
+        <h1>Taxi Ranks</h1>
+        <button class="button add">Add</button>
+
+        <!-- Grid table -->
+        <div class="grid-table">
+            <!-- Header row -->
+            <div class="grid-row grid-header">
+              <div class="grid-cell" id="header_name">Name</div>
+              <div class="grid-cell" id="header_province">Province</div>
+              <div class="grid-cell" id="header_address">Adress</div>
+              <div class="grid-cell" id="header_routes">No. of routes</div>
+            </div>
+
+            <!-- Data rows rendered in script -->
+       
+          </div>
+     
+
+        <!-- Context Menu -->
+
+        <div class="menu_wrapper">
+            <button id="close_button"><i class="fa fa-times" style="font-size:20px;color:red;" aria-hidden="true"></i></button>
+            <div class="input_line name">
+                <label>Name:</label>
+                <input placeholder="e.g Nkowankowa Taxi Rank">
+            </div>
+            <div class="input_line prov">
+                <label>Province:</label>
+                <input placeholder="e.g Limpopo">
+            </div>
+            <div class="input_line address">
+              <label>Address:</label>
+              <textarea></textarea>
+              <ul id="suggestions"></ul>
+            </div>
+           
+            <button id="update_button">Update</button>
+        </div>
+    </div>
+   <div id="map">
+  </div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <script  type="module" src="./js/index.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

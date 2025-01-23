@@ -1,0 +1,171 @@
+body {
+     margin: 0;
+     padding: 0; 
+     display: flex;
+     flex-direction: row;
+     width:100vw;
+     font-family: sans-serif;
+    }
+#ui_container{
+    width:45%;
+    height:100vh;
+    background-color: white;
+    overflow: hidden;
+    position: relative;
+}   
+#map { width: 55%; height: 100vh; }
+h1{
+    text-align: center;
+}
+.grid-table {
+    display: grid;
+    grid-template-columns: 120px 120px 200px 200px; /* 3 equal-width columns */
+    gap: 1px; /* Space between cells */
+    width:650px;
+  }
+
+  /* Rows and cells */
+.grid-row {
+    display: contents; /* Ensure rows don't disrupt grid flow */
+    cursor: pointer;
+    
+  }
+
+  
+  .grid-cell {
+    padding: 10px;
+    text-align: center;
+  }
+  .grid-row  .grid-cell {
+    font-size: small;
+  }
+  .grid-row  .grid-cell button {
+    margin-left: 10px;
+  }
+
+  
+
+  /* Header styling */
+  .grid-header .grid-cell {
+    font-weight: bold;
+  }
+
+  .button{
+    border:none;
+    border-radius: 30px;
+    font-weight: lighter;
+    cursor: pointer;
+  }
+
+  .button.add{
+    padding:10px 30px;
+    background-color: #193148;
+    color:white;
+    margin-left: 20px;
+    margin-bottom: 20px;
+  }
+  .button.add:hover{
+    background-color: #305A84;
+  }
+
+  .button.route{
+    padding:5px;
+    background-color: #F6DC76;
+    color:#193148;
+    font-weight: 570;
+  }
+  .button.route:hover{
+    background-color: #FFD737;
+  }
+
+/* Context Menu*/
+
+.menu_wrapper{
+    border:2px solid ;
+    position:absolute;
+    border-radius: 20px;
+    width:340px;
+    height:200px;
+    visibility: hidden;
+    left:22%;
+    top:40%;
+    background-color: white;
+}
+
+#close_button{
+    position: absolute;
+    padding: 0px;
+    top:10px;
+    right:10px;
+    border:none;
+    background-color: white;
+    cursor: pointer;
+}
+
+.input_line.name{
+    position: absolute;
+    top:40px;
+    left:10px;
+}
+
+.input_line.name label{
+    margin-right: 19px;
+}
+
+.input_line input{
+   border-radius: 10px;
+   height:20px
+}
+
+.input_line textarea{
+    border-radius: 10px;
+    height:40px;
+    border: 2px solid;
+    resize: none;
+ }
+
+.input_line.prov{
+    position: absolute;
+    top:70px;
+    right:1px;
+    left:10px;
+}
+
+.input_line.address{
+    position: absolute;
+    top:100px;
+    left:10px;
+}
+
+.input_line.address label{
+    margin-right: 2px;
+    position: relative;
+    bottom:22px;
+}
+
+.input_line.address button{
+   padding: 5px 5px;
+   position:absolute;
+   margin-left: 5px;
+   white-space:nowrap;
+   border-radius: 10px;
+   border:none;
+   background-color:#F6DC76;
+   color:white;
+}
+
+#update_button{
+    position: absolute;
+    left:135px;
+    padding:5px 10px;
+    border-radius: 10px;
+    border:none;
+    background-color:#F6DC76;
+    color:white;
+    top:160px;
+    cursor: pointer;
+}
+
+#update_button:hover{
+  background-color: #FFD737;
+}
