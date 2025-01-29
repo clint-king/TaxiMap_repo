@@ -12,7 +12,9 @@ body {
     background-color: white;
     overflow: hidden;
     position: relative;
-}   
+    border:2px solid black;
+}  
+
 #map { width: 55%; height: 100vh; }
 h1{
     text-align: center;
@@ -169,3 +171,4 @@ h1{
 #update_button:hover{
   background-color: #FFD737;
 }
+

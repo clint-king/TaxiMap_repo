@@ -1,0 +1,344 @@
+
+body {
+    margin: 0;
+    padding: 0; 
+    display: flex;
+    flex-direction: row;
+    width:100vw;
+    font-family: sans-serif;
+   }
+#ui_container{
+   width:45%;
+   height:100vh;
+   background-color: white;
+   overflow: hidden;
+   position: relative;
+   border:2px solid black;
+}  
+
+.information { 
+    width: 55%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+
+}
+
+.route_info{
+    height:40vh;
+}
+
+
+h1{
+   text-align: center;
+}
+
+/** Table **/
+.grid-table {
+   display: grid;
+   grid-template-columns: 120px 120px 400px; /* 3 equal-width columns */
+   gap: 1px; /* Space between cells */
+   width:650px;
+ }
+
+ /* Rows and cells */
+.grid-row {
+   display: contents; /* Ensure rows don't disrupt grid flow */
+   cursor: pointer;
+  
+ }
+
+ 
+ .grid-cell {
+   padding: 10px;
+   text-align: center;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+ }
+ .grid-row  .grid-cell {
+   font-size: small;
+ }
+ .grid-row  .grid-cell button {
+   margin-left: 0px;
+   padding: 5px 20px;
+ }
+
+ #coord-span{
+    width:150px;
+    word-wrap: break-word;
+    margin-right: 10px;
+ }
+
+ 
+
+ /* Header styling */
+ .grid-header .grid-cell {
+   font-weight: bold;
+ }
+
+ .button{
+   border:none;
+   border-radius: 30px;
+   font-weight: lighter;
+   cursor: pointer;
+ }
+
+ .button.add{
+   padding:10px 30px;
+   background-color: #193148;
+   color:white;
+   margin-left: 20px;
+   margin-bottom: 20px;
+ }
+ .button.add:hover{
+   background-color: #305A84;
+ }
+
+ .button.route{
+   padding:5px;
+   background-color: #F6DC76;
+   color:#193148;
+   font-weight: 570;
+ }
+ .button.route:hover{
+   background-color: #FFD737;
+ }
+
+
+
+.information{
+    position: flex;
+    flex-direction: column;
+}
+
+/*price sign*/
+.price h1{
+    border:2px solid black;
+    width:100px;
+    position: relative;
+    left:calc(50% - 80px);
+    padding: 10px 30px;
+    border-radius: 10px;
+    font-size: 50px;
+}
+/* ==Arrow section == */
+.direction1{
+    display: flex;
+    justify-content: center;
+}
+/*circles*/
+.circle{
+    height:30px;
+    width:30px;
+    border-radius: 50%;
+}
+
+.circle.start{
+    background-color: green;
+}
+
+.circle.dest{
+    background-color: blue;
+}
+
+.circle-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap:2px;
+}
+.circle-container.start{
+    margin-right:150px;
+}
+
+.circle-container.dest{
+    margin-left:150px;
+}
+.circle-container>div{
+    max-width:100px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+}
+
+/*arrows*/
+
+.arrow.left{
+    position: relative;
+    transform: translate(-50%, -50%);
+    transform: rotate(90deg);
+    cursor: pointer;
+    right:10%;
+  }
+
+.arrow.right{
+    position: relative;
+    transform: translate(-50%, -50%);
+    transform: rotate(-90deg);
+    cursor: pointer;
+    left:10%;
+  }
+  
+  .arrow span {
+    display: block;
+    width: 1.5vw;
+    height: 1.5vw;
+    border-bottom: 5px solid rgb(0, 0, 0);
+    border-right: 5px solid rgb(0, 0, 0);
+    transform: rotate(45deg);
+    margin: -10px;
+    animation: animate 2s infinite;
+  }
+  
+  .arrow span:nth-child(2) {
+    animation-delay: -0.2s;
+  }
+  
+  .arrow span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  
+  @keyframes animate {
+    0% {
+        opacity: 0;
+        transform: rotate(45deg) translate(-20px, -20px);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(45deg) translate(20px, 20px);
+    }
+  }
+
+
+  /* === Context Menu === */
+
+.menu_wrapper{
+    border:2px solid ;
+    position:absolute;
+    border-radius: 20px;
+    width:400px;
+    height:380px;
+    visibility: hidden;
+    left:22%;
+    top:40%;
+    background-color: white;
+ }
+ 
+ #close_button{
+    position: absolute;
+    padding: 0px;
+    top:10px;
+    right:10px;
+    border:none;
+    background-color: white;
+    cursor: pointer;
+ }
+ 
+ #update_button{
+    position: absolute;
+    left:39%;
+    width:100px;
+    height:30px;
+    padding:5px 10px;
+    border-radius: 10px;
+    border:none;
+    background-color:#F6DC76;
+    color:white;
+    top:310px;
+    cursor: pointer;
+ }
+ 
+ #update_button:hover{
+  background-color: #FFD737;
+ }
+
+ #routeID{
+    position: absolute;
+    left:38%;
+    font-weight: bold;
+    font-size: 15px;
+    top:13px;
+ }
+
+ .input_line.coord{
+    position: absolute;
+    left:5%;
+    top:20%;
+ }
+
+ .input_line.coord label{
+    position: absolute;
+    top:45%;
+ }
+
+ .input_line.coord textarea{
+    position: absolute;
+    left:100px;
+    width:250px;
+    border-radius: 10px;
+    border: 2px solid;
+    resize: none;
+    height:45px;
+ }
+
+ .input_line.startDest{
+    position: absolute;
+    top:60%;
+    display: flex;
+    flex-direction: column;
+    left:5%;
+ }
+
+ .routeInput.start_input{
+    position: relative;
+    left:55px;
+ }
+
+ .routeInput.dest_input{
+    position: relative;
+    left:9px;
+ }
+ .routeInput{
+    width:200px;
+    border: 2px solid black;
+    border-radius: 5px;
+    height:20px;
+ }
+
+ .inputConatiner{
+    margin-bottom: 10px;
+ }
+
+  /*Slide */
+  .price-slider-container {
+    width: 88.5%;
+    margin: 50px auto;
+    position: absolute;
+    top:18%;
+    left:5%;
+}
+
+.slider {
+    width: 100%;
+}
+
+.price-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.price-display {
+    position: relative;
+    font-size: 15px;
+    margin-top: 20px;
+    font-weight: lighter;
+    font-family: cursive;
+    left:100px;
+}
