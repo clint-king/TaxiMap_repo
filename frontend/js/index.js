@@ -40,10 +40,6 @@ async function getCoordinates(address) {
 }
 
 
-
-
-
-
 // // Initialize Directions API control
 // const directions = new MapboxDirections({
 //   accessToken: mapboxgl.accessToken,
@@ -230,6 +226,8 @@ map.on('click', async (e) => {
   }
 });
 
+
+
 // Attach event listener to the search box
 searchBox.addEventListener('input', (e) => {
   fetchSuggestions(e.target.value);
@@ -252,8 +250,7 @@ if (AddButton && menu && closeButton && updateButton && searchBox && nameBox && 
   });
 
   //Update execution
-  updateButton.addEventListener('click' , (e)=>{
-// The data to send
+ updateButton.addEventListener('click' , (e)=>{
 
 //get from name and province textbox
 taxiRankAddInfo.name = nameBox.value;
@@ -283,8 +280,6 @@ fetch('http://localhost:3000/admin/addTaxiRank', {
   .catch((error) => {
     console.error('Error:', error);
   });
-
-
   });
 
 } else {
@@ -333,6 +328,7 @@ const span = document.createElement("span");
 const button = document.createElement("button");
 button.className = "button route";
 button.textContent = "Add Route";
+button.dataset.rank = TaxiRankObj.ID;
 
 // Append the button to the span
 span.appendChild(button);
@@ -403,6 +399,7 @@ async function addSingleInfoOnTable(){
   const button = document.createElement("button");
   button.className = "button route";
   button.textContent = "Add Route";
+  button.dataset.rank = TaxiRankObj.ID;
   
   // Append the button to the span
   span.appendChild(button);
@@ -433,6 +430,33 @@ async function addMarker(lng , lat){
 }
 
 
+
+//from TaxiRank page to route.html
+document.body.addEventListener("click", function (event) {
+  if (event.target.classList.contains("route")) {
+    const rankID = event.target.dataset.rank;
+    console.log("Button clicked for Taxi Rank ID:", rankID);
+    window.location.href = `../route.html?rank=${rankID}`;
+  }
+});
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  const buttons = document.querySelectorAll(".button.route");
+
+  console.log(buttons);
+  buttons.forEach(button => {
+    console.log("Checking button");
+
+      button.addEventListener("click", function () {
+          const rankId = this.getAttribute("data-rank"); // Get row ID
+          console.log("Button selected with RankID: "+ rankId);
+          // Redirect to the new page with the rank ID in the URL
+          window.location.href = `../route.html?rank=${rankId}`;
+      });
+  });
+});
 
 
 

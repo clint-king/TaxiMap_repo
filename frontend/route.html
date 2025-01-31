@@ -69,28 +69,47 @@
 
         <!-- Context Menu -->
         <div class="menu_wrapper">
-            <p id="routeID">Route:<span>546252</span></p>
+            <p id="routeID">Route:<span id="routeName">546252</span></p>
             <button id="close_button"><i class="fa fa-times" style="font-size:20px;color:red;" aria-hidden="true"></i></button>
             <div class="input_line coord">
               <label>Coordinates:</label>
               <textarea></textarea>
-              <ul id="suggestions"></ul>
             </div>
 
             <div class="price-slider-container">
-                <div class="price-display">Selected Price: <span id="selectedPrice">R100</span></div>
-                <input type="range" min="100" max="10000" value="100" class="slider" id="priceRange">
+                <div class="price-display">Selected Price:R<span id="selectedPrice">100</span></div>
+                <input type="range" min="0" max="5000" value="100" class="slider" id="priceRange">
                 <div class="price-labels">
-                    <span>R100</span>
-                    <span>R10,000</span>
+                    <span>R0</span>
+                    <span>R5000</span>
                 </div>
-                
             </div>
+
+            <!-- checkbox -->
+            <div class="checkboxConatiner">
+              <p class="question">What type of route is this ? </p>
+              <div class="options">
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Straight">
+                      <span></span> Straight
+                  </label>
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Loop">
+                      <span></span> Loop
+                  </label>
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Reverse">
+                      <span></span> Reverse
+                  </label>
+              </div>
+          </div>
+      
 
             <div class="input_line startDest">
                 <span class="inputConatiner num2" >
                     <label id="dest_label">Destination: </label>
                     <input class="routeInput dest_input">
+                    <ul id="suggestions"></ul>
                 </span>
                 
               </div> 
@@ -140,5 +159,6 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
   <script  type="module" src="./js/index.js"></script>
+  <script  type="module" src="./js/route.js"></script>
 </body>
 </html>

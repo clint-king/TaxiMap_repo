@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import { v4 as uuidv4 } from 'uuid';
 
 export const AddTaxiRank = async(req , res)=>{
     try{
@@ -7,7 +8,7 @@ export const AddTaxiRank = async(req , res)=>{
         const query = "INSERT INTO TaxiRank(name,location_coord,province,address,num_routes) VALUES(?,?,?,?,?)";
         await db.execute(query , [name, coord, province,address,0]);
 
-        return res.status(200).json({message:"Successfully added"});
+        return res.status(201).json({message:"Successfully added"});
     }catch(error){
         console.log(error);
         return res.status(500).json({message:"Server error"});
@@ -28,6 +29,7 @@ export const listTaxiRanks = async(req,res)=>{
     
                
                 dataArr.push({
+                    ID:listOfTxRanks[i].ID,
                     name: listOfTxRanks[i].name,
                     coord: listOfTxRanks[i].location_coord,
                     province: listOfTxRanks[i].province,
@@ -47,17 +49,68 @@ export const listTaxiRanks = async(req,res)=>{
     }
 }
 
+export const getTaxiRank = async(req,res)=>{
+    try{
+        const rankID = req.body.rankID;
+
+        if(!rankID){
+            return res.status(400).send("rankID is null");
+        }
+        const query = "SELECT ID , name , location_coord  FROM TaxiRank WHERE ID = ?";
+
+        const [result] = await db.query(query , [rankID]);
+
+        if(!result || result.length === 0){
+            return res.status(404).send(`Could not find TaxiRank ${rankID}`);
+        }
+
+       
+        return res.json({
+            ID:result[0].ID,
+            name:result[0].name,
+            coords:result[0].location_coord
+       });
+    }catch(error){
+        console.log(error);
+        return res.status(500).send("Server error");
+    }
+}
+
 export const AddRoute = async(req,res)=>{
 try{
     const {name , price , coords , TRStart_ID , TRDest_ID,routeType}  = req.body;
 
-    if(name && price && coords && TRStart_ID && TRDest_ID && routeType){
-        const query = "INSERT INTO Routes(name,price,coords,TaxiRankStart_ID,TaxiRankDest_ID, route_type) VALUES(?,?,?,?,?,?)";
+    if (!name || !price || !coords || !TRStart_ID || !TRDest_ID || !routeType) {
+        return res.status(400).json({ message: "Missing required fields" });
+    }
+   
+    const query = "INSERT INTO Routes(name,price,coords,TaxiRankStart_ID,TaxiRankDest_ID, route_type) VALUES(?,?,?,?,?,?)";
+    const queryTaxiRank = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
 
-        await db.query(query , [name , price , coords ,TRStart_ID,TRDest_ID, routeType ]);
-        return res.status(200).json({message:"Successfully added"}); 
-    }else{
-        return res.status(404).json({message: "A bodyparser was found null"});
+    const connection = await db.getConnection();
+    try{
+       
+        await connection.beginTransaction();
+        //Add to Route table
+        const [result] = await connection.query(query , [name , price , coords ,TRStart_ID,TRDest_ID, routeType ]);
+
+        //Add to Start TaxiRank
+        await connection.query(queryTaxiRank , [1 , TRStart_ID]);
+
+        //Add to Dest TaxiRank
+        await connection.query(queryTaxiRank , [1 , TRDest_ID]);
+
+        await connection.commit();
+
+        res.status(201).json({ message: "Route added successfully", routeId: result.insertId });
+
+
+    }catch(error){
+        await connection.rollback(); // Rollback if any query fails
+        console.error("Transaction Failed:", error.message);
+        res.status(500).json({ message: "Server error during transaction" });
+    } finally {
+        connection.release(); // Release the database connection
     }
 }catch(error){
         console.log(error);
@@ -83,8 +136,9 @@ export const listRoutes = async(req, res) =>{
                 array[i].push({
                     id: result[i].ID,
                     name: result[i].name,
+                    type:result[i].route_type,
                     coordinates: result[i].coords
-                })
+                });
             }
         }else{
             return res.status(404).json({message:"No Route found"});
@@ -101,6 +155,7 @@ export const listRoutes = async(req, res) =>{
         return res.status(500).send({message:"Server error"});
     }
 }
+
 
 export const routeSelected = async(req,res) =>{
     const query = "SELECT * FROM Routes WHERE ID = ?";
@@ -175,4 +230,37 @@ ON
     }catch(error){
         return res.status(500).send({message:"Server error"});
     }
+}
+
+//get new uniqueID
+export const getUniqueRouteName = async(req,res)=>{
+    try{
+        const nameRouteID  = await generateUniqueRouteID();
+        console.log("RouteId : "+nameRouteID);
+        return res.status(200).json({name: nameRouteID, message:"Successfully sent"});
+    }catch(error){
+        console.log(error);
+        return res.status(500).send("Server Error");
+    }
+}
+
+
+// == FUNCTION ==
+async function generateUniqueRouteID() {
+    let isUnique = false;
+    let routeID;
+
+    while (!isUnique) {
+        routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
+
+        // Check if the ID already exists in the database
+        const [rows] = await db.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
+
+        if (rows[0].count === 0) {
+            isUnique = true; // If no match, it's unique
+        }
+    }
+
+    console.log("Returning unique routeID: ", routeID);
+    return routeID;
 }

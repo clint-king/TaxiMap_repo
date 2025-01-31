@@ -223,8 +223,8 @@ h1{
     position:absolute;
     border-radius: 20px;
     width:400px;
-    height:380px;
-    visibility: hidden;
+    height:420px;
+    visibility: visible;
     left:22%;
     top:40%;
     background-color: white;
@@ -250,7 +250,7 @@ h1{
     border:none;
     background-color:#F6DC76;
     color:white;
-    top:310px;
+    top:360px;
     cursor: pointer;
  }
  
@@ -289,7 +289,7 @@ h1{
 
  .input_line.startDest{
     position: absolute;
-    top:60%;
+    top:75%;
     display: flex;
     flex-direction: column;
     left:5%;
@@ -320,7 +320,7 @@ h1{
     width: 88.5%;
     margin: 50px auto;
     position: absolute;
-    top:18%;
+    top:20%;
     left:5%;
 }
 
@@ -341,4 +341,60 @@ h1{
     font-weight: lighter;
     font-family: cursive;
     left:100px;
+}
+
+/*Checkbox */
+.checkboxConatiner{
+  position: absolute;
+  left:21%;
+  top:53%;
+}
+.question {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.options {
+  display: flex;
+  gap: 15px;
+  margin-top: 5px;
+  position: relative;
+  right:25px;
+}
+
+/* Hide default radio buttons */
+input[type="radio"] {
+  display: none;
+}
+
+/* Custom radio button style */
+.custom-option {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  font-size: 16px;
+}
+
+.custom-option span {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #007BFF;
+  display: inline-block;
+  margin-right: 8px;
+  position: relative;
+  border-radius: 50%;
+}
+
+/* Checked state */
+input[type="radio"]:checked + span::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background-color: #007BFF;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
 }
