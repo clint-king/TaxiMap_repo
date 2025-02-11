@@ -1,8 +1,10 @@
-import db from "../config/db.js";
+import poolDb from "../config/db.js";
 import { v4 as uuidv4 } from 'uuid';
 
 export const AddTaxiRank = async(req , res)=>{
+    let db;
     try{
+        db = await poolDb.getConnection();
         const { name, coord, province,address} = req.body; // Extract data from the request body
         console.log('Received data:', { name, coord, province,address });
         const query = "INSERT INTO TaxiRank(name,location_coord,province,address,num_routes) VALUES(?,?,?,?,?)";
@@ -12,11 +14,15 @@ export const AddTaxiRank = async(req , res)=>{
     }catch(error){
         console.log(error);
         return res.status(500).json({message:"Server error"});
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
 export const listTaxiRanks = async(req,res)=>{
+    let db;
     try{
+        db = await poolDb.getConnection();
         const query = "SELECT * FROM TaxiRank";
 
         const [listOfTxRanks] = await db.execute(query);
@@ -46,11 +52,15 @@ export const listTaxiRanks = async(req,res)=>{
     }catch(error){
         console.log(error);
         return res.status(500).json({message:"Server error"});
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
 export const getTaxiRank = async(req,res)=>{
+    let db;
     try{
+        db = await poolDb.getConnection();
         const rankID = req.body.rankID;
 
         if(!rankID){
@@ -73,21 +83,27 @@ export const getTaxiRank = async(req,res)=>{
     }catch(error){
         console.log(error);
         return res.status(500).send("Server error");
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
 export const AddRoute = async(req,res)=>{
+    let connection;
 try{
-    const {name , price , coords , TRStart_ID , TRDest_ID,routeType}  = req.body;
-
+    
+    const {name , price , coords , TRStart_ID , TRDest_ID,routeType}  = req.body.data;
+    
     if (!name || !price || !coords || !TRStart_ID || !TRDest_ID || !routeType) {
         return res.status(400).json({ message: "Missing required fields" });
     }
-   
+
+
+    console.log("The coords: "+ coords);
     const query = "INSERT INTO Routes(name,price,coords,TaxiRankStart_ID,TaxiRankDest_ID, route_type) VALUES(?,?,?,?,?,?)";
     const queryTaxiRank = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
 
-    const connection = await db.getConnection();
+     connection = await poolDb.getConnection();
     try{
        
         await connection.beginTransaction();
@@ -119,21 +135,27 @@ try{
 }
 
 export const listRoutes = async(req, res) =>{
+    let db;
     const query = `
     SELECT *
     FROM Routes
     WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?;`;
     try{
 
+        db = await  poolDb.getConnection();
         const {taxiRankSelected_ID} = req.body;
 
+        console.log("ID : "+ taxiRankSelected_ID);
         if(taxiRankSelected_ID != null){
-            const result =await db.query(query , [taxiRankSelected_ID,taxiRankSelected_ID ]);
+            const response =await db.query(query , [taxiRankSelected_ID,taxiRankSelected_ID ]);
+            const result = response[0];
+            console.log("Results : "+ result);
         const array = [];
-        if(result || result.length > 0){
+        if(result.length > 0){
 
-            for(let i = 0 ; i < array.length ; i++){
-                array[i].push({
+            console.log("In if statement " +  result.length );
+            for(let i = 0 ; i < result.length ; i++){
+                array.push({
                     id: result[i].ID,
                     name: result[i].name,
                     type:result[i].route_type,
@@ -144,7 +166,8 @@ export const listRoutes = async(req, res) =>{
             return res.status(404).json({message:"No Route found"});
         }
 
-        return res.status(200).send(array);
+        console.log("Array : "+ JSON.stringify(array));
+        return res.status(200).json(array);
         }else{
 
             return res.status(404).json({message:"taxiRankSelected_ID is null"});
@@ -153,11 +176,14 @@ export const listRoutes = async(req, res) =>{
     }catch(error){
         console.log(error);
         return res.status(500).send({message:"Server error"});
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
 
 export const routeSelected = async(req,res) =>{
+    let db;
     const query = "SELECT * FROM Routes WHERE ID = ?";
     const queryForTaxiRankStart = `SELECT 
     TaxiRank.ID AS TaxiRankID,
@@ -184,6 +210,7 @@ ON
 
 
     try{
+        db = poolDb.getConnection();
         const {selectedRoute_ID} = req.body;
 
         //Checking if bodyparser selectedRoute_ID is null
@@ -229,38 +256,99 @@ ON
         }
     }catch(error){
         return res.status(500).send({message:"Server error"});
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
 //get new uniqueID
 export const getUniqueRouteName = async(req,res)=>{
+    let db;
     try{
+        db = await poolDb.getConnection();
         const nameRouteID  = await generateUniqueRouteID();
         console.log("RouteId : "+nameRouteID);
         return res.status(200).json({name: nameRouteID, message:"Successfully sent"});
     }catch(error){
         console.log(error);
         return res.status(500).send("Server Error");
-    }
+    }finally {
+        if (db) db.release(); // release connection back to the pool
+      }
 }
 
+//get routeID
+export const getRoute = async(req,res)=>{
+    let db;
+    try{
+        const {uniqueRouteName} = req.body;
+
+        if(!uniqueRouteName){
+            return res.status(404).send("uniqueRouteName is null or undefined");
+        }
+        console.log("Name : ", uniqueRouteName);
+        //route request
+        db = await poolDb.getConnection();
+
+        await db.beginTransaction();
+        const [resultRoute] = await db.query('SELECT * FROM Routes WHERE name = ?' ,[uniqueRouteName]);
+
+        const [resultMiniRoutes] = await db.query('SELECT * FROM MiniRoute WHERE Route_ID = ?' , [resultRoute[0].ID]);
+
+        const [resultDirection] = await db.query('SELECT * FROM DirectionRoute WHERE Route_ID = ?' , [resultRoute[0].ID]);
+
+        if(!resultRoute){
+            return res.status(404).send("No Route found");
+        }else if(!resultMiniRoutes){
+            return res.status(404).send("No MiniRoutes found");
+        }else if(!resultDirection){
+            return res.status(404).send("No directions found");
+        }
+
+
+        const finalResults = {
+            route: resultRoute,
+            miniRoutes_Arr:resultMiniRoutes,
+            directions_Arr:resultDirection
+        }
+
+        console.log("Result I as follows : ", finalResults);
+        return res.status(200).send(finalResults);
+
+    }catch(error){
+        console.log(error);
+        await connection.rollback(); 
+        return res.status(500).send("Server Error");
+        }finally{
+        if (db) db.release(); // release connection back to the pool
+    }
+}
 
 // == FUNCTION ==
 async function generateUniqueRouteID() {
     let isUnique = false;
     let routeID;
+    let db;
 
     while (!isUnique) {
         routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
 
-        // Check if the ID already exists in the database
-        const [rows] = await db.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
+        try{
+            db = poolDb.getConnection();
+            
+    // Check if the ID already exists in the database
+    const [rows] = await db.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
 
-        if (rows[0].count === 0) {
-            isUnique = true; // If no match, it's unique
-        }
+    if (rows[0].count === 0) {
+        isUnique = true; // If no match, it's unique
+    }
+        }catch(error){
+            console.log(error);
+        }finally {
+            if (db) db.release(); // release connection back to the pool
+          }
+    
     }
 
-    console.log("Returning unique routeID: ", routeID);
     return routeID;
 }

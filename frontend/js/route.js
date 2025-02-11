@@ -1,9 +1,8 @@
 import  axios  from 'axios';
-
+import * as turf from '@turf/turf';
 
 
 // === DOM ELEMENTS ===
-
 const addRouteButton  = document.querySelector(".button.add");
 const contextMenu = document.querySelector(".menu_wrapper");
 const closeButton = document.querySelector("#close_button");
@@ -12,6 +11,8 @@ const routeNameEl = document.querySelector("#routeName");
 const suggestionList = document.querySelector("#suggestions");
 const destinationInput = document.querySelector(".routeInput.dest_input");
 const updateButton = document.querySelector("#update_button");
+const gridTable = document.querySelector(".grid-table");
+const gridRowsEl = document.querySelectorAll(".grid-row ");
 
 //Value for slider
 const slider = document.getElementById("priceRange");
@@ -19,6 +20,252 @@ const selectedPrice = document.getElementById("selectedPrice");
 
 //Imcreating a temporary list of suggestions
 let taxiRanks = []; // Store fetched taxi ranks
+
+// === MAP IMPLEMENTATION ===
+
+ mapboxgl.accessToken = 'pk.eyJ1IjoiY2xpZXRpbiIsImEiOiJjbTR6eW1icmMxN3dyMmpzODBsZDQwNHN6In0.m5MSK2_0_SFpPPhB5BX86w'; // Replace with your Mapbox access token
+
+// // Initialize the map
+const map = new mapboxgl.Map({
+  container: 'map', // container ID
+  style: 'mapbox://styles/mapbox/streets-v11', // style URL
+  center: [30.0, -25.0], // Default center [lng, lat] (South Africa)
+  zoom: 12, // Default zoom
+});
+
+map.on('load', () => {
+
+    // function loadRoute(routeChosen) { 
+    //         // Convert mini-routes to GeoJSON
+    //         const routeFeatures = {
+    //             type: 'Feature',
+    //             properties: {},
+    //             geometry: {
+    //                 type: 'LineString',
+    //                 coordinates: routeChosen.coords
+    //             }
+    //         };
+
+    //         map.addSource(`route-source`, { 
+    //             type: 'geojson',
+    //             data: {
+    //                 type: 'FeatureCollection',
+    //                 features: [routeFeatures] 
+    //             }
+    //         });
+
+    //         // Add layer for lines (mini-routes)
+    //         map.addLayer({
+    //             id: `route-line`,
+    //             type: 'line',
+    //             source: `route-source`,
+    //             layout: {'line-cap': 'round',
+    //             'line-join': 'round'},
+    //             paint: {
+    //                 'line-color': `blue`,
+    //                 'line-width': 4,
+    //             }
+    //         });
+
+
+    //         //Animation implementation
+
+    //         const movementCoordinates = smoothenCoordinates(routeChosen.direction_coords);
+    //             // Add a moving taxi marker
+    //     const taxiMarker = new mapboxgl.Marker({ element: createTaxiElement() })
+    //     .setLngLat(movementCoordinates[0]) // Start at first point
+    //     .addTo(map);
+
+    // // Animate the taxi along the route
+    // let index = 0;
+    // function moveTaxi() {
+    //     if (index <movementCoordinates.length - 1) {
+    //         index++;
+    //         taxiMarker.setLngLat(movementCoordinates[index]);
+    //         setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
+    //     }
+    // }
+
+    // moveTaxi(); // Start animation
+    // }
+
+       // Create a taxi element for better styling
+       function createTaxiElement() {
+        const el = document.createElement('div');
+        el.style.width = '20px';
+        el.style.height = '20px';
+        el.style.backgroundColor = 'red';
+        el.style.backgroundSize = 'cover';
+        el.style.borderRadius = '50%'; // Optional: make it round
+        return el;
+    }
+
+    function removeExistingRoutes() {
+        if (!map.getStyle() || !map.getStyle().layers) return;
+
+        // Get all layers and sources in the map
+        const layers = map.getStyle().layers.map(layer => layer.id);
+    
+        layers.forEach(layerId => {
+            if (layerId.startsWith('route-line-')) {
+                map.removeLayer(layerId);
+            }
+        });
+    
+        // Get all sources and remove those related to routes
+        Object.keys(map.getStyle().sources).forEach(sourceId => {
+            if (sourceId.startsWith('route-source-')) {
+                map.removeSource(sourceId);
+            }
+        });
+    }
+    
+    function loadMiniRoutes(miniroutes) {
+
+        let arrCoords = [];
+        miniroutes.forEach((route, index) => {
+            const routeSourceId = `route-source-${index}`;
+            const routeLayerId = `route-line-${index}`;
+    
+            // Convert each mini-route to GeoJSON
+            const routeFeatures = {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: route.coords
+                }
+            };
+    
+            // Add a new source for each route
+            map.addSource(routeSourceId, { 
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: [routeFeatures] 
+                }
+            });
+    
+            // Add a new layer for each route
+            map.addLayer({
+                id: routeLayerId,
+                type: 'line',
+                source: routeSourceId,
+                layout: {
+                    'line-cap': 'round',
+                    'line-join': 'round'
+                },
+                paint: {
+                    'line-color': 'blue',
+                    'line-width': 4,
+                }
+            });
+
+            arrCoords.push(route.coords);
+    
+        });
+
+        if(arrCoords){
+            const finalCoords = arrCoords.flat();
+            zoomRoute(finalCoords);
+        }
+    }
+
+    function movement(coordinates){
+                //Animation implementation
+
+                if(!coordinates){
+                    console.log("Coordinates are empty or null [In :movement function]");
+                    return;
+                }
+            const movementCoordinates = smoothenCoordinates(coordinates);
+                // Add a moving taxi marker
+        const taxiMarker = new mapboxgl.Marker({ element: createTaxiElement() })
+        .setLngLat(movementCoordinates[0]) // Start at first point
+        .addTo(map);
+
+    // Animate the taxi along the route
+    let index = 0;
+    function moveTaxi() {
+        if (index <movementCoordinates.length - 1) {
+            if(index === movementCoordinates.length - 2){
+                index = 0
+            }else{
+                index++;
+            }
+            taxiMarker.setLngLat(movementCoordinates[index]);
+            setTimeout(moveTaxi, 250); // Adjust speed (1000ms = 1 sec per step)
+        }
+    }
+
+    moveTaxi(); // Start animation
+    }
+
+    function smoothenCoordinates(coordinates){
+        // Convert to a Turf.js LineString
+const line = turf.lineString(coordinates);
+
+// Calculate the total length of the route in kilometers
+const lineLength = turf.length(line, { units: 'kilometers' });
+
+// Define the number of points you want to generate
+const numberOfPoints = 100; // More points = smoother animation
+
+// Calculate interval distance
+const interval = lineLength / numberOfPoints;
+
+// Generate evenly spaced points along the route
+const smoothCoordinates = [];
+for (let i = 0; i <= lineLength; i += interval) {
+    const interpolatedPoint = turf.along(line, i, { units: 'kilometers' });
+    smoothCoordinates.push(interpolatedPoint.geometry.coordinates);
+}
+
+return smoothCoordinates;
+    }
+
+    function zoomRoute(coordinates){
+        // Get the bounds of the route
+    const bounds = coordinates.reduce((bounds, coord) => {
+        return bounds.extend(coord);
+    }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+    // Fit the map to the bounds
+    map.fitBounds(bounds, {
+        padding: 50, // Add some padding around the route
+        maxZoom: 15, // Set a max zoom level to avoid excessive zoom-in
+        duration: 2000 // Smooth animation duration in milliseconds
+    });
+    }
+    // Add click event to each row
+    document.querySelector('.grid-table').addEventListener('click', async (e) => {
+        const row = e.target.closest('.grid-row'); 
+        if (row) {
+            const routeIDName = row.children[0].textContent;
+
+            try {
+                const response = await axios.post('http://localhost:3000/admin/getRoute', {
+                    uniqueRouteName: routeIDName
+                });
+
+                const result = response.data;
+                
+                // Remove existing routes before adding new ones
+                 removeExistingRoutes();
+
+                console.log("Result : ", result.directions_Arr);
+                loadMiniRoutes(result.miniRoutes_Arr);
+
+                //Movement
+                movement(result.directions_Arr[0].direction_coords);
+                
+            } catch (error) {
+                console.error("Error fetching routes:", error);
+            }
+        }
+    });
+});
+
 
 // === EVENT LISTENERS ====
 
@@ -59,10 +306,35 @@ document.addEventListener("click", (event) => {
 
 //update button
 updateButton.addEventListener('click' , async()=>{
-   console.log("Information " , JSON.stringify(await saveRouteInformation()));
-})
+    const dataCaptured = (await saveRouteInformation()).value;
+
+    const response = await axios.post('http://localhost:3000/admin/AddRoute', {
+        data:dataCaptured
+    });
+});
+
+
 
 //=== FUNCTIONS ===
+const routeList =  async()=>{
+    try{
+
+        //Send TaxiRankId
+        const rank = getQueryParam('rank');
+
+        const response = await axios.post("http://localhost:3000/admin/listRoutes" , {taxiRankSelected_ID:rank});
+        const respondeData = response.data;
+        
+        //Populate
+        respondeData.forEach((route)=>{
+            createGridRow(route.name, route.type , route.coordinates);
+        })
+
+    }catch(error){
+        console.log("server error : "+ error);
+    }
+}
+routeList();
 
 //Getting TaxiRank Information
 const fetchRoutes = async () => {
@@ -87,18 +359,51 @@ function getQueryParam(param) {
     return urlParams.get(param);  // Return the value of the query parameter
 }
 
-const routeList =  async()=>{
-    try{
-        const rank = getQueryParam('rank');
-        const response = await axios.post("http://localhost:3000/admin/listRoutes" , {taxiRankSelected_ID:rank});
-        const respondeData = response.data;
-        console.log("Response : "+ respondeData);
-    }catch(error){
-        console.log("server error : "+ error);
-    }
+function createGridRow(routeID , type , coords) {
+    // Create the main grid-row div
+    const gridRow = document.createElement("div");
+    gridRow.className = "grid-row";
+    
+    
+    //RouteID cell
+        const gridCell = document.createElement("div");
+        gridCell.className = "grid-cell";
+        gridCell.textContent = routeID;
+        gridRow.appendChild(gridCell);
+
+        //type cell
+        const gridCell2 = document.createElement("div");
+        gridCell2.className = "grid-cell";
+        gridCell2.textContent = type;
+        gridRow.appendChild(gridCell2);
+    
+    
+    // Create the fourth grid-cell with nested elements
+    const fourthCell = document.createElement("div");
+    fourthCell.className = "grid-cell fourth";
+    
+    const coordSpan = document.createElement("div");
+    coordSpan.id = "coord-span";
+    coordSpan.textContent = coords;
+    
+    const buttonSpan = document.createElement("span");
+    buttonSpan.id = "button-span";
+    
+    const button = document.createElement("button");
+    button.className = "button route";
+    button.textContent = "Edit";
+    
+    // Append button to buttonSpan, then append both spans to fourthCell
+    buttonSpan.appendChild(button);
+    fourthCell.appendChild(coordSpan);
+    fourthCell.appendChild(buttonSpan);
+    
+    // Append fourth cell to the grid-row
+    gridRow.appendChild(fourthCell);
+    
+    // Append the whole structure to the body or another container
+    gridTable.appendChild(gridRow); // Change this to your desired container
 }
-
-
 
 // Fetch taxi ranks from backend once
 async function fetchTaxiRanks() {

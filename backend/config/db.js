@@ -4,13 +4,16 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
-const db = await mysql.createConnection({
+const pool = await mysql.createPool({
   host: 'localhost',
   user: 'TaxiMap_database',
   password: '12345',
-  database: 'taximapdb'
+  database: 'taximapdb',
+  waitForConnections: true,
+  connectionLimit: 10,  // for example, adjust as needed
+  queueLimit: 0
 });
 
 console.log("Connection to database is Successful");
 
-export default db;
+export default pool;

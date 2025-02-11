@@ -7,13 +7,17 @@ body {
     width:100vw;
     font-family: sans-serif;
    }
+
+   #map{
+    height: 60vh;
+   }
 #ui_container{
    width:45%;
    height:100vh;
    background-color: white;
    overflow: hidden;
    position: relative;
-   border:2px solid black;
+   box-shadow: 0px 4px 8px rgb(0,0,.3);;
 }  
 
 .information { 
@@ -37,7 +41,6 @@ h1{
 .grid-table {
    display: grid;
    grid-template-columns: 120px 120px 400px; /* 3 equal-width columns */
-   gap: 1px; /* Space between cells */
    width:650px;
  }
 
@@ -45,7 +48,8 @@ h1{
 .grid-row {
    display: contents; /* Ensure rows don't disrupt grid flow */
    cursor: pointer;
-  
+   gap: 1px; /* Keep the gaps */
+   width: 100%; /* Ensure it spans the full table */
  }
 
  
@@ -76,6 +80,18 @@ h1{
  .grid-header .grid-cell {
    font-weight: bold;
  }
+
+
+ .grid-row:hover {
+  background-color: #f0f0f0; /* Light grey background */
+  transition: background-color 0.3s ease;
+}
+
+/* Ensure each cell inherits row background color */
+.grid-row:hover .grid-cell {
+  background-color: inherit;
+}
+
 
  .button{
    border:none;
@@ -224,7 +240,7 @@ h1{
     border-radius: 20px;
     width:400px;
     height:420px;
-    visibility: visible;
+    visibility: hidden;
     left:22%;
     top:40%;
     background-color: white;
