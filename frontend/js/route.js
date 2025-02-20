@@ -90,7 +90,9 @@ map.on('load', () => {
     // }
 
        // Create a taxi element for better styling
-       function createTaxiElement() {
+       
+       
+    function createTaxiElement() {
         const el = document.createElement('div');
         el.style.width = '20px';
         el.style.height = '20px';
@@ -327,7 +329,7 @@ const routeList =  async()=>{
         
         //Populate
         respondeData.forEach((route)=>{
-            createGridRow(route.name, route.type , route.coordinates);
+            if(createGridRow(route.name,route.price , route.type , route.numOfDirections) != null);
         })
 
     }catch(error){
@@ -359,53 +361,94 @@ function getQueryParam(param) {
     return urlParams.get(param);  // Return the value of the query parameter
 }
 
-function createGridRow(routeID , type , coords) {
-    // Create the main grid-row div
-    const gridRow = document.createElement("div");
-    gridRow.className = "grid-row";
+// function createGridRow(routeID , type , coords) {
+//     // Create the main grid-row div
+//     const gridRow = document.createElement("div");
+//     gridRow.className = "grid-row";
     
     
-    //RouteID cell
-        const gridCell = document.createElement("div");
-        gridCell.className = "grid-cell";
-        gridCell.textContent = routeID;
-        gridRow.appendChild(gridCell);
+//     //RouteID cell
+//         const gridCell = document.createElement("div");
+//         gridCell.className = "grid-cell";
+//         gridCell.textContent = routeID;
+//         gridRow.appendChild(gridCell);
 
-        //type cell
-        const gridCell2 = document.createElement("div");
-        gridCell2.className = "grid-cell";
-        gridCell2.textContent = type;
-        gridRow.appendChild(gridCell2);
+//         //type cell
+//         const gridCell2 = document.createElement("div");
+//         gridCell2.className = "grid-cell";
+//         gridCell2.textContent = type;
+//         gridRow.appendChild(gridCell2);
     
     
-    // Create the fourth grid-cell with nested elements
-    const fourthCell = document.createElement("div");
-    fourthCell.className = "grid-cell fourth";
+//     // Create the fourth grid-cell with nested elements
+//     const fourthCell = document.createElement("div");
+//     fourthCell.className = "grid-cell fourth";
     
-    const coordSpan = document.createElement("div");
-    coordSpan.id = "coord-span";
-    coordSpan.textContent = coords;
+//     const coordSpan = document.createElement("div");
+//     coordSpan.id = "coord-span";
+//     coordSpan.textContent = coords;
     
-    const buttonSpan = document.createElement("span");
-    buttonSpan.id = "button-span";
+//     const buttonSpan = document.createElement("span");
+//     buttonSpan.id = "button-span";
     
-    const button = document.createElement("button");
-    button.className = "button route";
-    button.textContent = "Edit";
+//     const button = document.createElement("button");
+//     button.className = "button route";
+//     button.textContent = "Edit";
     
-    // Append button to buttonSpan, then append both spans to fourthCell
-    buttonSpan.appendChild(button);
-    fourthCell.appendChild(coordSpan);
-    fourthCell.appendChild(buttonSpan);
+//     // Append button to buttonSpan, then append both spans to fourthCell
+//     buttonSpan.appendChild(button);
+//     fourthCell.appendChild(coordSpan);
+//     fourthCell.appendChild(buttonSpan);
     
-    // Append fourth cell to the grid-row
-    gridRow.appendChild(fourthCell);
+//     // Append fourth cell to the grid-row
+//     gridRow.appendChild(fourthCell);
     
-    // Append the whole structure to the body or another container
-    gridTable.appendChild(gridRow); // Change this to your desired container
-}
+//     // Append the whole structure to the body or another container
+//     gridTable.appendChild(gridRow); // Change this to your desired container
+// }
 
 // Fetch taxi ranks from backend once
+
+function createGridRow(name, price, type, directions) {
+    const row = document.createElement("div");
+    row.classList.add("grid-row");
+    
+    // Helper function to create a grid cell
+    function createCell(content) {
+        const cell = document.createElement("div");
+        cell.classList.add("grid-cell");
+        cell.textContent = content;
+        return cell;
+    }
+    
+    row.appendChild(createCell(name));
+    row.appendChild(createCell(price));
+    row.appendChild(createCell(type));
+    row.appendChild(createCell(directions));
+    
+    // Create the fifth cell with buttons
+    const buttonCell = document.createElement("div");
+    buttonCell.classList.add("grid-cell");
+    
+    const routeButtonDiv = document.createElement("div");
+    routeButtonDiv.id = "route_button";
+    
+    const editButton = document.createElement("button");
+    editButton.classList.add("btn", "edit");
+    editButton.textContent = "Edit";
+    
+    const delButton = document.createElement("button");
+    delButton.classList.add("btn", "del");
+    delButton.textContent = "Del";
+    
+    routeButtonDiv.appendChild(editButton);
+    routeButtonDiv.appendChild(delButton);
+    buttonCell.appendChild(routeButtonDiv);
+    
+    row.appendChild(buttonCell);
+    gridTable.appendChild(row);
+}
+
 async function fetchTaxiRanks() {
     try {
         const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');

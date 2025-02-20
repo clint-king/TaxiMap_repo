@@ -12,16 +12,22 @@
 </head>
 <body>
     <div id="ui_container">
-        <h1><span></span>Route</h1>
-        <button class="button add">Add</button>
+        <h1><span>Nkowankowa Taxi Rank </span>Route</h1>
+        <div class="subtop">
+            <button class="button add">Add <br>Route</button>
+            <div class="inputContainer" ><input placeholder="Search..."></div>
+        </div>
+        
 
         <!-- Grid table -->
         <div class="grid-table">
             <!-- Header row -->
             <div class="grid-row grid-header">
               <div class="grid-cell" id="header_name">Route ID</div>
-              <div class="grid-cell" id="header_name">Type</div>
-              <div class="grid-cell" id="header_province">Coordinates</div>
+              <div class="grid-cell" id="header_price">Price</div>
+              <div class="grid-cell" id="header_type">Type</div>
+              <div class="grid-cell" id="header_directions">No. directions</div>
+              <div class="grid-cell" id="header_buttons"></div>
             </div>
 
             <!-- Data rows rendered in script -->
@@ -29,18 +35,55 @@
                 <!-- First grid-cell for name -->
                 <div class="grid-cell">
                     3UJHBND
-                </div>     
+                </div> 
+                <!--Second grid-cell for price-->   
                 <div class="grid-cell">
-                    Reverse
+                    R20.00
+                </div> 
+
+                <!--Third  grid-cell for Type-->   
+                <div class="grid-cell">
+                    Loop
+                </div>
+                
+                <!--Fourth grid-cell for number of directions-->   
+                <div class="grid-cell">
+                    20
                 </div>   
-                <!-- Fourth grid-cell with nested span and button -->
+                <!-- Fifth grid-cell with nested buttons -->
                 <div class="grid-cell">
-                    <div id="coord-span">
-                        [45.50049,89.9903] , [00.003902,90.39920],[78.90029,1.90003], [90.90302,45.003i2]
-                    </div>
-                  <span id="button-span">
-                    <button class="button route">Edit</button>
-                  </span>
+                  <div id="route_button">
+                    <button class="btn edit">Edit</button>
+                    <button class="btn del" >Del</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid-row">
+                <!-- First grid-cell for name -->
+                <div class="grid-cell">
+                    3UJHBND
+                </div> 
+                <!--Second grid-cell for price-->   
+                <div class="grid-cell">
+                    R20.00
+                </div> 
+
+                <!--Third  grid-cell for Type-->   
+                <div class="grid-cell">
+                    Loop
+                </div>
+                
+                <!--Fourth grid-cell for number of directions-->   
+                <div class="grid-cell">
+                    20
+                </div>   
+                <!-- Fifth grid-cell with nested buttons -->
+                <div class="grid-cell">
+                  <div id="route_button">
+                    <button class="btn edit">Edit</button>
+                    <button class="btn del" >Del</button>
+                  </div>
                 </div>
               </div>
 
@@ -51,9 +94,36 @@
         <div class="menu_wrapper">
             <p id="routeID">Route:<span id="routeName">546252</span></p>
             <button id="close_button"><i class="fa fa-times" style="font-size:20px;color:red;" aria-hidden="true"></i></button>
-            <div class="input_line coord">
-              <label>Coordinates:</label>
-              <textarea></textarea>
+
+            <!-- Toggle button -->
+
+            <div class="toggle-container">
+                <span class="toggle-label" id="toggleLabel">Taxi</span>
+                <div class="toggle-button" id="toggle">
+                    <div class="toggle-circle"></div>
+                </div>
+                <span class="toggle-label" id="toggleLabel">Walk</span>
+            </div>
+        
+
+            <!-- Coordinate input section-->
+
+            <div class="coordinate_container">
+                <div class="coordinate_subContainer miniCoords">
+                    <button>Add Mini Coords</button>
+                    <div class="coords_info">
+                        <p>Num of coords added:</p>
+                        <h2>6</h2>
+                    </div>
+                </div>
+
+                <div class="coordinate_subContainer directionCoords">
+                    <button>Add Directions Coords</button>
+                    <div class="coords_info">
+                        <p>Num of coords added:</p>
+                        <h2>2</h2>
+                    </div>
+                </div>
             </div>
 
             <div class="price-slider-container">
@@ -91,9 +161,17 @@
                     <input class="routeInput dest_input">
                     <ul id="suggestions"></ul>
                 </span>
-                
               </div> 
-            <button id="update_button">Update</button>
+            <button id="update_button">Save</button>
+
+            <!-- Coordinates TextArea-->
+             <div class="coords_container">
+                <textarea></textarea>
+                <div>
+                    <button>Cancel</button>
+                    <button>Save</button>
+                </div>
+             </div>
         </div>
 
     
@@ -101,7 +179,25 @@
 
     <div class="information">
         <div class="route_info">
-            <span class="price"><h1>R15</h1></span>
+
+            <span class="route_chosen">Route choosen:<span> Route L1</span></span>
+            <div class="direction_container">
+                <p>Directions :</p>
+                <button class="direction_button">D1</button>
+                <button class="direction_button">D2</button>
+                <button class="direction_button">D3</button>
+                <button class="direction_button">D4</button>
+                <button class="direction_button">D5</button>
+                <button class="direction_button">D6</button>
+                <button class="direction_button">D7</button>
+            </div>
+            <hr>
+
+            <div class="Editing_container">
+                <button class="button direction_route"> Add <br>direction <br>Route</button>
+                <button class="button mini_route"> Add mini<br>Route</button>
+            </div>
+
             <div class="direction1">
                 <!--First circle-->
                 <div class="circle-container start">
@@ -129,6 +225,7 @@
                     <div>Tzaneen Taxi Rank</div>
                 </div>
             </div>
+            
             </div>
         <div id="map">
     </div>

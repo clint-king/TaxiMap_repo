@@ -6,18 +6,24 @@ body {
     flex-direction: row;
     width:100vw;
     font-family: sans-serif;
+    background-color: #F7F7F7;
    }
 
    #map{
-    height: 60vh;
+    height: 40vh;
+    border: 2px solid black;
+    width: 500px;
+    border-radius: 30px;
+    margin-bottom: 10px;
+    margin-left: 25px;
    }
 #ui_container{
-   width:45%;
+   width:55%;
    height:100vh;
-   background-color: white;
-   overflow: hidden;
+   overflow: visible;
    position: relative;
-   box-shadow: 0px 4px 8px rgb(0,0,.3);;
+   margin-right:30px ;
+   margin-left: 20px;
 }  
 
 .information { 
@@ -28,68 +34,139 @@ body {
 
 }
 
-.route_info{
-    height:40vh;
+.subtop{
+  display: flex;
+  flex-direction:row;
+  justify-content: space-between;
+  align-items: center;
+
 }
 
+.inputContainer{
+  width:400px;
+  margin-right: 40px;
+}
+
+.inputContainer input{
+  width:100%;
+  height:30px;
+  border-radius: 30px;
+  color:#9C9C9C;
+  border: none;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  font-family:Arial, Helvetica, sans-serif
+}
+
+.inputContainer input:focus{
+  border: #193148 2px solid;
+  outline: none;
+}
+
+
+.route_info{
+    height:70vh;
+    position:relative;
+}
+.route_chosen{
+  position: absolute;
+  left:40%;
+  top:5%;
+}
+
+.direction_container{
+  position: absolute;
+  top:20%;
+  margin-left: 10px;
+}
+
+.direction_button{
+  width:70px;
+  height: 40px;
+  margin-right: 15px;
+  border-radius: 20px;
+  border:none;
+  font-weight: bold;
+  background-color: #76F68D;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+hr{
+position: relative;
+top:45%;
+margin-left: 2%;
+margin-right: 5%;
+height:0.2px;
+background-color: #9C9C9C;
+}
+.Editing_container{
+  position: absolute;
+  top:50%;
+  margin-left: 10px;
+}
+
+.Editing_container>.button{
+  margin-right: 15px;
+  background-color: #193148;
+  padding: 10px 20px;
+  color:white;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
 
 h1{
    text-align: center;
 }
 
 /** Table **/
-.grid-table {
-   display: grid;
-   grid-template-columns: 120px 120px 400px; /* 3 equal-width columns */
-   width:650px;
- }
-
- /* Rows and cells */
+/* Ensure rows appear as blocks with borders and shadows */
 .grid-row {
-   display: contents; /* Ensure rows don't disrupt grid flow */
-   cursor: pointer;
-   gap: 1px; /* Keep the gaps */
-   width: 100%; /* Ensure it spans the full table */
- }
+  display: flex; /* Change from 'contents' to 'flex' */
+  gap: 1px;
+  width: 97%;
+  margin: 0px 8px 4px 4px;
+  border-radius: 20px; /* Rounded corners */
+  padding: 2px; /* Space inside row */
+  overflow: hidden; /* Prevents child elements from breaking border-radius */
+}
 
- 
- .grid-cell {
-   padding: 10px;
-   text-align: center;
-   display: flex;
-   justify-content: center;
-   align-items: center;
- }
- .grid-row  .grid-cell {
-   font-size: small;
- }
- .grid-row  .grid-cell button {
-   margin-left: 0px;
-   padding: 5px 20px;
- }
+.grid-row:not(.grid-header) {
+  background-color: #FFFFFF;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Soft shadow */
+}
 
- #coord-span{
-    width:150px;
-    word-wrap: break-word;
-    margin-right: 10px;
- }
+.grid-cell {
+  flex: 1; /* Ensure equal distribution */
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+}
 
- 
+.grid-row:not(.grid-header) .grid-cell {
+  background-color: #ffffff;
+}
 
- /* Header styling */
- .grid-header .grid-cell {
-   font-weight: bold;
- }
+/* Header styling */
+.grid-row.grid-header {
+  font-weight: bold;
+}
 
+.grid-row.grid-header .grid-cell {
+  background-color: inherit;
+  color: black;
+}
 
- .grid-row:hover {
-  background-color: #f0f0f0; /* Light grey background */
+/* Hover effect */
+.grid-row:not(.grid-header):hover {
+  background-color: #f0f0f0;
   transition: background-color 0.3s ease;
 }
 
-/* Ensure each cell inherits row background color */
-.grid-row:hover .grid-cell {
+.grid-row:not(.grid-header):hover .grid-cell {
   background-color: inherit;
+  color: black;
 }
 
 
@@ -106,21 +183,36 @@ h1{
    color:white;
    margin-left: 20px;
    margin-bottom: 20px;
+   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
  }
  .button.add:hover{
    background-color: #305A84;
  }
 
- .button.route{
-   padding:5px;
-   background-color: #F6DC76;
-   color:#193148;
-   font-weight: 570;
- }
- .button.route:hover{
-   background-color: #FFD737;
+ #route_button{
+  display: flex;
+  flex-direction: column;
  }
 
+ .btn{
+  border: none;
+  padding: 8px 15px 2px 15px;
+  color:#362B2B;
+  font-weight: bold;
+ }
+ .btn.edit{
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  background-color: #76F68D;
+  text-align: center;
+ }
+
+ .btn.del{
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  background-color: #F67676;
+  text-align: center;
+ }
 
 
 .information{
@@ -140,13 +232,19 @@ h1{
 }
 /* ==Arrow section == */
 .direction1{
-    display: flex;
-    justify-content: center;
+  position:absolute;
+  top:75%;
+  display: flex;
+  justify-content: center;
+  margin-left:20px;
+  font-size: x-small;
+  font-weight: bold;
 }
+
 /*circles*/
 .circle{
-    height:30px;
-    width:30px;
+    height:25px;
+    width:25px;
     border-radius: 50%;
 }
 
@@ -200,8 +298,8 @@ h1{
   
   .arrow span {
     display: block;
-    width: 1.5vw;
-    height: 1.5vw;
+    width: 0.9vw;
+    height: 0.9vw;
     border-bottom: 5px solid rgb(0, 0, 0);
     border-right: 5px solid rgb(0, 0, 0);
     transform: rotate(45deg);
@@ -235,15 +333,19 @@ h1{
   /* === Context Menu === */
 
 .menu_wrapper{
-    border:2px solid ;
     position:absolute;
     border-radius: 20px;
-    width:400px;
-    height:420px;
+    width:600px;
+    height:600px;
     visibility: hidden;
     left:22%;
-    top:40%;
-    background-color: white;
+    top:10%;
+    background-color: #F2EFEF;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+ }
+
+ .menu_wrapper.walk{
+  height:400px;
  }
  
  #close_button{
@@ -252,13 +354,13 @@ h1{
     top:10px;
     right:10px;
     border:none;
-    background-color: white;
+    background-color: #F2EFEF;
     cursor: pointer;
  }
  
  #update_button{
     position: absolute;
-    left:39%;
+    left:43%;
     width:100px;
     height:30px;
     padding:5px 10px;
@@ -266,7 +368,7 @@ h1{
     border:none;
     background-color:#F6DC76;
     color:white;
-    top:360px;
+    top:90%;
     cursor: pointer;
  }
  
@@ -276,68 +378,176 @@ h1{
 
  #routeID{
     position: absolute;
-    left:38%;
+    left:42%;
     font-weight: bold;
     font-size: 15px;
     top:13px;
  }
 
- .input_line.coord{
-    position: absolute;
-    left:5%;
-    top:20%;
- }
-
- .input_line.coord label{
-    position: absolute;
-    top:45%;
- }
-
- .input_line.coord textarea{
-    position: absolute;
-    left:100px;
-    width:250px;
-    border-radius: 10px;
-    border: 2px solid;
-    resize: none;
-    height:45px;
- }
 
  .input_line.startDest{
     position: absolute;
     top:75%;
     display: flex;
     flex-direction: column;
-    left:5%;
+    left:24%;
  }
 
- .routeInput.start_input{
-    position: relative;
-    left:55px;
- }
 
  .routeInput.dest_input{
     position: relative;
     left:9px;
- }
- .routeInput{
+    height:40px;
     width:200px;
-    border: 2px solid black;
+    border:none;
     border-radius: 5px;
-    height:20px;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
  }
+
 
  .inputConatiner{
     margin-bottom: 10px;
  }
+
+
+
+ /** coorcdinates section */
+ .coordinate_container{
+  display: flex;
+  justify-content: space-between;
+  width:550px;
+  position: absolute;
+  top:20%;
+  left:4%;
+  visibility: hidden;
+ }
+
+ .coordinate_subContainer{
+  display: flex;
+  height:100px;
+ }
+
+ .coordinate_subContainer button{
+  width:100px;
+  background-color: #19AE1E;
+  color:white;
+  border:none;
+  border-radius:5px;
+ }
+
+ .coords_info p{
+  padding: 0px;
+  margin: 0px;
+  position: relative;
+  top:10px;
+  text-align: center;
+ }
+
+ .coords_info h2{
+  position: relative;
+  top:5px;
+ }
+ .coords_info{
+  background-color: #D9D9D9;
+  border-top-right-radius: 30px;
+  border-bottom-right-radius:30px;
+  width:140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+ }
+
+ /** Insert coordinates **/
+ .coords_container{
+  visibility: hidden;
+  width:500px;
+  height:500px;
+  background-color: #F2EFEF;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  position:absolute;
+  left:590px;
+  top:40px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap:20px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 20px;
+ }
+
+ .coords_container textarea{
+  resize: none;
+  width:490px;
+  height:450px;
+  border-radius: 10px;
+ }
+
+ .coords_container button{
+  width:100px;
+  height:30px;
+  cursor: pointer;
+  border-radius: 10px;
+  border:none;
+  background-color:#F6DC76;
+  color:white;
+  top:90%;
+ }
+
+ /*Toggle button*/
+
+ .toggle-container {
+  position: absolute;
+  left:39%;
+  top:60px;
+  gap:10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toggle-button {
+  width: 50px;
+  height: 25px;
+  background-color: #ccc;
+  border-radius: 25px;
+  position: relative;
+  transition: background-color 0.3s;
+}
+
+.toggle-circle {
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  transform: translateY(-50%);
+  transition: left 0.3s;
+}
+
+.toggle-button.active {
+  background-color: #4caf50;
+}
+
+.toggle-button.active .toggle-circle {
+  left: 25px;
+}
+
+.toggle-label {
+  font-size: 16px;
+}
 
   /*Slide */
   .price-slider-container {
     width: 88.5%;
     margin: 50px auto;
     position: absolute;
-    top:20%;
+    top:45%;
     left:5%;
+    visibility: hidden;
 }
 
 .slider {
@@ -356,14 +566,15 @@ h1{
     margin-top: 20px;
     font-weight: lighter;
     font-family: cursive;
-    left:100px;
+    left:190px;
 }
 
 /*Checkbox */
 .checkboxConatiner{
   position: absolute;
-  left:21%;
-  top:53%;
+  left:33%;
+  top:40%;
+  visibility: hidden;
 }
 .question {
   font-weight: bold;

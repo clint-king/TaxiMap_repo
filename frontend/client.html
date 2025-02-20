@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Taxi Path with Mapbox</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/clientStyle.css">
+</head>
+<body>
+    <div id="ui_container">
+        <!--Search-->
+        <div class="search_container">
+            <input class="search_input source" placeholder="Current location...">
+            <input class="search_input destination" placeholder="Destination...">
+        </div>
+
+         <!-- From and To buttons -->
+         <div class="toggleButtons_container">
+            <button class="toggleBtn from">From</button>
+            <button class="toggleBtn to">To</button>
+         </div>
+        <!--Route list-->
+        <div class="routeList_container">
+            <div class="cover price">
+                <p>Price</p>
+            </div>
+
+            <div class="list_container">
+                <div class="listSub_container list_right">
+                    <ul>
+                        <li><div class="route_circle"></div>Route 1</li>
+                        <li><div class="route_circle"></div>Route 2</li>
+                        <li><div class="route_circle"></div>Route 3</li>
+                    </ul>
+                </div>
+                <div class="listSub_container list_left">
+                    <ul>
+                        <li>R50.00</li>
+                        <li>R60.00</li>
+                        <li>R70.00</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="cover total_price">
+                <p>Total:</p>
+                <p>R200.00</p>
+            </div>
+        </div>
+
+        <!--Directions -->
+        <div class="direction_container">
+            <p>Directions :</p>
+            <button class="direction_button">D1</button>
+            <button class="direction_button">D2</button>
+            <button class="direction_button">D3</button>
+            <button class="direction_button">D4</button>
+            <button class="direction_button">D5</button>
+            <button class="direction_button">D6</button>
+            <button class="direction_button">D7</button>
+        </div>
+
+        <!--bottom bar-->
+        <div class="bar_container">
+            <p>Help</p>
+            <p>Info</p>
+            <p>Contacts</p>
+        </div>
+    </div>
+   <div id="map">
+  </div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <script  type="module" src="./js/index.js"></script>
+</body>
+</html>

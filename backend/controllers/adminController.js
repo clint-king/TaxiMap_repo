@@ -158,8 +158,10 @@ export const listRoutes = async(req, res) =>{
                 array.push({
                     id: result[i].ID,
                     name: result[i].name,
+                    travelMethod:result[i].travelMethod,
+                    numOfDirections:result[i].totalNum_directions,
                     type:result[i].route_type,
-                    coordinates: result[i].coords
+                    price: result[i].price
                 });
             }
         }else{

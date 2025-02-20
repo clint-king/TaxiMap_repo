@@ -5,52 +5,76 @@ body {
      flex-direction: row;
      width:100vw;
      font-family: sans-serif;
+     background-color: #F7F7F7;
     }
 #ui_container{
     width:45%;
     height:100vh;
-    background-color: white;
     overflow: hidden;
     position: relative;
-    border:2px solid black;
 }  
 
-#map { width: 55%; height: 100vh; }
+#map {
+   width: 55%;
+   height: 98vh;
+   border: 2px solid black;
+   margin:5px;
+   border-radius: 10px;
+  }
 h1{
     text-align: center;
 }
-.grid-table {
-    display: grid;
-    grid-template-columns: 120px 120px 200px 200px; /* 3 equal-width columns */
-    gap: 1px; /* Space between cells */
-    width:650px;
-  }
-
-  /* Rows and cells */
+/** Table **/
+/* Ensure rows appear as blocks with borders and shadows */
 .grid-row {
-    display: contents; /* Ensure rows don't disrupt grid flow */
-    cursor: pointer;
-    
-  }
+  display: flex; /* Change from 'contents' to 'flex' */
+  gap: 1px;
+  width: 97%;
+  margin: 0px 8px 4px 4px;
+  border-radius: 20px; /* Rounded corners */
+  padding: 2px; /* Space inside row */
+  overflow: hidden; /* Prevents child elements from breaking border-radius */
+}
 
-  
-  .grid-cell {
-    padding: 10px;
-    text-align: center;
-  }
-  .grid-row  .grid-cell {
-    font-size: small;
-  }
-  .grid-row  .grid-cell button {
-    margin-left: 10px;
-  }
+.grid-row:not(.grid-header) {
+  background-color: #FFFFFF;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Soft shadow */
+}
 
-  
+.grid-cell {
+  flex: 1; /* Ensure equal distribution */
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+}
 
-  /* Header styling */
-  .grid-header .grid-cell {
-    font-weight: bold;
-  }
+.grid-row:not(.grid-header) .grid-cell {
+  background-color: #ffffff;
+}
+
+/* Header styling */
+.grid-row.grid-header {
+  font-weight: bold;
+}
+
+.grid-row.grid-header .grid-cell {
+  background-color: inherit;
+  color: black;
+}
+
+/* Hover effect */
+.grid-row:not(.grid-header):hover {
+  background-color: #f0f0f0;
+  transition: background-color 0.3s ease;
+}
+
+.grid-row:not(.grid-header):hover .grid-cell {
+  background-color: inherit;
+  color: black;
+}
 
   .button{
     border:none;
@@ -70,14 +94,40 @@ h1{
     background-color: #305A84;
   }
 
-  .button.route{
-    padding:5px;
-    background-color: #F6DC76;
-    color:#193148;
-    font-weight: 570;
+  #multi_button{
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
   }
-  .button.route:hover{
-    background-color: #FFD737;
+
+  .btn{
+    border: none;
+    font-weight: bold;
+  }
+
+  .btn.route{
+    background-color:#FAE17F;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    width:100px;
+    height:25px;
+  }
+  .btn.edit{
+    background-color: #76F68D;
+    border-bottom-left-radius: 10px;
+    width:50px;
+    height:25px;
+  }
+  .btn.del{
+    background-color: #F67676;
+    border-bottom-right-radius: 10px;
+    width:50px;
+    height:25px;
+  }
+  .sub_multi_button{
+    display: flex;
+    flex-direction: row;
+   
   }
 
 /* Context Menu*/
