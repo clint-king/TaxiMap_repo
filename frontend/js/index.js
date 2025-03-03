@@ -227,7 +227,6 @@ map.on('click', async (e) => {
 });
 
 
-
 // Attach event listener to the search box
 searchBox.addEventListener('input', (e) => {
   fetchSuggestions(e.target.value);
@@ -297,57 +296,12 @@ async function listOnTable() {
     const dataReceived = response.data;
     dataReceived.forEach( TaxiRankObj=>{
    // Create the parent div with class "grid-row" and id "2"
-const gridRow = document.createElement("div");
-gridRow.className = "grid-row";
-gridRow.id = "2";
-
-// Create the first grid-cell for name
-const gridCell1 = document.createElement("div");
-gridCell1.className = "grid-cell";
-gridCell1.textContent = TaxiRankObj.name; // Set the text content
-
-// Create the second grid-cell for provinvce
-const gridCell2 = document.createElement("div");
-gridCell2.className = "grid-cell";
-gridCell2.textContent = TaxiRankObj.province;
-
-// Create the third grid-cell
-const gridCell3 = document.createElement("div");
-gridCell3.className = "grid-cell";
-gridCell3.textContent = TaxiRankObj.address;
-
-// Create the fourth grid-cell with nested span and button
-const gridCell4 = document.createElement("div");
-gridCell4.className = "grid-cell fourth";
-gridCell4.textContent = TaxiRankObj.num_routes; // Add the text content
-
-// Create the span inside the fourth grid-cell
-const span = document.createElement("span");
-
-// Create the button inside the span
-const button = document.createElement("button");
-button.className = "button route";
-button.textContent = "Add Route";
-button.dataset.rank = TaxiRankObj.ID;
-
-// Append the button to the span
-span.appendChild(button);
-
-// Append the span to the fourth grid-cell
-gridCell4.appendChild(span);
-
-// Append all grid-cells to the parent grid-row
-gridRow.appendChild(gridCell1);
-gridRow.appendChild(gridCell2);
-gridRow.appendChild(gridCell3);
-gridRow.appendChild(gridCell4);
-// Append the grid-row to the body or a specific container in your HTML
-gridTableDiv.appendChild(gridRow); // Or replace document.body with the target container element
+   createGridRow(TaxiRankObj.ID ,TaxiRankObj.name , TaxiRankObj.province , TaxiRankObj.address , TaxiRankObj.num_routes);
 
 //Adding a Marker
 addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude);
 
-    })
+    });
   } catch (error) {
     console.error(error);
   }
@@ -355,6 +309,60 @@ addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude);
 }else{
   console.error("An element not found under table list.");
 }
+}
+
+
+function createGridRow(ID ,taxiName , provinceName , addressName , numRoutes) {
+  const gridRow = document.createElement("div");
+  gridRow.className = "grid-row";
+
+  const taxiRankName = document.createElement("div");
+  taxiRankName.className = "grid-cell";
+  taxiRankName.textContent = taxiName;
+  gridRow.appendChild(taxiRankName);
+
+  const province = document.createElement("div");
+  province.className = "grid-cell";
+  province.textContent = provinceName;
+  gridRow.appendChild(province);
+
+  const address = document.createElement("div");
+  address.className = "grid-cell";
+  address.textContent = addressName;
+  gridRow.appendChild(address);
+
+  const lastCell = document.createElement("div");
+  lastCell.className = "grid-cell";
+  lastCell.textContent =numRoutes;
+
+  const multiButton = document.createElement("div");
+  multiButton.id = "multi_button";
+
+  const addRouteButton = document.createElement("button");
+  addRouteButton.className = "btn route";
+  addRouteButton.textContent = "Add route";
+  addRouteButton.dataset.rank = ID;
+  multiButton.appendChild(addRouteButton);
+
+  const subMultiButton = document.createElement("div");
+  subMultiButton.className = "sub_multi_button";
+
+  const editButton = document.createElement("button");
+  editButton.className = "btn edit";
+  editButton.textContent = "Edit";
+
+  const delButton = document.createElement("button");
+  delButton.className = "btn del";
+  delButton.textContent = "Del";
+
+  subMultiButton.appendChild(editButton);
+  subMultiButton.appendChild(delButton);
+
+  multiButton.appendChild(subMultiButton);
+  lastCell.appendChild(multiButton);
+  gridRow.appendChild(lastCell);
+
+  gridTableDiv.appendChild(gridRow);
 }
 
 async function addSingleInfoOnTable(){
@@ -429,9 +437,7 @@ async function addMarker(lng , lat){
         .addTo(map);
 }
 
-
-
-//from TaxiRank page to route.html
+//Handling Add route button clicks
 document.body.addEventListener("click", function (event) {
   if (event.target.classList.contains("route")) {
     const rankID = event.target.dataset.rank;
@@ -441,9 +447,9 @@ document.body.addEventListener("click", function (event) {
 });
 
 
-
+//Handling Add route button clicks
 document.addEventListener("DOMContentLoaded", function () {
-  const buttons = document.querySelectorAll(".button.route");
+  const buttons = document.querySelectorAll(".btn.route");
 
   console.log(buttons);
   buttons.forEach(button => {
@@ -459,104 +465,102 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-
-
-map.addSource('route', {
-  'type': 'geojson',
-  'data': {
-      'type': 'Feature',
-      'properties': {},
-      'geometry': {
-          'type': 'LineString',
-          'coordinates': [
-              [
-                30.28617826851672,
-                -23.887364480185497
-              ],
-              [
-                30.287540163301344,
-                -23.88732599096339
-              ],
-              [
-                30.28754759181831,
-                -23.888009738962296
-              ],
-              [
-                30.29111468078719,
-                -23.88786483905264
-              ],
-              [
-                30.29137220270954,
-                -23.88771541082228
-              ],
-              [
-                30.291622966113323,
-                -23.887501266262788
-              ],
-              [
-                30.291892868897833,
-                -23.887225049533484
-              ],
-              [
-                30.29360276557776,
-                -23.885667357261454
-              ],
-              [
-                30.2956385413909,
-                -23.887616845317467
-              ],
-              [
-                30.29613034534802,
-                -23.888083479511394
-              ],
-              [
-                30.29621175181373,
-                -23.888150469232542
-              ],
-              [
-                30.296274163437943,
-                -23.888192647926175
-              ],
-              [
-                30.29636371055014,
-                -23.888224902213707
-              ],
-              [
-                30.29812751731339,
-                -23.8882869296648
-              ],
-              [
-                30.301443162726173,
-                -23.888388115618824
-              ],
-              [
-                30.30160376938443,
-                -23.88840473997122
-              ],
-              [
-                30.30170376975707,
-                -23.888429676495946
-              ],
-              [
-                30.301957775550335,
-                -23.8885149420139
-              ],
-              [
-                30.30448505768163,
-                -23.889490232791573
-              ],
-              [
-                30.304548694281806,
-                -23.88934061479803
-              ],
-              [
-                30.306224249305927,
-                -23.885592832923052
-              ]
-            ]
-      }
-  }
-});
+// map.addSource('route', {
+//   'type': 'geojson',
+//   'data': {
+//       'type': 'Feature',
+//       'properties': {},
+//       'geometry': {
+//           'type': 'LineString',
+//           'coordinates': [
+//               [
+//                 30.28617826851672,
+//                 -23.887364480185497
+//               ],
+//               [
+//                 30.287540163301344,
+//                 -23.88732599096339
+//               ],
+//               [
+//                 30.28754759181831,
+//                 -23.888009738962296
+//               ],
+//               [
+//                 30.29111468078719,
+//                 -23.88786483905264
+//               ],
+//               [
+//                 30.29137220270954,
+//                 -23.88771541082228
+//               ],
+//               [
+//                 30.291622966113323,
+//                 -23.887501266262788
+//               ],
+//               [
+//                 30.291892868897833,
+//                 -23.887225049533484
+//               ],
+//               [
+//                 30.29360276557776,
+//                 -23.885667357261454
+//               ],
+//               [
+//                 30.2956385413909,
+//                 -23.887616845317467
+//               ],
+//               [
+//                 30.29613034534802,
+//                 -23.888083479511394
+//               ],
+//               [
+//                 30.29621175181373,
+//                 -23.888150469232542
+//               ],
+//               [
+//                 30.296274163437943,
+//                 -23.888192647926175
+//               ],
+//               [
+//                 30.29636371055014,
+//                 -23.888224902213707
+//               ],
+//               [
+//                 30.29812751731339,
+//                 -23.8882869296648
+//               ],
+//               [
+//                 30.301443162726173,
+//                 -23.888388115618824
+//               ],
+//               [
+//                 30.30160376938443,
+//                 -23.88840473997122
+//               ],
+//               [
+//                 30.30170376975707,
+//                 -23.888429676495946
+//               ],
+//               [
+//                 30.301957775550335,
+//                 -23.8885149420139
+//               ],
+//               [
+//                 30.30448505768163,
+//                 -23.889490232791573
+//               ],
+//               [
+//                 30.304548694281806,
+//                 -23.88934061479803
+//               ],
+//               [
+//                 30.306224249305927,
+//                 -23.885592832923052
+//               ]
+//             ]
+//       }
+//   }
+// });
 
 //Load image 
 map.loadImage('../images/724954.png', (error, image) => {
@@ -564,18 +568,18 @@ map.loadImage('../images/724954.png', (error, image) => {
   map.addImage('arrow', image);
 });
 
-map.addLayer({
-  'id': 'route-line',
-  'type': 'line',
-  'source': 'route',
-  'layout': {
-      'line-cap': 'round',
-      'line-join': 'round'
-  },
-  'paint': {
-      'line-color': '#ff0000',
-      'line-width': 4
-  }
-});
+// map.addLayer({
+//   'id': 'route-line',
+//   'type': 'line',
+//   'source': 'route',
+//   'layout': {
+//       'line-cap': 'round',
+//       'line-join': 'round'
+//   },
+//   'paint': {
+//       'line-color': '#ff0000',
+//       'line-width': 4
+//   }
+// });
 
 

@@ -133,15 +133,15 @@ h1{
 /* Context Menu*/
 
 .menu_wrapper{
-    border:2px solid ;
     position:absolute;
     border-radius: 20px;
-    width:340px;
-    height:200px;
-    visibility: hidden;
+    width:380px;
+    height:300px;
+    visibility:hidden;
     left:22%;
     top:40%;
-    background-color: white;
+    background-color: #F2EFEF;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);  
 }
 
 #close_button{
@@ -150,14 +150,15 @@ h1{
     top:10px;
     right:10px;
     border:none;
-    background-color: white;
+    background-color: #F2EFEF;
     cursor: pointer;
 }
 
 .input_line.name{
     position: absolute;
-    top:40px;
-    left:10px;
+    top:50px;
+    left:30px;
+    border: none;
 }
 
 .input_line.name label{
@@ -166,33 +167,36 @@ h1{
 
 .input_line input{
    border-radius: 10px;
-   height:20px
+   height:30px;
+   width:240px;
+   border:none;
 }
 
 .input_line textarea{
     border-radius: 10px;
-    height:40px;
-    border: 2px solid;
+    height:70px;
+    width:240px;
+    border: none;
     resize: none;
  }
 
 .input_line.prov{
     position: absolute;
-    top:70px;
+    top:90px;
     right:1px;
-    left:10px;
+    left:30px;
 }
 
 .input_line.address{
     position: absolute;
-    top:100px;
-    left:10px;
+    top:130px;
+    left:30px;
 }
 
 .input_line.address label{
     margin-right: 2px;
     position: relative;
-    bottom:22px;
+    bottom:35px;
 }
 
 .input_line.address button{
@@ -208,13 +212,13 @@ h1{
 
 #update_button{
     position: absolute;
-    left:135px;
+    left:160px;
     padding:5px 10px;
     border-radius: 10px;
     border:none;
     background-color:#F6DC76;
     color:white;
-    top:160px;
+    top:250px;
     cursor: pointer;
 }
 

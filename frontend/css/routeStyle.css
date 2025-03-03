@@ -12,10 +12,11 @@ body {
    #map{
     height: 40vh;
     border: 2px solid black;
-    width: 500px;
+    width: 720px;
     border-radius: 30px;
     margin-bottom: 10px;
     margin-left: 25px;
+    border:none;
    }
 #ui_container{
    width:55%;
@@ -205,6 +206,7 @@ h1{
   border-top-right-radius: 10px;
   background-color: #76F68D;
   text-align: center;
+  cursor: pointer;
  }
 
  .btn.del{
@@ -212,7 +214,19 @@ h1{
   border-bottom-right-radius: 10px;
   background-color: #F67676;
   text-align: center;
+  cursor: pointer;
  }
+
+ .btn.del:hover{
+  background-color: #F09191;
+ }
+
+ 
+ .btn.edit:hover{
+  background-color: #A3FEB4;
+ }
+
+
 
 
 .information{
@@ -404,7 +418,6 @@ h1{
     box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
  }
 
-
  .inputConatiner{
     margin-bottom: 10px;
  }
@@ -419,6 +432,9 @@ h1{
   position: absolute;
   top:20%;
   left:4%;
+ }
+
+ .coordinate_container.walk{
   visibility: hidden;
  }
 
@@ -547,7 +563,10 @@ h1{
     position: absolute;
     top:45%;
     left:5%;
-    visibility: hidden;
+}
+
+.price-slider-container.walk{
+  visibility: hidden;
 }
 
 .slider {
@@ -574,8 +593,12 @@ h1{
   position: absolute;
   left:33%;
   top:40%;
+}
+
+.checkboxConatiner.walk{
   visibility: hidden;
 }
+
 .question {
   font-weight: bold;
   margin-bottom: 5px;

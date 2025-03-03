@@ -12,7 +12,7 @@
 </head>
 <body>
     <div id="ui_container">
-        <h1><span>Nkowankowa Taxi Rank </span>Route</h1>
+        <h1><span id="taxiRankName_label">Nkowankowa Taxi Rank </span> Route</h1>
         <div class="subtop">
             <button class="button add">Add <br>Route</button>
             <div class="inputContainer" ><input placeholder="Search..."></div>
@@ -31,61 +31,33 @@
             </div>
 
             <!-- Data rows rendered in script -->
-            <div class="grid-row">
-                <!-- First grid-cell for name -->
+             
+             <!-- <div class="grid-row">
                 <div class="grid-cell">
                     3UJHBND
                 </div> 
-                <!--Second grid-cell for price-->   
+             
                 <div class="grid-cell">
                     R20.00
                 </div> 
 
-                <!--Third  grid-cell for Type-->   
+              
                 <div class="grid-cell">
                     Loop
                 </div>
                 
-                <!--Fourth grid-cell for number of directions-->   
+                 
                 <div class="grid-cell">
                     20
                 </div>   
-                <!-- Fifth grid-cell with nested buttons -->
+                
                 <div class="grid-cell">
                   <div id="route_button">
                     <button class="btn edit">Edit</button>
                     <button class="btn del" >Del</button>
                   </div>
                 </div>
-              </div>
-
-              <div class="grid-row">
-                <!-- First grid-cell for name -->
-                <div class="grid-cell">
-                    3UJHBND
-                </div> 
-                <!--Second grid-cell for price-->   
-                <div class="grid-cell">
-                    R20.00
-                </div> 
-
-                <!--Third  grid-cell for Type-->   
-                <div class="grid-cell">
-                    Loop
-                </div>
-                
-                <!--Fourth grid-cell for number of directions-->   
-                <div class="grid-cell">
-                    20
-                </div>   
-                <!-- Fifth grid-cell with nested buttons -->
-                <div class="grid-cell">
-                  <div id="route_button">
-                    <button class="btn edit">Edit</button>
-                    <button class="btn del" >Del</button>
-                  </div>
-                </div>
-              </div>
+              </div> -->
 
           </div>
      
@@ -97,12 +69,12 @@
 
             <!-- Toggle button -->
 
-            <div class="toggle-container">
-                <span class="toggle-label" id="toggleLabel">Taxi</span>
+            <div class="toggle-container" >
+                <span class="toggle-label taxi-label">Taxi</span>
                 <div class="toggle-button" id="toggle">
                     <div class="toggle-circle"></div>
                 </div>
-                <span class="toggle-label" id="toggleLabel">Walk</span>
+                <span class="toggle-label walk-label">Walk</span>
             </div>
         
 
@@ -113,7 +85,7 @@
                     <button>Add Mini Coords</button>
                     <div class="coords_info">
                         <p>Num of coords added:</p>
-                        <h2>6</h2>
+                        <h2 id="miniCoords_num">0</h2>
                     </div>
                 </div>
 
@@ -121,17 +93,17 @@
                     <button>Add Directions Coords</button>
                     <div class="coords_info">
                         <p>Num of coords added:</p>
-                        <h2>2</h2>
+                        <h2 id="direCoords_num">0</h2>
                     </div>
                 </div>
             </div>
 
             <div class="price-slider-container">
-                <div class="price-display">Selected Price:R<span id="selectedPrice">100</span></div>
-                <input type="range" min="0" max="5000" value="100" class="slider" id="priceRange">
+                <div class="price-display">Selected Price:R<span id="selectedPrice">0</span></div>
+                <input type="range" min="0" max="1000" value="0" class="slider" id="priceRange">
                 <div class="price-labels">
                     <span>R0</span>
-                    <span>R5000</span>
+                    <span>R1000</span>
                 </div>
             </div>
 
@@ -168,8 +140,8 @@
              <div class="coords_container">
                 <textarea></textarea>
                 <div>
-                    <button>Cancel</button>
-                    <button>Save</button>
+                    <button id="coordsCancelBtn">Cancel</button>
+                    <button id ="coordsSaveBtn">Save</button>
                 </div>
              </div>
         </div>
@@ -180,16 +152,11 @@
     <div class="information">
         <div class="route_info">
 
-            <span class="route_chosen">Route choosen:<span> Route L1</span></span>
+            <span class="route_chosen">Route choosen:<span id="routeChosenLabel"> Route L1</span></span>
+
             <div class="direction_container">
                 <p>Directions :</p>
-                <button class="direction_button">D1</button>
-                <button class="direction_button">D2</button>
-                <button class="direction_button">D3</button>
-                <button class="direction_button">D4</button>
-                <button class="direction_button">D5</button>
-                <button class="direction_button">D6</button>
-                <button class="direction_button">D7</button>
+                <!-- <button class="direction_button">D1</button> -->
             </div>
             <hr>
 
@@ -202,7 +169,7 @@
                 <!--First circle-->
                 <div class="circle-container start">
                     <div class="circle start"></div>
-                    <div>Nkowankowa Taxi Rank</div>
+                    <div id="fromContainerLabel">Nkowankowa Taxi Rank</div>
                 </div>
 
                 <!--The  left arrow -->
@@ -222,7 +189,7 @@
                 <!--second circle-->
                 <div class="circle-container dest">
                     <div class="circle dest"></div>
-                    <div>Tzaneen Taxi Rank</div>
+                    <div id="toContainerLabel">Tzaneen Taxi Rank</div>
                 </div>
             </div>
             
@@ -235,6 +202,6 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-  <script  type="module" src="./js/route.js"></script>
+  <script  type="module" src="./js/route.js" defer></script>
 </body>
 </html>

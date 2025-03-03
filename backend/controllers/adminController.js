@@ -6,7 +6,6 @@ export const AddTaxiRank = async(req , res)=>{
     try{
         db = await poolDb.getConnection();
         const { name, coord, province,address} = req.body; // Extract data from the request body
-        console.log('Received data:', { name, coord, province,address });
         const query = "INSERT INTO TaxiRank(name,location_coord,province,address,num_routes) VALUES(?,?,?,?,?)";
         await db.execute(query , [name, coord, province,address,0]);
 
@@ -32,8 +31,7 @@ export const listTaxiRanks = async(req,res)=>{
     
           
             for(let i = 0 ; i < listOfTxRanks.length ;i++){
-    
-               
+
                 dataArr.push({
                     ID:listOfTxRanks[i].ID,
                     name: listOfTxRanks[i].name,
@@ -91,24 +89,29 @@ export const getTaxiRank = async(req,res)=>{
 export const AddRoute = async(req,res)=>{
     let connection;
 try{
+   
+    const {TRStart_ID , TRDest_ID, name , price , routeType , travelMethod , numOfMiniRoutes , numOfDirectionRoutes , listOfDirCoords , listOfMiniCoords}  = req.body.data;
     
-    const {name , price , coords , TRStart_ID , TRDest_ID,routeType}  = req.body.data;
     
-    if (!name || !price || !coords || !TRStart_ID || !TRDest_ID || !routeType) {
+    if (!name  || !TRStart_ID || !TRDest_ID || !routeType || !travelMethod ||
+         !numOfMiniRoutes || !numOfDirectionRoutes || !listOfDirCoords || !listOfMiniCoords) {
+            console.log("Missing required fields");
         return res.status(400).json({ message: "Missing required fields" });
     }
 
+    console.log("Coordinates : ", listOfMiniCoords);
 
-    console.log("The coords: "+ coords);
-    const query = "INSERT INTO Routes(name,price,coords,TaxiRankStart_ID,TaxiRankDest_ID, route_type) VALUES(?,?,?,?,?,?)";
+    const query = "INSERT INTO Routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
     const queryTaxiRank = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
+    const queryMiniRoute = "INSERT INTO MiniRoute(Route_ID,coords,route_index) VALUES(?,?,?)";
+    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords) VALUES(?,?)";
 
      connection = await poolDb.getConnection();
     try{
        
         await connection.beginTransaction();
         //Add to Route table
-        const [result] = await connection.query(query , [name , price , coords ,TRStart_ID,TRDest_ID, routeType ]);
+        const [result] = await connection.query(query , [name , price  ,TRStart_ID,TRDest_ID, routeType ,numOfMiniRoutes , numOfDirectionRoutes ,travelMethod]);
 
         //Add to Start TaxiRank
         await connection.query(queryTaxiRank , [1 , TRStart_ID]);
@@ -116,14 +119,21 @@ try{
         //Add to Dest TaxiRank
         await connection.query(queryTaxiRank , [1 , TRDest_ID]);
 
+        //Add MiniRoutes
+        for(let i = 0 ; i < listOfMiniCoords.length ; i++){
+            await connection.query(queryMiniRoute , [result.insertId , listOfMiniCoords[i] , i+1 ])
+        }
+        
+        //Add Directions
+        for(let i = 0; i< listOfDirCoords.length ;i++){
+            await connection.query(queryDirectionRoute , [result.insertId , listOfDirCoords[i]])
+        }
+
         await connection.commit();
-
         res.status(201).json({ message: "Route added successfully", routeId: result.insertId });
-
-
     }catch(error){
         await connection.rollback(); // Rollback if any query fails
-        console.error("Transaction Failed:", error.message);
+        console.error("Transaction Failed:", error);
         res.status(500).json({ message: "Server error during transaction" });
     } finally {
         connection.release(); // Release the database connection
@@ -149,11 +159,9 @@ export const listRoutes = async(req, res) =>{
         if(taxiRankSelected_ID != null){
             const response =await db.query(query , [taxiRankSelected_ID,taxiRankSelected_ID ]);
             const result = response[0];
-            console.log("Results : "+ result);
         const array = [];
         if(result.length > 0){
 
-            console.log("In if statement " +  result.length );
             for(let i = 0 ; i < result.length ; i++){
                 array.push({
                     id: result[i].ID,
@@ -182,7 +190,6 @@ export const listRoutes = async(req, res) =>{
         if (db) db.release(); // release connection back to the pool
       }
 }
-
 
 export const routeSelected = async(req,res) =>{
     let db;
@@ -268,7 +275,7 @@ export const getUniqueRouteName = async(req,res)=>{
     let db;
     try{
         db = await poolDb.getConnection();
-        const nameRouteID  = await generateUniqueRouteID();
+        const nameRouteID  = await generateUniqueRouteID(db);
         console.log("RouteId : "+nameRouteID);
         return res.status(200).json({name: nameRouteID, message:"Successfully sent"});
     }catch(error){
@@ -309,7 +316,7 @@ export const getRoute = async(req,res)=>{
 
 
         const finalResults = {
-            route: resultRoute,
+            route: resultRoute[0],
             miniRoutes_Arr:resultMiniRoutes,
             directions_Arr:resultDirection
         }
@@ -326,31 +333,75 @@ export const getRoute = async(req,res)=>{
     }
 }
 
+//Delete route
+export const deleteRoute = async (req, res) => {
+    let db;
+    try {
+        const { routeID } = req.body;
+
+        if (!routeID) {
+            return res.status(400).json({ message: "uniqueRouteName is required" });
+        }
+
+        db = await poolDb.getConnection();
+        await db.beginTransaction();
+
+        //reduce nuumber of routes in a TaxiRank
+        
+        const [resultDestinationTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankStart_ID FROM Routes WHERE ID = ?)' , [routeID]);
+        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankDest_ID FROM Routes WHERE ID = ?)' , [routeID]);
+
+        // Delete dependent records (if no cascading deletes)
+        const [resultMiniRoutes] = await db.query('DELETE FROM MiniRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE ID = ?)', [routeID]);
+        const [resultDirection] = await db.query('DELETE FROM DirectionRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE ID = ?)', [routeID]);
+
+        // Delete parent record first (assuming cascading deletes are enabled)
+        const [resultRoute] = await db.query('DELETE FROM Routes WHERE ID = ?', [routeID]);
+        if (resultRoute.affectedRows === 0) {
+            await db.rollback();
+            return res.status(404).json({ message: "No Route found" });
+        }
+
+        
+
+        // Commit transaction
+        await db.commit();
+
+        return res.status(200).json({
+            message: "Successfully deleted",
+            deletedRoutes: resultRoute.affectedRows,
+            deletedMiniRoutes: resultMiniRoutes.affectedRows,
+            deletedDirections: resultDirection.affectedRows,
+            startTaxiRank:resultStartTaxiRank,
+            destinationTaxiRank:resultDestinationTaxiRank
+        });
+
+    } catch (error) {
+        console.error("Error deleting route:", error.stack);
+        if (db) await db.rollback();
+        return res.status(500).json({ message: "Server Error", error: error.message });
+    } finally {
+        if (db) db.release();
+    }
+};
+
 // == FUNCTION ==
-async function generateUniqueRouteID() {
+async function generateUniqueRouteID(connection) {
     let isUnique = false;
     let routeID;
-    let db;
-
+    try{
+     
     while (!isUnique) {
         routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
-
-        try{
-            db = poolDb.getConnection();
-            
     // Check if the ID already exists in the database
-    const [rows] = await db.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
+    const [rows] = await connection.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
 
     if (rows[0].count === 0) {
         isUnique = true; // If no match, it's unique
+    }  
     }
-        }catch(error){
-            console.log(error);
-        }finally {
-            if (db) db.release(); // release connection back to the pool
-          }
-    
-    }
-
+}catch(error){
+    console.log(error);
+}
     return routeID;
 }
