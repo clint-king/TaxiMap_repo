@@ -6,8 +6,10 @@ const port = 3000;
 const app = express();
 
 //middleware
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(cors());
+app.use(express.urlencoded({limit:'50mb', extended: true }));
+app.use(express.json({limit:'50mb'}));
 
 //route
 app.use("/admin", adminRoutes);

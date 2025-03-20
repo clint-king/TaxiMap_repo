@@ -1,8 +1,10 @@
 import express from "express";
-import {AddTaxiRank , getRoute , listTaxiRanks, getTaxiRank, getUniqueRouteName , listRoutes, AddRoute, deleteRoute} from "../controllers/adminController.js";
+import {AddTaxiRank , getRoute , listTaxiRanks, getTaxiRank, getUniqueRouteName , listRoutes, AddRoute, deleteRoute , deleteTaxiRank} from "../controllers/adminController.js";
 
 
 const router = express.Router();
+
+
 
 router.post("/addTaxiRank", AddTaxiRank);
 router.get("/listTaxiRanks" , listTaxiRanks);
@@ -12,6 +14,7 @@ router.post("/listRoutes" , listRoutes);
 router.post("/AddRoute" , AddRoute);
 router.post("/getRoute" , getRoute);
 router.post("/deleteRoute" , deleteRoute);
+router.post("/deleteTaxiRank" , deleteTaxiRank);
 
 
 export default router;

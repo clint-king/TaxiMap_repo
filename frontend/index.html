@@ -68,6 +68,35 @@
            
             <button id="update_button">Update</button>
         </div>
+
+        <!--Deleting context menu-->
+        <div class="menu deleting">
+          <p id="title">Deleting TaxiRank</p>
+          <button class="close_button" id="del_close_button"><i class="fa fa-times" style="font-size:20px;color:rblackd;" aria-hidden="true"></i></button>
+          <div>
+            <span>Warning : </span>
+            <p>Deleting this Taxi Rank <br> also  encompasses its 
+              <br>corresponding Routes</p>
+          </div>
+          <button class="btn deleting">delete</button>
+        </div>
+
+       <!--Editing context menu-->
+        <div class="menu editing">
+          <p id="title">Editing TaxiRank</p>
+          <button class="close_button" id="editing_close_button"><i class="fa fa-times" style="font-size:20px;color:black;" aria-hidden="true"></i></button>
+          <div class="editing_input_line name">
+              <label id="editing_name">Name:</label>
+              <input placeholder="e.g Nkowankowa Taxi Rank">
+          </div>
+
+          <div class="editing_input_line prov">
+            <label>Province:</label>
+            <input placeholder="e.g Limpopo">
+        </div>
+        <button class="btn updateEdit ">Update</button>
+        </div>
+
     </div>
    <div id="map">
   </div>

@@ -1,6 +1,9 @@
 import poolDb from "../config/db.js";
 import { v4 as uuidv4 } from 'uuid';
 
+
+
+
 export const AddTaxiRank = async(req , res)=>{
     let db;
     try{
@@ -60,23 +63,29 @@ export const getTaxiRank = async(req,res)=>{
     try{
         db = await poolDb.getConnection();
         const rankID = req.body.rankID;
-
         if(!rankID){
             return res.status(400).send("rankID is null");
         }
+
+        //get the Taxirank 
         const query = "SELECT ID , name , location_coord  FROM TaxiRank WHERE ID = ?";
-
         const [result] = await db.query(query , [rankID]);
-
         if(!result || result.length === 0){
             return res.status(404).send(`Could not find TaxiRank ${rankID}`);
         }
-
+        //get the related routes
+        const routesQuery = `SELECT r.ID AS routeID , r.travelMethod , m.coords  FROM Routes r 
+        INNER JOIN MiniRoute m
+        ON r.ID = m.Route_ID 
+        WHERE r.TaxiRankDest_ID = ? OR r.TaxiRankStart_ID =?`;
+        const [findListOfRoutes] = await db.query(routesQuery , [rankID , rankID]);
+        //send taxirank and and an array of routes(coordinates)
        
         return res.json({
-            ID:result[0].ID,
-            name:result[0].name,
-            coords:result[0].location_coord
+            taxiR_ID:result[0].ID,
+            taxiR_name:result[0].name,
+            taxiR_location_coords:result[0].location_coord,
+            route_coordsList:findListOfRoutes
        });
     }catch(error){
         console.log(error);
@@ -332,6 +341,55 @@ export const getRoute = async(req,res)=>{
         if (db) db.release(); // release connection back to the pool
     }
 }
+//Delete TaxiRank
+export const deleteTaxiRank = async(req,res)=>{
+    let db;
+    try {
+        const { taxiRankID } = req.body;
+
+        if (!taxiRankID) {
+            return res.status(400).json({ message: "taxiRankID is required" });
+        }
+
+        db = await poolDb.getConnection();
+        await db.beginTransaction();
+
+        //reduce the number of routes on the other TaxiRanks involved with the routes being deleted 
+        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1)  WHERE ID IN (SELECT TaxiRankDest_ID FROM  Routes WHERE TaxiRankStart_ID = ?)' ,  [taxiRankID ]);
+        const [resultDestTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1) WHERE ID IN (SELECT TaxiRankStart_ID FROM Routes WHERE  TaxiRankDest_ID = ?)' , [taxiRankID ]);
+
+        // Delete route dependent records (if no cascading deletes)
+        const [resultMiniRoutes] = await db.query(`DELETE FROM MiniRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)`, [taxiRankID , taxiRankID]);
+        const [resultDirection] = await db.query('DELETE FROM DirectionRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)', [taxiRankID , taxiRankID]);
+       // Delete Routes
+        const [resultRoute] = await db.query('DELETE FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?', [taxiRankID , taxiRankID]);
+      
+        //Delete the TaxiRank
+        const [resultTaxiRank] = await db.query('DELETE FROM taxirank WHERE ID = ?', [taxiRankID]);
+
+        if(resultTaxiRank.affectedRows <= 0){
+            await db.rollback();
+            return res.status(404).send("No TaxiRank found");
+        }
+
+        // Commit transaction
+        await db.commit();
+
+        return res.status(200).json({
+            message: "Successfully deleted",
+            deletedRoutes: resultRoute.affectedRows,
+            deletedMiniRoutes: resultMiniRoutes.affectedRows,
+            deletedDirections: resultDirection.affectedRows
+        });
+
+    } catch (error) {
+        console.error("Error deleting route:", error.stack);
+        if (db) await db.rollback();
+        return res.status(500).json({ message: "Server Error", error: error.message });
+    } finally {
+        if (db) db.release();
+    }
+}
 
 //Delete route
 export const deleteRoute = async (req, res) => {
@@ -362,8 +420,6 @@ export const deleteRoute = async (req, res) => {
             return res.status(404).json({ message: "No Route found" });
         }
 
-        
-
         // Commit transaction
         await db.commit();
 
@@ -371,9 +427,7 @@ export const deleteRoute = async (req, res) => {
             message: "Successfully deleted",
             deletedRoutes: resultRoute.affectedRows,
             deletedMiniRoutes: resultMiniRoutes.affectedRows,
-            deletedDirections: resultDirection.affectedRows,
-            startTaxiRank:resultStartTaxiRank,
-            destinationTaxiRank:resultDestinationTaxiRank
+            deletedDirections: resultDirection.affectedRows
         });
 
     } catch (error) {

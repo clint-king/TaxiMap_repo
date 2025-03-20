@@ -11,16 +11,25 @@
   <link rel="stylesheet" href="./css/clientStyle.css">
 </head>
 <body>
+     <!--Ui section-->
     <div id="ui_container">
         <!--Search-->
         <div class="search_container">
-            <input class="search_input source" placeholder="Current location...">
-            <input class="search_input destination" placeholder="Destination...">
+            <div class="sourceSearch container">
+                <input class="search_input source" placeholder="Current location...">
+                <ul class="listSource"></ul>
+            </div>
+            <div class="destinationSearch container">
+                <input class="search_input destination" placeholder="Destination...">
+                <ul class="listDestination"></ul>
+            </div>
+            
         </div>
 
          <!-- From and To buttons -->
          <div class="toggleButtons_container">
             <button class="toggleBtn from">From</button>
+            <div class="toggleDefaultBtn"></div>
             <button class="toggleBtn to">To</button>
          </div>
         <!--Route list-->
@@ -32,16 +41,16 @@
             <div class="list_container">
                 <div class="listSub_container list_right">
                     <ul>
-                        <li><div class="route_circle"></div>Route 1</li>
-                        <li><div class="route_circle"></div>Route 2</li>
-                        <li><div class="route_circle"></div>Route 3</li>
+                        <li class="rightPriceRow"><div class="route_circle"></div>Route 1</li>
+                        <li class="rightPriceRow"><div class="route_circle"></div>Route 2</li>
+                        <li class="rightPriceRow"><div class="route_circle"></div>Route 3</li>
                     </ul>
                 </div>
                 <div class="listSub_container list_left">
                     <ul>
-                        <li>R50.00</li>
-                        <li>R60.00</li>
-                        <li>R70.00</li>
+                        <li class="leftPriceRow">R50.00</li>
+                        <li class="leftPriceRow">R60.00</li>
+                        <li class="leftPriceRow">R70.00</li>
                     </ul>
                 </div>
             </div>
@@ -71,12 +80,27 @@
             <p>Contacts</p>
         </div>
     </div>
+    <!--Context menu-->
+  <div class="menu markerConfirmation">
+    <p id="title">Marker Confirmation</p>
+    <button class="close_button" id="del_close_button"><i class="fa fa-times" style="font-size:20px;color:rblackd;" aria-hidden="true"></i></button>
+    <div class = "markerInformation">
+      <p>Do you want to lock-in this location ?</p>
+    </div>
+    <div class ="btnContainer">
+        <button class="btn no">No</button>
+        <button class="btn yes">Yes</button>
+    </div>
+    
+  </div>
+
+     <!--Map-->
    <div id="map">
   </div>
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-  <script  type="module" src="./js/index.js"></script>
+  <script  type="module" src="./js/client.js"></script>
 </body>
 </html>

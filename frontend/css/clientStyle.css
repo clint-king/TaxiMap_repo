@@ -108,7 +108,9 @@ body {
    border: 2px solid #1975CD;
    background-color: #CEE6C2;
    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+   cursor: pointer;
 }
+
 
 .bar_container{
   display: flex;
@@ -127,6 +129,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 .toggleButtons_container{
    display: flex;
    border-radius: 13px;
+   background-color: #f3f2f2;
    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -134,12 +137,22 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
    width:140px;
    height:40px;
    border:none;
+   cursor: pointer;
+}
+
+.toggleDefaultBtn{
+   width:10px;
+   height:40px;
+   border-radius: 10px;
+   background-image:linear-gradient( #e7be1a,#F6DC76);
+   border: 1px solid rgb(197, 197, 197);
 }
 
 .toggleBtn.from{
+   height:40px;
    border-top-left-radius: 13px;
    border-bottom-left-radius: 13px;
-   border-right: 1px solid black;
+   margin-right: 5px;
 }
 
 .toggleBtn.from:hover{
@@ -147,14 +160,78 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
  }
 
 .toggleBtn.to{
+   height:40px;
    border-top-right-radius: 13px;
    border-bottom-right-radius: 13px;
+   margin-left: 5px;
 }
 
 .toggleBtn.to:hover{
    box-shadow: 7px 0px 15px rgba(0, 0, 0, 0.4);
-
 }
+
+/* Context menu [Marker confirmation] */
+  .menu.markerConfirmation{
+   position:absolute;
+   visibility: visible;
+   top:40%;
+   left:48%;
+   width:280px;
+   height:150px;
+   z-index:10;
+   background-color: #F2EFEF;
+   border-radius: 10px;
+   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+ }
+
+
+ .menu.markerConfirmation .markerInformation{
+   position: relative;
+   width:100%;
+   top:7%;
+   text-align: center;
+ }
+
+ .menu #title{
+   position: relative;
+   top:5%;
+   font-weight: bold;
+   text-align: center;
+ }
+
+ .menu .close_button{
+   position: absolute;
+   left:88%;
+   bottom:80%;
+   background-color: #F2EFEF;
+   cursor: pointer;
+   border:none;
+ }
+
+ .menu .close_button:hover{
+  color: #F30909;
+ }
+
+ .btnContainer{
+   position:absolute;
+   top:70%;
+   left:30%
+ }
+
+ .btnContainer .btn{
+   width:57.5px;
+   height:21px;
+   border:none;
+   color:white;
+   background-color: #F6DC76;
+   border-radius: 5px;
+   cursor: pointer;
+ }
+
+ .btnContainer .btn:hover{
+   background-color: #FFEFAD;
+ }
+
 /* == MAP SECTION ==*/
 
 #map {

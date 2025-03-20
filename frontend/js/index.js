@@ -18,6 +18,14 @@ map.fitBounds([
 [33.105929612928605, -22.069255932789716]
 ]);
 
+//stores coordinates
+let markerLocationStorage = [];
+
+//stores marker objects
+let allMarkerObjects = [];
+
+//store the iD OF THE ROW THAT REQUETED DELETE
+let delRankID = -1;
 
 //Get coordinates of the Adresss
 async function getCoordinates(address) {
@@ -109,7 +117,12 @@ const searchBox = document.querySelector('.input_line.address textarea');
 const suggestions = document.getElementById('suggestions');
 const provinceBox = document.querySelector(".input_line.prov input");
 const nameBox =  document.querySelector(".input_line.name input");
-
+const uiContainer = document.querySelector("#ui_container");
+const deleteMenu = document.querySelector(".menu.deleting");
+const executeDeleteBtn = document.querySelector(".btn.deleting");
+const editMenu = document.querySelector(".menu.editing");
+const deleteCloseButton = document.querySelector("#del_close_button");
+const editCloseButton = document.querySelector("#editing_close_button");
 
 
 
@@ -122,6 +135,38 @@ const taxiRankAddInfo = {
   province: '',
   address: ''
 };
+
+let mapIdCount = 0;
+
+
+// === GETTING COORDINATES ===
+// Define the route origin and destination coordinates
+// const origin = [
+//   30.16315768196048,
+//   -23.8243333792574
+// ]; // New York City (Longitude, Latitude)
+// const destination =  [
+//   28.264803632144577,
+//   -25.73058042479326
+// ]; // Los Angeles (Longitude, Latitude)
+
+// // Mapbox Directions API endpoint
+// const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+// fetch(url)
+//   .then(response => response.json())
+//   .then(data => {
+//     // Get the route geometry (coordinates of the path)
+//     const route = data.routes[0].geometry.coordinates;
+
+//     // Log the coordinates of the path
+//     console.log( 'Cordinates for a route' , route); // Array of coordinates for the entire path
+//   })
+//   .catch(error => console.error('Error fetching route data:', error));
+
+
+  //=== END OF COORDINATES ====
+
 
 
 // **** Mapbox capabilities  *****
@@ -182,6 +227,7 @@ async function fetchSuggestions(query) {
   }
 }
 
+map.on('load', () => {
 // Add a click event listener to the map
 map.on('click', async (e) => {
   const { lng, lat } = e.lngLat; // Extract longitude and latitude
@@ -226,6 +272,74 @@ map.on('click', async (e) => {
   }
 });
 
+//handle row click
+gridTableDiv.addEventListener('click' , async (event)=>{
+  const row = event.target.closest(".grid-row");
+  if(row){
+    //get the row ID
+    const id = row.dataset.rank;
+
+    //request information
+    const response = await axios.post('http://localhost:3000/admin/getTaxiRank' ,{
+      rankID:id
+    });
+
+    //read information
+    const resultInfo = response.data;
+
+     //load TaxiRank marker
+     addMarker(resultInfo.taxiR_location_coords.longitude   , resultInfo.taxiR_location_coords.latitude , 'yellow');
+
+    //load routes
+    const coordsList = resultInfo.route_coordsList;
+    coordsList.forEach((route)=>{
+      loadMiniRoutes(route.coords , route.travelMethod);
+    });
+
+    //Collect all coordinates to zoom
+    if(coordsList){
+      let arrCoords = [];
+      coordsList.forEach((route)=>{
+        arrCoords.push(route.coords);
+      })
+  
+    if(arrCoords){
+        const finalCoords = arrCoords.flat();
+        zoomRoute(finalCoords);
+    }
+    }
+   
+    //remove the markers
+    removeMarker();
+  }
+});
+});
+
+deleteCloseButton.addEventListener('click' , ()=>{
+  deleteMenu.style.visibility = 'hidden';
+  delRankID  = -1;
+});
+
+editCloseButton.addEventListener('click' , ()=>{
+  editMenu.style.visibility = 'hidden';
+});
+
+//conatiner to revert
+// uiContainer.addEventListener('click' , ()=>{
+
+//   if(allMarkerObjects.length === 0){
+//     re_loadMarkers();
+
+//     map.fitBounds([
+//       [18.13518613880771,-34.966345196944445],
+//       [33.105929612928605, -22.069255932789716]
+//       ]);
+//   }
+ 
+// });
+
+
+
 
 // Attach event listener to the search box
 searchBox.addEventListener('input', (e) => {
@@ -234,7 +348,6 @@ searchBox.addEventListener('input', (e) => {
 
 
 // **** functionality Capabilities ****
-
 // Check if both elements exist
 if (AddButton && menu && closeButton && updateButton && searchBox && nameBox && provinceBox) {
 
@@ -285,7 +398,6 @@ fetch('http://localhost:3000/admin/addTaxiRank', {
   console.error("Button or menu element not found.");
 }
 
-
 //Table list update
 listOnTable();
 
@@ -299,7 +411,9 @@ async function listOnTable() {
    createGridRow(TaxiRankObj.ID ,TaxiRankObj.name , TaxiRankObj.province , TaxiRankObj.address , TaxiRankObj.num_routes);
 
 //Adding a Marker
-addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude);
+markerLocationStorage.push(TaxiRankObj.coord);
+const newMarker = addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude,'red');
+allMarkerObjects.push(newMarker);
 
     });
   } catch (error) {
@@ -311,10 +425,10 @@ addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude);
 }
 }
 
-
 function createGridRow(ID ,taxiName , provinceName , addressName , numRoutes) {
   const gridRow = document.createElement("div");
   gridRow.className = "grid-row";
+  gridRow.dataset.rank = ID;
 
   const taxiRankName = document.createElement("div");
   taxiRankName.className = "grid-cell";
@@ -354,6 +468,7 @@ function createGridRow(ID ,taxiName , provinceName , addressName , numRoutes) {
   const delButton = document.createElement("button");
   delButton.className = "btn del";
   delButton.textContent = "Del";
+  delButton.dataset.rank = ID;
 
   subMultiButton.appendChild(editButton);
   subMultiButton.appendChild(delButton);
@@ -422,7 +537,7 @@ async function addSingleInfoOnTable(){
   gridRow.appendChild(gridCell4);
   // Append the grid-row to the body or a specific container in your HTML
   gridTableDiv.appendChild(gridRow); // Or replace document.body with the target container element
-  addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude);
+  addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude, 'red');
     } catch (error) {
       console.error(error);
     }
@@ -431,21 +546,148 @@ async function addSingleInfoOnTable(){
   }
 }
 
-async function addMarker(lng , lat){
-  new mapboxgl.Marker({color:'red' , scale:0.6})
+ function addMarker(lng , lat, color){
+  const newMarker = new mapboxgl.Marker({color:color , scale:0.6})
         .setLngLat([lng, lat])
         .addTo(map);
+
+    return newMarker;   
+}
+
+function loadMiniRoutes(miniroutes , travelMethod) {
+
+      const routeSourceId = `route-source-${(mapIdCount)}`;
+      const routeLayerId = `route-line-${(mapIdCount)}`;
+
+      //Increase for the next load of miniroutes
+      mapIdCount++;
+        // Remove existing source if it exists
+        if (map.getSource(routeSourceId)) {
+          map.removeSource(routeSourceId);
+      }
+
+      // Remove existing layer if it exists
+      if (map.getLayer(routeLayerId)) {
+          map.removeLayer(routeLayerId);
+      }
+
+
+      // Convert each mini-route to GeoJSON
+      const routeFeatures = {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+              type: 'LineString',
+              coordinates: miniroutes
+          }
+      };
+
+      // Add a new source for each route
+      map.addSource(routeSourceId, { 
+          type: 'geojson',
+          data: {
+              type: 'FeatureCollection',
+              features: [routeFeatures] 
+          }
+      });
+
+      // Add a new layer for each route
+
+      let paintOption ;
+      if(travelMethod === 'Walk'){
+          paintOption =  {
+                  'line-color': '#FF0000', // Line color
+                  'line-width': 4,         // Line thickness
+                  'line-dasharray': [0, 2] // [dash length, gap length] in units of line-width
+              };
+      }else{
+          paintOption = {
+              'line-color': 'blue',
+              'line-width': 4,
+          }
+      }
+
+      map.addLayer({
+          id: routeLayerId,
+          type: 'line',
+          source: routeSourceId,
+          layout: {
+              'line-cap': 'round',
+              'line-join': 'round'
+          },
+          paint: paintOption
+      });
+
+  
+}
+
+function zoomRoute(coordinates){
+  // Get the bounds of the route
+const bounds = coordinates.reduce((bounds, coord) => {
+  return bounds.extend(coord);
+}, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+// Fit the map to the bounds
+map.fitBounds(bounds, {
+  padding: 50, // Add some padding around the route
+  maxZoom: 15, // Set a max zoom level to avoid excessive zoom-in
+  duration: 2000 // Smooth animation duration in milliseconds
+});
+}
+
+function removeMarker(){
+  if(allMarkerObjects){
+    allMarkerObjects.forEach((marker)=>{
+      marker.remove();
+    });
+  }
+
+  //empty the array
+  allMarkerObjects = [];
+}
+
+function re_loadMarkers(){
+  markerLocationStorage.forEach((coord)=>{
+    addMarker(coord.longitude , coord.latitude, 'red');
+  })
 }
 
 //Handling Add route button clicks
-document.body.addEventListener("click", function (event) {
+document.body.addEventListener("click", async function (event) {
+  //checking if route is clicked
   if (event.target.classList.contains("route")) {
     const rankID = event.target.dataset.rank;
     console.log("Button clicked for Taxi Rank ID:", rankID);
     window.location.href = `../route.html?rank=${rankID}`;
   }
+
+  //checking if delete is clicked
+  if(event.target.classList.contains("del")){
+    const rankID = event.target.dataset.rank;
+    //make the warning visible , if ok is clicked delete
+    deleteMenu.style.visibility = 'visible';
+    delRankID = rankID;
+  }
 });
 
+executeDeleteBtn.addEventListener('click' , async (event)=>{
+  if(delRankID < 0){
+    return;
+  }
+
+  console.log("delRankID : ", delRankID);
+
+   const response = await axios.post('http://localhost:3000/admin/deleteTaxiRank' , {
+      taxiRankID:delRankID
+    });
+
+    console.log(response);
+
+    if(response.status === 200){
+      delRankID = -1;
+      deleteMenu.style.visibility = 'hidden';
+    }
+})
 
 //Handling Add route button clicks
 document.addEventListener("DOMContentLoaded", function () {
@@ -465,121 +707,5 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-// map.addSource('route', {
-//   'type': 'geojson',
-//   'data': {
-//       'type': 'Feature',
-//       'properties': {},
-//       'geometry': {
-//           'type': 'LineString',
-//           'coordinates': [
-//               [
-//                 30.28617826851672,
-//                 -23.887364480185497
-//               ],
-//               [
-//                 30.287540163301344,
-//                 -23.88732599096339
-//               ],
-//               [
-//                 30.28754759181831,
-//                 -23.888009738962296
-//               ],
-//               [
-//                 30.29111468078719,
-//                 -23.88786483905264
-//               ],
-//               [
-//                 30.29137220270954,
-//                 -23.88771541082228
-//               ],
-//               [
-//                 30.291622966113323,
-//                 -23.887501266262788
-//               ],
-//               [
-//                 30.291892868897833,
-//                 -23.887225049533484
-//               ],
-//               [
-//                 30.29360276557776,
-//                 -23.885667357261454
-//               ],
-//               [
-//                 30.2956385413909,
-//                 -23.887616845317467
-//               ],
-//               [
-//                 30.29613034534802,
-//                 -23.888083479511394
-//               ],
-//               [
-//                 30.29621175181373,
-//                 -23.888150469232542
-//               ],
-//               [
-//                 30.296274163437943,
-//                 -23.888192647926175
-//               ],
-//               [
-//                 30.29636371055014,
-//                 -23.888224902213707
-//               ],
-//               [
-//                 30.29812751731339,
-//                 -23.8882869296648
-//               ],
-//               [
-//                 30.301443162726173,
-//                 -23.888388115618824
-//               ],
-//               [
-//                 30.30160376938443,
-//                 -23.88840473997122
-//               ],
-//               [
-//                 30.30170376975707,
-//                 -23.888429676495946
-//               ],
-//               [
-//                 30.301957775550335,
-//                 -23.8885149420139
-//               ],
-//               [
-//                 30.30448505768163,
-//                 -23.889490232791573
-//               ],
-//               [
-//                 30.304548694281806,
-//                 -23.88934061479803
-//               ],
-//               [
-//                 30.306224249305927,
-//                 -23.885592832923052
-//               ]
-//             ]
-//       }
-//   }
-// });
-
-//Load image 
-map.loadImage('../images/724954.png', (error, image) => {
-  if (error) throw error;
-  map.addImage('arrow', image);
-});
-
-// map.addLayer({
-//   'id': 'route-line',
-//   'type': 'line',
-//   'source': 'route',
-//   'layout': {
-//       'line-cap': 'round',
-//       'line-join': 'round'
-//   },
-//   'paint': {
-//       'line-color': '#ff0000',
-//       'line-width': 4
-//   }
-// });
 
 

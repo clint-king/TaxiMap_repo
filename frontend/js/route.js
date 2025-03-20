@@ -64,67 +64,7 @@ const map = new mapboxgl.Map({
 
 map.on('load', () => {
 
-    // function loadRoute(routeChosen) { 
-    //         // Convert mini-routes to GeoJSON
-    //         const routeFeatures = {
-    //             type: 'Feature',
-    //             properties: {},
-    //             geometry: {
-    //                 type: 'LineString',
-    //                 coordinates: routeChosen.coords
-    //             }
-    //         };
-
-    //         map.addSource(`route-source`, { 
-    //             type: 'geojson',
-    //             data: {
-    //                 type: 'FeatureCollection',
-    //                 features: [routeFeatures] 
-    //             }
-    //         });
-
-    //         // Add layer for lines (mini-routes)
-    //         map.addLayer({
-    //             id: `route-line`,
-    //             type: 'line',
-    //             source: `route-source`,
-    //             layout: {'line-cap': 'round',
-    //             'line-join': 'round'},
-    //             paint: {
-    //                 'line-color': `blue`,
-    //                 'line-width': 4,
-    //             }
-    //         });
-
-
-    //         //Animation implementation
-
-    //         const movementCoordinates = smoothenCoordinates(routeChosen.direction_coords);
-    //             // Add a moving taxi marker
-    //     const taxiMarker = new mapboxgl.Marker({ element: createTaxiElement() })
-    //     .setLngLat(movementCoordinates[0]) // Start at first point
-    //     .addTo(map);
-
-    // // Animate the taxi along the route
-    // let index = 0;
-    // function moveTaxi() {
-    //     if (index <movementCoordinates.length - 1) {
-    //         index++;
-    //         taxiMarker.setLngLat(movementCoordinates[index]);
-    //         setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
-    //     }
-    // }
-
-    // moveTaxi(); // Start animation
-    // }
-
-       // Create a taxi element for better styling
-       
-       
-  
     // Add click event to each row
-    
-    
     document.querySelector('.grid-table').addEventListener('click', async (e) => {
         const row = e.target.closest('.grid-row'); 
         if (row) {

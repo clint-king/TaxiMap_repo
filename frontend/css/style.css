@@ -130,8 +130,105 @@ h1{
    
   }
 
-/* Context Menu*/
+  /* Semi Context Menu*/
+  .menu{
+    width:300px;
+    height:200px;
+    background-color: #F2EFEF;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    left:30%
+  }
 
+ 
+  
+  /* editing menu */
+  .menu.editing{
+    visibility: hidden;
+  }
+
+  .menu.editing input{
+    border:none;
+    width:180px;
+    border-radius: 5px;
+    height: 30px;
+  }
+
+  .menu #editing_name{
+    position: relative;
+    right:1%;
+    margin-right:18px ;
+  }
+
+  .menu div{
+    margin-bottom: 4%;;
+  }
+
+  .btn.updateEdit{
+    background-color:#F6DC76;
+    color:white;
+    padding:5px 10px;
+    border-radius: 10px;
+  }
+
+  .btn.updateEdit:hover{
+    background-color: #FFEFAD;
+  }
+  
+
+  /*delete menu */
+  .menu.deleting{
+    visibility: hidden;
+  }
+
+
+  .menu.deleting div{
+    position: relative;
+    bottom:10%;
+    width:100%;
+    text-align: center;
+  }
+
+  .menu.deleting div span{
+    font-weight: bold;
+  }
+
+  .menu #title{
+    position: relative;
+    font-weight: bold;
+  }
+
+
+  .menu .close_button{
+    position: relative;
+    background-color: #F2EFEF;
+    left:42%;
+    bottom:20%;
+    cursor: pointer;
+    border:none;
+  }
+
+  .menu .close_button:hover{
+   color: #F30909;
+  }
+  .btn.deleting{
+    background-color:#F6DC76;
+    color:white;
+    padding:5px 10px;
+    border-radius: 10px;
+    position: relative;
+    bottom: 8%;
+    cursor: pointer;
+  }
+
+  .btn.deleting:hover{
+    background-color: #FFEFAD;
+  }
+/* Context Menu*/
 .menu_wrapper{
     position:absolute;
     border-radius: 20px;
