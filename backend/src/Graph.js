@@ -1,5 +1,5 @@
 // Graph.js
-const Node = require("./Node");
+import  Node from "./Node.js";
 
 class Graph {
   constructor() {
@@ -20,4 +20,4 @@ class Graph {
   }
 }
 
-module.exports = Graph;
+ export default  Graph;

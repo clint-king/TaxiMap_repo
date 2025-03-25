@@ -9,9 +9,9 @@ import  axios  from 'axios';
 
  //context menu
  const confirmationContextMenu = document.querySelector(".menu.markerConfirmation");
- const confirmationCloseBtn = document.querySelector(".menu.close_button");
- const confirmationNoBtn = document.querySelector(".menu.btn.no");
- const confirmationYesBtn = document.querySelector(".menu.btn.yes");
+ const confirmationCloseBtn = document.querySelector(".menu .close_button");
+ const confirmationNoBtn = document.querySelector(".menu .btn.no");
+ const confirmationYesBtn = document.querySelector(".menu .btn.yes");
 
 
  //search input
@@ -41,13 +41,18 @@ import  axios  from 'axios';
  //confirmation menu vars
  let isOpen_confirmationMenu = false;
  let isYes = false;
- let confirmationMenu_longitude = -1;
- let confirmationMenu_latitude = -1;
+ let confirmationMenu_longitude = -500;
+ let confirmationMenu_latitude = -500;
  let confirmationMenu_adresss = "";
 
+ //save the coordinates
+ let sourceCoordinates = { latitude: -500, longitude: -500 };
+ let destinationCoordinates = { latitude: -500, longitude: -500};
  //Row prices
  let sumOfPrices = 0;
 
+ //sending search Info vars
+ const listOfProvinces = ["Limpopo" , "Gauteng" , "Mpumalanga" , "Western Cape" , "kwazulu-natal" , "Eastern Cape" , "North West" , "Free State" , "Northern Cape"];
  // === MAP IMPLEMENTATION ===
 
  //mapbox setup
@@ -72,6 +77,12 @@ map.on('click', async (e) => {
     if(isOpen_confirmationMenu === true){
         console.error("Context menu is already open");
         return;
+    }
+
+    //prevents user from marking location without clicking from or To
+    if(toggleMap.get("to") === 0 && toggleMap.get("from") === 0){
+      console.error("Can not mark without clciking from Or To");
+      return;
     }
     const { lng, lat } = e.lngLat; // Extract longitude and latitude
     console.log(`Coordinates clicked: Longitude - ${lng}, Latitude - ${lat}`);
@@ -102,7 +113,11 @@ map.on('click', async (e) => {
     isYes = true;
    if(isLocationInfoAvailable()){
     placeMarker(confirmationMenu_longitude , confirmationMenu_latitude , confirmationMenu_adresss);
+
     defaultLocationMarkerInfo();
+    //close menu 
+    closeConfirmationMenu();
+
    }else{
     console.error("Not all information is available to be saved");
    }
@@ -132,9 +147,6 @@ map.on('click', async (e) => {
     toToggleBtn.style.backgroundColor = "#F6DC76";
     //default btn
    defaultToggleBtn.style.backgroundImage = "linear-gradient(#cccaca , white)";
-
-
-
  });
 
  confirmationCloseBtn.addEventListener('click' , ()=>{
@@ -162,98 +174,159 @@ map.on('click', async (e) => {
 
  //=== FUNCTIONS ===
 
-function defaultRetreat(){
-    if(toggleMap.get("from") === 1){
-    // retreat from source
-    fromToggleBtn.style.backgroundColor = "#f3f2f2";
-    toggleMap.set("from" , 0);
-    }
-    
-    if(toggleMap.get("to") === 1){
-    //retreat from destination 
-    toToggleBtn.style.backgroundColor = "#f3f2f2";
-    toggleMap.set("to" , 0);
-    }
-   
-   //default btn
-   defaultToggleBtn.style.backgroundImage = "linear-gradient( #e7be1a,#F6DC76)";
-}
+ //sending search information
+ async function sendsearchInfo(){
+  if(allMarkersPlaced()  === true){
+    const sourceAdress = inputCurrentLocation.value;
+    const destinationAdress = inputDestinationLocation.value;
+    console.log("sourceAdress : ", sourceAdress );
+      console.log("destinationAdress : ", destinationAdress );
 
-async function fetchSuggestions(suggestions, query) {
-    if (!query) {
-      suggestions.innerHTML = ''; // Clear suggestions if input is empty
+    //geting province of each Adress
+    const sourceProv = getProvince(sourceAdress);
+    const destinationProv = getProvince(destinationAdress);
+
+    if(sourceProv.containsProv === false || destinationProv.containsProv === false){
+      console.log("Could not extract a province");
+      console.log("sourceProv : ", sourceProv );
+      console.log("destinationProv : ", destinationProv );
       return;
     }
 
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=5`;
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-  
-      // Populate the dropdown with suggestions
-      suggestions.innerHTML = '';
-      if (data.features.length > 0) {
-        data.features.forEach((feature) => {
-          const li = document.createElement('li');
-          li.textContent = feature.place_name;
-          li.style.padding = '10px';
-          li.style.cursor = 'pointer';
-  
-          // On click, set the map view to the selected location
-          li.addEventListener('click', () => {
-            const [longitude, latitude] = feature.center;
-  
-            console.log('Selected coordinates:', longitude, latitude );
+    //getting coordinates
+    if((sourceCoordinates.latitude != -500 && sourceCoordinates.longitude != -500) && (destinationCoordinates.latitude != -500 && destinationCoordinates.longitude != -500)){
 
-            if(currentLocation === suggestions){
-                 // Remove the old marker if it exists
-         if (sourceMarker) {
-            sourceMarker.remove();
-            console.log("marker is removed");
-          }
-
-              // Add marker and center the map
-              sourceMarker =  new mapboxgl.Marker()
-              .setLngLat([longitude, latitude])
-              .addTo(map);
-
-            map.flyTo({ center: [longitude, latitude], zoom: 12 });
-
-            }else if(destinationLocation === suggestions){
-
-            // Remove the old marker if it exists
-         if (destinationMarker) {
-            destinationMarker.remove();
-            console.log("marker is removed");
-          }
-
-              // Add marker and center the map
-              destinationMarker =  new mapboxgl.Marker()
-              .setLngLat([longitude, latitude])
-              .addTo(map);
-  
-            map.flyTo({ center: [longitude, latitude], zoom: 12 });
-
-            }else{
-                console.error("There was no marker chosen or valid ")
-            }
-          });
-  
-          suggestions.appendChild(li);
+      try{
+        const response = await axios.post('http://localhost:3000/client/findingPath' , {
+          sourceCoords :  sourceCoordinates, 
+          sourceProvince : sourceProv.province, 
+          destinationCoords : destinationCoordinates, 
+          destinationProvince : destinationProv.province
         });
+        const dataReceived = response.data;
+
+        console.log("Route results : " , dataReceived);
+
+      }catch(error){
+        console.log(error);
       }
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-    }
-}
-
-function routeExecution(){
-    if(destinationMarker && destinationMarker){
+    }else{
+      console.log("Some coordinates are equal to -500 , which is default");
+      return;
 
     }
+  }
 }
+
+function getProvince(address){
+  //check if address is not empty
+  if(address.length <= 0){
+    console.log("The address is empty");
+    return;
+  }
+  //split the address
+  const cleanedAddress = address.replace(/\d+/g, '').trim();
+const wordsInString = cleanedAddress.split(",").map(word => word.trim().toLowerCase());
+let selectedProv = "";
+const containsProv = listOfProvinces.some((province)=>{
+
+  const check = wordsInString.includes(province.trim().toLowerCase());
+  if(check){
+    selectedProv = province;
+  }
+  return check;
+});
+
+return {containsProv: containsProv, province:selectedProv};
+
+}
+
+async function fetchSuggestions(suggestions, query) {
+  if (!query) {
+    suggestions.innerHTML = ''; // Clear suggestions if input is empty
+    return;
+  }
+
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=5`;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Populate the dropdown with suggestions
+    suggestions.innerHTML = '';
+    if (data.features.length > 0) {
+      data.features.forEach((feature) => {
+        const li = document.createElement('li');
+        li.textContent = feature.place_name;
+        li.style.padding = '10px';
+        li.style.cursor = 'pointer';
+
+        // On click, set the map view to the selected location
+        li.addEventListener('click', () => {
+          const [longitude, latitude] = feature.center;
+
+          console.log('Selected coordinates:', longitude, latitude );
+
+          if(currentLocation === suggestions){
+               // Remove the old marker if it exists
+       if (sourceMarker) {
+          sourceMarker.remove();
+          console.log("marker is removed");
+        }
+
+            // Add marker and center the map
+            sourceMarker =  new mapboxgl.Marker()
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          map.flyTo({ center: [longitude, latitude], zoom: 12 });
+
+          }else if(destinationLocation === suggestions){
+
+          // Remove the old marker if it exists
+       if (destinationMarker) {
+          destinationMarker.remove();
+          console.log("marker is removed");
+        }
+
+            // Add marker and center the map
+            destinationMarker =  new mapboxgl.Marker()
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          map.flyTo({ center: [longitude, latitude], zoom: 12 });
+
+          }else{
+              console.error("There was no marker chosen or valid ")
+          }
+        });
+
+        suggestions.appendChild(li);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching suggestions:', error);
+  }
+}
+
 
 //confirmation manu management
+function defaultRetreat(){
+  if(toggleMap.get("from") === 1){
+  // retreat from source
+  fromToggleBtn.style.backgroundColor = "#f3f2f2";
+  toggleMap.set("from" , 0);
+  }
+  
+  if(toggleMap.get("to") === 1){
+  //retreat from destination 
+  toToggleBtn.style.backgroundColor = "#f3f2f2";
+  toggleMap.set("to" , 0);
+  }
+ 
+ //default btn
+ defaultToggleBtn.style.backgroundImage = "linear-gradient( #e7be1a,#F6DC76)";
+}
 
 function closeConfirmationMenu(){
     confirmationContextMenu.style.visibility = 'hidden';
@@ -266,18 +339,30 @@ function openConfirmationMenu(){
     isOpen_confirmationMenu = true;
 }
 
+function saveCoordinates(indicator , lat , long){
+  if(indicator === "source"){
+    //insert source information
+    sourceCoordinates.latitude = lat;
+    sourceCoordinates.longitude = long; 
+  }else{
+ //insert destination information
+ destinationCoordinates.latitude = lat;
+ destinationCoordinates.longitude = long;
+  }
+}
+
 function saveLocationMarkerInfo(lng , lat , address){
     confirmationMenu_longitude = lng ;
     confirmationMenu_latitude = lat;
     confirmationMenu_adresss = address;
 }
 function isLocationInfoAvailable(){
-    return confirmationMenu_longitude > -1 && confirmationMenu_latitude > -1 && confirmationMenu_adresss.length > 0
+    return confirmationMenu_longitude > -500 && confirmationMenu_latitude > -500 && confirmationMenu_adresss.length > 0
 }
 
 function defaultLocationMarkerInfo(){
-    confirmationMenu_longitude = -1 ;
-    confirmationMenu_latitude = -1;
+    confirmationMenu_longitude = -500 ;
+    confirmationMenu_latitude = -500;
     confirmationMenu_adresss = "";
 }
 
@@ -300,10 +385,10 @@ function placeMarker(lng , lat , address){
        
                     //insert in input
                     inputCurrentLocation.value = address;
-       
-                   //reverse toggle map value
-                   toggleMap.set("from" , 0);
-       
+
+                        //save coordinates to send to backend at the appropriate time 
+                        saveCoordinates("source" , lat, lng);
+
                    //set back to defaault
                    defaultRetreat();
        
@@ -325,15 +410,23 @@ function placeMarker(lng , lat , address){
                    //insert in input
                    inputDestinationLocation.value = address;
        
+                     //save coordinates to send to backend at the appropriate time 
+                     saveCoordinates("destination" , lat, lng);
+
+
                    //reverse toggle map value
-                   toggleMap.set("to" , 0);
+                   defaultRetreat();;
                }  
 
-               
-                
+              // check to send data to backend
+                sendsearchInfo();
         }
 
     }
+}
+
+function allMarkersPlaced(){
+  return sourceMarker != null && destinationMarker != null;
 }
 
 //managing route prices 

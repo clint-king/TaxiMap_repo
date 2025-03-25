@@ -171,6 +171,7 @@ let mapIdCount = 0;
 
 // **** Mapbox capabilities  *****
 // Fetch suggestions from the Mapbox Geocoding API
+
 async function fetchSuggestions(query) {
   if (!query) {
     suggestions.innerHTML = ''; // Clear suggestions if input is empty
@@ -342,6 +343,7 @@ editCloseButton.addEventListener('click' , ()=>{
 
 
 // Attach event listener to the search box
+
 searchBox.addEventListener('input', (e) => {
   fetchSuggestions(e.target.value);
 });

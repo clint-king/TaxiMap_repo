@@ -173,7 +173,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 /* Context menu [Marker confirmation] */
   .menu.markerConfirmation{
    position:absolute;
-   visibility: visible;
+   visibility: hidden;
    top:40%;
    left:48%;
    width:280px;
