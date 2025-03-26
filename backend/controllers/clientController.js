@@ -64,13 +64,12 @@ export const findingPath = async(req,res)=>{
     printGraphConnections(graph);
 
     console.log("Print input , firstR_taxiRankSource : " , ranksIDs.firstR_taxiRankSource , " secR_taxiRankDestination : " , ranksIDs.secR_taxiRankDestination );
-    const fastestPathResults =  getBestPath(graph , ranksIDs.firstR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
+    const fastestPathResults =  getBestPath(graph , `${ranksIDs.firstR_taxiRankSource}` , `${ranksIDs.secR_taxiRankDestination}`);
     console.log("Path : " , fastestPathResults);
     
 }
 
 // === FUNCTIONS === 
-
 async function filterAreas(sourceProv, destinationProv) {
     let db;
     try {
@@ -145,7 +144,6 @@ async function filterAreas(sourceProv, destinationProv) {
     }
 }
 
-
 function formatRoutes(routes , miniCoords){
 
     //cheking if the parameters are valid 
@@ -191,8 +189,8 @@ function insertInGraph(listRoutes){
 
     listRoutes.forEach(route => {
         const price = parseInt(route.price , 10);
-        const sourceID = String(route.TaxiRankStart_ID);
-        const destId = String(route.TaxiRankDest_ID);
+        const sourceID = `${route.TaxiRankStart_ID}`;
+        const destId = `${route.TaxiRankDest_ID}`;
         console.log("Inserted fields : " , price ,sourceID , destId )
         graph.addEdge(sourceID , destId , price);
     });
@@ -335,6 +333,116 @@ const convertToGeoFormat = (coordinates) => {
     }));
 };
 
+//returns a dynamic array with ordered direction coords
+async function getDirections(finalRoutesIds){
+    let arr = [];
+    let db;
+
+    if(!finalRoutesIds){
+        return {status:400 , message:"Argument is null or undefined" , result:null}
+    }
+
+    try{
+        db = await poolDb.getConnection();
+        const query = "SELECT ID FROM DirectionRoute WHERE Route_ID = ?";
+        finalRoutesIds.forEach(async(routeID)=>{
+            const [result] = await db.query(query , [routeID]);
+            if(!result || result.length === 0){
+                return  {status:404 , message:"Argument is null or undefined" , result:null}
+            }
+            arr.push(result);
+        });
+
+        if(arr.length === 0){
+            return {status:401 , message:"array has length of Zero (0)" , result:null}
+        }
+
+        const orderedDirections = findAllPaths(arr);
+
+        if(orderedDirections.length === 0){
+            return {status:401 , message:"orderedDirections array has length of Zero (0)" , result:null}
+        }
+        return {status:200 , message:"Successfully sent" , result:orderedDirections};
+    }catch(error){
+        console.log(error);
+        return {status:500 , message:"Server error" , result:null }
+    }finally{
+        if(db) await db.release();
+    }
+}
+
+async function getMinimisedDirections(finalRoutesIds , allDirections ){
+    let dynamicArr = [];
+    let arr = [];
+    let db;
+    let directionsLength ;
+    //Request total number of cobined route directions
+    try{
+        db = await poolDb.getConnection();
+        directionsLength= await db.query(`SELECT COUNT(*) AS direction_count
+            FROM DirectionRoute 
+            WHERE Route_ID IN(${finalRoutesIds})
+            GROUP BY Route_ID 
+            ORDER BY direction_count DESC
+            LIMIT 1`);
+
+            if(!directionsLength || directionsLength.length === 0){
+                return {status:404 , message:"Could not find the count of directions", result:null};
+            }
+
+           
+    }catch(error){
+        return {status:500 , message:"Server error", result:null};
+    }finally{
+        if(db) await db.release();
+    }
+  
+
+    for(let a = 1 ; a <= directionsLength ; a++){
+    for(let i = 0 ;i < finalRoutesIds.length ;i++){
+        const routeID = finalRoutesIds[i];
+        const routeDirections = getRouteDirections(routeID , allDirections);
+        const  directions = routeDirections[a];
+        arr.push(directions);
+    }
+
+    dynamicArr.push(arr);
+    arr = [];
+}
+
+return dynamicArr;
+
+}
+
+
+function findAllPaths(locations) {
+    if (locations.length === 0) return [];
+    
+    const paths = [];
+    
+    function backtrack(currentPath, currentIndex) {
+        if (currentIndex === locations.length) {
+            paths.push([...currentPath]);
+            return;
+        }
+        
+        const currentLocation = locations[currentIndex];
+        for (let i = 0; i < currentLocation.length; i++) {
+            currentPath.push(currentLocation[i]);
+            backtrack(currentPath, currentIndex + 1);
+            currentPath.pop();
+        }
+    }
+    
+    backtrack([], 0);
+    return paths;
+}
+
+function getRouteDirections(routeId , allDirections){
+return allDirections.filter((direction)=>{
+    return direction.Route_ID == routeId
+});
+}
 
 
 

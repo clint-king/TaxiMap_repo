@@ -113,7 +113,7 @@ try{
     const query = "INSERT INTO Routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
     const queryTaxiRank = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
     const queryMiniRoute = "INSERT INTO MiniRoute(Route_ID,coords,route_index) VALUES(?,?,?)";
-    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords) VALUES(?,?)";
+    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords,direction_index) VALUES(?,?,?)";
 
      connection = await poolDb.getConnection();
     try{
@@ -135,9 +135,9 @@ try{
         
         //Add Directions
         for(let i = 0; i< listOfDirCoords.length ;i++){
-            await connection.query(queryDirectionRoute , [result.insertId , listOfDirCoords[i]])
+            await connection.query(queryDirectionRoute , [result.insertId , listOfDirCoords[i] , i+1])
         }
-
+        
         await connection.commit();
         res.status(201).json({ message: "Route added successfully", routeId: result.insertId });
     }catch(error){
@@ -344,13 +344,12 @@ export const getRoute = async(req,res)=>{
 //Delete TaxiRank
 export const deleteTaxiRank = async(req,res)=>{
     let db;
-    try {
-        const { taxiRankID } = req.body;
-
+    
         if (!taxiRankID) {
             return res.status(400).json({ message: "taxiRankID is required" });
         }
 
+        try{
         db = await poolDb.getConnection();
         await db.beginTransaction();
 
