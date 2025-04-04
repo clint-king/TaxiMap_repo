@@ -99,7 +99,7 @@ export const findingPath = async(req,res)=>{
     }
 
     //Get paths from the Ids of TaxiRanks provided by [fastestPathResults]
-    const chosenRoutes = getChosenRoutes(formatedRoutes , fastestPathResults.path);
+    const chosenRoutes = getChosenRoutes(formatedRoutes , fastestPathResults.path , routeCloseToSource.closestRoute, routeCloseToDest.closestRoute);
     console.log("Chosen routes : " , chosenRoutes);
     if(chosenRoutes.length === 0){
         console.log("Could not get the chosen routes in [getChosenRoutes]=>[findingPath]");
@@ -109,7 +109,7 @@ export const findingPath = async(req,res)=>{
      const directionsO2 = await getDirections(chosenRoutes);
      console.log("Directions : " , directionsO2.result);
 
-     if(directionsO2.status != 200){
+     if(directionsO2.status != 200){3
         console.log(directionsO2.message);
         return res.status(directionsO2.status).send("Internal server error");
        }
@@ -169,7 +169,7 @@ async function filterAreas(sourceProv, destinationProv) {
             const placeholders = taxiIDs.map(() => "?").join(",");
 
             const [getRoutes] = await db.query(
-                `SELECT ID, name, TaxiRankStart_ID, TaxiRankDest_ID, price  
+                `SELECT ID, name, travelMethod , route_type , TaxiRankStart_ID, TaxiRankDest_ID, price  
                  FROM Routes 
                  WHERE TaxiRankDest_ID IN (${placeholders}) 
                  OR TaxiRankStart_ID IN (${placeholders})`,
@@ -226,16 +226,22 @@ function formatRoutes(routes , miniCoords){
 
     // * formatting process
     let array = [];
+
     routes.forEach((route)=>{
 
         const id = route.ID;
         const price = route.price;
+        const routeName = route.name;
+        const travelMethod = route.travelMethod;
+        const routeType = route.route_type;
         const TaxiRankStart_ID  = route.TaxiRankStart_ID;
         const TaxiRankDest_ID =  route.TaxiRankDest_ID;
         let coordsAr = [];
+        let drawArray = [];
         miniCoords.forEach((miniCoords)=>{
             if(miniCoords.Route_ID === id){
              coordsAr.push(...convertToGeoFormat(miniCoords.coords));
+             drawArray.push(miniCoords.coords);
             }              
         });
 
@@ -243,7 +249,7 @@ function formatRoutes(routes , miniCoords){
             console.log(`in route:  ${id} , there are no coords found`);
             return null;
         }
-       array.push( {id:id , price:price , TaxiRankStart_ID:TaxiRankStart_ID , TaxiRankDest_ID:TaxiRankDest_ID, coordinates:coordsAr});
+       array.push( {id:id , name:routeName , price:price ,route_type : routeType  ,  travelMethod:travelMethod , TaxiRankStart_ID:TaxiRankStart_ID  ,TaxiRankDest_ID:TaxiRankDest_ID, coordinates:coordsAr , drawableCoords:drawArray });
     });
 
     return array;
@@ -365,6 +371,7 @@ function routesConnectionCheck(firstR_trSource ,firstR_trDest  , secR_trSource ,
 
     return {flag:false , commonTaxiR_ID:-1};
 }
+
 function printGraphConnections(graph) {
     // Validate graph structure
     if (!graph || !graph.nodes || typeof graph.nodes !== 'object') {
@@ -391,6 +398,8 @@ function printGraphConnections(graph) {
         }
     }
 }
+
+
 //converting coordintates
 const convertToGeoFormat = (coordinates) => {
     return coordinates.map(coord => ({
@@ -490,9 +499,12 @@ return dynamicArr;
 
 }
 
-function getChosenRoutes(routes , taxiRanks){
+function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToDest){
 
-    let chosenRoutes = []
+    let chosenRoutes = [];
+    let isSourceLoop = false ;
+    let isDestLoop = false;
+    let properTaxiRankList = [];
     if(routes === null|| taxiRanks === null){
         console.log("Routes or pathRouteIds is null");
         return null;
@@ -503,9 +515,43 @@ function getChosenRoutes(routes , taxiRanks){
         return null;
     }
 
-    for(let i = 0; i < taxiRanks.length-1 ; i++){
-        const source =  Number(taxiRanks[i]);
-        const destination = Number(taxiRanks[i+1]);
+    //check if it is a loop case 
+        //add to chosen routes
+        chosenRoutes.push(routeCloseToSource);
+
+    if(routeCloseToSource.route_type == "Loop"){
+        isSourceLoop = true;
+    }
+
+    if(routeCloseToDest.route_type == "Loop"){
+        isDestLoop = true;
+    }
+
+    //refactoring the list in taxiRanks [FALSE IS WHAT WE ARE LOOKING FOR]
+    if(isSourceLoop === false && isDestLoop === false){
+        for(let i = 1 ; i < taxiRanks.length-1 ; i++){
+            properTaxiRankList.push(taxiRanks[i]);
+        }
+    }else if(isSourceLoop === true && isDestLoop === false){
+        for(let i = 0 ; i < taxiRanks.length-1 ; i++){
+            properTaxiRankList.push(taxiRanks[i]);
+        }
+    }else if(isSourceLoop === false && isDestLoop === true){
+        for(let i = 1 ; i < taxiRanks.length ; i++){
+            properTaxiRankList.push(taxiRanks[i]);
+        }
+    }else{
+        for(let i = 0 ; i < taxiRanks.length ; i++){
+            properTaxiRankList.push(taxiRanks[i]);
+        }
+    }
+
+
+
+
+    for(let i = 0; i < properTaxiRankList.length-1 ; i++){
+        const source =  Number(properTaxiRankList[i]);
+        const destination = Number(properTaxiRankList[i+1]);
 
         routes.forEach((route)=>{
             const routeSource = route.TaxiRankStart_ID ;
@@ -523,6 +569,10 @@ function getChosenRoutes(routes , taxiRanks){
             }
         });
     }
+
+//add to chosen routes for destination
+chosenRoutes.push(routeCloseToDest);
+    
 
     return chosenRoutes;
 }
@@ -543,7 +593,7 @@ function PriceCalc(chosenRoutes){
     
     chosenRoutes.forEach((route)=>{
         const tempPrice = Number(route.price);
-        listPrices.push({routeID:route.id , price:tempPrice});
+        listPrices.push({name:route.name , price:tempPrice});
         totalPrice += tempPrice;
     });
 

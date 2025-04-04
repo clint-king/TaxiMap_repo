@@ -50,9 +50,18 @@ import  axios  from 'axios';
  let destinationCoordinates = { latitude: -500, longitude: -500};
  //Row prices
  let sumOfPrices = 0;
-
+ 
  //sending search Info vars
  const listOfProvinces = ["Limpopo" , "Gauteng" , "Mpumalanga" , "Western Cape" , "kwazulu-natal" , "Eastern Cape" , "North West" , "Free State" , "Northern Cape"];
+
+ //color for prices
+ const priceColors = ['#D2CCA1','#757780','#387780','#A30B37','#EF626C','#361F27','#912F56','#68B684','#C3F73A','#FF36AB'];
+
+ //direction colors 
+ const directionButtonColors = ["#CEE6C2" , "#C3C5F7" , "#ECB8B8" , "#ECBDF1" , "#F1E8BD" , "#BDE7F1" , "#BDF1DE",  "#ECBDF1" , "#CEE6C2"];
+
+ //direction storage
+ let  directionStorage = [];
  // === MAP IMPLEMENTATION ===
 
  //mapbox setup
@@ -121,8 +130,9 @@ map.on('click', async (e) => {
    }else{
     console.error("Not all information is available to be saved");
    }
- })
+ });
 
+ //***  END OF LOAD MAP
   });
 
  // === EVENT LISTENERS ====
@@ -161,7 +171,6 @@ map.on('click', async (e) => {
     isYes = false;
  });
 
-
  //source input 
  inputCurrentLocation.addEventListener('input' , (e)=>{
     fetchSuggestions(currentLocation , e.target.value );
@@ -170,7 +179,42 @@ map.on('click', async (e) => {
  //destination input
  inputDestinationLocation.addEventListener('input' , (e)=>{
     fetchSuggestions(destinationLocation , e.target.value);
- })
+ });
+
+ //direction button listeners
+ directionContainer.addEventListener('click' , (e)=>{
+  const dirBtnEl  = e.target.closest(".direction_button"); 
+
+  if(!directionStorage){
+    console.log("Could not find any  directions stored");
+    return;
+  }
+
+  const directionButtonInfo = directionStorage[dirBtnEl.id];
+
+  console.log("Direcion combo chosen : ", directionButtonInfo);
+  if(!directionButtonInfo){
+    console.log(`Button id = ${dirBtnEl.id} , was nopt found`);
+    return ;
+  }
+
+  //draw coordinates 
+
+  //store the coordinates
+  let directionCoords = [];
+  directionButtonInfo.forEach((direction)=>{
+    directionCoords.push(direction.direction_coords);
+  });
+
+  if(!directionCoords){
+    console.log(`The variable directionCoords is null or  undefined `);
+    return ;
+  }
+
+  //draw the coordinates
+    loadMiniRoutes(directionCoords , "Taxi" , `D${1}` , 'yellow');
+  ;
+ });
 
  //=== FUNCTIONS ===
 
@@ -203,10 +247,48 @@ map.on('click', async (e) => {
           destinationCoords : destinationCoordinates, 
           destinationProvince : destinationProv.province
         });
-        const dataReceived = response.data;
 
+        const dataReceived = response.data;
         console.log("Route results : " , dataReceived);
 
+        //draw route
+        const listOfRoutes = dataReceived.routes;
+
+        listOfRoutes.forEach((route , index)=>{
+          console.log(`Drawing route ${index}:`, route);
+          loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  'blue');
+        });
+
+        //walking routes
+        let walkingCoords = [];
+        //source walking
+        const sourceCoords = await getWalkCoordinates(dataReceived.sourceCoord.latitude , dataReceived.sourceCoord.longitude , dataReceived.pointCloseToSource.latitude , dataReceived.pointCloseToSource.longitude);
+        walkingCoords.push(sourceCoords);
+      
+        //destination walking
+        const destinationCoords = await getWalkCoordinates(dataReceived.destCoord.latitude , dataReceived.destCoord.longitude , dataReceived.pointCloseToDest.latitude , dataReceived.pointCloseToDest.longitude);
+        walkingCoords.push(destinationCoords);
+
+        loadMiniRoutes(walkingCoords , "Walk" , `W${1}` , 'blue');
+        
+        //create prices
+        const priceInfo = dataReceived.prices;
+        const listOfPrices = priceInfo.listOfPrices;
+
+        for(let i = 0 ; i < listOfPrices.length ; i++){
+          const price = listOfPrices[i].price;
+          const routeName = listOfRoutes[i].name;
+
+          createPricerow(routeName , price , priceColors[i]);
+        }
+
+        //create directions
+        const listOfDirections = dataReceived.directions.result;
+
+        directionStorage = [...listOfDirections];  // destructuring directions
+        listOfDirections.forEach((direction , index)=>{
+          createDirections(`D${index+1}` , directionButtonColors[index] , index);
+        });
       }catch(error){
         console.log(error);
       }
@@ -308,7 +390,6 @@ async function fetchSuggestions(suggestions, query) {
     console.error('Error fetching suggestions:', error);
   }
 }
-
 
 //confirmation manu management
 function defaultRetreat(){
@@ -429,30 +510,250 @@ function allMarkersPlaced(){
   return sourceMarker != null && destinationMarker != null;
 }
 
+
+//creating routes
+// function loadMiniRoutes(miniroutes ) {
+
+//   let arrCoords = [];
+//   miniroutes.forEach((route, index) => {
+//       const routeSourceId = `route-source-${index}`;
+//       const routeLayerId = `route-line-${index}`;
+
+//       const convertedCoords = route.coordinates.map(coord => [coord.longitude, coord.latitude]);
+//       // Convert each mini-route to GeoJSON
+//       const routeFeatures = {
+//           type: 'Feature',
+//           properties: {},
+//           geometry: {
+//               type: 'LineString',
+//               coordinates: convertedCoords
+//           }
+//       };
+
+//       // Add a new source for each route
+//       map.addSource(routeSourceId, { 
+//           type: 'geojson',
+//           data: {
+//               type: 'FeatureCollection',
+//               features: [routeFeatures] 
+//           }
+//       });
+
+//       // Add a new layer for each route
+
+//       let paintOption ;
+//       if(route.travelMethod === 'Walk'){
+//           paintOption =  {
+//                   'line-color': '#FF0000', // Line color
+//                   'line-width': 4,         // Line thickness
+//                   'line-dasharray': [0, 2] // [dash length, gap length] in units of line-width
+//               };
+//       }else{
+//           paintOption = {
+//               'line-color': 'blue',
+//               'line-width': 4,
+//           }
+//       }
+
+//       map.addLayer({
+//           id: routeLayerId,
+//           type: 'line',
+//           source: routeSourceId,
+//           layout: {
+//               'line-cap': 'round',
+//               'line-join': 'round'
+//           },
+//           paint: paintOption
+//       });
+
+//       arrCoords.push(convertedCoords);
+
+//   });
+
+//   if(arrCoords.length === 0){
+//       const finalCoords = arrCoords.flat();
+//       zoomRoute(finalCoords);
+//   }
+// }
+
+// function loadMiniRoutes(miniroutes , travelMethod , fIndex) {
+
+//   if (!map || !map.isStyleLoaded()) {
+//     console.error("Map is not ready yet");
+//     return;
+// }
+
+
+//   let arrCoords = [];
+//   miniroutes.forEach((route, index) => {
+//       const routeSourceId = `route-source-${index}-${fIndex}`;
+//       const routeLayerId = `route-line-${index}-${fIndex}`;
+
+//       // Convert each mini-route to GeoJSON
+//       const routeFeatures = {
+//           type: 'Feature',
+//           properties: {},
+//           geometry: {
+//               type: 'LineString',
+//               coordinates: route
+//           }
+//       };
+
+//       // Add a new source for each route
+//       map.addSource(routeSourceId, { 
+//           type: 'geojson',
+//           data: {
+//               type: 'FeatureCollection',
+//               features: [routeFeatures] 
+//           }
+//       });
+
+//       // Add a new layer for each route
+
+//       let paintOption ;
+//       if(travelMethod === 'Walk'){
+//           paintOption =  {
+//                   'line-color': '#FF0000', // Line color
+//                   'line-width': 4,         // Line thickness
+//                   'line-dasharray': [0, 2] // [dash length, gap length] in units of line-width
+//               };
+//       }else{
+//           paintOption = {
+//               'line-color': 'blue',
+//               'line-width': 4,
+//           }
+//       }
+
+//       map.addLayer({
+//           id: routeLayerId,
+//           type: 'line',
+//           source: routeSourceId,
+//           layout: {
+//               'line-cap': 'round',
+//               'line-join': 'round'
+//           },
+//           paint: paintOption
+//       });
+
+//       //arrCoords.push(route[index]);
+
+//   });
+
+//   // if(arrCoords){
+//   //     const finalCoords = arrCoords.flat();
+//   //     zoomRoute(finalCoords);
+//   // }
+// }
+
+
+function loadMiniRoutes(miniroutes, travelMethod, fIndex , color) {
+  // if (!map || !map.isStyleLoaded()) {
+  //     console.error("Map is not ready yet");
+  //     return;
+  // }
+
+  miniroutes.forEach((route, index) => {
+      const routeSourceId = `route-source-${fIndex}-${index}`;
+      const routeLayerId = `route-line-${fIndex}-${index}`;
+
+      if (!Array.isArray(route) || route.length === 0) {
+          console.error(`Invalid coordinates for route ${index}:`, route);
+          return;
+      }
+
+      // Remove existing source and layer if they exist
+      if (map.getSource(routeSourceId)) {
+          map.removeLayer(routeLayerId);
+          map.removeSource(routeSourceId);
+      }
+
+      // Convert to GeoJSON
+      const routeFeatures = {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+              type: 'LineString',
+              coordinates: route
+          }
+      };
+
+      // Add the source
+      map.addSource(routeSourceId, {
+          type: 'geojson',
+          data: {
+              type: 'FeatureCollection',
+              features: [routeFeatures]
+          }
+      });
+
+      // Choose line styling
+      let paintOption = travelMethod === 'Walk' ? {
+          'line-color': '#FF0000',
+          'line-width': 4,
+          'line-dasharray': [0, 2]
+      } : {
+          'line-color': color,
+          'line-width': 4
+      };
+
+      // Add the layer
+      map.addLayer({
+          id: routeLayerId,
+          type: 'line',
+          source: routeSourceId,
+          layout: {
+              'line-cap': 'round',
+              'line-join': 'round'
+          },
+          paint: paintOption
+      });
+  });
+}
+
+function zoomRoute(coordinates){
+  // Get the bounds of the route
+const bounds = coordinates.reduce((bounds, coord) => {
+  return bounds.extend(coord);
+}, new mapboxgl.LngLatBounds(coordinates[0], coordinates[1]));
+
+// Fit the map to the bounds
+map.fitBounds(bounds, {
+  padding: 50, // Add some padding around the route
+  maxZoom: 15, // Set a max zoom level to avoid excessive zoom-in
+  duration: 2000 // Smooth animation duration in milliseconds
+});
+}
+
 //managing route prices 
-function createPricerow(routeID , price , color){
+function createPricerow(routeID, price, color) {
+  // Select existing lists
+  const rightPriceList = document.querySelector(".list_right ul");
+  const leftPriceList = document.querySelector(".list_left ul");
 
-//create the right row
-const rightRowPrice = document.createElement("li");
-rightRowPrice.className = "rightPriceRow";
-const circle = document.createElement("div");
-circle.className = "route_circle";
-circle.style.backgroundColor = color;
-rightRowPrice.appendChild(circle);
-rightRowPrice.textContent = routeID;
+  // Create the right row (Route ID)
+  const rightRowPrice = document.createElement("li");
+  rightRowPrice.className = "rightPriceRow";
 
-//create the left row
-const leftRowPrice = document.createElement("li");
-leftRowPrice.className = "leftPriceRow";
-leftRowPrice.textContent = price;
+  const circle = document.createElement("div");
+  circle.className = "route_circle";
+  circle.style.backgroundColor = color;
 
+  rightRowPrice.appendChild(circle);
+  rightRowPrice.appendChild(document.createTextNode(` ${routeID}`)); // Ensure spacing
 
-//append rows 
-rightPriceList.appendChild(rightRowPrice);
-leftPriceList.appendChild(leftRowPrice);
+  // Create the left row (Price)
+  const leftRowPrice = document.createElement("li");
+  leftRowPrice.className = "leftPriceRow";
+  leftRowPrice.textContent = `R${price}`;
 
-//add to sum 
-sumOfPrices += parseInt(price , 10);
+  // Append rows to their respective lists
+  rightPriceList.appendChild(rightRowPrice);
+  leftPriceList.appendChild(leftRowPrice);
+
+  // Update total sum
+  let sumOfPrices = parseInt(document.querySelector(".total_price p:last-child").textContent.replace("R", ""), 10);
+  sumOfPrices += parseInt(price, 10);
+  document.querySelector(".total_price p:last-child").textContent = `R${sumOfPrices}`;
 }
 
 function removeAllPrices(){
@@ -475,12 +776,12 @@ function removeAllPrices(){
     sumOfPrices = 0;
 }
 
-
-//managing directions prices
-function createDirections(name , color){
+//managing directions 
+function createDirections(name , color , ID){
 const directionButton = document.createElement('button');
 directionButton.className = 'direction_button';
 directionButton.textContent = name;
+directionButton.id = ID;
 directionButton.backgroundColor = color;
 directionContainer.appendChild(directionButton);
 }
@@ -492,6 +793,67 @@ function removeAllDirectionBtns(){
             button.remove();
         });
     }
+}
+
+//Direction calculations
+
+// Function to find matching segments between full path and direction path
+function getMatchingSegments(fullPath, directionPath, tolerance = 0.0001) {
+  let matchingSegments = [];
+  
+  for (let i = 0; i < fullPath.length - 1; i++) {
+      let segmentStart = fullPath[i];
+      let segmentEnd = fullPath[i + 1];
+      
+      for (let j = 0; j < directionPath.length - 1; j++) {
+          let dirStart = directionPath[j];
+          let dirEnd = directionPath[j + 1];
+          
+          if (areSegmentsClose(segmentStart, segmentEnd, dirStart, dirEnd, tolerance)) {
+              matchingSegments.push([segmentStart, segmentEnd]);
+              break;
+          }
+      }
+  }
+  
+  return matchingSegments;
+}
+
+// Helper function to check if two line segments are close
+function areSegmentsClose(a1, a2, b1, b2, tolerance) {
+  return (distance(a1, b1) < tolerance && distance(a2, b2) < tolerance) ||
+         (distance(a1, b2) < tolerance && distance(a2, b1) < tolerance);
+}
+
+async function getWalkCoordinates(startCoordsLat , startCoordsLong , destCoordsLat , destCoordsLong){
+  const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${startCoordsLong},${startCoordsLat};${destCoordsLong},${destCoordsLat}?geometries=geojson&access_token=${accessToken}`;
+
+try{
+  const response = await axios.get(url);
+
+   // Check if the response contains the expected data
+   if (!response.data.routes || response.data.routes.length === 0) {
+      console.error("Error: No routes found in API response", response.data);
+      return null; // Return null or handle the case accordingly
+    }
+
+    let array =[];
+  const route = response.data.routes[0].geometry.coordinates;
+  array.push(JSON.stringify(route));
+  console.log("Route:", array);
+  return array;
+}catch(error){
+  console.error("Error fetching route:", error);
+  return null;
+}
+
+}
+
+// Function to calculate distance between two coordinates
+function distance(coord1, coord2) {
+  let [lon1, lat1] = coord1;
+  let [lon2, lat2] = coord2;
+  return Math.sqrt(Math.pow(lon2 - lon1, 2) + Math.pow(lat2 - lat1, 2));
 }
 
 

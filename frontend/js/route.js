@@ -33,7 +33,7 @@ const checkBoxContainer = document.querySelector(".checkboxConatiner");
 const coordinateContainer = document.querySelector(".coordinate_container");
 
 
-const directionButtonColors = ["#CEE6C2" , "#C3C5F7" , "#ECB8B8" , "#ECBDF1" , "#F1E8BD" , "#BDE7F1" , "#BDF1DE"];
+const directionButtonColors = ["#CEE6C2" , "#C3C5F7" , "#ECB8B8" , "#ECBDF1" , "#F1E8BD" , "#BDE7F1" , "#BDF1DE",  "#ECBDF1" , "#CEE6C2"];
 let directionsInfoStorage = [];
 let coordsInserted = new Map([
     ['miniroutes', []],
@@ -581,8 +581,6 @@ function removeRouteInformation(){
     fromTaxiRankCircleLabel.textContent ="";
     toTaxiRankCirccleLabel.textContent = "";
 }
-
-
 
 async function getTaxiRankName(ID){
     try {
