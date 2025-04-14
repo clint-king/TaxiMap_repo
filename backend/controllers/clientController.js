@@ -50,28 +50,43 @@ export const findingPath = async(req,res)=>{
     }
 
     // *** When routes connect
+    
     //Check if routes connect 
     const ranksIDs = closestTaxiRanks.result;
     const commonPath = routesConnectionCheck(ranksIDs.firstR_taxiRankSource , ranksIDs.firstR_taxiRankDestination , ranksIDs.secR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
 
-   //price  Option 1
-   const priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
-   if(priceCollectionO1 === null){
-    console.log("Could not get the prices of routes (priceCollectionO1) in [findingPath]");
-    return res.status(400).send("Internal server error");
-   }
-
- 
-   //get directions option 1
-   const directionsO1 = await getDirections([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
-
-   if(directionsO1.status != 200){
-    console.log(directionsO1.message);
-    return res.status(directionsO1.status).send("Internal server error");
-   }
+  
 
     if(commonPath.flag === true){
         console.log("Routes have common taxiRanks");
+
+
+ //price  Option 1
+ const priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
+ if(priceCollectionO1 === null){
+  console.log("Could not get the prices of routes (priceCollectionO1) in [findingPath]");
+  return res.status(400).send("Internal server error");
+ }
+
+
+ //get directions option 1
+ const directionsO1 = await getDirections([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
+
+ if(directionsO1.status != 200){
+  console.log(directionsO1.message);
+  return res.status(directionsO1.status).send("Internal server error");
+ }
+
+  //   //get The Taxi TaxiRank 
+    const formedTaxiIds = ['ranksIDs.firstR_taxiRankSource' , 'ranksIDs.firstR_taxiRankDestination' , 'ranksIDs.secR_taxiRankSource'];
+    const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds );
+
+    if(chosenTaxiRanks1 === null || chosenTaxiRanks1.length === 0){
+        console.log("chosenTaxiRanks is null or has length of zero");
+        return res.status(400).send("Internal server error");
+    }
+
+
          return res.status(200).send({
             sourceCoord: sourceCoords,
             pointCloseToSource: routeCloseToSource.closestPoint,
@@ -79,7 +94,8 @@ export const findingPath = async(req,res)=>{
             pointCloseToDest: routeCloseToDest.closestPoint,
             routes: [routeCloseToSource.closestRoute ,routeCloseToDest.closestRoute],
             prices:priceCollectionO1,
-            directions:directionsO1
+            directions:directionsO1,
+            chosenTaxiRanks:chosenTaxiRanks1
         });
     }
 
@@ -88,13 +104,42 @@ export const findingPath = async(req,res)=>{
      //create a graph
     const graph = insertInGraph(formatedRoutes);
 
+    //choose taxiRank
+    let sourceTaxiRankRank;
+    let destinationTaxiRank;
+    //check if source has a left destination (sourceLong > destinationLong) 
+    if(sourceCoords.longitude > destinationCoords.longitude){
+        sourceTaxiRankRank =  ranksIDs.firstR_taxiRankSource;
+        destinationTaxiRank = ranksIDs.secR_taxiRankDestination;
+
+    }else if(sourceCoords.longitude < destinationCoords.longitude){
+    //check if source has a right destination (sourceLong < destinationLong)
+    sourceTaxiRankRank = ranksIDs.firstR_taxiRankDestination;
+    destinationTaxiRank = ranksIDs.secR_taxiRankSource;
+    console.log("*****************WENT THROUGH THE OTHER OPTION");
+
+    }else{
+     //check when longitudes are equal
+
+     //check which one is on top
+    }
+  
+
     //get the fastest path utilising the graph
-    console.log("Print input , firstR_taxiRankSource : " , ranksIDs.firstR_taxiRankSource , " secR_taxiRankDestination : " , ranksIDs.secR_taxiRankDestination );
-    const fastestPathResults =  getBestPath(graph , `${ranksIDs.firstR_taxiRankSource}` , `${ranksIDs.secR_taxiRankDestination}`);
+    console.log("Print input , firstR_taxiRankSource : " , sourceTaxiRankRank, " secR_taxiRankDestination : " , destinationTaxiRank);
+    const fastestPathResults =  getBestPath(graph , `${sourceTaxiRankRank}` , `${destinationTaxiRank}`);
     console.log("Path : " , fastestPathResults);
 
     if(fastestPathResults.path.length === 0){
         console.log("Could not get the Fastest path in [findingPath]");
+        return res.status(400).send("Internal server error");
+    }
+
+    //get The Taxi TaxiRank 
+    const chosenTaxiRanks = await getChosenTaxiTanks( fastestPathResults.path );
+
+    if(chosenTaxiRanks === null || chosenTaxiRanks.length === 0){
+        console.log("chosenTaxiRanks is null or has length of zero");
         return res.status(400).send("Internal server error");
     }
 
@@ -131,7 +176,8 @@ export const findingPath = async(req,res)=>{
         pointCloseToDest: routeCloseToDest.closestPoint,
         routes: chosenRoutes,
         prices:priceCollectionO2,
-        directions:directionsO2
+        directions:directionsO2,
+        chosenTaxiRanks:chosenTaxiRanks
     });
 }
 
@@ -254,6 +300,46 @@ function formatRoutes(routes , miniCoords){
 
     return array;
 }
+
+async function getChosenTaxiTanks(path) {
+    // Check the parameter
+    if (path === null || !Array.isArray(path)) {
+        console.log("Invalid 'path' parameter in [getChosenTaxiTanks]");
+        return null;
+    }
+
+    if (path.length === 0) {
+        console.log("Path has length of zero");
+        return null;
+    }
+
+    // Convert to integers
+    const intArray = path.map(Number);
+    const placeholders = intArray.map(() => '?').join(', ');
+    
+
+    // `FROM TaxiRank ID IN(${placeholders})` is incorrect SQL
+    const query = `SELECT name, location_coord, address FROM TaxiRank WHERE ID IN (${placeholders})`;
+
+    let db;
+    try {
+        db = await poolDb.getConnection();
+        const [result] = await db.query(query, intArray); // no need to wrap intArray in another array
+
+        if (!result || result.length === 0) {
+            console.log("Result from database query has length of zero [getChosenTaxiTanks]");
+            return null;
+        }
+
+        return result;
+    } catch (error) {
+        console.log("Error in getChosenTaxiTanks:", error);
+        return null;
+    } finally {
+        if (db) await db.release();
+    }
+}
+
 
 // Insert in a graph
 function insertInGraph(listRoutes){
@@ -398,7 +484,6 @@ function printGraphConnections(graph) {
         }
     }
 }
-
 
 //converting coordintates
 const convertToGeoFormat = (coordinates) => {

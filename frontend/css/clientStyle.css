@@ -232,6 +232,98 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
    background-color: #FFEFAD;
  }
 
+
+  /*Toggle button*/
+
+  .toggle-container {
+   position: relative;
+   top:6%;
+   display: flex;
+   align-items: center;
+   cursor: pointer;
+ }
+ 
+ .toggle-button {
+   width: 50px;
+   height: 25px;
+   background-color: #ccc;
+   border-radius: 25px;
+   position: relative;
+   transition: background-color 0.3s;
+ }
+ 
+ .toggle-circle {
+   width: 20px;
+   height: 20px;
+   background-color: white;
+   border-radius: 50%;
+   position: absolute;
+   top: 50%;
+   left: 5px;
+   transform: translateY(-50%);
+   transition: left 0.3s;
+ }
+ 
+ .toggle-button.active {
+   background-color: #4caf50;
+ }
+ 
+ .toggle-button.active .toggle-circle {
+   left: 25px;
+ }
+ 
+ .toggle-label {
+   font-size: 16px;
+ }
+
+ /* Markers design*/
+
+ .custom-mapbox-pin {
+   --marker-color: #3fb1ce;
+ 
+   width: 30px;
+   height: 50px; /* includes pin and tip */
+   background: var(--marker-color);
+   border-radius: 15px 15px 50% 50%;
+   position: relative;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+   transform: rotate(0deg);
+   transform-origin: center bottom;
+   overflow: visible;
+ }
+ 
+ .custom-mapbox-pin::after {
+   content: "";
+   position: absolute;
+   bottom: -10px;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 0;
+   height: 0;
+   border-left: 10px solid transparent;
+   border-right: 10px solid transparent;
+   border-top: 10px solid var(--marker-color);
+ }
+ 
+ .custom-pin-emoji {
+   font-size: 18px;
+   line-height: 1;
+   z-index: 1;
+ }
+ 
+ .message{
+   max-width:250px;
+   max-height: 250px;
+   font-family: 'Open Sans', sans-serif;
+ }
+
+ .message main{
+   font-weight: bold;
+ }
+ 
 /* == MAP SECTION ==*/
 
 #map {

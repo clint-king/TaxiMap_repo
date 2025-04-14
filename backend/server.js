@@ -9,7 +9,7 @@ const app = express();
 //middleware
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(cors({
-    origin: "http://localhost:5173", // Allow Vite frontend
+    origin: ["http://localhost:5174","http://localhost:5173"], // Allow Vite frontend
     methods: "GET, POST, PUT, DELETE",
     credentials: true  // Allow cookies & auth headers
 }));

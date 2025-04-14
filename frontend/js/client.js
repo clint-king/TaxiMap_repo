@@ -1,5 +1,5 @@
 import  axios  from 'axios';
-
+import * as turf from '@turf/turf';
  // === DOM ELEMENTS ===
 
  //toggle button
@@ -15,18 +15,19 @@ import  axios  from 'axios';
 
 
  //search input
- const currentLocation = document.querySelector("#listSource");
- const destinationLocation = document.querySelector('#listDestination');
+ const currentLocation = document.querySelector(".listSource");
+ const destinationLocation = document.querySelector('.listDestination');
  const inputCurrentLocation = document.querySelector('.search_input.source');
  const inputDestinationLocation = document.querySelector('.search_input.destination');
 
  //prices listing
  const rightPriceList = document.querySelector('.listSub_container.list_right');
  const leftPriceList = document.querySelector('.listSub_container.list_left');
-
+ const priceToogleButton  = document.querySelector(".toggle-container");
  //direction prices
  const directionContainer = document.querySelector('.direction_container');
-
+ let incomingMovement = false;
+ let movementExists = false;
 
  //=== VARIABLES ===
  const toggleMap = new Map([
@@ -37,7 +38,7 @@ import  axios  from 'axios';
  //markers
  let sourceMarker = null;
  let destinationMarker = null;
-
+ let generalMarkerCollector = [];
  //confirmation menu vars
  let isOpen_confirmationMenu = false;
  let isYes = false;
@@ -50,7 +51,8 @@ import  axios  from 'axios';
  let destinationCoordinates = { latitude: -500, longitude: -500};
  //Row prices
  let sumOfPrices = 0;
- 
+ let storedListRoutes ;
+ let walkingCoords = [];
  //sending search Info vars
  const listOfProvinces = ["Limpopo" , "Gauteng" , "Mpumalanga" , "Western Cape" , "kwazulu-natal" , "Eastern Cape" , "North West" , "Free State" , "Northern Cape"];
 
@@ -198,7 +200,7 @@ map.on('click', async (e) => {
     return ;
   }
 
-  //draw coordinates 
+  //*draw coordinates 
 
   //store the coordinates
   let directionCoords = [];
@@ -212,8 +214,19 @@ map.on('click', async (e) => {
   }
 
   //draw the coordinates
-    loadMiniRoutes(directionCoords , "Taxi" , `D${1}` , 'yellow');
-  ;
+    loadMiniRoutes(directionCoords , "Taxi" , `D${1}` , 'yellow' );
+
+    //moving object
+    if(movementExists === true){
+      incomingMovement = true;
+      movementExists = false;
+    }
+    movement(directionCoords.flat(), "#CEE6C2");
+  
+ });
+
+ priceToogleButton.addEventListener('click' , (e)=>{
+    ExecutePriceToggleBtn();
  });
 
  //=== FUNCTIONS ===
@@ -221,6 +234,10 @@ map.on('click', async (e) => {
  //sending search information
  async function sendsearchInfo(){
   if(allMarkersPlaced()  === true){
+    //Remove an existsing route first 
+    removeExistingRoutes();
+
+    //create a new route
     const sourceAdress = inputCurrentLocation.value;
     const destinationAdress = inputDestinationLocation.value;
     console.log("sourceAdress : ", sourceAdress );
@@ -254,33 +271,77 @@ map.on('click', async (e) => {
         //draw route
         const listOfRoutes = dataReceived.routes;
 
+        //START SECTION TO SEPERATE
+        storedListRoutes = listOfRoutes;
         listOfRoutes.forEach((route , index)=>{
           console.log(`Drawing route ${index}:`, route);
-          loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  'blue');
+          loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  'blue' );
         });
 
         //walking routes
-        let walkingCoords = [];
+       
         //source walking
-        const sourceCoords = await getWalkCoordinates(dataReceived.sourceCoord.latitude , dataReceived.sourceCoord.longitude , dataReceived.pointCloseToSource.latitude , dataReceived.pointCloseToSource.longitude);
+        const sourceRouteCoords =  listOfRoutes[0].drawableCoords.length > 0 ? listOfRoutes[0].drawableCoords.flat() : listOfRoutes[0].drawableCoords ;
+        console.log("Source Walking  : " , sourceRouteCoords);
+        const sourceCoords = await getAccurateWalkCoords(dataReceived.sourceCoord.latitude , dataReceived.sourceCoord.longitude , dataReceived.pointCloseToSource.latitude , dataReceived.pointCloseToSource.longitude ,sourceRouteCoords);
         walkingCoords.push(sourceCoords);
-      
         //destination walking
-        const destinationCoords = await getWalkCoordinates(dataReceived.destCoord.latitude , dataReceived.destCoord.longitude , dataReceived.pointCloseToDest.latitude , dataReceived.pointCloseToDest.longitude);
+        const lastRoute = listOfRoutes.length -1;
+        console.log("Route length : " , lastRoute);
+        console.log("Destination Walking  : " ,listOfRoutes[lastRoute].drawableCoords);
+        const destRouteCoords =  listOfRoutes[lastRoute].drawableCoords.length > 0 ? listOfRoutes[lastRoute].drawableCoords.flat() :  listOfRoutes[lastRoute].drawableCoords;
+        const destinationCoords = await getAccurateWalkCoords(dataReceived.destCoord.latitude , dataReceived.destCoord.longitude , dataReceived.pointCloseToDest.latitude , dataReceived.pointCloseToDest.longitude ,destRouteCoords);
+        console.log("destWalking coords: ",destinationCoords);
         walkingCoords.push(destinationCoords);
 
         loadMiniRoutes(walkingCoords , "Walk" , `W${1}` , 'blue');
         
+        const finalCoords = walkingCoords.flat();
+        zoomRoute(finalCoords);
+        //remove walk coordinates
+        walkingCoords = [];
+
+        //create Markers
+      
+        //start marker
+        const lastSourceCoord = sourceCoords.length-1;
+        const sourceAdress = await getAdress(sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]);
+        if(listOfRoutes.length === 1){
+   
+          placeMarkerGeneral( sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]  , 'start' ,   '👇' , 'Raise the hand sign shown to stop a Taxi' ,  sourceAdress, dataReceived.chosenTaxiRanks[0].address);
+        }else if(listOfRoutes.length > 1){
+          placeMarkerGeneral( sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]  , 'start' ,   '👆' , 'Raise the hand sign shown to stop a Taxi ' ,sourceAdress,`${dataReceived.chosenTaxiRanks[0].address}, [TaxiRank :${dataReceived.chosenTaxiRanks[0].name}]`);
+        }
+
+        //stop Marker
+        const lastDestCoord = destinationCoords.length-1;
+        const destAdress = await getAdress( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1] );
+        placeMarkerGeneral( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1]   , 'stop' ,  '🛑', `Please ask the Taxi driver to stop at this point`, destAdress);
+
+        //TaxiRank Markers
+        const taxiRanksLength = dataReceived.chosenTaxiRanks.length;
+        for(let  i = 0 ; i <  taxiRanksLength-1 ; i++){
+          let taxiRank = dataReceived.chosenTaxiRanks[i];
+          let nextTaxiRank = dataReceived.chosenTaxiRanks[i+1];
+          placeMarkerGeneral(taxiRank.location_coord.longitude , taxiRank.location_coord.latitude , "taxiRank" , '>>' , " Message" , `${taxiRank.address}, [TaxiRank : ${taxiRank.name}] `,`${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`);
+        }
+
+        //Lat TaxiRank
+        const lastTaxiRank = taxiRanksLength-1 ;
+        placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
+
+
         //create prices
-        const priceInfo = dataReceived.prices;
+        const priceInfo = dataReceived.prices; 
         const listOfPrices = priceInfo.listOfPrices;
 
         for(let i = 0 ; i < listOfPrices.length ; i++){
           const price = listOfPrices[i].price;
           const routeName = listOfRoutes[i].name;
-
           createPricerow(routeName , price , priceColors[i]);
         }
+
+        //END SECTION TO SEPERATE
 
         //create directions
         const listOfDirections = dataReceived.directions.result;
@@ -299,6 +360,61 @@ map.on('click', async (e) => {
     }
   }
 }
+
+async function getAdress(lng , lat){
+  const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+
+  try{
+    const response = await fetch(reverseGeocodeUrl);
+    const data = await response.json();
+    const address = data.features[0].place_name;
+    return address;
+  }catch(error){
+    console.log(error);
+    return null;
+  }
+
+}
+
+function redrawCoords(){
+  //draw routes
+  storedListRoutes.forEach((route , index)=>{
+    console.log(`Drawing route ${index}:`, route);
+    loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  'blue' );
+  });
+  // walking routes 
+  loadMiniRoutes(walkingCoords , "Walk" , `W${1}` , 'blue');
+  const finalCoords = walkingCoords.flat();
+  zoomRoute(finalCoords);
+}
+
+async function getAccurateWalkCoords(source_lat , source_long , dest_lat , dest_long , routeCoords){
+  const walkCoords = await getWalkCoordinates(source_lat, source_long, dest_lat,  dest_long);
+
+        const routeLine = turf.lineString(routeCoords);
+         const walkingLine = turf.lineString(JSON.parse((walkCoords)));
+
+         // Get intersection points
+  const intersections = turf.lineIntersect(routeLine, walkingLine);
+
+  // Check if there's an intersection
+if (intersections.features.length === 0) {
+  console.log("No intersection found.");
+  return JSON.parse(walkCoords);
+}
+
+const firstIntersection = intersections.features[0].geometry.coordinates;
+console.log("First intersection:", firstIntersection);
+
+const walkCoords2 = await getWalkCoordinates(source_lat, source_long, firstIntersection[1],  firstIntersection[0]);
+
+if(walkCoords2.length === 0){
+  console.log("Could not form the second coordinates");
+  return JSON.parse(walkCoords);
+}
+
+return JSON.parse(walkCoords2);
+} 
 
 function getProvince(address){
   //check if address is not empty
@@ -357,12 +473,17 @@ async function fetchSuggestions(suggestions, query) {
         }
 
             // Add marker and center the map
-            sourceMarker =  new mapboxgl.Marker()
+            sourceMarker =  new mapboxgl.Marker({color:'green'})
             .setLngLat([longitude, latitude])
             .addTo(map);
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
 
+          saveCoordinates("source" , latitude , longitude);
+          inputCurrentLocation.value =  li.textContent;
+          suggestions.innerHTML = '';
+          sendsearchInfo();
+          defaultLocationMarkerInfo();
           }else if(destinationLocation === suggestions){
 
           // Remove the old marker if it exists
@@ -372,12 +493,17 @@ async function fetchSuggestions(suggestions, query) {
         }
 
             // Add marker and center the map
-            destinationMarker =  new mapboxgl.Marker()
+            destinationMarker =  new mapboxgl.Marker({color:"red"})
             .setLngLat([longitude, latitude])
             .addTo(map);
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
 
+          saveCoordinates("destination" , latitude , longitude);
+          inputDestinationLocation.value = li.textContent;
+          suggestions.innerHTML = '';
+          sendsearchInfo();
+          defaultLocationMarkerInfo();
           }else{
               console.error("There was no marker chosen or valid ")
           }
@@ -447,6 +573,7 @@ function defaultLocationMarkerInfo(){
     confirmationMenu_adresss = "";
 }
 
+//Marker functions
 function placeMarker(lng , lat , address){
     if(isOpen_confirmationMenu === true){
 
@@ -458,7 +585,7 @@ function placeMarker(lng , lat , address){
                  }
        
                      // Add marker and center the map
-                     sourceMarker =  new mapboxgl.Marker()
+                     sourceMarker =  new mapboxgl.Marker({color:'green'})
                      .setLngLat([lng, lat])
                      .addTo(map);
        
@@ -482,7 +609,7 @@ function placeMarker(lng , lat , address){
                  }
        
                      // Add marker and center the map
-                     destinationMarker =  new mapboxgl.Marker()
+                     destinationMarker =  new mapboxgl.Marker({color:'red'})
                      .setLngLat([lng, lat])
                      .addTo(map);
          
@@ -506,153 +633,93 @@ function placeMarker(lng , lat , address){
     }
 }
 
+function placeMarkerGeneral(lng , lat , type , imageTxt, message ,msg_currentLocation , msg_nextLocation ){
+  let newMarker;
+  const emojiMarker = document.createElement('div');
+  emojiMarker.className = 'custom-mapbox-pin';
+  
+  const emojiInner = document.createElement('div');
+  emojiInner.className = 'custom-pin-emoji';
+  emojiInner.textContent = imageTxt;
+  emojiMarker.appendChild(emojiInner);
+
+  const popupContent = `
+  <div class="message">
+      <div class="main">${message}</div>
+      <p class="currentLocation"> <strong>Current Location : </strong>${msg_currentLocation}</p>
+      <p class ="nextLocation"> <strong>Next Location : </strong>${msg_nextLocation}</p>
+  </div>
+`;
+
+  if(type === "start"){
+    //change emoji
+    emojiMarker.style.setProperty('--marker-color', '#27548A');
+    
+  }else if(type === "stop"){
+    //Drop off point
+    emojiMarker.style.setProperty('--marker-color', '#00CED1');
+  }else{
+    //Transition
+    emojiMarker.style.setProperty('--marker-color', '#F0F4F7');
+  }
+
+  // Add Marker
+  newMarker =  new mapboxgl.Marker({ element:emojiMarker, anchor: 'bottom' }) // Adjust based on pin height
+  .setLngLat([lng, lat])
+  .setPopup(popupContent)
+  .addTo(map);
+
+  new mapboxgl.Marker({color:'#A020F0'}) // Default red one
+  .setLngLat([lng, lat])
+  .addTo(map);
+ //add to collector
+ if(newMarker) generalMarkerCollector.push(newMarker);
+  
+}
+
 function allMarkersPlaced(){
   return sourceMarker != null && destinationMarker != null;
 }
 
+function ExecutePriceToggleBtn() {
+  const toggle = document.getElementById("toggle");
+  toggle.classList.toggle("active");
+
+  // If you want to change labels dynamically, you can do this:
+  const offPriceLabel = document.querySelector(".price-off");
+  const onPriceLabel = document.querySelector(".price-on");
+
+  if (toggle.classList.contains("active")) {
+    offPriceLabel.style.opacity = "0.5"; // Dim Taxi label
+      onPriceLabel.style.opacity = "1";   // Highlight Walk label
+      removeCheck();
+
+      if(storedListRoutes){
+        //remove existing 
+        removeExistingRoutes();
+        //insert new 
+        storedListRoutes.forEach((route , index)=>{
+          console.log(`Drawing route ${index}:`, route);
+          loadMiniRoutes(route.drawableCoords , route.travelMethod, index , priceColors[index] );
+        });
+      }else{
+        console.error("listRoutes stored is null");
+      }
+
+  } else {
+      offPriceLabel.style.opacity = "1";   // Highlight Taxi label
+      onPriceLabel.style.opacity = "0.5"; // Dim Walk label
+      removeExistingRoutes();
+      redrawCoords();
+  }
+}
 
 //creating routes
-// function loadMiniRoutes(miniroutes ) {
 
-//   let arrCoords = [];
-//   miniroutes.forEach((route, index) => {
-//       const routeSourceId = `route-source-${index}`;
-//       const routeLayerId = `route-line-${index}`;
-
-//       const convertedCoords = route.coordinates.map(coord => [coord.longitude, coord.latitude]);
-//       // Convert each mini-route to GeoJSON
-//       const routeFeatures = {
-//           type: 'Feature',
-//           properties: {},
-//           geometry: {
-//               type: 'LineString',
-//               coordinates: convertedCoords
-//           }
-//       };
-
-//       // Add a new source for each route
-//       map.addSource(routeSourceId, { 
-//           type: 'geojson',
-//           data: {
-//               type: 'FeatureCollection',
-//               features: [routeFeatures] 
-//           }
-//       });
-
-//       // Add a new layer for each route
-
-//       let paintOption ;
-//       if(route.travelMethod === 'Walk'){
-//           paintOption =  {
-//                   'line-color': '#FF0000', // Line color
-//                   'line-width': 4,         // Line thickness
-//                   'line-dasharray': [0, 2] // [dash length, gap length] in units of line-width
-//               };
-//       }else{
-//           paintOption = {
-//               'line-color': 'blue',
-//               'line-width': 4,
-//           }
-//       }
-
-//       map.addLayer({
-//           id: routeLayerId,
-//           type: 'line',
-//           source: routeSourceId,
-//           layout: {
-//               'line-cap': 'round',
-//               'line-join': 'round'
-//           },
-//           paint: paintOption
-//       });
-
-//       arrCoords.push(convertedCoords);
-
-//   });
-
-//   if(arrCoords.length === 0){
-//       const finalCoords = arrCoords.flat();
-//       zoomRoute(finalCoords);
-//   }
-// }
-
-// function loadMiniRoutes(miniroutes , travelMethod , fIndex) {
-
-//   if (!map || !map.isStyleLoaded()) {
-//     console.error("Map is not ready yet");
-//     return;
-// }
-
-
-//   let arrCoords = [];
-//   miniroutes.forEach((route, index) => {
-//       const routeSourceId = `route-source-${index}-${fIndex}`;
-//       const routeLayerId = `route-line-${index}-${fIndex}`;
-
-//       // Convert each mini-route to GeoJSON
-//       const routeFeatures = {
-//           type: 'Feature',
-//           properties: {},
-//           geometry: {
-//               type: 'LineString',
-//               coordinates: route
-//           }
-//       };
-
-//       // Add a new source for each route
-//       map.addSource(routeSourceId, { 
-//           type: 'geojson',
-//           data: {
-//               type: 'FeatureCollection',
-//               features: [routeFeatures] 
-//           }
-//       });
-
-//       // Add a new layer for each route
-
-//       let paintOption ;
-//       if(travelMethod === 'Walk'){
-//           paintOption =  {
-//                   'line-color': '#FF0000', // Line color
-//                   'line-width': 4,         // Line thickness
-//                   'line-dasharray': [0, 2] // [dash length, gap length] in units of line-width
-//               };
-//       }else{
-//           paintOption = {
-//               'line-color': 'blue',
-//               'line-width': 4,
-//           }
-//       }
-
-//       map.addLayer({
-//           id: routeLayerId,
-//           type: 'line',
-//           source: routeSourceId,
-//           layout: {
-//               'line-cap': 'round',
-//               'line-join': 'round'
-//           },
-//           paint: paintOption
-//       });
-
-//       //arrCoords.push(route[index]);
-
-//   });
-
-//   // if(arrCoords){
-//   //     const finalCoords = arrCoords.flat();
-//   //     zoomRoute(finalCoords);
-//   // }
-// }
-
-
-function loadMiniRoutes(miniroutes, travelMethod, fIndex , color) {
-  // if (!map || !map.isStyleLoaded()) {
-  //     console.error("Map is not ready yet");
-  //     return;
-  // }
+function loadMiniRoutes(miniroutes, travelMethod, fIndex , color ) {
 
   miniroutes.forEach((route, index) => {
+    console.log(`route in loadMiniRoutes ${fIndex}`);
       const routeSourceId = `route-source-${fIndex}-${index}`;
       const routeLayerId = `route-line-${fIndex}-${index}`;
 
@@ -686,6 +753,7 @@ function loadMiniRoutes(miniroutes, travelMethod, fIndex , color) {
           }
       });
 
+  
       // Choose line styling
       let paintOption = travelMethod === 'Walk' ? {
           'line-color': '#FF0000',
@@ -707,6 +775,28 @@ function loadMiniRoutes(miniroutes, travelMethod, fIndex , color) {
           },
           paint: paintOption
       });
+  });
+}
+
+function removeExistingRoutes() {
+
+
+  if (!map.getStyle() || !map.getStyle().layers) return;
+
+  // Get all layers and sources in the map
+  const layers = map.getStyle().layers.map(layer => layer.id);
+
+  layers.forEach(layerId => {
+      if (layerId.startsWith('route-line-')) {
+          map.removeLayer(layerId);
+      }
+  });
+
+  // Get all sources and remove those related to routes
+  Object.keys(map.getStyle().sources).forEach(sourceId => {
+      if (sourceId.startsWith('route-source-')) {
+          map.removeSource(sourceId);
+      }
   });
 }
 
@@ -795,6 +885,79 @@ function removeAllDirectionBtns(){
     }
 }
 
+function movement(coordinates , color){
+  //Animation implementation
+  if(movementExists === false){
+    incomingMovement = false;
+  }
+
+  movementExists = true;
+  if(!coordinates){
+      console.log("Coordinates are empty or null [In :movement function]");
+      return;
+  }
+
+  if(incomingMovement){
+    return;
+  }
+const movementCoordinates = smoothenCoordinates(coordinates);
+  // Add a moving taxi marker
+const taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
+.setLngLat(movementCoordinates[0]) // Start at first point
+.addTo(map);
+
+// Animate the taxi along the route
+let index = 0;
+function moveTaxi() {
+if (index <movementCoordinates.length - 1) {
+if(index === movementCoordinates.length - 2){
+  index = 0
+}else{
+  index++;
+}
+taxiMarker.setLngLat(movementCoordinates[index]);
+setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
+}
+}
+
+moveTaxi(); // Start animation
+}
+
+function smoothenCoordinates(coordinates){
+    // Convert to a Turf.js LineString
+const line = turf.lineString(coordinates);
+
+// Calculate the total length of the route in kilometers
+const lineLength = turf.length(line, { units: 'kilometers' });
+
+// Define the number of points you want to generate
+const numberOfPoints = 100; // More points = smoother animation
+
+// Calculate interval distance
+const interval = lineLength / numberOfPoints;
+
+// Generate evenly spaced points along the route
+const smoothCoordinates = [];
+for (let i = 0; i <= lineLength; i += interval) {
+const interpolatedPoint = turf.along(line, i, { units: 'kilometers' });
+smoothCoordinates.push(interpolatedPoint.geometry.coordinates);
+}
+
+return smoothCoordinates;
+}
+
+function createTaxiElement(color) {
+  const el = document.createElement('div');
+  el.classList.add("movingDirectionCircle");
+  el.style.width = '20px';
+  el.style.height = '20px';
+  el.style.backgroundColor = color;
+  el.style.backgroundSize = 'cover';
+  el.style.border = '2px solid red';
+  el.style.borderRadius = '50%'; // Optional: make it round
+  return el;
+}
+
 //Direction calculations
 
 // Function to find matching segments between full path and direction path
@@ -854,6 +1017,13 @@ function distance(coord1, coord2) {
   let [lon1, lat1] = coord1;
   let [lon2, lat2] = coord2;
   return Math.sqrt(Math.pow(lon2 - lon1, 2) + Math.pow(lat2 - lat1, 2));
+}
+
+function removeCheck() {
+  let selectedStyle = document.querySelector('input[name="type"]:checked');
+  if (selectedStyle) {
+      selectedStyle.checked = false;
+  }
 }
 
 

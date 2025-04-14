@@ -338,11 +338,6 @@ function removeExistingRoutes() {
             map.removeSource(sourceId);
         }
     });
-
-    //Remove the directions of the previous route
-    removeDirections();
-
-    //remove 
 }
 
 function loadMiniRoutes(miniroutes , travelMethod) {
