@@ -21,13 +21,14 @@ import * as turf from '@turf/turf';
  const inputDestinationLocation = document.querySelector('.search_input.destination');
 
  //prices listing
- const rightPriceList = document.querySelector('.listSub_container.list_right');
- const leftPriceList = document.querySelector('.listSub_container.list_left');
  const priceToogleButton  = document.querySelector(".toggle-container");
+
  //direction prices
- const directionContainer = document.querySelector('.direction_container');
+ const directionContainer = document.querySelector('.direction_container .sub_direction_container');
+ const defaultDirectionButton = document.querySelector('.default_direction_button');
  let incomingMovement = false;
  let movementExists = false;
+ let  taxiMarker;
 
  //=== VARIABLES ===
  const toggleMap = new Map([
@@ -225,9 +226,15 @@ map.on('click', async (e) => {
   
  });
 
+ //default directions 
+ defaultDirectionButton.addEventListener('click' , (e)=>{
+  redrawCoords();
+ });
+
  priceToogleButton.addEventListener('click' , (e)=>{
     ExecutePriceToggleBtn();
  });
+
 
  //=== FUNCTIONS ===
 
@@ -332,6 +339,10 @@ map.on('click', async (e) => {
 
 
         //create prices
+
+        //remove existing price list if present
+        removeAllPrices();
+
         const priceInfo = dataReceived.prices; 
         const listOfPrices = priceInfo.listOfPrices;
 
@@ -344,6 +355,10 @@ map.on('click', async (e) => {
         //END SECTION TO SEPERATE
 
         //create directions
+
+        //remove existing directions
+        removeAllDirectionBtns();
+
         const listOfDirections = dataReceived.directions.result;
 
         directionStorage = [...listOfDirections];  // destructuring directions
@@ -378,6 +393,7 @@ async function getAdress(lng , lat){
 
 function redrawCoords(){
   //draw routes
+  if(!storedListRoutes || storedListRoutes.length === 0) return;
   storedListRoutes.forEach((route , index)=>{
     console.log(`Drawing route ${index}:`, route);
     loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  'blue' );
@@ -666,7 +682,7 @@ function placeMarkerGeneral(lng , lat , type , imageTxt, message ,msg_currentLoc
   // Add Marker
   newMarker =  new mapboxgl.Marker({ element:emojiMarker, anchor: 'bottom' }) // Adjust based on pin height
   .setLngLat([lng, lat])
-  .setPopup(popupContent)
+  .setPopup(new mapboxgl.Popup().setHTML(popupContent))
   .addTo(map);
 
   new mapboxgl.Marker({color:'#A020F0'}) // Default red one
@@ -863,7 +879,7 @@ function removeAllPrices(){
     }
 
     //default total
-    sumOfPrices = 0;
+    document.querySelector(".total_price p:last-child").textContent = `R${0}`;
 }
 
 //managing directions 
@@ -902,7 +918,7 @@ function movement(coordinates , color){
   }
 const movementCoordinates = smoothenCoordinates(coordinates);
   // Add a moving taxi marker
-const taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
+ taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
 .setLngLat(movementCoordinates[0]) // Start at first point
 .addTo(map);
 
@@ -931,7 +947,7 @@ const line = turf.lineString(coordinates);
 const lineLength = turf.length(line, { units: 'kilometers' });
 
 // Define the number of points you want to generate
-const numberOfPoints = 100; // More points = smoother animation
+const numberOfPoints = 1000; // More points = smoother animation
 
 // Calculate interval distance
 const interval = lineLength / numberOfPoints;
@@ -958,6 +974,9 @@ function createTaxiElement(color) {
   return el;
 }
 
+function RemoveTaxiMarker(){
+  taxiMarker.
+}
 //Direction calculations
 
 // Function to find matching segments between full path and direction path
