@@ -28,7 +28,13 @@ import * as turf from '@turf/turf';
  const defaultDirectionButton = document.querySelector('.default_direction_button');
  let incomingMovement = false;
  let movementExists = false;
- let  taxiMarker;
+ let  taxiMarker=  null;
+
+ //arrow button
+ const ArrowBtn = document.getElementById('toggleBtn');
+ const mapContainer = document.querySelector('.map_container');
+ const mapEl  = document.getElementById('map');
+ let isTextDirectionOpen = false;
 
  //=== VARIABLES ===
  const toggleMap = new Map([
@@ -40,6 +46,7 @@ import * as turf from '@turf/turf';
  let sourceMarker = null;
  let destinationMarker = null;
  let generalMarkerCollector = [];
+
  //confirmation menu vars
  let isOpen_confirmationMenu = false;
  let isYes = false;
@@ -50,10 +57,12 @@ import * as turf from '@turf/turf';
  //save the coordinates
  let sourceCoordinates = { latitude: -500, longitude: -500 };
  let destinationCoordinates = { latitude: -500, longitude: -500};
+
  //Row prices
  let sumOfPrices = 0;
  let storedListRoutes ;
  let walkingCoords = [];
+
  //sending search Info vars
  const listOfProvinces = ["Limpopo" , "Gauteng" , "Mpumalanga" , "Western Cape" , "kwazulu-natal" , "Eastern Cape" , "North West" , "Free State" , "Northern Cape"];
 
@@ -65,6 +74,8 @@ import * as turf from '@turf/turf';
 
  //direction storage
  let  directionStorage = [];
+ let textDirectionAddresses = [];
+
  // === MAP IMPLEMENTATION ===
 
  //mapbox setup
@@ -150,6 +161,33 @@ map.on('click', async (e) => {
    defaultToggleBtn.style.backgroundImage = "linear-gradient(#cccaca , white)";
  });
 
+ ArrowBtn.addEventListener('click', () => {
+  const isDown = ArrowBtn.classList.toggle('down');
+
+  if(isDown === true){
+    isTextDirectionOpen = true;
+    //Add the other page
+    let textMap = null;
+    if(textDirectionAddresses && textDirectionAddresses.length > 0){
+      //there is information to display
+       textMap = createTextMapContainer(textDirectionAddresses);
+       mapContainer.insertBefore(textMap , mapEl);
+       mapEl.style.width = "75%";
+    }else{
+      //there is no information to display
+      console.log("Thee is no Information");
+      const arrAddress = ['Oops: Text map is not loaded'];
+      textMap = createTextMapContainer(arrAddress); 
+      mapContainer.insertBefore(textMap , mapEl); 
+      mapEl.style.width = "75%";
+    }
+
+  }else{
+    isTextDirectionOpen = false;
+    removeTextDirections();
+    mapEl.style.width = "95%"
+  }
+});
 
  toToggleBtn.addEventListener('click' , ()=>{
     //incase the user the to button before from immediately
@@ -185,7 +223,7 @@ map.on('click', async (e) => {
  });
 
  //direction button listeners
- directionContainer.addEventListener('click' , (e)=>{
+ directionContainer.addEventListener('click' , async (e)=>{
   const dirBtnEl  = e.target.closest(".direction_button"); 
 
   if(!directionStorage){
@@ -222,7 +260,7 @@ map.on('click', async (e) => {
       incomingMovement = true;
       movementExists = false;
     }
-    movement(directionCoords.flat(), "#CEE6C2");
+   await movement(directionCoords.flat(), "#CEE6C2");
   
  });
 
@@ -244,6 +282,8 @@ map.on('click', async (e) => {
     //Remove an existsing route first 
     removeExistingRoutes();
 
+    //default text directions information
+    textDirectionAddresses = [];
     //create a new route
     const sourceAdress = inputCurrentLocation.value;
     const destinationAdress = inputDestinationLocation.value;
@@ -320,6 +360,8 @@ map.on('click', async (e) => {
           placeMarkerGeneral( sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]  , 'start' ,   '👆' , 'Raise the hand sign shown to stop a Taxi ' ,sourceAdress,`${dataReceived.chosenTaxiRanks[0].address}, [TaxiRank :${dataReceived.chosenTaxiRanks[0].name}]`);
         }
 
+        textDirectionAddresses.push(dataReceived.chosenTaxiRanks[0].address);
+
         //stop Marker
         const lastDestCoord = destinationCoords.length-1;
         const destAdress = await getAdress( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1] );
@@ -331,12 +373,26 @@ map.on('click', async (e) => {
           let taxiRank = dataReceived.chosenTaxiRanks[i];
           let nextTaxiRank = dataReceived.chosenTaxiRanks[i+1];
           placeMarkerGeneral(taxiRank.location_coord.longitude , taxiRank.location_coord.latitude , "taxiRank" , '>>' , " Message" , `${taxiRank.address}, [TaxiRank : ${taxiRank.name}] `,`${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`);
+          textDirectionAddresses.push(`${taxiRank.address}, [TaxiRank : ${taxiRank.name}]`);
         }
 
-        //Lat TaxiRank
+        //Last TaxiRank
         const lastTaxiRank = taxiRanksLength-1 ;
         placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
+        textDirectionAddresses.push(`${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`);
 
+        //store stop adress
+        textDirectionAddresses.push(destAdress);
+
+        //check to display text directions immediately
+        if(isTextDirectionOpen === true){
+          //remove existing
+          removeTextDirections();
+          //there is information to display
+       const textMap = createTextMapContainer(textDirectionAddresses);
+       mapContainer.insertBefore(textMap , mapEl);
+       mapEl.style.width = "75%";
+        }
 
         //create prices
 
@@ -652,12 +708,9 @@ function placeMarker(lng , lat , address){
 function placeMarkerGeneral(lng , lat , type , imageTxt, message ,msg_currentLocation , msg_nextLocation ){
   let newMarker;
   const emojiMarker = document.createElement('div');
-  emojiMarker.className = 'custom-mapbox-pin';
+  emojiMarker.className = 'custom-mapbox';
+  emojiMarker.innerHTML = imageTxt;
   
-  const emojiInner = document.createElement('div');
-  emojiInner.className = 'custom-pin-emoji';
-  emojiInner.textContent = imageTxt;
-  emojiMarker.appendChild(emojiInner);
 
   const popupContent = `
   <div class="message">
@@ -685,9 +738,7 @@ function placeMarkerGeneral(lng , lat , type , imageTxt, message ,msg_currentLoc
   .setPopup(new mapboxgl.Popup().setHTML(popupContent))
   .addTo(map);
 
-  new mapboxgl.Marker({color:'#A020F0'}) // Default red one
-  .setLngLat([lng, lat])
-  .addTo(map);
+
  //add to collector
  if(newMarker) generalMarkerCollector.push(newMarker);
   
@@ -901,7 +952,7 @@ function removeAllDirectionBtns(){
     }
 }
 
-function movement(coordinates , color){
+async function movement(coordinates , color){
   //Animation implementation
   if(movementExists === false){
     incomingMovement = false;
@@ -917,14 +968,18 @@ function movement(coordinates , color){
     return;
   }
 const movementCoordinates = smoothenCoordinates(coordinates);
-  // Add a moving taxi marker
- taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
-.setLngLat(movementCoordinates[0]) // Start at first point
-.addTo(map);
-
+   
+  // Add a moving taxi marker 
+      taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
+      .setLngLat(movementCoordinates[0]) // Start at first point
+      .addTo(map);
+    
+   
+ 
 // Animate the taxi along the route
 let index = 0;
 function moveTaxi() {
+  if(taxiMarker === null) return;
 if (index <movementCoordinates.length - 1) {
 if(index === movementCoordinates.length - 2){
   index = 0
@@ -975,7 +1030,13 @@ function createTaxiElement(color) {
 }
 
 function RemoveTaxiMarker(){
-  taxiMarker.
+ if(taxiMarker){
+  taxiMarker.remove();
+  taxiMarker = null;
+  return true;
+ }
+
+ return false;
 }
 //Direction calculations
 
@@ -1043,6 +1104,56 @@ function removeCheck() {
   if (selectedStyle) {
       selectedStyle.checked = false;
   }
+}
+
+//Managing text directions
+
+// Create a single text node element
+function createTextNode(text, showArrow) {
+  const textNode = document.createElement('div');
+  textNode.classList.add('text-node');
+
+  const textDir = document.createElement('div');
+  textDir.classList.add('textDir', 'bubble');
+  textDir.textContent = text;
+
+  textNode.appendChild(textDir);
+
+  if (showArrow === true) {
+      const arrowIcon = document.createElement('i');
+      arrowIcon.className = 'far fa-arrow-alt-circle-down';
+      arrowIcon.style.fontSize = '32px';
+      textNode.appendChild(arrowIcon);
+  }
+
+  return textNode;
+}
+
+// Create the whole text map container
+function createTextMapContainer(listOfAdresses) {
+  const container = document.createElement('div');
+  container.id = 'text-map';
+
+  console.log("List : " , listOfAdresses);
+  for (let i = 0; i < listOfAdresses.length ; i++) {
+      // Hide arrow in last node
+      console.log('Im here');
+      const showArrow = i !== (listOfAdresses.length - 1);
+      const textNode = createTextNode(listOfAdresses[i], showArrow);
+      console.log("TextNode : " , textNode);
+      container.appendChild(textNode);
+  }
+
+  return container;
+}
+
+function removeTextDirections(){
+  const container = document.getElementById('text-map');
+  if (container) {
+      container.innerHTML = ''; // This removes all child elements inside
+  }
+
+  container.remove();
 }
 
 

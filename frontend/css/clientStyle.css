@@ -263,6 +263,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
    display: flex;
    align-items: center;
    cursor: pointer;
+   margin-bottom: 20px;
  }
  
  .toggle-button {
@@ -302,40 +303,18 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 
  /* Markers design*/
 
- .custom-mapbox-pin {
+
+ .custom-mapbox {
    --marker-color: #3fb1ce;
  
-   width: 30px;
-   height: 50px; /* includes pin and tip */
    background: var(--marker-color);
-   border-radius: 15px 15px 50% 50%;
-   position: relative;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-   transform: rotate(0deg);
-   transform-origin: center bottom;
-   overflow: visible;
- }
- 
- .custom-mapbox-pin::after {
-   content: "";
-   position: absolute;
-   bottom: -10px;
-   left: 50%;
-   transform: translateX(-50%);
-   width: 0;
-   height: 0;
-   border-left: 10px solid transparent;
-   border-right: 10px solid transparent;
-   border-top: 10px solid var(--marker-color);
- }
- 
- .custom-pin-emoji {
-   font-size: 18px;
-   line-height: 1;
-   z-index: 1;
+   font-size: 20px;
+   line-height: 40px;
+   width:50px;
+   border-radius: 20px;
+   color:#e7be1a;
+   text-align: center;
+   cursor: pointer;
  }
  
  .message{
@@ -350,13 +329,72 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
  }
  
 /* == MAP SECTION ==*/
+.map_container{
+   width: 70%;
+   height: 98vh;
+   position: relative;
+   top:5px;
+   right:5px;
+   display: flex;
+   flex-direction: row;
+   gap:10px;
+}
+
+#text-map{
+   width:20%;
+   height: 98vh;
+}
+
+.text-node{
+   margin-top: 15px;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   gap:10px;
+}
 
 #map {
-  width: 70%;
+  width: 95%;
   height: 98vh;
   border: 2px solid black;
   border-radius: 10px;
-  position: relative;
-  top:5px;
-  right:5px;
+ }
+
+
+ .circle-button {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   border: 3px solid grey;
+   background-color: white;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   transition: transform 0.3s;
+ }
+
+ .arrow {
+   width: 1px;
+   height: 1px;
+   border-left: 15px solid grey;
+   border-top: 10px solid transparent;
+   border-bottom: 10px solid transparent;
+ 
+   transition: transform 0.3s;
+ }
+
+ .down .arrow {
+   transform: rotate(90deg);
+   border-left: 15px solid green;
+ }
+
+ .textDir.bubble{
+   border:4px solid black;
+   padding:10px;
+   text-align: center;
+   width:90%;
+   height:50px;
+   border-radius: 10px;
  }

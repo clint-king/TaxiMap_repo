@@ -6,9 +6,10 @@
   <title>Multi-Taxi Path with Mapbox</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
   <link rel="stylesheet" href="./css/clientStyle.css">
+ 
 </head>
 <body>
      <!--Ui section-->
@@ -102,12 +103,62 @@
   </div>
 
      <!--Map-->
-   <div id="map">
-  </div>
+    <div class="map_container">
+        <div id="toggleBtn" class="circle-button">
+            <div class="arrow"></div>
+          </div>
+
+        <!-- <div id="text-map"> -->
+
+            <!-- <div class="text-node-fail">
+                <div class="textDir bubble">Failed:Could not load text Map</div> 
+            </div> -->
+
+            <!-- <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+           
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
+            </div>
+
+            <div class="text-node">
+                <div class="textDir bubble">Nkowankowa , Starting</div>
+            </div> -->
+        <!-- </div> -->
+
+        <div id="map">
+        </div>
+    </div>
+   
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
   <script  type="module" src="./js/client.js"></script>
+
+
 </body>
 </html>
