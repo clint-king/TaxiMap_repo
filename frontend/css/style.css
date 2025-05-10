@@ -25,6 +25,13 @@ h1{
     text-align: center;
 }
 /** Table **/
+.grid-table{
+  height:87%;
+}
+.grid-row-container{
+  overflow-y: scroll;
+  height:93%;
+}
 /* Ensure rows appear as blocks with borders and shadows */
 .grid-row {
   display: flex; /* Change from 'contents' to 'flex' */

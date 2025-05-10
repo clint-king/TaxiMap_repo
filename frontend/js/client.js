@@ -15,6 +15,7 @@ import * as turf from '@turf/turf';
 
 
  //search input
+ const searchContainer = document.querySelector(".search_container");
  const currentLocation = document.querySelector(".listSource");
  const destinationLocation = document.querySelector('.listDestination');
  const inputCurrentLocation = document.querySelector('.search_input.source');
@@ -29,12 +30,15 @@ import * as turf from '@turf/turf';
  let incomingMovement = false;
  let movementExists = false;
  let  taxiMarker=  null;
+ let moveTimer = null;
 
  //arrow button
  const ArrowBtn = document.getElementById('toggleBtn');
  const mapContainer = document.querySelector('.map_container');
  const mapEl  = document.getElementById('map');
  let isTextDirectionOpen = false;
+
+ 
 
  //=== VARIABLES ===
  const toggleMap = new Map([
@@ -150,6 +154,13 @@ map.on('click', async (e) => {
   });
 
  // === EVENT LISTENERS ====
+ document.addEventListener('click' , (event)=>{
+  if (!searchContainer.contains(event.target) && !currentLocation.contains(event.target) && !destinationLocation.contains(event.target)) {
+    currentLocation.innerHTML = '';
+    destinationLocation.innerHTML = '';
+  }
+ });
+
  fromToggleBtn.addEventListener('click' , ()=>{
     //incase the user the to button before from immediately
     defaultRetreat();
@@ -170,14 +181,14 @@ map.on('click', async (e) => {
     let textMap = null;
     if(textDirectionAddresses && textDirectionAddresses.length > 0){
       //there is information to display
-       textMap = createTextMapContainer(textDirectionAddresses);
+       textMap = createTextMapContainer(textDirectionAddresses , false);
        mapContainer.insertBefore(textMap , mapEl);
        mapEl.style.width = "75%";
     }else{
       //there is no information to display
       console.log("Thee is no Information");
       const arrAddress = ['Oops: Text map is not loaded'];
-      textMap = createTextMapContainer(arrAddress); 
+      textMap = createTextMapContainer(arrAddress , true); 
       mapContainer.insertBefore(textMap , mapEl); 
       mapEl.style.width = "75%";
     }
@@ -266,6 +277,7 @@ map.on('click', async (e) => {
 
  //default directions 
  defaultDirectionButton.addEventListener('click' , (e)=>{
+  removeExistingObject();
   redrawCoords();
  });
 
@@ -354,7 +366,6 @@ map.on('click', async (e) => {
         const lastSourceCoord = sourceCoords.length-1;
         const sourceAdress = await getAdress(sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]);
         if(listOfRoutes.length === 1){
-   
           placeMarkerGeneral( sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]  , 'start' ,   '👇' , 'Raise the hand sign shown to stop a Taxi' ,  sourceAdress, dataReceived.chosenTaxiRanks[0].address);
         }else if(listOfRoutes.length > 1){
           placeMarkerGeneral( sourceCoords[lastSourceCoord][0] , sourceCoords[lastSourceCoord][1]  , 'start' ,   '👆' , 'Raise the hand sign shown to stop a Taxi ' ,sourceAdress,`${dataReceived.chosenTaxiRanks[0].address}, [TaxiRank :${dataReceived.chosenTaxiRanks[0].name}]`);
@@ -365,21 +376,21 @@ map.on('click', async (e) => {
         //stop Marker
         const lastDestCoord = destinationCoords.length-1;
         const destAdress = await getAdress( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1] );
-        placeMarkerGeneral( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1]   , 'stop' ,  '🛑', `Please ask the Taxi driver to stop at this point`, destAdress);
+        placeMarkerGeneral( destinationCoords[lastDestCoord][0]  , destinationCoords[lastDestCoord][1]   , 'stop' ,  '🛑', `Please ask the Taxi driver to stop at this point`, destAdress , "Empty");
 
         //TaxiRank Markers
         const taxiRanksLength = dataReceived.chosenTaxiRanks.length;
         for(let  i = 0 ; i <  taxiRanksLength-1 ; i++){
           let taxiRank = dataReceived.chosenTaxiRanks[i];
           let nextTaxiRank = dataReceived.chosenTaxiRanks[i+1];
-          placeMarkerGeneral(taxiRank.location_coord.longitude , taxiRank.location_coord.latitude , "taxiRank" , '>>' , " Message" , `${taxiRank.address}, [TaxiRank : ${taxiRank.name}] `,`${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`);
+          placeMarkerGeneral(taxiRank.location_coord.longitude , taxiRank.location_coord.latitude , "taxiRank" , '>>' , " Take a Taxi that is going to the Next Location(Walk to the Next Location if the Path is in dots)" , `${taxiRank.address}, [TaxiRank : ${taxiRank.name}] `,`${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`);
           textDirectionAddresses.push(`${taxiRank.address}, [TaxiRank : ${taxiRank.name}]`);
         }
 
-        //Last TaxiRank
-        const lastTaxiRank = taxiRanksLength-1 ;
-        placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
-        textDirectionAddresses.push(`${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`);
+        // //Last TaxiRank
+        // const lastTaxiRank = taxiRanksLength-1 ;
+        // placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
+        // textDirectionAddresses.push(`${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`);
 
         //store stop adress
         textDirectionAddresses.push(destAdress);
@@ -389,7 +400,7 @@ map.on('click', async (e) => {
           //remove existing
           removeTextDirections();
           //there is information to display
-       const textMap = createTextMapContainer(textDirectionAddresses);
+       const textMap = createTextMapContainer(textDirectionAddresses , false);
        mapContainer.insertBefore(textMap , mapEl);
        mapEl.style.width = "75%";
         }
@@ -405,7 +416,7 @@ map.on('click', async (e) => {
         for(let i = 0 ; i < listOfPrices.length ; i++){
           const price = listOfPrices[i].price;
           const routeName = listOfRoutes[i].name;
-          createPricerow(routeName , price , priceColors[i]);
+          createPricerow(routeName , price , listOfPrices[i].travelMethod == "Walk" ? "red": priceColors[i]);
         }
 
         //END SECTION TO SEPERATE
@@ -418,6 +429,8 @@ map.on('click', async (e) => {
         const listOfDirections = dataReceived.directions.result;
 
         directionStorage = [...listOfDirections];  // destructuring directions
+
+        console.log("**** DIRECTIONS STORED **** : " , directionStorage);
         listOfDirections.forEach((direction , index)=>{
           createDirections(`D${index+1}` , directionButtonColors[index] , index);
         });
@@ -522,6 +535,11 @@ async function fetchSuggestions(suggestions, query) {
     const response = await fetch(url);
     const data = await response.json();
 
+    if(suggestions == currentLocation ){
+      destinationLocation.innerHTML = '';
+    }else{
+      currentLocation.innerHTML = '';
+    }
     // Populate the dropdown with suggestions
     suggestions.innerHTML = '';
     if (data.features.length > 0) {
@@ -767,7 +785,8 @@ function ExecutePriceToggleBtn() {
         //insert new 
         storedListRoutes.forEach((route , index)=>{
           console.log(`Drawing route ${index}:`, route);
-          loadMiniRoutes(route.drawableCoords , route.travelMethod, index , priceColors[index] );
+        
+          loadMiniRoutes(route.drawableCoords , route.travelMethod, index ,  priceColors[index] );
         });
       }else{
         console.error("listRoutes stored is null");
@@ -968,7 +987,10 @@ async function movement(coordinates , color){
     return;
   }
 const movementCoordinates = smoothenCoordinates(coordinates);
-   
+
+
+   removeExistingObject();
+
   // Add a moving taxi marker 
       taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
       .setLngLat(movementCoordinates[0]) // Start at first point
@@ -987,7 +1009,7 @@ if(index === movementCoordinates.length - 2){
   index++;
 }
 taxiMarker.setLngLat(movementCoordinates[index]);
-setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
+moveTimer = setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
 }
 }
 
@@ -1015,6 +1037,19 @@ smoothCoordinates.push(interpolatedPoint.geometry.coordinates);
 }
 
 return smoothCoordinates;
+}
+
+function removeExistingObject(){
+   // STOP previous animation and REMOVE previous marker
+   if (moveTimer) {
+    clearTimeout(moveTimer); // stop animation loop
+    moveTimer = null;
+  }
+
+  if (taxiMarker !== null) {
+    taxiMarker.remove(); // remove from map
+    taxiMarker = null;   // clear reference
+  }
 }
 
 function createTaxiElement(color) {
@@ -1109,14 +1144,21 @@ function removeCheck() {
 //Managing text directions
 
 // Create a single text node element
-function createTextNode(text, showArrow) {
+function createTextNode(text, showArrow , markerColor , emoji) {
   const textNode = document.createElement('div');
   textNode.classList.add('text-node');
+
+  const emojiMarker = document.createElement('div');
+  emojiMarker.classList.add("custom-mapbox");
+  emojiMarker.innerHTML = emoji;
+  emojiMarker.style.setProperty('--marker-color', markerColor);
+
 
   const textDir = document.createElement('div');
   textDir.classList.add('textDir', 'bubble');
   textDir.textContent = text;
 
+  textNode.appendChild(emojiMarker);
   textNode.appendChild(textDir);
 
   if (showArrow === true) {
@@ -1130,7 +1172,7 @@ function createTextNode(text, showArrow) {
 }
 
 // Create the whole text map container
-function createTextMapContainer(listOfAdresses) {
+function createTextMapContainer(listOfAdresses , isDefault) {
   const container = document.createElement('div');
   container.id = 'text-map';
 
@@ -1139,8 +1181,17 @@ function createTextMapContainer(listOfAdresses) {
       // Hide arrow in last node
       console.log('Im here');
       const showArrow = i !== (listOfAdresses.length - 1);
-      const textNode = createTextNode(listOfAdresses[i], showArrow);
-      console.log("TextNode : " , textNode);
+      let textNode = null;
+      if(i == 0 && isDefault == false){
+         textNode = createTextNode(listOfAdresses[i], showArrow, "#27548A" , "👆");
+      }else if(i == 0 && isDefault == true){
+        textNode = createTextNode(listOfAdresses[i], showArrow, "red" , "ER");
+      }else if(i == listOfAdresses.length-1){
+        textNode = createTextNode(listOfAdresses[i], showArrow, "#00CED1" , '🛑');
+      }else{
+        textNode = createTextNode(listOfAdresses[i], showArrow, "#F0F4F7" , ">>");
+      }
+     
       container.appendChild(textNode);
   }
 

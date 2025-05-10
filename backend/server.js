@@ -21,6 +21,7 @@ app.use("/admin", adminRoutes);
 app.use("/client" , clientRoutes);
 
 
+
 app.listen(port , ()=>{
     console.log(`Server running on server ${port}`);
 })

@@ -678,7 +678,7 @@ function PriceCalc(chosenRoutes){
     
     chosenRoutes.forEach((route)=>{
         const tempPrice = Number(route.price);
-        listPrices.push({name:route.name , price:tempPrice});
+        listPrices.push({name:route.name , price:tempPrice , travelMethod:route.travelMethod});
         totalPrice += tempPrice;
     });
 

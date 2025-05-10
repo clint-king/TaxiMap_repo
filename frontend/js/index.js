@@ -128,6 +128,7 @@ const editCloseButton = document.querySelector("#editing_close_button");
 
 //Grid elements
 const gridTableDiv = document.querySelector(".grid-table");
+const gridRowContainer = document.querySelector(".grid-row-container");
 
 const taxiRankAddInfo = {
   name: '',
@@ -479,7 +480,8 @@ function createGridRow(ID ,taxiName , provinceName , addressName , numRoutes) {
   lastCell.appendChild(multiButton);
   gridRow.appendChild(lastCell);
 
-  gridTableDiv.appendChild(gridRow);
+  // gridTableDiv.appendChild(gridRow);
+  gridRowContainer.appendChild(gridRow);
 }
 
 async function addSingleInfoOnTable(){
