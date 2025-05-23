@@ -10,13 +10,23 @@ body {
    }
    /* == UI SECTION == */
 #ui_container{
-   width:30%;
+   width:20%;
    height:100vh;
    overflow: hidden;
    display: flex;
    flex-direction: column;
    align-items: center;
    justify-content: space-between;
+}
+
+.ui_panel{
+   position: absolute;
+   left:2px;
+   top:2px;
+   width:2%;;
+   height:99%;
+   border: 3px solid black;
+   border-radius: 10px;
 }
 
 .search_container{
@@ -339,7 +349,6 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 
  /* Markers design*/
 
-
  .custom-mapbox {
    --marker-color: #3fb1ce;
  
@@ -366,7 +375,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
  
 /* == MAP SECTION ==*/
 .map_container{
-   width: 70%;
+   width: 80%;
    height: 98vh;
    position: relative;
    top:5px;

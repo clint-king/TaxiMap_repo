@@ -10,6 +10,9 @@ export const findingPath = async(req,res)=>{
     if(!sourceCoords || !sourceProvince || !destinationCoords || !destinationProvince){
         return res.status(400).send("Missing required fields");
     }
+    //count of farms a
+    let countObj = {countSource:0 , countDest:0};
+    let arr = [];
 
     console.log("Fields : " , sourceCoords , sourceProvince , destinationCoords , destinationProvince);
     //get routes in the provinces of the source and destination points only (Filtering function)
@@ -24,11 +27,17 @@ export const findingPath = async(req,res)=>{
         console.log("Could not format routes");
         return res.status(400).send("Internal server error");
     }
-
     console.log("formatedRoutes : " , formatedRoutes);
+
+
+    //closestTaxiRanksF(arr , countObj , formatedRoutes , sourceCoords , destinationCoords );
+    /****************** */
 
     //get the closest routes to the source and destination points
     const routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
+  
+
+
     const routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
 
     if(routeCloseToSource.closestRoute === null || routeCloseToSource.closestRoute === null){
@@ -51,6 +60,9 @@ export const findingPath = async(req,res)=>{
 
     // *** When routes connect
     
+    /************************* */
+
+
     //Check if routes connect 
     const ranksIDs = closestTaxiRanks.result;
     const commonPath = routesConnectionCheck(ranksIDs.firstR_taxiRankSource , ranksIDs.firstR_taxiRankDestination , ranksIDs.secR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
@@ -79,7 +91,7 @@ export const findingPath = async(req,res)=>{
 
   //   //get The Taxi TaxiRank 
     const formedTaxiIds = ['ranksIDs.firstR_taxiRankSource' , 'ranksIDs.firstR_taxiRankDestination' , 'ranksIDs.secR_taxiRankSource'];
-    const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds );
+    const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds);
 
     if(chosenTaxiRanks1 === null || chosenTaxiRanks1.length === 0){
         console.log("chosenTaxiRanks is null or has length of zero");
@@ -116,8 +128,6 @@ export const findingPath = async(req,res)=>{
     //check if source has a right destination (sourceLong < destinationLong)
     sourceTaxiRankRank = ranksIDs.firstR_taxiRankDestination;
     destinationTaxiRank = ranksIDs.secR_taxiRankSource;
-    console.log("*****************WENT THROUGH THE OTHER OPTION");
-
     }else{
      //check when longitudes are equal
 
@@ -180,6 +190,37 @@ export const findingPath = async(req,res)=>{
         chosenTaxiRanks:chosenTaxiRanks
     });
 }
+
+
+async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes , sourceCoords , destinationCoords){
+    const routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
+    const routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
+
+    
+
+    if(routeCloseToSource.closestRoute === null || routeCloseToSource.closestRoute === null){
+        console.log("Could not get the closest routes in [findingPath]");
+        return res.status(400).send("Internal server error");
+    }
+
+    console.log("routeCloseToSource : " , routeCloseToSource);
+    console.log("routeCloseToDest : ", routeCloseToDest);
+
+    //get the nearest taxiRank
+    const closestTaxiRanks = await getTheTaxiRanks(routeCloseToSource.closestRoute.id , routeCloseToDest.closestRoute.id);
+    console.log("closestTaxiRanks : " , closestTaxiRanks);
+
+    //check TaxiRank IDs returned
+    if((await closestTaxiRanks).status != 200){
+        console.log((await closestTaxiRanks).message);
+        return res.status((await closestTaxiRanks).status).send((await closestTaxiRanks).message);
+    }
+
+    //save the info in an array 
+    routeExploredArr.push()
+    //return the needed variables 
+}
+
 
 // === FUNCTIONS === 
 async function filterAreas(sourceProv, destinationProv) {

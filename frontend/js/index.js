@@ -18,9 +18,6 @@ map.fitBounds([
 [33.105929612928605, -22.069255932789716]
 ]);
 
-//stores coordinates
-let markerLocationStorage = [];
-
 //stores marker objects
 let allMarkerObjects = [];
 
@@ -140,36 +137,6 @@ const taxiRankAddInfo = {
 let mapIdCount = 0;
 
 
-// === GETTING COORDINATES ===
-// Define the route origin and destination coordinates
-// const origin = [
-//   30.16315768196048,
-//   -23.8243333792574
-// ]; // New York City (Longitude, Latitude)
-// const destination =  [
-//   28.264803632144577,
-//   -25.73058042479326
-// ]; // Los Angeles (Longitude, Latitude)
-
-// // Mapbox Directions API endpoint
-// const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
-
-// fetch(url)
-//   .then(response => response.json())
-//   .then(data => {
-//     // Get the route geometry (coordinates of the path)
-//     const route = data.routes[0].geometry.coordinates;
-
-//     // Log the coordinates of the path
-//     console.log( 'Cordinates for a route' , route); // Array of coordinates for the entire path
-//   })
-//   .catch(error => console.error('Error fetching route data:', error));
-
-
-  //=== END OF COORDINATES ====
-
-
-
 // **** Mapbox capabilities  *****
 // Fetch suggestions from the Mapbox Geocoding API
 
@@ -278,6 +245,10 @@ map.on('click', async (e) => {
 gridTableDiv.addEventListener('click' , async (event)=>{
   const row = event.target.closest(".grid-row");
   if(row){
+    //remove existing markers and routes
+    removeMarker();
+    removeExistingRoutes();
+    
     //get the row ID
     const id = row.dataset.rank;
 
@@ -290,7 +261,8 @@ gridTableDiv.addEventListener('click' , async (event)=>{
     const resultInfo = response.data;
 
      //load TaxiRank marker
-     addMarker(resultInfo.taxiR_location_coords.longitude   , resultInfo.taxiR_location_coords.latitude , 'yellow');
+    const addedMarker =  addMarker(resultInfo.taxiR_location_coords.longitude   , resultInfo.taxiR_location_coords.latitude , 'yellow');
+    allMarkerObjects.push(addedMarker);
 
     //load routes
     const coordsList = resultInfo.route_coordsList;
@@ -311,8 +283,6 @@ gridTableDiv.addEventListener('click' , async (event)=>{
     }
     }
    
-    //remove the markers
-    removeMarker();
   }
 });
 });
@@ -326,29 +296,10 @@ editCloseButton.addEventListener('click' , ()=>{
   editMenu.style.visibility = 'hidden';
 });
 
-//conatiner to revert
-// uiContainer.addEventListener('click' , ()=>{
-
-//   if(allMarkerObjects.length === 0){
-//     re_loadMarkers();
-
-//     map.fitBounds([
-//       [18.13518613880771,-34.966345196944445],
-//       [33.105929612928605, -22.069255932789716]
-//       ]);
-//   }
- 
-// });
-
-
-
-
 // Attach event listener to the search box
-
 searchBox.addEventListener('input', (e) => {
   fetchSuggestions(e.target.value);
 });
-
 
 // **** functionality Capabilities ****
 // Check if both elements exist
@@ -409,15 +360,16 @@ async function listOnTable() {
   try {
     const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
     const dataReceived = response.data;
-    dataReceived.forEach( TaxiRankObj=>{
+    dataReceived.forEach( async TaxiRankObj=>{
    // Create the parent div with class "grid-row" and id "2"
    createGridRow(TaxiRankObj.ID ,TaxiRankObj.name , TaxiRankObj.province , TaxiRankObj.address , TaxiRankObj.num_routes);
 
 //Adding a Marker
-markerLocationStorage.push(TaxiRankObj.coord);
 const newMarker = addMarker(TaxiRankObj.coord.longitude , TaxiRankObj.coord.latitude,'red');
 allMarkerObjects.push(newMarker);
 
+   //add routes
+   await populateMap(TaxiRankObj.ID)
     });
   } catch (error) {
     console.error(error);
@@ -493,11 +445,12 @@ async function addSingleInfoOnTable(){
       const lastRowNum  = dataReceived.length -1;
       const TaxiRankObj = dataReceived[lastRowNum];
 
-     
+
+
      // Create the parent div with class "grid-row" and id "2"
      const gridRow = document.createElement("div");
      gridRow.className = "grid-row";
-  gridRow.id = "2";
+     gridRow.id = "2";
   
   // Create the first grid-cell for name
   const gridCell1 = document.createElement("div");
@@ -625,6 +578,23 @@ function loadMiniRoutes(miniroutes , travelMethod) {
   
 }
 
+async function populateMap(id){
+  try{
+   const response = await axios.post('http://localhost:3000/admin/getTaxiRank' ,{
+    rankID:id
+  });
+    //read information
+    const resultInfo = response.data;
+   //load routes
+   const coordsList = resultInfo.route_coordsList;
+   coordsList.forEach((route)=>{
+     loadMiniRoutes(route.coords , route.travelMethod);
+   });
+  }catch(error){
+console.log(error);
+  }
+}
+
 function zoomRoute(coordinates){
   // Get the bounds of the route
 const bounds = coordinates.reduce((bounds, coord) => {
@@ -640,20 +610,38 @@ map.fitBounds(bounds, {
 }
 
 function removeMarker(){
-  if(allMarkerObjects){
+  if(allMarkerObjects.length > 0){
     allMarkerObjects.forEach((marker)=>{
       marker.remove();
     });
+
+    //empty the array
+  allMarkerObjects = [];
   }
 
-  //empty the array
-  allMarkerObjects = [];
+
 }
 
-function re_loadMarkers(){
-  markerLocationStorage.forEach((coord)=>{
-    addMarker(coord.longitude , coord.latitude, 'red');
-  })
+function removeExistingRoutes() {
+
+
+  if (!map.getStyle() || !map.getStyle().layers) return;
+
+  // Get all layers and sources in the map
+  const layers = map.getStyle().layers.map(layer => layer.id);
+
+  layers.forEach(layerId => {
+      if (layerId.startsWith('route-line-')) {
+          map.removeLayer(layerId);
+      }
+  });
+
+  // Get all sources and remove those related to routes
+  Object.keys(map.getStyle().sources).forEach(sourceId => {
+      if (sourceId.startsWith('route-source-')) {
+          map.removeSource(sourceId);
+      }
+  });
 }
 
 //Handling Add route button clicks

@@ -62,8 +62,9 @@ const map = new mapboxgl.Map({
   zoom: 12, // Default zoom
 });
 
-map.on('load', () => {
 
+
+map.on('load', () => {
     // Add click event to each row
     document.querySelector('.grid-table').addEventListener('click', async (e) => {
         const row = e.target.closest('.grid-row'); 
@@ -88,6 +89,9 @@ map.on('load', () => {
                 loadDirections(result.directions_Arr);
 
                 //Load information
+
+                console.log("Start_ID : " , result.route.TaxiRankStart_ID , "Dest_ID : " , result.route.TaxiRankDest_ID);
+
                 const taxiRankfrom  = await getTaxiRankName(result.route.TaxiRankStart_ID);
                 const taxiRankTo = await getTaxiRankName(result.route.TaxiRankDest_ID);
 
@@ -483,7 +487,8 @@ const fetchRoutes = async () => {
             rankID: rank_ID // Send ID in the body of the request
         });
 
-
+        //Information
+        taxiRankBigName.textContent = response.data.taxiR_name.toString();
         console.log("Data retrived " + JSON.stringify(response.data, null, 2));
     } catch (error) {
         console.error("Error fetching data:", error);
@@ -558,7 +563,7 @@ function showRouteInformation(taxiRankFrom , taxiRankTo , routeName){
 
     //set the big taxiRankName
     console.log("TaxiFrom : ", taxiRankFrom ,"TaxiTo : ", taxiRankTo , "routeName : " , routeName);
-    taxiRankBigName.textContent = taxiRankFrom;
+   
 
     //set the route
     routeChosenLabel.textContent = routeName;
@@ -568,8 +573,6 @@ function showRouteInformation(taxiRankFrom , taxiRankTo , routeName){
 }
 
 function removeRouteInformation(){
-    taxiRankBigName.textContent = "";
-
     //set the route
     routeChosenLabel.textContent = "";
     //set the circle labels
@@ -587,7 +590,9 @@ async function getTaxiRankName(ID){
         if(!response){
             return null;
         }
-        return response.data.name;
+        console.log("Taxi Info : ",  response.data);
+        return response.data.taxiR_name
+        ;
     } catch (error) {
         console.error('Error fetching taxi ranks:', error);
     }
@@ -615,18 +620,32 @@ function toogleSelection(isWalk){
 }
 
 function loadDirections(list){
- 
+    removeAllDirectionButtons();
      directionsInfoStorage = [...list];
     let name;
+    let dirColors = []; 
+
+    if (list.length > directionButtonColors.length) {
+        console.error("Not enough unique colors for the number of directions.[loadDirections(list)]");
+        return;
+    }
+
     for(let i = 0 ; i < list.length ; i++){
          name = "D"+(i+1);
-        createDirectionButton(name  , i);
+         let randNum;
+         do{
+            randNum = Math.floor(Math.random() * directionButtonColors.length);
+         } while(dirColors.includes(randNum));
+         dirColors.push(randNum);
+        
+        createDirectionButton(name  , i  , randNum);
     }
 }
 
 
-function createDirectionButton(labelName , generatedID){
-    const randNum = Math.floor(Math.random() * directionButtonColors.length);
+function createDirectionButton(labelName , generatedID , randNum){
+    
+   
     const button = document.createElement("button");
     button.classList.add("direction_button");
     button.textContent = labelName;
@@ -635,6 +654,10 @@ function createDirectionButton(labelName , generatedID){
     directionContainer.append(button);
 }
 
+function removeAllDirectionButtons() {
+    const buttons = document.querySelectorAll(".direction_button");
+    buttons.forEach(button => button.remove());
+}
 
 //removing the moving circle (The function is implemented insied removeDirections function)
 function deleteMovingCircle(){
