@@ -5,6 +5,10 @@ import dijkstra from "../src/Dijkstra.js";
 import geolib from'geolib';
 
 
+
+let closestTaxiCount = 0 ;
+
+
 export const findingPath = async(req,res)=>{
     const {sourceCoords , sourceProvince , destinationCoords , destinationProvince}  = req.body;
     if(!sourceCoords || !sourceProvince || !destinationCoords || !destinationProvince){
@@ -12,7 +16,7 @@ export const findingPath = async(req,res)=>{
     }
     //count of farms a
     let countObj = {countSource:0 , countDest:0};
-    let arr = [];
+    let arrObj = {sourceArr:[] , destArr:[]};
 
     console.log("Fields : " , sourceCoords , sourceProvince , destinationCoords , destinationProvince);
     //get routes in the provinces of the source and destination points only (Filtering function)
@@ -21,6 +25,7 @@ export const findingPath = async(req,res)=>{
     if((await routes).status != 200){
         return res.status((await routes).status).send((await routes).message);
     }
+
     //Format routes in a way that can be easily processed by the incoming functions
     const formatedRoutes = formatRoutes(routes.result.routes , routes.result.miniRoutes);
     if(formatedRoutes === null){
@@ -30,14 +35,11 @@ export const findingPath = async(req,res)=>{
     console.log("formatedRoutes : " , formatedRoutes);
 
 
-    //closestTaxiRanksF(arr , countObj , formatedRoutes , sourceCoords , destinationCoords );
-    /****************** */
+    closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
 
+    /****************** */
     //get the closest routes to the source and destination points
     const routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
-  
-
-
     const routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
 
     if(routeCloseToSource.closestRoute === null || routeCloseToSource.closestRoute === null){
@@ -63,53 +65,18 @@ export const findingPath = async(req,res)=>{
     /************************* */
 
 
+    // =============================================== THE SECOND PART ================================================ 
     //Check if routes connect 
     const ranksIDs = closestTaxiRanks.result;
     const commonPath = routesConnectionCheck(ranksIDs.firstR_taxiRankSource , ranksIDs.firstR_taxiRankDestination , ranksIDs.secR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
 
-  
-
+    //return shortPath when the routes connect
     if(commonPath.flag === true){
-        console.log("Routes have common taxiRanks");
-
-
- //price  Option 1
- const priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
- if(priceCollectionO1 === null){
-  console.log("Could not get the prices of routes (priceCollectionO1) in [findingPath]");
-  return res.status(400).send("Internal server error");
- }
-
-
- //get directions option 1
- const directionsO1 = await getDirections([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
-
- if(directionsO1.status != 200){
-  console.log(directionsO1.message);
-  return res.status(directionsO1.status).send("Internal server error");
- }
-
-  //   //get The Taxi TaxiRank 
-    const formedTaxiIds = ['ranksIDs.firstR_taxiRankSource' , 'ranksIDs.firstR_taxiRankDestination' , 'ranksIDs.secR_taxiRankSource'];
-    const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds);
-
-    if(chosenTaxiRanks1 === null || chosenTaxiRanks1.length === 0){
-        console.log("chosenTaxiRanks is null or has length of zero");
-        return res.status(400).send("Internal server error");
+        const response = await shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords);
+        return res.status(response.status).send(response.result);
     }
 
-
-         return res.status(200).send({
-            sourceCoord: sourceCoords,
-            pointCloseToSource: routeCloseToSource.closestPoint,
-            destCoord: destinationCoords,
-            pointCloseToDest: routeCloseToDest.closestPoint,
-            routes: [routeCloseToSource.closestRoute ,routeCloseToDest.closestRoute],
-            prices:priceCollectionO1,
-            directions:directionsO1,
-            chosenTaxiRanks:chosenTaxiRanks1
-        });
-    }
+    //================================================ END OF THE SECOND PART =====================================================
 
      // *** When routes Dont connect
 
@@ -135,15 +102,24 @@ export const findingPath = async(req,res)=>{
     }
   
 
+    let fastestPathResults;
+    let flag = true;
+    while(flag){
     //get the fastest path utilising the graph
     console.log("Print input , firstR_taxiRankSource : " , sourceTaxiRankRank, " secR_taxiRankDestination : " , destinationTaxiRank);
-    const fastestPathResults =  getBestPath(graph , `${sourceTaxiRankRank}` , `${destinationTaxiRank}`);
+     fastestPathResults =  getBestPath(graph , `${sourceTaxiRankRank}` , `${destinationTaxiRank}`);
     console.log("Path : " , fastestPathResults);
 
     if(fastestPathResults.path.length === 0){
         console.log("Could not get the Fastest path in [findingPath]");
         return res.status(400).send("Internal server error");
+    }else{
+        flag = false;
     }
+}
+
+   //reset the count
+   closestTaxiCount = 0;
 
     //get The Taxi TaxiRank 
     const chosenTaxiRanks = await getChosenTaxiTanks( fastestPathResults.path );
@@ -192,33 +168,166 @@ export const findingPath = async(req,res)=>{
 }
 
 
+async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
+    console.log("Routes have common taxiRanks");
+
+    //price 
+    let priceCollectionO1;
+    //get directions
+    let  directionsO1;
+    if(ranksIDs.firstR_taxiRankSource ===  ranksIDs.secR_taxiRankSource && ranksIDs.firstR_taxiRankDestination === ranksIDs.secR_taxiRankDestination){
+        directionsO1 =   await getDirections([routeCloseToSource.closestRoute]);
+        priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute]);
+    }else{
+        directionsO1 =   await getDirections([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
+        priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
+    }
+
+
+    if(priceCollectionO1 === null){
+        console.log("Could not get the prices of routes (priceCollectionO1) in [findingPath]");
+        return {status:400 , result: "Internal server error"};
+       }
+
+       
+    if(directionsO1.status != 200){
+     console.log(directionsO1.message);
+     return {status:directionsO1.status, result:"Internal server error"};
+    }
+   
+      //get The Taxi TaxiRank 
+       const formedTaxiIds = [`${ranksIDs.firstR_taxiRankSource}` , `${ranksIDs.firstR_taxiRankDestination}` , `${ranksIDs.secR_taxiRankSource}` ];
+       const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds);
+   
+       if(chosenTaxiRanks1 === null || chosenTaxiRanks1.length === 0){
+           console.log("chosenTaxiRanks is null or has length of zero");
+           return {status:400, result:"Internal server error"};
+       }
+   
+   
+            return{status:200 , result:{
+               sourceCoord: sourceCoords,
+               pointCloseToSource: routeCloseToSource.closestPoint,
+               destCoord: destinationCoords,
+               pointCloseToDest: routeCloseToDest.closestPoint,
+               routes: [routeCloseToSource.closestRoute ,routeCloseToDest.closestRoute],
+               prices:priceCollectionO1,
+               directions:directionsO1,
+               chosenTaxiRanks:chosenTaxiRanks1
+           } };
+}
+
 async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes , sourceCoords , destinationCoords){
-    const routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
-    const routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
+    /*This function is called evertime when a path is not found.Its function is to find another close route , the respects the following
+    [It is within 2.1km walking distance , it is not repeating , there is only 5 attempts each side , the route has been found and when not anothe attempt is taken if the rules are allow]
+    */
+    if (countObject.countSource >= 5 && countObject.countDest >= 5) return {status:400 , message:"the count exceeds 5 on both source and destination" , value:null};
+ 
+    //Loop to make sure the places found are not repeating
+        let routeCloseToSource ;
+        let routeCloseToDest ;
 
+        //when its the first attempt we check both routes
+        if(closestTaxiCount === 0){
+             routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
+             routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
+        }else{
+        
+            //checking source count whether it has 5 attempts , 
+            if(countObject.countSource < countObject.countDest  && countObject.countSource < 5){
+               const result =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes);
+               if(!result){
+                const destResult = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes);
+                //when it returns null , Return no routes were found 
+                if(!destResult) return  {status:400 , message:"No new routes were found" , value:null};
+                 routeCloseToDest = destResult;
+                
+               }else{
+                routeCloseToSource = result;
+               }
+            
+            }else if(countObject.countDest < 5){
+                const result = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes);
+                
+                if(!result){
+                    destinationIsOutOfRoutes = true;
+                 //run the destination Section
+                 const sourceResult =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes);
+                 //when it returns null , Return no routes were found 
+                 if(!sourceResult) return  {status:400 , message:"No new routes were found" , value:null};
+                    routeCloseToSource = sourceResult;
+                 
+                }else{
+                    routeCloseToDest = result;
+                }
+              
+            }else{
+                return {status:400 , message:"No new routes were found" , value:null};;
+            }
+
+        }
+       
     
+        if (!routeCloseToSource?.closestRoute || !routeCloseToDest?.closestRoute) {
+            console.log("Could not get the closest routes");
+            return {status:400 , message:"The routes found were not null or inapropriate " , value:null};;
+        }
+    
+        //get the nearest taxiRank
+        const closestTaxiRanks = await getTheTaxiRanks(routeCloseToSource.closestRoute.id , routeCloseToDest.closestRoute.id);
+    
+        //check TaxiRank IDs returned
+        if(closestTaxiRanks.status != 200){
+            console.log(closestTaxiRanks.message);
+            return {status:closestTaxiRanks.status , message:closestTaxiRanks.message , value:null};
+        }
+        //increase count that is used to detect when the function is called for the first time
+        closestTaxiCount++;
+        return {status:200 , message:"Successful " , value:{ routeCloseToSource, routeCloseToDest, closestTaxiRanks }};
+}
 
-    if(routeCloseToSource.closestRoute === null || routeCloseToSource.closestRoute === null){
-        console.log("Could not get the closest routes in [findingPath]");
-        return res.status(400).send("Internal server error");
+function destinationRoute(countObject, routeCloseToDest, routeExploredArr, formatedRoutes){
+    let loopAgain = true;
+    while(loopAgain){
+    let temp = routeCloseToDest;
+    routeCloseToDest = findClosestRoute(formatedRoutes , sourceCoords);
+    if(routeCloseToDest.closestRoute === null){
+        routeCloseToDest = temp;
+        return null;
+    }else {
+         //loop again if not found
+        if (!routeExploredArr.destArr.includes(routeCloseToDest.closestRoute.id)) {
+            routeExploredArr.destArr.push(routeCloseToDest.closestRoute.id);
+            countObject.countDest++;
+            loopAgain= false;
+            return routeCloseToDest;
+          }else{
+            routeCloseToDest = temp;
+          }  
     }
-
-    console.log("routeCloseToSource : " , routeCloseToSource);
-    console.log("routeCloseToDest : ", routeCloseToDest);
-
-    //get the nearest taxiRank
-    const closestTaxiRanks = await getTheTaxiRanks(routeCloseToSource.closestRoute.id , routeCloseToDest.closestRoute.id);
-    console.log("closestTaxiRanks : " , closestTaxiRanks);
-
-    //check TaxiRank IDs returned
-    if((await closestTaxiRanks).status != 200){
-        console.log((await closestTaxiRanks).message);
-        return res.status((await closestTaxiRanks).status).send((await closestTaxiRanks).message);
     }
+} 
 
-    //save the info in an array 
-    routeExploredArr.push()
-    //return the needed variables 
+function sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes ){
+    let loopAgain = true;
+    while(loopAgain){
+    let temp = routeCloseToSource;
+    routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
+    if(routeCloseToSource.closestRoute === null){
+        routeCloseToSource = temp;
+        return null;
+    }else {
+         //loop again if not found
+        if (!routeExploredArr.sourceArr.includes(routeCloseToSource.closestRoute.id)) {
+            routeExploredArr.sourceArr.push(routeCloseToSource.closestRoute.id);
+            countObject.countSource++;
+            loopAgain= false;
+            return routeCloseToSource;
+          }else{
+            routeCloseToSource = temp;
+          }  
+    }
+    }
 }
 
 
@@ -406,12 +515,13 @@ function findClosestRoute(routes, randomPlace) {
     let closestRoute = null;
     let closestPoint = null;
     let minDistance = Infinity;
+    const MAX_DISTANCE = 2100;
 
     routes.forEach(route => {
         route.coordinates.forEach(coord => {
             const distance = geolib.getDistance(randomPlace, coord);
 
-            if (distance < minDistance) {
+            if (distance < minDistance && distance <= MAX_DISTANCE) {
                 minDistance = distance;
                 closestRoute = route;
                 closestPoint = coord;
