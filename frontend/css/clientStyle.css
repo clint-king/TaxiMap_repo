@@ -1,17 +1,77 @@
 body {
     margin: 0;
     padding: 0; 
-    display: flex;
-    flex-direction: row;
-    width:100vw;
     font-family: sans-serif;
-    background-color: #F7F7F7;
+    background-color: #ffffff;
     height: 100vh;
    }
+   /* == NAVIGATION BAR == */
+
+
+    /* Wrapper to hold topbar + page content in column layout */
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* Top navigation bar */
+    .topnav {
+      position: fixed;
+      z-index: 1000;
+      padding: 15px 20px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: #01386A;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .topnav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 30px;
+    }
+
+    .topnav a:hover {
+      text-decoration: underline;
+    }
+
+    .topnav .nav_group{
+      margin-right: 20%;
+    }
+
+    /* Page layout (flex row) for sidebar + main content */
+    .page-content {
+      padding-top: 50px;
+      display: flex;
+      flex: 1; /* fill the remaining space */
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #ddd;
+      padding: 20px;
+    }
+
+    .main {
+      flex: 1;
+      padding: 20px;
+    }
+
+
+
    /* == UI SECTION == */
 #ui_container{
    width:20%;
-   height:100vh;
+   height:90%;
    overflow: hidden;
    display: flex;
    flex-direction: column;
@@ -19,15 +79,6 @@ body {
    justify-content: space-between;
 }
 
-.ui_panel{
-   position: absolute;
-   left:2px;
-   top:2px;
-   width:2%;;
-   height:99%;
-   border: 3px solid black;
-   border-radius: 10px;
-}
 
 .search_container{
    display: flex;
@@ -48,13 +99,13 @@ body {
    width:300px;
    height:40px;
    border-radius: 20px;
-   border: none;
-   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+   border: 1PX solid #D3D3D3;
    text-align: center;
    margin-bottom: 10px;
 }
 .search_input:focus{
-   border:none;
+   border: 3px solid #FFD52F; 
+   outline:none;
 }
 
 .searchList{
@@ -86,7 +137,12 @@ z-index: 999;
 .cover{
    height:30px;
    width:250px;
-   background-color: #F6DC76;
+   background-color: #FFD52F;
+   font-weight: 600;
+}
+
+.list_container{
+   border:3px solid #FFD52F;
 }
 
 .cover.price{
@@ -155,6 +211,7 @@ z-index: 999;
 }
 
 .default_direction_button{
+   font-weight: 600;
    border: none;
    padding: 7px;
    background-color: #9ACBD0;
@@ -180,46 +237,26 @@ z-index: 999;
 }
 
 
-.bar_container{
-  display: flex;
-  justify-content:space-evenly;
-  align-items: center;
-  width:100%;
-  height:40px;
-
-}
-
-.bar_container p{
-font-weight: bold;
-text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
 .toggleButtons_container{
    display: flex;
    border-radius: 13px;
-   background-color: #f3f2f2;
-   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .toggleBtn{
    width:140px;
    height:40px;
    border:none;
+   background-color: white;
    cursor: pointer;
+   font-weight: 600;
 }
 
-.toggleDefaultBtn{
-   width:10px;
-   height:40px;
-   border-radius: 10px;
-   background-image:linear-gradient( #e7be1a,#F6DC76);
-   border: 1px solid rgb(197, 197, 197);
-}
+
 
 .toggleBtn.from{
    height:40px;
-   border-top-left-radius: 13px;
-   border-bottom-left-radius: 13px;
+   border:1px solid #D3D3D3;
+   border-radius: 13px;
    margin-right: 5px;
 }
 
@@ -229,8 +266,8 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 
 .toggleBtn.to{
    height:40px;
-   border-top-right-radius: 13px;
-   border-bottom-right-radius: 13px;
+   border:1px solid #D3D3D3;
+   border-radius: 13px;
    margin-left: 5px;
 }
 
@@ -291,7 +328,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
    height:21px;
    border:none;
    color:white;
-   background-color: #F6DC76;
+   background-color: #FFD52F;
    border-radius: 5px;
    cursor: pointer;
  }
@@ -334,7 +371,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
  }
  
  .toggle-button.active {
-   background-color: #4caf50;
+   background-color: #FFD52F;
  }
  
  .toggle-button.active .toggle-circle {
@@ -344,7 +381,6 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
  .toggle-label {
    font-size: 16px;
    margin-left: 6px;
-   font-family: cursive;
  }
 
  /* Markers design*/
@@ -357,7 +393,7 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
    line-height: 40px;
    width:50px;
    border-radius: 20px;
-   color:#e7be1a;
+   color:#FFD52F;
    text-align: center;
    cursor: pointer;
  }
@@ -371,6 +407,16 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 
  .message .main{
    font-weight: bold;
+ }
+
+ /* Frontend */
+ .feedbackBtn{
+   font-weight: 600;
+   font-size: medium;
+   padding: 23px 105px;
+   border-radius: 20px;
+   border:none;
+   background-color: #FFD52F ;
  }
  
 /* == MAP SECTION ==*/
@@ -411,8 +457,8 @@ text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 #map {
-  width: 95%;
-  height: 98vh;
+  width: 96%;
+  height: 96%;
   border: 2px solid black;
   border-radius: 10px;
  }

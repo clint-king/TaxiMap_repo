@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Taxi Path with Mapbox</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/clientCrowdSource.css">
+</head>
+<body>
+
+    <div class="wrapper">
+    <!-- Top navigation bar -->
+    <div class="topnav">
+        <div class="logo">FiQa (taxi map)</div>
+        <div class="nav_group">
+          <a href="client.html">Home</a>
+          <a href="clientCrowdSource.html">Suggest route</a>
+          <a href="#contributors">Contributors</a>
+          <a href="#about">About</a>
+          <a href="#help">Help</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+
+
+      <div class="page-content">
+     <!--Ui section-->
+    <div id="ui_container">
+       
+        <!-- Route ID -->
+          <h4 class="routelb">Route <span id="routeId">#124Ae54</span></h4>
+
+        <!-- Taxi rank info section  -->
+          <div class="taxiRInfo_container">
+            <div class="routeTypeSelection_container"> 
+                
+                <p>Route Type : </p>  
+                <select name="routeType" id="routeType">
+                     <option value="Straight">Straight</option>
+                     <option value="Loop">Loop</option>
+                  </select>
+            </div>
+
+            <div class="taxiRInput_container">
+                <div class="inputTR group1">
+                    <input placeholder="Starting taxiRank...">
+                    <button>Create TaxiRank</button>
+                </div>
+                <div class="inputTR group2">
+                    <input placeholder="Destination taxiRank...">
+                    <button>Create TaxiRank</button>
+                </div>
+            </div>
+
+          </div>
+
+          <!-- Route additions  -->
+           <div  class="addRoute_container">
+            <div class="addRoute"> 
+            <button class="route_button" style="background-color: #F4BCF9;">Route 1</button>
+             <button class="route_button"  style="background-color: #BDEBFF;">Route 2</button>
+             <button class="route_button"  style="background-color: #FFE8BD;">Route 2</button>
+             <button class="route_button"  style="background-color: #BDBEFF;">Route 2</button>
+             <button class="route_button"   style="background-color: #98E8C2;">Route 2</button>
+           </div>
+           <button class="add_button"><i class="fas fa-plus" style="color:white;"></i></button>
+           </div>
+           
+           <!-- Price slidder  -->
+            
+            <div class="price-slider-container">
+                <div class="price-display">Selected Price:R<span id="selectedPrice">0</span></div>
+                <input type="range" min="0" max="1000" value="0" class="slider" id="priceRange">
+                <div class="price-labels">
+                    <span>R0</span>
+                    <span>R1000</span>
+                </div>
+            </div>
+
+            <!-- TextArea -->
+        <textarea placeholder="message..."></textarea>
+
+        <button class="sendBtn">Send Route</button>
+    </div>
+
+    <!--Context menu-->
+
+
+     <!--Map-->
+      <div class="map_container">
+        <div id="map">
+        </div>
+        </div>
+</div>
+</div>
+
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <script  type="module" src="./js/clientCrowdSource.js"></script>
+</body>
+</html>

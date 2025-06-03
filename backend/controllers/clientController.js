@@ -35,44 +35,23 @@ export const findingPath = async(req,res)=>{
     console.log("formatedRoutes : " , formatedRoutes);
 
 
-    closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
+    let closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
 
-    /****************** */
-    //get the closest routes to the source and destination points
-    const routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
-    const routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
-
-    if(routeCloseToSource.closestRoute === null || routeCloseToSource.closestRoute === null){
-        console.log("Could not get the closest routes in [findingPath]");
-        return res.status(400).send("Internal server error");
+    if(closestRouteInfo.status != 200){
+        console.error(closestRouteInfo.message);
+        return res.status(closestRouteInfo.status).send("Internal server error");
     }
 
-    console.log("routeCloseToSource : " , routeCloseToSource);
-    console.log("routeCloseToDest : ", routeCloseToDest);
-
-    //get the nearest taxiRank
-    const closestTaxiRanks = await getTheTaxiRanks(routeCloseToSource.closestRoute.id , routeCloseToDest.closestRoute.id);
-    console.log("closestTaxiRanks : " , closestTaxiRanks);
-
-    //check TaxiRank IDs returned
-    if((await closestTaxiRanks).status != 200){
-        console.log((await closestTaxiRanks).message);
-        return res.status((await closestTaxiRanks).status).send((await closestTaxiRanks).message);
-    }
-
-    // *** When routes connect
-    
-    /************************* */
-
+    console.log("ClosestRouteInfo : " , closestRouteInfo.value);
 
     // =============================================== THE SECOND PART ================================================ 
     //Check if routes connect 
-    const ranksIDs = closestTaxiRanks.result;
+    const ranksIDs = closestRouteInfo.value.closestTaxiRanks.result;
     const commonPath = routesConnectionCheck(ranksIDs.firstR_taxiRankSource , ranksIDs.firstR_taxiRankDestination , ranksIDs.secR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
 
     //return shortPath when the routes connect
     if(commonPath.flag === true){
-        const response = await shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords);
+        const response = await shortPath(closestRouteInfo.value.routeCloseToSource , closestRouteInfo.value.routeCloseToDest , ranksIDs , sourceCoords , destinationCoords);
         return res.status(response.status).send(response.result);
     }
 
@@ -112,14 +91,19 @@ export const findingPath = async(req,res)=>{
 
     if(fastestPathResults.path.length === 0){
         console.log("Could not get the Fastest path in [findingPath]");
-        return res.status(400).send("Internal server error");
+        closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
+        //checking 
+        if(closestRouteInfo.status != 200){
+            console.error(closestRouteInfo.message);
+            return res.status(closestRouteInfo.status).send("Internal server error");
+        }
     }else{
         flag = false;
     }
 }
 
-   //reset the count
-   closestTaxiCount = 0;
+    //reset the count
+    closestTaxiCount = 0;
 
     //get The Taxi TaxiRank 
     const chosenTaxiRanks = await getChosenTaxiTanks( fastestPathResults.path );
@@ -130,7 +114,7 @@ export const findingPath = async(req,res)=>{
     }
 
     //Get paths from the Ids of TaxiRanks provided by [fastestPathResults]
-    const chosenRoutes = getChosenRoutes(formatedRoutes , fastestPathResults.path , routeCloseToSource.closestRoute, routeCloseToDest.closestRoute);
+    const chosenRoutes = getChosenRoutes(formatedRoutes , fastestPathResults.path , closestRouteInfo.value.routeCloseToSource.closestRoute, closestRouteInfo.value.routeCloseToDest.closestRoute);
     console.log("Chosen routes : " , chosenRoutes);
     if(chosenRoutes.length === 0){
         console.log("Could not get the chosen routes in [getChosenRoutes]=>[findingPath]");
@@ -157,9 +141,9 @@ export const findingPath = async(req,res)=>{
     //final return
     return res.status(200).send({
         sourceCoord: sourceCoords,
-        pointCloseToSource: routeCloseToSource.closestPoint,
+        pointCloseToSource: closestRouteInfo.value.routeCloseToSource.closestPoint,
         destCoord: destinationCoords,
-        pointCloseToDest: routeCloseToDest.closestPoint,
+        pointCloseToDest: closestRouteInfo.value.routeCloseToDest.closestPoint,
         routes: chosenRoutes,
         prices:priceCollectionO2,
         directions:directionsO2,
@@ -235,9 +219,9 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
         
             //checking source count whether it has 5 attempts , 
             if(countObject.countSource < countObject.countDest  && countObject.countSource < 5){
-               const result =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes);
+               const result =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes , sourceCoords);
                if(!result){
-                const destResult = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes);
+                const destResult = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes , destinationCoords);
                 //when it returns null , Return no routes were found 
                 if(!destResult) return  {status:400 , message:"No new routes were found" , value:null};
                  routeCloseToDest = destResult;
@@ -247,12 +231,11 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                }
             
             }else if(countObject.countDest < 5){
-                const result = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes);
+                const result = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes , destinationCoords);
                 
                 if(!result){
-                    destinationIsOutOfRoutes = true;
                  //run the destination Section
-                 const sourceResult =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes);
+                 const sourceResult =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes , sourceCoords);
                  //when it returns null , Return no routes were found 
                  if(!sourceResult) return  {status:400 , message:"No new routes were found" , value:null};
                     routeCloseToSource = sourceResult;
@@ -270,7 +253,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
     
         if (!routeCloseToSource?.closestRoute || !routeCloseToDest?.closestRoute) {
             console.log("Could not get the closest routes");
-            return {status:400 , message:"The routes found were not null or inapropriate " , value:null};;
+            return {status:400 , message:"The routes found were null or inapropriate " , value:null};;
         }
     
         //get the nearest taxiRank
@@ -286,11 +269,11 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
         return {status:200 , message:"Successful " , value:{ routeCloseToSource, routeCloseToDest, closestTaxiRanks }};
 }
 
-function destinationRoute(countObject, routeCloseToDest, routeExploredArr, formatedRoutes){
+function destinationRoute(countObject, routeCloseToDest, routeExploredArr, formatedRoutes , destinationCoords){
     let loopAgain = true;
     while(loopAgain){
     let temp = routeCloseToDest;
-    routeCloseToDest = findClosestRoute(formatedRoutes , sourceCoords);
+    routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
     if(routeCloseToDest.closestRoute === null){
         routeCloseToDest = temp;
         return null;
@@ -308,7 +291,7 @@ function destinationRoute(countObject, routeCloseToDest, routeExploredArr, forma
     }
 } 
 
-function sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes ){
+function sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes ,  sourceCoords ){
     let loopAgain = true;
     while(loopAgain){
     let temp = routeCloseToSource;
@@ -515,7 +498,7 @@ function findClosestRoute(routes, randomPlace) {
     let closestRoute = null;
     let closestPoint = null;
     let minDistance = Infinity;
-    const MAX_DISTANCE = 2100;
+    const MAX_DISTANCE = 5100;
 
     routes.forEach(route => {
         route.coordinates.forEach(coord => {

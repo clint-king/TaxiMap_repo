@@ -12,12 +12,25 @@
  
 </head>
 <body>
+
+    <div class="wrapper">
+    <!-- Top navigation bar -->
+    <div class="topnav">
+        <div class="logo">FiQa (taxi map)</div>
+        <div class="nav_group">
+          <a href="#home">Home</a>
+          <a href="clientCrowdSource.html">Suggest route</a>
+          <a href="#contributors">Contributors</a>
+          <a href="#about">About</a>
+          <a href="#help">Help</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+
+
+      <div class="page-content">
      <!--Ui section-->
     <div id="ui_container">
-        <div class = "ui_panel">
-            <div class="option login">
-            </div>
-        </div>
         <!--Search-->
         <div class="search_container">
             <div class="sourceSearch container">
@@ -34,7 +47,6 @@
          <!-- From and To buttons -->
          <div class="toggleButtons_container">
             <button class="toggleBtn from">From</button>
-            <div class="toggleDefaultBtn"></div>
             <button class="toggleBtn to">To</button>
          </div>
 
@@ -83,13 +95,7 @@
             </div>
         </div>
 
-        <!--bottom bar-->
-        <div class="bar_container">
-            <p>Help</p>
-            <p>Info</p>
-            <p>Contacts</p>
-        </div>
-
+        <button class="feedbackBtn">Feedback</button>
 
     </div>
     <!--Context menu-->
@@ -158,14 +164,17 @@
 
         <div id="map">
         </div>
+
+
+    
     </div>
-   
+</div>
+</div>
+
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
   <script  type="module" src="./js/client.js"></script>
-
-
 </body>
 </html>

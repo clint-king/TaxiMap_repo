@@ -5,7 +5,7 @@ import * as turf from '@turf/turf';
  //toggle button
  const fromToggleBtn = document.querySelector(".toggleBtn.from");
  const toToggleBtn = document.querySelector(".toggleBtn.to");
- const defaultToggleBtn =document.querySelector(".toggleDefaultBtn");
+
 
  //context menu
  const confirmationContextMenu = document.querySelector(".menu.markerConfirmation");
@@ -38,7 +38,10 @@ import * as turf from '@turf/turf';
  const mapEl  = document.getElementById('map');
  let isTextDirectionOpen = false;
 
- 
+
+ //feedback 
+const feedbackBtn = document.querySelector(".feedbackBtn");
+
 
  //=== VARIABLES ===
  const toggleMap = new Map([
@@ -154,6 +157,12 @@ map.on('click', async (e) => {
   });
 
  // === EVENT LISTENERS ====
+
+ feedbackBtn.addEventListener('click' , (event)=>{
+
+ });
+
+
  document.addEventListener('click' , (event)=>{
   if (!searchContainer.contains(event.target) && !currentLocation.contains(event.target) && !destinationLocation.contains(event.target)) {
     currentLocation.innerHTML = '';
@@ -167,9 +176,9 @@ map.on('click', async (e) => {
     //set map to 1
     toggleMap.set("from" , 1);
     //change color
-    fromToggleBtn.style.backgroundColor = "#F6DC76";
-    //default btn
-   defaultToggleBtn.style.backgroundImage = "linear-gradient(#cccaca , white)";
+    fromToggleBtn.style.backgroundColor = "#FFD52F";
+    fromToggleBtn.style.color = "white";
+
  });
 
  ArrowBtn.addEventListener('click', () => {
@@ -206,9 +215,8 @@ map.on('click', async (e) => {
     //set map to 1
     toggleMap.set("to" , 1);
     //change color
-    toToggleBtn.style.backgroundColor = "#F6DC76";
-    //default btn
-   defaultToggleBtn.style.backgroundImage = "linear-gradient(#cccaca , white)";
+    toToggleBtn.style.backgroundColor = "#FFD52F";
+    toToggleBtn.style.color = "white";
  });
 
  confirmationCloseBtn.addEventListener('click' , ()=>{
@@ -611,18 +619,19 @@ async function fetchSuggestions(suggestions, query) {
 function defaultRetreat(){
   if(toggleMap.get("from") === 1){
   // retreat from source
-  fromToggleBtn.style.backgroundColor = "#f3f2f2";
+  fromToggleBtn.style.backgroundColor = "white";
+  fromToggleBtn.style.color = "black";
   toggleMap.set("from" , 0);
   }
   
   if(toggleMap.get("to") === 1){
   //retreat from destination 
-  toToggleBtn.style.backgroundColor = "#f3f2f2";
+  toToggleBtn.style.backgroundColor = "white";
+  toToggleBtn.style.color = "black";
   toggleMap.set("to" , 0);
   }
  
- //default btn
- defaultToggleBtn.style.backgroundImage = "linear-gradient( #e7be1a,#F6DC76)";
+
 }
 
 function closeConfirmationMenu(){
