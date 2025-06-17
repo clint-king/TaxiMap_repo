@@ -6,7 +6,7 @@
   <title>Multi-Taxi Path with Mapbox</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
   <link rel="stylesheet" href="./css/clientCrowdSource.css">
 </head>
@@ -31,9 +31,17 @@
      <!--Ui section-->
     <div id="ui_container">
        
-        <!-- Route ID -->
-          <h4 class="routelb">Route <span id="routeId">#124Ae54</span></h4>
-
+      <!-- Route Section-->
+       <div class="labelContainer sessionSectionLabels">
+ <h3>Session : </h3>
+ <i class="fa-solid fa-circle-info" style="color: #919191; font-size: 24px;"></i>
+       </div>
+       
+      <div class="sessionInfoContainer">
+        <!-- Transparent container -->
+         <div class="TransparentCover sessionInfoContainerCover">
+            <i class="fa-solid fa-lock" style="color: #919191; font-size: 24px;"></i>
+        </div>
         <!-- Taxi rank info section  -->
           <div class="taxiRInfo_container">
             <div class="routeTypeSelection_container"> 
@@ -47,30 +55,26 @@
 
             <div class="taxiRInput_container">
                 <div class="inputTR group1">
-                    <input placeholder="Starting taxiRank...">
+                  <div class="inputcontainer startingInput">
+                   <input  placeholder="Starting taxiRank...">
+                   <ul ></ul>
+                  </div>
                     <button>Create TaxiRank</button>
                 </div>
+
                 <div class="inputTR group2">
-                    <input placeholder="Destination taxiRank...">
+                  <div class="inputcontainer destInput">
+                  <input  placeholder="Destination taxiRank...">
+                  <ul></ul>
+                  </div>
                     <button>Create TaxiRank</button>
                 </div>
+                
             </div>
 
           </div>
 
-          <!-- Route additions  -->
-           <div  class="addRoute_container">
-            <div class="addRoute"> 
-            <button class="route_button" style="background-color: #F4BCF9;">Route 1</button>
-             <button class="route_button"  style="background-color: #BDEBFF;">Route 2</button>
-             <button class="route_button"  style="background-color: #FFE8BD;">Route 2</button>
-             <button class="route_button"  style="background-color: #BDBEFF;">Route 2</button>
-             <button class="route_button"   style="background-color: #98E8C2;">Route 2</button>
-           </div>
-           <button class="add_button"><i class="fas fa-plus" style="color:white;"></i></button>
-           </div>
-           
-           <!-- Price slidder  -->
+          <!-- Price slidder  -->
             
             <div class="price-slider-container">
                 <div class="price-display">Selected Price:R<span id="selectedPrice">0</span></div>
@@ -81,17 +85,72 @@
                 </div>
             </div>
 
-            <!-- TextArea -->
+            <button class="saveSession">Save</button>
+
+        </div>
+
+        <!-- Route Section-->
+         <div class="labelContainer routeSectionLabels">
+               <h3>Route : </h3>
+       </div>
+
+         <!--Route list -->
+
+           <div class="addRoute_container">
+         <div class="addRoute">
+           <div class="route_div" style="background-color: #EBA9B7;"> Route 1<button class="routeButton" style="background-color: #EBA9B7;"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <!-- <div class="route_div" style="background-color: #BCF9F9;"> Route 2<button class="routeButton" style="background-color: #BCF9F9;"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #F9E1BC"> Route 3<button class="routeButton" style="background-color: #F9E1BC"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #C1F9BC"> Route 4<button class="routeButton" style="background-color: #C1F9BC"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #A9C6EB;"> Route 5<button class="routeButton" style="background-color: #A9C6EB;"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div> -->
+
+        
+          </div>
+          </div>
+         
+         
+        <div class="routeInfoContainer">
+          <div class="TransparentCover routeInfoContainerCover">
+            <i class="fa-solid fa-lock" style="color: #919191; font-size: 24px;"></i>
+        </div>
+         <!-- Route ID -->
+          <h2 class="routelb">Route #<span id="routeId">1</span></h2>
+
+         <!-- TextArea -->
         <textarea placeholder="message..."></textarea>
+          
+        <button class="add_button">Draw Another route</button>
+        </div>
+
+        
+       
 
         <button class="sendBtn">Send Route</button>
     </div>
 
     <!--Context menu-->
-
+        <div class="menu_wrapper">
+            <button id="close_button"><i class="fa fa-times" style="font-size:20px;color:red;" aria-hidden="true"></i></button>
+            <div class="input_line name">
+                <label>Name:</label>
+                <input placeholder="e.g Nkowankowa Taxi Rank">
+            </div>
+            <div class="input_line prov">
+                <label>Province:</label>
+                <input placeholder="e.g Limpopo">
+            </div>
+            <div class="input_line address">
+              <label>Address:</label>
+              <textarea></textarea>
+              <ul id="suggestions"></ul>
+            </div>
+           
+            <button id="update_button">Update</button>
+        </div>
 
      <!--Map-->
       <div class="map_container">
+        <div class="draw_flag"><p>Draw:<span>OFF</span></p></div>
         <div id="map">
         </div>
         </div>

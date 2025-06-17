@@ -68,8 +68,7 @@ body {
    /* == UI SECTION == */
 #ui_container{
    width:23.5%;
-   height:90%;
-   overflow: hidden;
+   height:95%;
    display: flex;
    flex-direction: column;
    align-items: center;
@@ -78,7 +77,7 @@ body {
 
  /* Taxi rank info */
 .taxiRInfo_container{
-   border: 1px solid black;
+   border: 1px solid #D3D3D3;
    border-radius: 20px;
    padding: 4%;
 }
@@ -115,14 +114,16 @@ body {
    display: flex;
    align-items: center;
    gap: 15%;
+   width:100%;
 }
 .inputTR input{
-   width:80%;
+   width:100%;
    height:35px;
    border-radius: 20px;
-   border: 1PX solid #D3D3D3;
+   border: 1px solid #D3D3D3;
    text-align: center;
-
+   position: relative;
+   top:7px;
 }
 
 .inputTR button{
@@ -132,10 +133,32 @@ body {
    border-radius: 10px;
    border: none;
    color: white;
+   cursor: pointer;
+}
+
+.inputcontainer{
+  max-width: 100%;
+}
+
+.inputcontainer ul{
+position: absolute;
+list-style-type: none;
+padding-left: 0;
+border-radius: 15px;
+background: rgba(128, 128, 128, 0.3); /* semi-transparent gray */
+backdrop-filter: blur(8px); /* applies blur to background */
+-webkit-backdrop-filter: blur(8px); /* for Safari */
+z-index: 999;
+}
+
+.inputcontainer li:hover{
+   color:white;
+   font-size: large;
 }
 
 /* send button */
 .sendBtn{
+  margin-top: 20px;
    font-weight: 600;
    font-size: medium;
    padding: 21px 90px;
@@ -145,22 +168,86 @@ body {
    color: white;
 }
 
-/* Add route */
-.addRoute_container{
+/* session section */
+/* Cover */
+
+.sessionInfoContainerCover{
+height: 100%;
+width:100%;
+position: absolute;
+border-radius: 20px;
+visibility: hidden;
+}
+/*End of cover*/
+
+.sessionInfoContainer{
   position: relative;
-  top:3%;
+  border:1px solid #D3D3D3;
+  width:80%;
+  height:442px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  gap:0px;
+  margin-top: 5px;
+  border-radius: 20px;
+}
+
+.saveSession{
+  width:100px;
+  height:32px;
+  border-radius: 20px;
+  border:none;
+  background-color: #FFD52F;
+  color: white;
+}
+
+/* Route list */
+
+.addRoute_container{
   display:flex;
   gap:5px;
   align-items: center;
-  width:320px;
+  width:430px;
   height:70px;
+  margin-bottom: 8px;
+
 }
 .addRoute{
-  border:2px solid black;
-  width:280px;
-  height:70px;
+  width:100%;
+  height:100%;
   border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap:3px;
+}
+
+.route_div{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap:2px;
+  border-radius: 18px;
+  border: none;
+  padding: 6px;
+  margin-top: 5px;
+  width:70px;
+  height:20px;
+  font-size: small;
   padding: 5px;
+}
+
+.route_div button{
+  width:18px;
+  height:18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  cursor: pointer;
 }
 
 .route_button{
@@ -169,20 +256,70 @@ body {
   padding: 6px;
   margin-top: 5px;
 }
-.add_button{
-  width:40px;
-  height:40px;
-  border-radius: 20px;
-  background-color: #1C274C;
-  border: none;
-  cursor: pointer;
+
+/*Route label */
+.labelContainer{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width:90%;
 }
 
+/* Route cover */
+
+.TransparentCover{
+  background-color: #D9D9D980;
+  z-index: 2000;
+}
+
+.routeInfoContainerCover{
+  position: absolute;
+  height:100%;
+  width:100%;
+  visibility: visible;
+  border-radius: 20px;
+  top:0.5px;
+}
+
+.fa-lock{
+  position: absolute;
+  left:90%;
+  top:2%;
+}
+
+/* Route section*/
+.routeInfoContainer{
+  position: relative;
+  border: 1px solid #D3D3D3;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width:80%;
+  height:500px;
+  gap:15px;
+  padding-bottom: 15px;
+}
+
+.add_button{
+  width:250px;
+  height:50px;
+  border-radius: 15px;
+  border:2px solid #203FDB;
+  background-color: white;
+  color:#203FDB;
+  font-weight: 700;
+  font-size:medium;
+  cursor: pointer;
+ 
+}
 
 /*Slide */
   .price-slider-container {
     width: 70%;
-    margin: 50px auto;
+    height:100px;
+    font-weight: 600;
 }
 
 .price-slider-container.walk{
@@ -203,9 +340,8 @@ body {
     position: relative;
     font-size: 15px;
     margin-top: 20px;
-    font-weight: lighter;
-    left:90px;
-   font-family: cursive;
+    font-size: large;
+    left:65px;
 }
 
 /*message */
@@ -217,6 +353,7 @@ textarea{
    font-family:sans-serif;
    resize: none;
    padding: 7px;
+   border: 1px solid #D3D3D3;
 }
 
  /* Markers design */
@@ -232,11 +369,128 @@ textarea{
    gap:10px;
 }
 
+/* Map */
+.draw_flag{
+  position: absolute;
+  LEFT: 95%;
+  TOP:1%;
+  color:white;
+  background-color: #FF0A0A5c;
+  width:84px;
+  height:38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  box-shadow: 2px 4px 6px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  z-index: 1000;
+}
+
+.draw_flag p {
+  margin: 0; /* remove default p margin */
+  padding: 0;
+}
+
 #map {
   width: 100%;
   height: 96%;
-  border: 2px solid black;
   border-radius: 10px;
  }
 
  
+/* Context Menu*/
+.menu_wrapper{
+    position:absolute;
+    border-radius: 20px;
+    width:380px;
+    height:300px;
+    visibility:hidden;
+    left:40%;
+    top:37%;
+    background-color: #F2EFEF;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);  
+    z-index:999 ;
+}
+
+#close_button{
+    position: absolute;
+    padding: 0px;
+    top:10px;
+    right:10px;
+    border:none;
+    background-color: #F2EFEF;
+    cursor: pointer;
+}
+
+.input_line.name{
+    position: absolute;
+    top:50px;
+    left:30px;
+    border: none;
+}
+
+.input_line.name label{
+    margin-right: 19px;
+}
+
+.input_line input{
+   border-radius: 10px;
+   height:30px;
+   width:240px;
+   border:none;
+}
+
+.input_line textarea{
+    border-radius: 10px;
+    height:70px;
+    width:240px;
+    border: none;
+    resize: none;
+ }
+
+.input_line.prov{
+    position: absolute;
+    top:90px;
+    right:1px;
+    left:30px;
+}
+
+.input_line.address{
+    position: absolute;
+    top:130px;
+    left:30px;
+}
+
+.input_line.address label{
+    margin-right: 2px;
+    position: relative;
+    bottom:35px;
+}
+
+.input_line.address button{
+   padding: 5px 5px;
+   position:absolute;
+   margin-left: 5px;
+   white-space:nowrap;
+   border-radius: 10px;
+   border:none;
+   background-color:#F6DC76;
+   color:white;
+}
+
+#update_button{
+    position: absolute;
+    left:160px;
+    padding:5px 10px;
+    border-radius: 10px;
+    border:none;
+    background-color:#F6DC76;
+    color:white;
+    top:250px;
+    cursor: pointer;
+}
+
+#update_button:hover{
+  background-color: #FFD737;
+}

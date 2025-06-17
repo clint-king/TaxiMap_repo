@@ -874,8 +874,6 @@ function loadMiniRoutes(miniroutes, travelMethod, fIndex , color ) {
 }
 
 function removeExistingRoutes() {
-
-
   if (!map.getStyle() || !map.getStyle().layers) return;
 
   // Get all layers and sources in the map
