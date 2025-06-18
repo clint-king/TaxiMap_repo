@@ -151,6 +151,106 @@ export const findingPath = async(req,res)=>{
     });
 }
 
+export const AddPendingRoute = async(req,res)=>{
+     const query = "INSERT INTO Routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
+    const queryTaxiRankWithId = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
+    const queryInsertTaxiRank = "INSERT INTO PendingTaxiRank(name , location_coord, province, address , num_routes) VALUES (?,?,?,?,?)";
+    const queryMiniRoute = "INSERT INTO MiniRoute(Route_ID,coords,route_index) VALUES(?,?,?)";
+    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords,direction_index) VALUES(?,?,?)";
+    let connection;
+try{
+   
+    const data = req.body.data;
+    const {caseType}  = data;
+
+    /* *** In this case miniroutes are the same as directions  */
+    // Straight(1) Or Loop(0) | Source [1-> New OR 0-> old]  | Destination [1-> New OR 0-> old]  * Not included when its Loop* 
+    switch(caseType){
+        case "01":{
+          //loop , new
+             const {TRSource, routeInfo}  = data;
+             const { name, coord, province,address} = TRSource;
+             const { routeName , price , routeType , travelMethod   , listOfMiniCoords} = routeInfo;
+
+
+               connection = await poolDb.getConnection();
+    try{
+       
+        await connection.beginTransaction();
+
+        //insert a new TaxiRank
+       const [newTR]  = await connection.query(queryInsertTaxiRank , [name, coord, province,address , 1]);
+
+        //Add to Route table
+        const [result] = await connection.query(query , [routeName , price  ,newTR.insertId,newTR.insertId, routeType ,listOfMiniCoords.length  , listOfMiniCoords.length  ,travelMethod]);
+
+        //Add MiniRoutes
+        for(let i = 0 ; i < listOfMiniCoords.length ; i++){
+            await connection.query(queryMiniRoute , [result.insertId , listOfMiniCoords[i] , i+1 ])
+        }
+        
+        //Add Directions
+        for(let i = 0; i< listOfMiniCoords.length ;i++){
+            await connection.query(queryDirectionRoute , [result.insertId , listOfMiniCoords[i] , i+1])
+        }
+        
+        await connection.commit();
+        res.status(201).json({ message: "Route added successfully", routeId: result.insertId });
+    }catch(error){
+        await connection.rollback(); // Rollback if any query fails
+        console.error("Transaction Failed:", error);
+        res.status(500).json({ message: "Server error during transaction" });
+    } finally {
+        connection.release(); // Release the database connection
+    }
+               break;
+          }
+            
+         case "00":{
+          //loop , old
+             const {TRSource, routeInfo}  = data;
+
+
+              break;
+         }
+         case "111":{
+          //straight , new  , new
+             const {TRSource, TRDest, routeInfo}  = data;
+
+             break;
+         }
+           
+
+         case "100":{
+         //straight , old  , old
+             const {TRSource, TRDest, routeInfo}  = data;
+
+             break;
+         }
+            
+         case "110":{
+        //straight , new  , old
+            const {TRSource, TRDest, routeInfo}  = data;
+
+             break;
+         }
+            
+
+         case "101":{
+        //straight , old  , new
+            const {TRSource, TRDest, routeInfo}  = data;
+
+             break;
+         }
+            
+    }
+ 
+}catch(error){
+        console.log(error);
+        return res.status(500).send({message:"Server error"});
+    }
+}
+
 
 async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
     console.log("Routes have common taxiRanks");
@@ -472,7 +572,6 @@ async function getChosenTaxiTanks(path) {
         if (db) await db.release();
     }
 }
-
 
 // Insert in a graph
 function insertInGraph(listRoutes){

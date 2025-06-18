@@ -794,6 +794,7 @@ coords.length = 1;
 
 
 }
+
 function removeRouteAndMarker(){
   //route remove 
   if (map.getLayer('route')) {
@@ -829,7 +830,6 @@ function removeRouteAndMarker(){
       createdDestTaxiRank = null;
       listOfRoutes = [];
 }
-
 
 function createCustomPointMarker(lngLat) {
   const el = document.createElement('div');
