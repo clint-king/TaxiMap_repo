@@ -19,6 +19,7 @@ import  axios  from 'axios';
  const saveTRInfo = document.querySelector(".saveSession");
  const routeInfoCover = document.querySelector(".routeInfoContainerCover");
  const taxiRankInfoCover = document.querySelector(".sessionInfoContainerCover");
+ const sendButton = document.querySelector(".sendBtn");
 
 
  //context menu
@@ -41,7 +42,7 @@ const messageTextArea = document.querySelector(".sendBtn");
 const routeCancelButton = document.querySelector(".routeButton");
 const routeAddButton = document.querySelector(".add_button") ;
 
- //CLASSES
+ //=== CLASSES  ===
 
  class Route{
    name;
@@ -59,10 +60,16 @@ const routeAddButton = document.querySelector(".add_button") ;
    }
   
    AddRouteCoords(listOfCoords){
-    if(listOfCoords === null || listOfCoords.length === 0) return false;
+    if(listOfCoords.length === 0) return false;
     this.listOfCoords = listOfCoords;
     return true;
    }
+
+    RoutePrint(){
+    return ` name: ${this.name} , message : ${this.message} , listOfCoords : ${this.listOfCoords}`;
+  }
+
+
  }
 
  class TaxiRank{
@@ -84,10 +91,14 @@ const routeAddButton = document.querySelector(".add_button") ;
     this.coord.latitude = latitude;
     this.isNew = isNew;
 
-    if(isNew === true){
+    if(isNew === false){
       this.ID = ID;
     }
 
+  }
+
+  TaxiRankPrint(){
+    return `ID: ${this.ID}  , name: ${this.name} , province: ${this.province} , address: ${this.address} , num_routes: ${this.num_routes} , isNew: ${this.isNew} , coord_longitude: ${this.coord.longitude} , coord_latitude: ${this.coord.latitude} `;
   }
 
  }
@@ -430,27 +441,9 @@ searchBox.addEventListener('input', (e) => {
 
 routeAddButton.addEventListener('click' , ()=>{
   
-  //save route information 
-  if(routeObj && routeCount < 5){
-    //add route 
-    if(!routeCoordinates || routeCoordinates.length === 0){
-      console.log("routeCoordinates has no coordinates");
-      alert("There is no route has been drawn")
-      return null;
-    }
-    routeObj.AddRouteCoords(routeCoordinates);
-    //add message
-    if(messageTextArea.value.trim() === ""){
-      routeObj.AddMessage("");
-    }else{
-      routeObj.AddMessage(messageTextArea.value);
-    }
-
-
-     //save route in a list
-    listOfRoutes.push(routeObj);
-    
-
+  //save current route information 
+  const isRouteSaved = saveCurrentRoute() ;
+  if(isRouteSaved === true){
   //remove 
   removeRouteOnly();
 
@@ -469,11 +462,112 @@ routeAddButton.addEventListener('click' , ()=>{
     console.log("Route object is null");
     return null;
   }
-
- 
- 
 });
 
+sendButton.addEventListener("click" , async()=>{
+
+  //Save current route
+  const isCurrentRouteSaved = saveCurrentRoute();
+
+  if(isCurrentRouteSaved === false){
+    console.log("ERROR: Last route was not saved!!");
+  }
+  //TaxiRanks
+  console.log("SourceTaxiRank : " , createdStartTaxiRank.TaxiRankPrint());
+
+   if(isStraightChosen === true){
+      console.log("DestTaxiRank : " , createdDestTaxiRank.TaxiRankPrint());
+   }
+
+  //routes
+  console.log("Routes : ");
+  listOfRoutes.forEach(route => {
+    console.log(route.RoutePrint());
+  });
+
+  let routeType;
+  let caseType ;
+  let TRSource;
+  let TRDest;
+  let routeInfo;
+
+  if(isStraightChosen === true){
+    caseType = "1";
+    routeType = "Straight";
+  }else{
+    caseType = "0";
+    routeType = "Loop";
+  }
+
+  //TRSource
+  if(createdStartTaxiRank.ID === Infinity){
+    //new
+    caseType += "1";
+    TRSource = {name: createdStartTaxiRank.name , coord: createdStartTaxiRank.coord , province: createdStartTaxiRank.province ,address:createdStartTaxiRank.address};
+  }else{
+    //old
+    caseType += "0";
+    TRSource = {IDSource:createdStartTaxiRank.ID}
+  }
+
+  //TRDest
+  if(isStraightChosen === true){
+  if(createdDestTaxiRank.ID === Infinity){
+    //new
+    caseType += "1";
+    TRDest = {nameDest: createdDestTaxiRank.name , coordDest:createdDestTaxiRank.coord , provinceDest: createdDestTaxiRank.province ,addressDest: createdDestTaxiRank.address };
+  }else{
+    //old
+    caseType += "0";
+    TRDest = {IDDest: createdDestTaxiRank.ID}
+  }
+
+  }
+
+  //route
+  let listOfMessAndCoords = [];
+  listOfRoutes.forEach(route => {
+    listOfMessAndCoords.push({message:route.message , Coords: route.listOfCoords});
+  });
+
+  const value = parseInt(selectedPrice.textContent, 10);
+  routeInfo = { price:value , routeType: routeType , travelMethod:"Taxi" , listOfMessAndCoords:listOfMessAndCoords};
+
+
+  try{
+
+    let response ;
+      if(isStraightChosen === true){
+       response = await axios.post('http://localhost:3000/client//AddPendingRoute' , {
+          caseType:caseType,
+          TRSource:TRSource,
+          TRDest:TRDest,
+          routeInfo:routeInfo
+        });
+
+
+      }else{
+
+          response = await axios.post('http://localhost:3000/client//AddPendingRoute' , {
+          caseType:caseType,
+          TRSource:TRSource,
+          TRDest:TRDest,
+          routeInfo:routeInfo
+        });
+      }
+
+      if( response.status != 200){
+        alert("Could not save");
+      }else{
+        alert("Saved!!");
+      }
+  
+  }catch(error){
+    console.log(error);
+    return;
+  }
+
+});
 
 //=== FUNCTIONS ===
 function updateRouteOnMap(geojson) {
@@ -503,6 +597,37 @@ function updateRouteOnMap(geojson) {
   }
 }
 
+function saveCurrentRoute(){
+  //save route information 
+  if(routeObj && routeCount < 5){
+    //add route 
+    if(!routeCoordinates || routeCoordinates.length === 0){
+      console.log("routeCoordinates has no coordinates");
+      alert("There is no route has been drawn")
+      return null;
+    }
+    const addroute = routeObj.AddRouteCoords(routeCoordinates);
+
+    if(addroute === false){
+      console.log("Could not add route");
+    }
+    //add message
+    if(messageTextArea.value.trim() === ""){
+      routeObj.AddMessage("");
+    }else{
+      routeObj.AddMessage(messageTextArea.value);
+    }
+
+
+     //save route in a list
+    listOfRoutes.push(routeObj);
+    return true;
+  }
+
+  return false;
+}
+
+
 function isMarkersPlaced(){
   let innerFlag = false;
   if(isStraightChosen === true){
@@ -526,6 +651,7 @@ function isMarkersPlaced(){
   return false;
 
 }
+
 
 function removeTaxiRInputGroup2() {
     const taxiRInputGroup2 = document.querySelector(".inputTR.group2");

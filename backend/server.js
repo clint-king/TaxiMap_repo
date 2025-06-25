@@ -1,6 +1,7 @@
 import express from "express";
 import adminRoutes from './routes/adminRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
+import auth from './routes/AuthRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 const port = 3000;
@@ -19,6 +20,7 @@ app.use(express.json({limit:'50mb'}));
 //route
 app.use("/admin", adminRoutes);
 app.use("/client" , clientRoutes);
+app.use("/auth",auth );
 
 
 

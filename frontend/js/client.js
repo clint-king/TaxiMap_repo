@@ -1,5 +1,6 @@
 import  axios  from 'axios';
 import * as turf from '@turf/turf';
+import popup from "./popup.js"
  // === DOM ELEMENTS ===
 
  //toggle button
@@ -20,6 +21,8 @@ import * as turf from '@turf/turf';
  const destinationLocation = document.querySelector('.listDestination');
  const inputCurrentLocation = document.querySelector('.search_input.source');
  const inputDestinationLocation = document.querySelector('.search_input.destination');
+ const sourceSearchBtn = document.querySelector(".source .fa-search");
+ const destSearchBtn = document.querySelector(".dest .fa-search");
 
  //prices listing
  const priceToogleButton  = document.querySelector(".toggle-container");
@@ -73,6 +76,8 @@ const feedbackBtn = document.querySelector(".feedbackBtn");
  //sending search Info vars
  const listOfProvinces = ["Limpopo" , "Gauteng" , "Mpumalanga" , "Western Cape" , "kwazulu-natal" , "Eastern Cape" , "North West" , "Free State" , "Northern Cape"];
 
+ //price toggle check
+ let toggleCheck = false;
  //color for prices
  const priceColors = ['#D2CCA1','#757780','#387780','#A30B37','#EF626C','#361F27','#912F56','#68B684','#C3F73A','#FF36AB'];
 
@@ -162,6 +167,22 @@ map.on('click', async (e) => {
 
  });
 
+ sourceSearchBtn.addEventListener('click' , async(e)=>{
+ 
+  //get address
+   const query = inputCurrentLocation.value;
+   if (!query) return;
+
+   getPlaceUsingQueryRequest(query , true);
+ });
+
+ destSearchBtn.addEventListener('click' , async(e)=>{
+  //get address
+   const query = inputDestinationLocation.value;
+   if (!query) return;
+
+   getPlaceUsingQueryRequest(query , false);
+ });
 
  document.addEventListener('click' , (event)=>{
   if (!searchContainer.contains(event.target) && !currentLocation.contains(event.target) && !destinationLocation.contains(event.target)) {
@@ -172,6 +193,11 @@ map.on('click', async (e) => {
 
  fromToggleBtn.addEventListener('click' , ()=>{
     //incase the user the to button before from immediately
+     if(toggleMap.get("from") === 1){
+      defaultRetreat();
+      return;
+    }
+
     defaultRetreat();
     //set map to 1
     toggleMap.set("from" , 1);
@@ -211,6 +237,10 @@ map.on('click', async (e) => {
 
  toToggleBtn.addEventListener('click' , ()=>{
     //incase the user the to button before from immediately
+    if(toggleMap.get("to") === 1){
+      defaultRetreat();
+      return;
+    }
     defaultRetreat();
     //set map to 1
     toggleMap.set("to" , 1);
@@ -233,12 +263,24 @@ map.on('click', async (e) => {
 
  //source input 
  inputCurrentLocation.addEventListener('input' , (e)=>{
-    fetchSuggestions(currentLocation , e.target.value );
+ const value = e.target.value.trim();
+  if (value === "") {
+    sourceSearchBtn.style.color = "#919191"; // Gray when input is empty
+  } else {
+    sourceSearchBtn.style.color = "#FFD52F"; // Yellow when input has text
+    fetchSuggestions(currentLocation, value);
+  }
  });
 
  //destination input
  inputDestinationLocation.addEventListener('input' , (e)=>{
-    fetchSuggestions(destinationLocation , e.target.value);
+   const value = e.target.value.trim();
+  if (value === "") {
+    destSearchBtn.style.color = "#919191"; // Gray when input is empty
+  } else {
+    destSearchBtn.style.color = "#FFD52F"; // Yellow when input has text
+    fetchSuggestions(destinationLocation, value);
+  }
  });
 
  //direction button listeners
@@ -307,8 +349,8 @@ map.on('click', async (e) => {
     //create a new route
     const sourceAdress = inputCurrentLocation.value;
     const destinationAdress = inputDestinationLocation.value;
-    console.log("sourceAdress : ", sourceAdress );
-      console.log("destinationAdress : ", destinationAdress );
+    console.log("sourceAdress : ", sourceAdress);
+    console.log("destinationAdress : ", destinationAdress);
 
     //geting province of each Adress
     const sourceProv = getProvince(sourceAdress);
@@ -332,8 +374,14 @@ map.on('click', async (e) => {
           destinationProvince : destinationProv.province
         });
 
+        
         const dataReceived = response.data;
         console.log("Route results : " , dataReceived);
+        
+
+        //check if there is no error
+         popup.showSuccessPopup("route found" , true);
+        
 
         //draw route
         const listOfRoutes = dataReceived.routes;
@@ -352,6 +400,7 @@ map.on('click', async (e) => {
         console.log("Source Walking  : " , sourceRouteCoords);
         const sourceCoords = await getAccurateWalkCoords(dataReceived.sourceCoord.latitude , dataReceived.sourceCoord.longitude , dataReceived.pointCloseToSource.latitude , dataReceived.pointCloseToSource.longitude ,sourceRouteCoords);
         walkingCoords.push(sourceCoords);
+
         //destination walking
         const lastRoute = listOfRoutes.length -1;
         console.log("Route length : " , lastRoute);
@@ -418,6 +467,7 @@ map.on('click', async (e) => {
         //remove existing price list if present
         removeAllPrices();
 
+        //populate the new price list
         const priceInfo = dataReceived.prices; 
         const listOfPrices = priceInfo.listOfPrices;
 
@@ -426,6 +476,8 @@ map.on('click', async (e) => {
           const routeName = listOfRoutes[i].name;
           createPricerow(routeName , price , listOfPrices[i].travelMethod == "Walk" ? "red": priceColors[i]);
         }
+
+        
 
         //END SECTION TO SEPERATE
 
@@ -442,8 +494,26 @@ map.on('click', async (e) => {
         listOfDirections.forEach((direction , index)=>{
           createDirections(`D${index+1}` , directionButtonColors[index] , index);
         });
+
+        //check if price toggle is on
+        // if(toggleCheck === true){
+        //   ExecutePriceToggleBtn();
+        // }
+
       }catch(error){
-        console.log(error);
+         popup.showSuccessPopup("No route found" , false);
+      if (error.response) {
+    // The request was made and the server responded with a status code outside 2xx
+    console.log("Route results (ERROR):", error.response);
+    console.log("Route error data:", error.response.data);
+    console.log("Status:", error.response.status);
+  } else if (error.request) {
+    // The request was made but no response was received
+    console.log("No response received:", error.request);
+  } else {
+    // Something else went wrong setting up the request
+    console.log("Error setting up request:", error.message);
+  }
       }
     }else{
       console.log("Some coordinates are equal to -500 , which is default");
@@ -452,6 +522,70 @@ map.on('click', async (e) => {
     }
   }
 }
+
+
+//getting the adress of a random request typed by the user
+ async function getPlaceUsingQueryRequest(query , isSource){
+
+  const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${accessToken}&limit=1`;
+
+  try {
+    const response = await axios.get(endpoint);
+    const data = response.data;
+
+    if (data.features && data.features.length > 0) {
+      const place = data.features[0];
+      const name = place.place_name;
+      const [longitude, latitude] = place.center;
+
+      if(isSource === true){
+       // Remove the old marker if it exists
+       if (sourceMarker) {
+          sourceMarker.remove();
+          console.log("marker is removed");
+        }
+
+            // Add marker and center the map
+            sourceMarker =  new mapboxgl.Marker({color:'green'})
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          map.flyTo({ center: [longitude, latitude], zoom: 12 });
+          saveCoordinates("source" , latitude , longitude);
+          inputCurrentLocation.value =  name;
+          currentLocation.innerHTML = '';
+          sourceSearchBtn.style.color = "#919191";
+     
+      }else{
+
+         // Remove the old marker if it exists
+       if (destinationMarker) {
+          destinationMarker.remove();
+          console.log("marker is removed");
+        }
+            // Add marker and center the map
+            destinationMarker =  new mapboxgl.Marker({color:"red"})
+            .setLngLat([longitude, latitude])
+            .addTo(map);
+
+          map.flyTo({ center: [longitude, latitude], zoom: 12 });
+          saveCoordinates("destination" , latitude , longitude);
+          inputDestinationLocation.value = name;
+          destinationLocation.innerHTML = '';
+          destSearchBtn.style.color = "#919191";
+      }
+       
+      sendsearchInfo();
+      defaultLocationMarkerInfo();
+    } else {
+       popup.showSuccessPopup("No results found." , false);
+    }
+  } catch (error) {
+    console.error(error);
+     popup.showSuccessPopup("No results found." , false);
+  }
+ }
+
 
 async function getAdress(lng , lat){
   const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
@@ -538,7 +672,7 @@ async function fetchSuggestions(suggestions, query) {
     return;
   }
 
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=5`;
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=10`;
   try {
     const response = await fetch(url);
     const data = await response.json();
@@ -580,6 +714,7 @@ async function fetchSuggestions(suggestions, query) {
           saveCoordinates("source" , latitude , longitude);
           inputCurrentLocation.value =  li.textContent;
           suggestions.innerHTML = '';
+          sourceSearchBtn.style.color = "#919191";
           sendsearchInfo();
           defaultLocationMarkerInfo();
           }else if(destinationLocation === suggestions){
@@ -600,6 +735,7 @@ async function fetchSuggestions(suggestions, query) {
           saveCoordinates("destination" , latitude , longitude);
           inputDestinationLocation.value = li.textContent;
           suggestions.innerHTML = '';
+             destSearchBtn.style.color = "#919191";
           sendsearchInfo();
           defaultLocationMarkerInfo();
           }else{
@@ -787,7 +923,7 @@ function ExecutePriceToggleBtn() {
     offPriceLabel.style.opacity = "0.5"; // Dim Taxi label
       onPriceLabel.style.opacity = "1";   // Highlight Walk label
       removeCheck();
-
+      toggleCheck = true;
       if(storedListRoutes){
         //remove existing 
         removeExistingRoutes();
@@ -806,6 +942,7 @@ function ExecutePriceToggleBtn() {
       onPriceLabel.style.opacity = "0.5"; // Dim Walk label
       removeExistingRoutes();
       redrawCoords();
+      toggleCheck = false;
   }
 }
 

@@ -9,6 +9,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
   <link rel="stylesheet" href="./css/clientStyle.css">
+  <link rel="stylesheet" href="./css/popup.css">
  
 </head>
 <body>
@@ -16,16 +17,16 @@
     <div class="wrapper">
     <!-- Top navigation bar -->
     <div class="topnav">
-        <div class="logo">FiQa (taxi map)</div>
+        <div class="logo"><a href="Home.html"><img src='./images/Add a subheading (1).png'></a></div>
         <div class="nav_group">
-          <a href="#home">Home</a>
+          <a href="client.html">Find route</a>
           <a href="clientCrowdSource.html">Suggest route</a>
-          <a href="#contributors">Contributors</a>
-          <a href="#about">About</a>
           <a href="#help">Help</a>
-          <a href="#contact">Contact</a>
         </div>
       </div>
+
+      <!-- Popup -->
+        <div id="popup-container"></div>
 
 
       <div class="page-content">
@@ -34,11 +35,18 @@
         <!--Search-->
         <div class="search_container">
             <div class="sourceSearch container">
-                <input class="search_input source" placeholder="Current location...">
+                <div class="searchRow source">
+                <i class="fas fa-search" style="color: #919191; font-size: 20px;"></i>
+                <input class="search_input source" placeholder="Search Starting location">
+                </div>
+        
                 <ul class="searchList listSource"></ul>
             </div>
             <div class="destinationSearch container">
-                <input class="search_input destination" placeholder="Destination...">
+                 <div class="searchRow dest">
+                <i class="fas fa-search" style="color: #919191; font-size: 20px;"></i>
+                <input class="search_input destination" placeholder="Search Destination">
+                </div>
                 <ul class="searchList listDestination"></ul>
             </div>
             
@@ -171,10 +179,19 @@
 </div>
 </div>
 
+   <!-- Load popup -->
+  <script>
+    fetch('popup.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('popup-container').innerHTML = html;
+      });
+  </script>
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
   <script  type="module" src="./js/client.js"></script>
+  
 </body>
 </html>

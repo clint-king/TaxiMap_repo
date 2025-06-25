@@ -1,0 +1,39 @@
+
+
+
+.popup {
+  max-width: 300px;
+  color: white;
+  font-weight: 500;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 16px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  text-align: center;
+
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+
+.popup.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Success style */
+.popup.success {
+  background: linear-gradient(135deg, #38b000, #70e000);
+  border-left: 1px solid #007f5f;
+}
+
+/* Error style */
+.popup.error {
+  background: linear-gradient(135deg, #d00000, #ff4d4d);
+  border-left: 1px solid #a00000;
+}
+

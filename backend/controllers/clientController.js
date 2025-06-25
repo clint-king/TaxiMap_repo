@@ -1,15 +1,16 @@
 import poolDb from "../config/db.js";
-import { v4 as uuidv4 } from 'uuid';
+import { stringify, v4 as uuidv4 } from 'uuid';
 import  Graph from "../src/Graph.js";
 import dijkstra from "../src/Dijkstra.js";
 import geolib from'geolib';
 
 
 
-let closestTaxiCount = 0 ;
+
 
 
 export const findingPath = async(req,res)=>{
+    let closestTaxiCount = 0 ;
     const {sourceCoords , sourceProvince , destinationCoords , destinationProvince}  = req.body;
     if(!sourceCoords || !sourceProvince || !destinationCoords || !destinationProvince){
         return res.status(400).send("Missing required fields");
@@ -35,7 +36,7 @@ export const findingPath = async(req,res)=>{
     console.log("formatedRoutes : " , formatedRoutes);
 
 
-    let closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
+    let closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords , closestTaxiCount);
 
     if(closestRouteInfo.status != 200){
         console.error(closestRouteInfo.message);
@@ -91,7 +92,7 @@ export const findingPath = async(req,res)=>{
 
     if(fastestPathResults.path.length === 0){
         console.log("Could not get the Fastest path in [findingPath]");
-        closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords );
+        closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords , closestTaxiCount);
         //checking 
         if(closestRouteInfo.status != 200){
             console.error(closestRouteInfo.message);
@@ -151,105 +152,323 @@ export const findingPath = async(req,res)=>{
     });
 }
 
-export const AddPendingRoute = async(req,res)=>{
-     const query = "INSERT INTO Routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
-    const queryTaxiRankWithId = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
-    const queryInsertTaxiRank = "INSERT INTO PendingTaxiRank(name , location_coord, province, address , num_routes) VALUES (?,?,?,?,?)";
-    const queryMiniRoute = "INSERT INTO MiniRoute(Route_ID,coords,route_index) VALUES(?,?,?)";
-    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords,direction_index) VALUES(?,?,?)";
-    let connection;
-try{
+// export const AddPendingRoute = async(req,res)=>{
+//         const query = "INSERT INTO PendingRoutes(name,price,start_rank_id,end_rank_id, route_type,travel_method) VALUES(?,?,?,?,?,?)";
+//     const queryInsertTaxiRank = "INSERT INTO PendingTaxiRank(name , location_coord, province, address) VALUES (?,?,?,?)";
+//     const queryMiniRoute = "INSERT INTO PendingMiniRoutes(pending_route_id,message,coords,route_index) VALUES(?,?,?,?)";
+//     const queryDirectionRoute = "INSERT INTO PendingDirectionRoutes(pending_route_id,direction_coords,direction_index) VALUES(?,?,?)";
+
+//     let connection ;
+// try{
    
-    const data = req.body.data;
-    const {caseType}  = data;
+   
+//     const data = req.body;
 
-    /* *** In this case miniroutes are the same as directions  */
-    // Straight(1) Or Loop(0) | Source [1-> New OR 0-> old]  | Destination [1-> New OR 0-> old]  * Not included when its Loop* 
-    switch(caseType){
-        case "01":{
-          //loop , new
-             const {TRSource, routeInfo}  = data;
-             const { name, coord, province,address} = TRSource;
-             const { routeName , price , routeType , travelMethod   , listOfMiniCoords} = routeInfo;
+//     console.log("Pending route data : " , JSON.stringify(data));
+//     const {caseType}  = data;
 
+//     /* *** In this case miniroutes are the same as directions  */
+//     // Straight(1) Or Loop(0) | Source [1-> New OR 0-> old]  | Destination [1-> New OR 0-> old]  * Not included when its Loop* 
+//     switch(caseType){
 
-               connection = await poolDb.getConnection();
-    try{
+//         case "01":{
+//           //loop , new
+//              const {TRSource, routeInfo}  = data;
+//              const { name, coord, province,address} = TRSource;
+//              const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
+
+//                connection = await poolDb.getConnection();
+//     try{
        
-        await connection.beginTransaction();
+//         await connection.beginTransaction();
 
-        //insert a new TaxiRank
-       const [newTR]  = await connection.query(queryInsertTaxiRank , [name, coord, province,address , 1]);
+//         //insert a new TaxiRank
+//        const [newTR]  = await connection.query(queryInsertTaxiRank , [name, JSON.stringify(coord), province,address]);
 
-        //Add to Route table
-        const [result] = await connection.query(query , [routeName , price  ,newTR.insertId,newTR.insertId, routeType ,listOfMiniCoords.length  , listOfMiniCoords.length  ,travelMethod]);
+//         //Add to Route table
+//        const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  ,newTR.insertId,newTR.insertId, routeType  ,travelMethod]);
 
-        //Add MiniRoutes
-        for(let i = 0 ; i < listOfMiniCoords.length ; i++){
-            await connection.query(queryMiniRoute , [result.insertId , listOfMiniCoords[i] , i+1 ])
-        }
+//         //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message ,  JSON.stringify(listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
         
-        //Add Directions
-        for(let i = 0; i< listOfMiniCoords.length ;i++){
-            await connection.query(queryDirectionRoute , [result.insertId , listOfMiniCoords[i] , i+1])
-        }
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify(listOfMessAndCoords[i].Coords) , i+1])
+//         }
         
-        await connection.commit();
-        res.status(201).json({ message: "Route added successfully", routeId: result.insertId });
-    }catch(error){
-        await connection.rollback(); // Rollback if any query fails
-        console.error("Transaction Failed:", error);
-        res.status(500).json({ message: "Server error during transaction" });
-    } finally {
-        connection.release(); // Release the database connection
-    }
-               break;
-          }
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+//                break;
+//           }
             
-         case "00":{
-          //loop , old
-             const {TRSource, routeInfo}  = data;
+//          case "00":{
+//           //loop , old
+
+//           const {TRSource, routeInfo}  = data;
+
+//           const { IDSource} = TRSource;
+//           const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
 
 
-              break;
-         }
-         case "111":{
-          //straight , new  , new
-             const {TRSource, TRDest, routeInfo}  = data;
+//          connection = await poolDb.getConnection();
+//     try{
+       
+//         await connection.beginTransaction();
+//         //Add to Route table
+//         const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  ,IDSource,IDSource, routeType  ,travelMethod]);
 
-             break;
-         }
+//        //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message , JSON.stringify( listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
+        
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify(listOfMessAndCoords[i].Coords) , i+1])
+//         }
+        
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+
+
+
+//               break;
+//          }
+//          case "111":{
+//           //straight , new  , new
+//              const {TRSource, TRDest, routeInfo}  = data;
+
+//              const { name, coord, province,address} = TRSource;
+//              const { nameDest, coordDest, provinceDest,addressDest} = TRDest; 
+//              const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
+
+
+//                       connection = await poolDb.getConnection();
+//     try{
+       
+//         await connection.beginTransaction();
+
+//         //insert a new TaxiRank source
+//        const [newTRSource]  = await connection.query(queryInsertTaxiRank , [name, coord, province,address]);
+
+//        //insert a new TaxiRank Destination
+//        const [newTRDest]  = await connection.query(queryInsertTaxiRank , [nameDest, coordDest, provinceDest,addressDest]);
+
+//         //Add to Route table
+//         const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  ,newTRSource.insertId,newTRDest.insertId, routeType ,travelMethod]);
+
+//        //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message ,  JSON.stringify(listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
+        
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify(listOfMessAndCoords[i].Coords) , i+1])
+//         }
+        
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+
+//              break;
+//          }
            
 
-         case "100":{
-         //straight , old  , old
-             const {TRSource, TRDest, routeInfo}  = data;
+//          case "100":{
+//          //straight , old  , old
+//              const {TRSource, TRDest, routeInfo}  = data;
 
-             break;
-         }
+//              const {IDSource} = TRSource;
+//              const {IDDest} = TRDest; 
+//              const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
+
+
+//      connection = await poolDb.getConnection();
+//     try{
+       
+//         await connection.beginTransaction();
+
+//         //Add to Route table
+//         const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  ,IDSource ,IDDest, routeType  ,travelMethod]);
+
+//         //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message ,  JSON.stringify(listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
+        
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify(listOfMessAndCoords[i].Coords) , i+1])
+//         }
+        
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+
+
+//              break;
+//          }
             
-         case "110":{
-        //straight , new  , old
-            const {TRSource, TRDest, routeInfo}  = data;
+//          case "110":{
+//         //straight , new  , old
+//             const {TRSource, TRDest, routeInfo}  = data;
 
-             break;
-         }
+//             const {  name, coord, province,address} = TRSource;
+//              const {IDDest} = TRDest; 
+//             const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
+
+
+             
+//                       connection = await poolDb.getConnection();
+//     try{
+       
+//         await connection.beginTransaction();
+
+//         //insert a new TaxiRank source
+//        const [newTRSource]  = await connection.query(queryInsertTaxiRank , [name, coord, province,address]);
+
+//         //Add to Route table
+//         const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  ,newTRSource.insertId,IDDest, routeType  ,travelMethod]);
+
+//        //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message , JSON.stringify( listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
+        
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify( listOfMessAndCoords[i].Coords) , i+1])
+//         }
+        
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+
+
+//              break;
+//          }
             
 
-         case "101":{
-        //straight , old  , new
-            const {TRSource, TRDest, routeInfo}  = data;
+//          case "101":{
+//         //straight , old  , new
+//             const {TRSource, TRDest, routeInfo}  = data;
 
-             break;
-         }
+//             const {IDSource} = TRSource;
+//              const {  nameDest, coordDest, provinceDest,addressDest} = TRDest; 
+//             const { price  ,routeType , travelMethod  , listOfMessAndCoords} = routeInfo;
+
+
+             
+//     connection = await poolDb.getConnection();
+//     try{
+       
+//         await connection.beginTransaction();
+
+//        //insert a new TaxiRank Destination
+//        const [newTRDest]  = await connection.query(queryInsertTaxiRank , [nameDest, coordDest, provinceDest,addressDest]);
+
+//         //Add to Route table
+//         const  routeName = await generateUniqueRouteID(connection);
+//         const [result] = await connection.query(query , [routeName , price  , IDSource ,newTRDest.insertId, routeType ,travelMethod]);
+
+//         //Add MiniRoutes
+//         for(let i = 0 ; i < listOfMessAndCoords.length ; i++){
+//             await connection.query(queryMiniRoute , [result.insertId ,listOfMessAndCoords[i].message , JSON.stringify( listOfMessAndCoords[i].Coords) , i+1 ])
+//         }
+        
+//         //Add Directions
+//         for(let i = 0; i< listOfMessAndCoords.length ;i++){
+//             await connection.query(queryDirectionRoute , [result.insertId , JSON.stringify(listOfMessAndCoords[i].Coords) , i+1])
+//         }
+        
+//         await connection.commit();
+//         return res.status(200).json({ message: "Route added successfully", routeId: result.insertId });
+//     }catch(error){
+//         await connection.rollback(); // Rollback if any query fails
+//         console.error("Transaction Failed:", error);
+//         return res.status(500).json({ message: "Server error during transaction" });
+//     } finally {
+//         connection.release(); // Release the database connection
+//     }
+
+
+//              break;
+//          }
             
-    }
+//     }
  
-}catch(error){
-        console.log(error);
-        return res.status(500).send({message:"Server error"});
+// }catch(error){
+//         console.log(error);
+//         return res.status(500).send({message:"Server error"});
+//     }
+// }
+
+export const AddPendingRoute = async (req, res) => {
+    const data = req.body;
+    const { caseType } = data;
+    let connection;
+
+    console.log("CaseType : " , caseType);
+    try {
+        connection = await poolDb.getConnection();
+        await connection.beginTransaction();
+
+        if (!handleRouteInsertion[caseType]) {
+            throw new Error("Unsupported caseType");
+        }
+
+        const routeId = await handleRouteInsertion[caseType](connection, data);
+
+        await connection.commit();
+        return res.status(200).json({ message: "Route added successfully", routeId });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Transaction Failed:", error);
+        return res.status(500).json({ message: "Server error during transaction" });
+    } finally {
+        if (connection) connection.release();
     }
-}
+};
 
 
 async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
@@ -301,7 +520,7 @@ async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sour
            } };
 }
 
-async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes , sourceCoords , destinationCoords){
+async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes , sourceCoords , destinationCoords, closestTaxiCount){
     /*This function is called evertime when a path is not found.Its function is to find another close route , the respects the following
     [It is within 2.1km walking distance , it is not repeating , there is only 5 attempts each side , the route has been found and when not anothe attempt is taken if the rules are allow]
     */
@@ -323,7 +542,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                if(!result){
                 const destResult = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes , destinationCoords);
                 //when it returns null , Return no routes were found 
-                if(!destResult) return  {status:400 , message:"No new routes were found" , value:null};
+                if(!destResult) return  {status:404 , message:"No new routes were found" , value:null};
                  routeCloseToDest = destResult;
                 
                }else{
@@ -337,7 +556,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                  //run the destination Section
                  const sourceResult =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes , sourceCoords);
                  //when it returns null , Return no routes were found 
-                 if(!sourceResult) return  {status:400 , message:"No new routes were found" , value:null};
+                 if(!sourceResult) return  {status:404 , message:"No new routes were found" , value:null};
                     routeCloseToSource = sourceResult;
                  
                 }else{
@@ -345,7 +564,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                 }
               
             }else{
-                return {status:400 , message:"No new routes were found" , value:null};;
+                return {status:404 , message:"No new routes were found" , value:null};;
             }
 
         }
@@ -353,7 +572,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
     
         if (!routeCloseToSource?.closestRoute || !routeCloseToDest?.closestRoute) {
             console.log("Could not get the closest routes");
-            return {status:400 , message:"The routes found were null or inapropriate " , value:null};;
+            return {status:404 , message:"The routes found were null or inapropriate " , value:null};;
         }
     
         //get the nearest taxiRank
@@ -488,6 +707,7 @@ async function filterAreas(sourceProv, destinationProv) {
         return { status: 500, message: "Server Error", result: null };
     }
 }
+
 
 function formatRoutes(routes , miniCoords){
 
@@ -947,5 +1167,152 @@ return allDirections.filter((direction)=>{
 });
 }
 
+async function generateUniqueRouteID(connection) {
+    let isUnique = false;
+    let routeID;
+    try{
+     
+    while (!isUnique) {
+        routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
+    // Check if the ID already exists in the database
+    const [rows] = await connection.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
 
+    if (rows[0].count === 0) {
+        isUnique = true; // If no match, it's unique
+    }  
+    }
+}catch(error){
+    console.log(error);
+}
+    return routeID;
+}
+
+
+//pending route functions 
+
+const handleRouteInsertion = {
+    "01": async (connection, data) => {
+        const { TRSource, routeInfo } = data;
+        const sourceId = await insertTaxiRank(connection, TRSource);
+        const routeId = await insertRoute(connection, {
+            price: routeInfo.price,
+            sourceId,
+            destId: sourceId,
+            routeType: routeInfo.routeType,
+            travelMethod: routeInfo.travelMethod,
+        });
+        await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+        await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+        return routeId;
+    },
+    "00": async (connection, data) => {
+        const { TRSource, routeInfo } = data;
+        const routeId = await insertRoute(connection, {
+            price: routeInfo.price,
+            sourceId: TRSource.IDSource,
+            destId: TRSource.IDSource,
+            routeType: routeInfo.routeType,
+            travelMethod: routeInfo.travelMethod,
+        });
+        await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+        await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+        return routeId;
+    },
+    "111": async (connection, data) => {
+        const { TRSource, TRDest, routeInfo } = data;
+        const sourceId = await insertTaxiRank(connection, TRSource);
+        const destId = await insertTaxiRank(connection, {
+            name: TRDest.nameDest,
+            coord: TRDest.coordDest,
+            province: TRDest.provinceDest,
+            address: TRDest.addressDest,
+        });
+        const routeId = await insertRoute(connection, {
+            price: routeInfo.price,
+            sourceId,
+            destId,
+            routeType: routeInfo.routeType,
+            travelMethod: routeInfo.travelMethod,
+        });
+        await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+        await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+        return routeId;
+    },
+    "100": async (connection, data) => {
+    const { TRSource, TRDest, routeInfo } = data;
+    const routeId = await insertRoute(connection, {
+        price: routeInfo.price,
+        sourceId: TRSource.IDSource,
+        destId: TRDest.IDDest,
+        routeType: routeInfo.routeType,
+        travelMethod: routeInfo.travelMethod,
+    });
+    await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+    await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+    return routeId;
+},
+"110": async (connection, data) => {
+    const { TRSource, TRDest, routeInfo } = data;
+    const sourceId = await insertTaxiRank(connection, TRSource);
+    const routeId = await insertRoute(connection, {
+        price: routeInfo.price,
+        sourceId,
+        destId: TRDest.IDDest,
+        routeType: routeInfo.routeType,
+        travelMethod: routeInfo.travelMethod,
+    });
+    await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+    await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+    return routeId;
+},
+"101": async (connection, data) => {
+    const { TRSource, TRDest, routeInfo } = data;
+    const destId = await insertTaxiRank(connection, {
+        name: TRDest.nameDest,
+        coord: TRDest.coordDest,
+        province: TRDest.provinceDest,
+        address: TRDest.addressDest,
+    });
+
+    console.log("destID : ",destId );
+
+    const routeId = await insertRoute(connection, {
+        price: routeInfo.price,
+        sourceId: TRSource.IDSource,
+        destId,
+        routeType: routeInfo.routeType,
+        travelMethod: routeInfo.travelMethod,
+    });
+    await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
+    await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
+    return routeId;
+}    // Add similar blocks for "100", "110", "101"
+};
+
+const insertRoute = async (connection, { price, sourceId, destId, routeType, travelMethod }) => {
+    const query = "INSERT INTO PendingRoutes(name,price,start_rank_id,end_rank_id, route_type,travel_method) VALUES(?,?,?,?,?,?)";
+    const routeName = await generateUniqueRouteID(connection);
+    const [result] = await connection.query(query, [routeName, price, sourceId, destId, routeType, travelMethod]);
+    return result.insertId;
+};
+
+const insertDirections = async (connection, routeId, list) => {
+    const query = "INSERT INTO PendingDirectionRoutes(pending_route_id,direction_coords,direction_index) VALUES(?,?,?)";
+    for (let i = 0; i < list.length; i++) {
+        await connection.query(query, [routeId, JSON.stringify(list[i].Coords), i + 1]);
+    }
+};
+
+const insertMiniRoutes = async (connection, routeId, list) => {
+    const query = "INSERT INTO PendingMiniRoutes(pending_route_id,message,coords,route_index) VALUES(?,?,?,?)";
+    for (let i = 0; i < list.length; i++) {
+        await connection.query(query, [routeId, list[i].message, JSON.stringify(list[i].Coords), i + 1]);
+    }
+};
+
+const insertTaxiRank = async (connection, { name, coord, province, address }) => {
+    const query = "INSERT INTO PendingTaxiRank(name , location_coord, province, address ) VALUES (?,?,?,?)";
+    const [result] = await connection.query(query, [name, JSON.stringify(coord), province, address]);
+    return result.insertId;
+};
 

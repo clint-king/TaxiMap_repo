@@ -4,11 +4,11 @@ export default defineConfig({
     build: {
         rollupOptions: {
             input: {
-                main: 'client.html' // Change this to your desired file
+                main: 'Home.html' // Change this to your desired file
             }
         }
     },
     server: {
-        open: '/client.html'
+        open: '/Home.html'
     }
 });

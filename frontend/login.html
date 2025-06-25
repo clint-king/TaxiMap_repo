@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaxiRoute | Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #01386A, #001f3f);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #01386A;
+    }
+
+    .auth-container {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .form-section {
+      flex: 1;
+      padding: 3rem;
+    }
+
+    .form-section h2 {
+      margin-bottom: 1rem;
+      color: #01386A;
+      font-size: 2rem;
+    }
+
+    .form-section form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-section label {
+      margin: 0.5rem 0 0.2rem;
+      font-weight: 500;
+    }
+
+    .form-section input {
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid #dfe6e9;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .form-section button {
+      background: #FFD737;
+      color: #01386A;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+    }
+
+    .form-section button:hover {
+      background: #e6c32c;
+    }
+
+    .switch-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .switch-link a {
+      color: #FFD737;
+      text-decoration: none;
+    }
+
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+
+    .image-section {
+      flex: 1;
+      background: url('https://images.unsplash.com/photo-1534081333815-ae5019106621') no-repeat center center/cover;
+      min-height: 400px;
+    }
+
+    .btn-google {
+      display: inline-block;
+      background: white;
+      color: #444;
+      border: 1px solid #ddd;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .btn-google:hover {
+      background: #eee;
+    }
+
+    @media (max-width: 768px) {
+      .auth-container {
+        flex-direction: column;
+      }
+      .image-section {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div class="auth-container">
+    <div class="form-section">
+      <h2>Welcome Back</h2>
+      <form action="#" method="post">
+        <label for="email">Email Address</label>
+        <input type="email" class="loginEmail" id="email" name="email" required />
+
+        <label for="password">Password</label>
+        <input type="password" class="loginPassword" id="password" name="password" required />
+
+        <button class="loginSubmit" type="submit">Login</button>
+
+        <div style="text-align: center; margin: 1rem 0;">or</div>
+
+        <div style="display: flex; justify-content: center;">
+          <a href="/auth/google" class="btn-google">
+            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 18px; vertical-align: middle; margin-right: 8px;">
+            Login with Google
+          </a>
+        </div>
+      </form>
+      <div class="switch-link">
+        Don't have an account? <a href="signup.html">Sign up here</a>
+      </div>
+    </div>
+    <div class="image-section"></div>
+  </div>
+
+    <script  type="module" src="./js/Auth.js"></script>
+</body>
+</html>
+
