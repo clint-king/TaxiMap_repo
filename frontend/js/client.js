@@ -341,8 +341,12 @@ map.on('click', async (e) => {
  //sending search information
  async function sendsearchInfo(){
   if(allMarkersPlaced()  === true){
+
     //Remove an existsing route first 
     removeExistingRoutes();
+
+    //remove existing general markers
+    removeGeneralMarker();
 
     //default text directions information
     textDirectionAddresses = [];
@@ -437,6 +441,8 @@ map.on('click', async (e) => {
 
         //TaxiRank Markers
         const taxiRanksLength = dataReceived.chosenTaxiRanks.length;
+        console.log("Taxiranks length : " , taxiRanksLength , " chosenTaxiRanks : " ,dataReceived.chosenTaxiRanks );
+
         for(let  i = 0 ; i <  taxiRanksLength-1 ; i++){
           let taxiRank = dataReceived.chosenTaxiRanks[i];
           let nextTaxiRank = dataReceived.chosenTaxiRanks[i+1];
@@ -445,9 +451,9 @@ map.on('click', async (e) => {
         }
 
         // //Last TaxiRank
-        // const lastTaxiRank = taxiRanksLength-1 ;
-        // placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
-        // textDirectionAddresses.push(`${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`);
+        const lastTaxiRank = taxiRanksLength-1 ;
+        placeMarkerGeneral(dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude ,dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude , "taxiRank" , '>>' , "Message" , `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]` , `${destAdress}`);
+        textDirectionAddresses.push(`${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`);
 
         //store stop adress
         textDirectionAddresses.push(destAdress);
@@ -868,6 +874,15 @@ function placeMarker(lng , lat , address){
     }
 }
 
+function removeGeneralMarker(){
+  if(generalMarkerCollector.length === 0) return;
+
+  generalMarkerCollector.forEach(marker => {
+    marker.remove();
+  });
+
+}
+
 function placeMarkerGeneral(lng , lat , type , imageTxt, message ,msg_currentLocation , msg_nextLocation ){
   let newMarker;
   const emojiMarker = document.createElement('div');
@@ -1064,7 +1079,7 @@ function createPricerow(routeID, price, color) {
   // Create the left row (Price)
   const leftRowPrice = document.createElement("li");
   leftRowPrice.className = "leftPriceRow";
-  leftRowPrice.textContent = `R${price}`;
+  leftRowPrice.textContent = color === "red"? "walk" : `R${price}`;
 
   // Append rows to their respective lists
   rightPriceList.appendChild(rightRowPrice);

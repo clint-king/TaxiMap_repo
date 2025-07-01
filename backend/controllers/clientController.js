@@ -10,7 +10,7 @@ import geolib from'geolib';
 
 
 export const findingPath = async(req,res)=>{
-    let closestTaxiCount = 0 ;
+    let closestTaxiCount = {value: 0};
     const {sourceCoords , sourceProvince , destinationCoords , destinationProvince}  = req.body;
     if(!sourceCoords || !sourceProvince || !destinationCoords || !destinationProvince){
         return res.status(400).send("Missing required fields");
@@ -93,6 +93,9 @@ export const findingPath = async(req,res)=>{
     if(fastestPathResults.path.length === 0){
         console.log("Could not get the Fastest path in [findingPath]");
         closestRouteInfo = await closestTaxiRanksF(arrObj, countObj , formatedRoutes , sourceCoords , destinationCoords , closestTaxiCount);
+        console.log(" closestRouteInfo in a while loop :" ,  closestRouteInfo);
+        console.log("countSource : " , countObj.countSource);
+        console.log("countDest : " , countObj.countDest);
         //checking 
         if(closestRouteInfo.status != 200){
             console.error(closestRouteInfo.message);
@@ -104,7 +107,7 @@ export const findingPath = async(req,res)=>{
 }
 
     //reset the count
-    closestTaxiCount = 0;
+    closestTaxiCount.value = 0;
 
     //get The Taxi TaxiRank 
     const chosenTaxiRanks = await getChosenTaxiTanks( fastestPathResults.path );
@@ -531,9 +534,10 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
         let routeCloseToDest ;
 
         //when its the first attempt we check both routes
-        if(closestTaxiCount === 0){
+        if(closestTaxiCount.value === 0){
              routeCloseToSource = findClosestRoute(formatedRoutes , sourceCoords);
              routeCloseToDest = findClosestRoute(formatedRoutes , destinationCoords);
+
         }else{
         
             //checking source count whether it has 5 attempts , 
@@ -541,6 +545,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                const result =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes , sourceCoords);
                if(!result){
                 const destResult = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes , destinationCoords);
+                
                 //when it returns null , Return no routes were found 
                 if(!destResult) return  {status:404 , message:"No new routes were found" , value:null};
                  routeCloseToDest = destResult;
@@ -548,6 +553,8 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                }else{
                 routeCloseToSource = result;
                }
+
+           
             
             }else if(countObject.countDest < 5){
                 const result = destinationRoute(countObject , routeCloseToDest , routeExploredArr , formatedRoutes , destinationCoords);
@@ -555,6 +562,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                 if(!result){
                  //run the destination Section
                  const sourceResult =  sourceRoute(countObject , routeCloseToSource , routeExploredArr , formatedRoutes , sourceCoords);
+                
                  //when it returns null , Return no routes were found 
                  if(!sourceResult) return  {status:404 , message:"No new routes were found" , value:null};
                     routeCloseToSource = sourceResult;
@@ -563,6 +571,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
                     routeCloseToDest = result;
                 }
               
+                
             }else{
                 return {status:404 , message:"No new routes were found" , value:null};;
             }
@@ -584,7 +593,7 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
             return {status:closestTaxiRanks.status , message:closestTaxiRanks.message , value:null};
         }
         //increase count that is used to detect when the function is called for the first time
-        closestTaxiCount++;
+        closestTaxiCount.value++;
         return {status:200 , message:"Successful " , value:{ routeCloseToSource, routeCloseToDest, closestTaxiRanks }};
 }
 
