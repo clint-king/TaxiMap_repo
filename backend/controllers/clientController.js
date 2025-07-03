@@ -3,7 +3,7 @@ import { stringify, v4 as uuidv4 } from 'uuid';
 import  Graph from "../src/Graph.js";
 import dijkstra from "../src/Dijkstra.js";
 import geolib from'geolib';
-
+import RouteModel from '../models/routeModel.js';
 
 
 
@@ -472,6 +472,18 @@ export const AddPendingRoute = async (req, res) => {
         if (connection) connection.release();
     }
 };
+
+export const listOfAllRoutes = async(req, res) =>{
+
+    try{
+        const listOfRoutes = await RouteModel.getAllRoutes();
+        if(!listOfRoutes) return res.status(404).json({message:"No routes not found "});
+
+        return res.status(200).send({routes:listOfRoutes , message:"Successful"});
+    }catch(error){
+        console.log(error);
+    }
+}
 
 
 async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
