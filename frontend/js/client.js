@@ -301,6 +301,8 @@ cancelYesBtn.addEventListener("click", (e) => {
     //remove existing
     removeExistingRoutes();
 
+    //remove stored route (dont put this function in removeExistingRoutes() , it will affect price division)
+    storedListRoutes.length = 0;
     //remove existing general markers
     removeGeneralMarker();
 
@@ -476,6 +478,7 @@ directionContainer.addEventListener("click", async (e) => {
     directionCoords.push(direction.direction_coords);
   });
 
+  console.log("Direction combo chosen : " , directionCoords);
   if (!directionCoords) {
     console.log(`The variable directionCoords is null or  undefined `);
     return;
@@ -590,6 +593,7 @@ async function sendsearchInfo() {
             ? listOfRoutes[0].drawableCoords.flat()
             : listOfRoutes[0].drawableCoords;
         console.log("Source Walking  : ", sourceRouteCoords);
+
         const sourceCoords = await getAccurateWalkCoords(
           dataReceived.sourceCoord.latitude,
           dataReceived.sourceCoord.longitude,
@@ -1513,8 +1517,6 @@ function removeExistingRoutes() {
       map.removeSource(sourceId);
     }
   });
-
-  storedListRoutes.length = 0;
 }
 
 function zoomRoute(coordinates) {
@@ -1628,6 +1630,7 @@ async function movement(coordinates, color) {
 
   removeExistingObject();
 
+  console.log("directions coords of the chosen mode[in movement]  : " ,movementCoordinates );
   // Add a moving taxi marker
   taxiMarker = new mapboxgl.Marker({ element: createTaxiElement(color) })
     .setLngLat(movementCoordinates[0]) // Start at first point
@@ -1644,7 +1647,7 @@ async function movement(coordinates, color) {
         index++;
       }
       taxiMarker.setLngLat(movementCoordinates[index]);
-      moveTimer = setTimeout(moveTaxi, 1000); // Adjust speed (1000ms = 1 sec per step)
+      moveTimer = setTimeout(moveTaxi, 200); // Adjust speed (1000ms = 1 sec per step)
     }
   }
 

@@ -128,10 +128,15 @@ export const findingPath = async(req,res)=>{
      const directionsO2 = await getDirections(chosenRoutes);
      console.log("Directions : " , directionsO2.result);
 
-     if(directionsO2.status != 200){3
+     if(directionsO2.status != 200){
         console.log(directionsO2.message);
         return res.status(directionsO2.status).send("Internal server error");
        }
+
+    //Make sure the direction is proper
+    
+    fixRouteDirections(directionsO2 , sourceCoords , destinationCoords);
+
 
     //get price option 2
     const priceCollectionO2 = PriceCalc(chosenRoutes);
@@ -486,6 +491,44 @@ export const listOfAllRoutes = async(req, res) =>{
 }
 
 
+// === FUNCTIONS === 
+
+function fixRouteDirections(directionsO2, sourceCoords, destinationCoords) {
+    let bearingsArr = []; // stores { id, correctDir }
+
+    for (let i = 0; i < directionsO2.result.length; i++) {
+        for (let y = 0; y < directionsO2.result[i].length; y++) {
+            const routeID = directionsO2.result[i][y].Route_ID;
+            const directionCoords = directionsO2.result[i][y].direction_coords;
+
+            if (i === 0) {
+                const result = analyzeRouteDirection(directionCoords, sourceCoords, destinationCoords);
+                bearingsArr.push({ id: routeID, correctDir: result });
+
+                if (result === false) {
+                    directionsO2.result[i][y].direction_coords = reverseCoordinates(directionCoords);
+                }
+            } else {
+                const valueFound = bearingsArr.find(value => value.id === routeID);
+                if (valueFound && valueFound.correctDir === false) {
+                    directionsO2.result[i][y].direction_coords = reverseCoordinates(directionCoords);
+                }
+            }
+        }
+    }
+
+    // Since directionsO2 is mutated, no need to return anything.
+}
+
+
+function reverseCoordinates(coords) {
+  if (!Array.isArray(coords)) {
+    throw new Error("Input must be an array of coordinates.");
+  }
+  return coords.slice().reverse();
+}
+
+
 async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
     console.log("Routes have common taxiRanks");
 
@@ -522,7 +565,11 @@ async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sour
            return {status:400, result:"Internal server error"};
        }
    
-   
+
+       //modify directions
+
+       fixRouteDirections(directionsO1 , sourceCoords , destinationCoords);
+
             return{status:200 , result:{
                sourceCoord: sourceCoords,
                pointCloseToSource: routeCloseToSource.closestPoint,
@@ -653,8 +700,38 @@ function sourceRoute(countObject , routeCloseToSource , routeExploredArr , forma
     }
 }
 
+function analyzeRouteDirection(route, source, destination) {
+  if (route.length < 2) {
+    console.log("Need at least 2 route points to analyze direction.");
+    return;
+  }
 
-// === FUNCTIONS === 
+  // Step 1: Vector from source to destination
+  const vectorSD = {
+    x: destination.longitude - source.longitude,
+    y: destination.latitude - source.latitude
+  };
+
+  // Step 2: Vector from first point to last point in the route
+  const start = route[0];
+  const end = route[route.length - 1];
+
+  const vectorRoute = {
+    x: end[0] - start[0],
+    y: end[1] - start[1]
+  };
+
+  // Step 3: Dot product
+  const dot = vectorSD.x * vectorRoute.x + vectorSD.y * vectorRoute.y;
+
+  // Step 4: Interpretation
+  if (dot > 0) return true; // Route is heading toward destination
+  else if (dot < 0) return false;  // Route is heading back toward source
+  else return false // Route is neutral to source/destination
+}
+
+
+
 async function filterAreas(sourceProv, destinationProv) {
     let db;
     try {
