@@ -53,6 +53,19 @@ body {
       margin-right: 20%;
     }
 
+
+    /*Popp*/
+    #popup-container{
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      left:calc(50% - 100px);
+      top:60px;
+      height:70px;
+      width:250px;
+      z-index: 3000;
+    }
+
     /* Page layout (flex row) for sidebar + main content */
     .page-content {
       padding-top: 50px;
@@ -71,6 +84,138 @@ body {
       flex: 1;
       padding: 20px;
     }
+
+    /* - Choosing Marker - */
+
+  .listmenu{
+   position:absolute;
+   visibility: hidden;
+   top:40%;
+   left:48%;
+   width:230px;
+   height:150px;
+   z-index:10;
+   background-color: #F2EFEF;
+   border-radius: 10px;
+   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+   .listmenu #title{
+   position: relative;
+   top:5%;
+   font-weight: bold;
+   text-align: center;
+ }
+
+  .listmenu .close_button{
+   position: absolute;
+   left:88%;
+   bottom:80%;
+   background-color: #F2EFEF;
+   cursor: pointer;
+   border:none;
+ }
+
+  .listmenu .close_button:hover{
+  color: #F30909;
+ }
+
+ .btnListContainer{
+  height:90px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+ }
+
+ .btnMenu{
+  height:35px;
+  border: none;
+  background-color: #fadf73;
+  color: white;
+  font-weight: 600;
+  margin-left: 10px;
+  margin-right: 10px;
+  cursor: pointer;
+ }
+
+  .btnMenu:hover{
+     background-color: #FFD52F;
+  }
+
+    /* Context menu [Marker confirmation] */
+  .menu{
+   position:absolute;
+   visibility: hidden;
+   top:40%;
+   left:48%;
+   width:290px;
+   height:150px;
+   z-index:10;
+   background-color: #F2EFEF;
+   border-radius: 10px;
+   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+ }
+
+
+
+  .menu.finalMarker .Information{
+   position: relative;
+   width:100%;
+   top:7%;
+   text-align: center;
+   font-weight: 400;
+  }
+
+  
+  .menu.editMarker .Information{
+   position: relative;
+   width:100%;
+   top:7%;
+   text-align: center;
+   font-weight: 400;
+  }
+
+
+ .menu #title{
+   position: relative;
+   top:5%;
+   font-weight: bold;
+   text-align: center;
+ }
+
+ .menu .close_button{
+   position: absolute;
+   left:88%;
+   bottom:80%;
+   background-color: #F2EFEF;
+   cursor: pointer;
+   border:none;
+ }
+
+ .menu .close_button:hover{
+  color: #F30909;
+ }
+
+ .btnContainer{
+   position:absolute;
+   top:70%;
+   left:30%
+ }
+
+ .btnContainer .btn{
+   width:57.5px;
+   height:21px;
+   border:none;
+   color:white;
+   background-color: #FFD52F;
+   border-radius: 5px;
+   cursor: pointer;
+ }
+
+ .btnContainer .btn:hover{
+   background-color: #FFEFAD;
+ }
+
 
    /* == UI SECTION == */
 #ui_container{

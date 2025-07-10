@@ -704,6 +704,8 @@ async function sendsearchInfo() {
         }
 
         // //Last TaxiRank
+
+        if(listOfRoutes.length <= 2){
         const lastTaxiRank = taxiRanksLength - 1;
         placeMarkerGeneral(
           dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude,
@@ -717,7 +719,8 @@ async function sendsearchInfo() {
         textDirectionAddresses.push(
           `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`
         );
-
+        }
+       
         //store stop adress
         textDirectionAddresses.push(destAdress);
 

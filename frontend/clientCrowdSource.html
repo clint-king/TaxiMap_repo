@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
   <link rel="stylesheet" href="./css/clientCrowdSource.css">
+  <link rel="stylesheet" href="./css/popup.css" />
 </head>
 <body>
 
@@ -23,6 +24,8 @@
         </div>
       </div>
 
+      <!-- Popup -->
+      <div id="popup-container"></div>
 
       <div class="page-content">
      <!--Ui section-->
@@ -145,6 +148,64 @@
             <button id="update_button">Update</button>
         </div>
 
+    <!-- final marker  Context menu -->
+        <div class="menu finalMarker">
+          <p id="title">Confirm final Marker</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Do you want to end the route ?</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+
+    <!-- Confirm editted marker -->
+     <div class="menu editMarker">
+          <p id="title">Confirm location selected</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Do you want to edit the waypoint to this location ?</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+
+    <!-- Choosing Marker -->
+      <div class="listmenu">
+          <p id="title">Modify Marker</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="btnListContainer">
+           <button class="btnMenu Edit">Edit Marker</button>
+          <button class="btnMenu Remove" >Remove Marker</button>
+          </div>
+          
+        </div>
+
+
      <!--Map-->
       <div class="map_container">
         <div class="draw_flag"><p>Draw:<span>OFF</span></p></div>
@@ -154,6 +215,14 @@
 </div>
 </div>
 
+<!-- Load popup -->
+    <script>
+      fetch("popup.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("popup-container").innerHTML = html;
+        });
+    </script>
 
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
