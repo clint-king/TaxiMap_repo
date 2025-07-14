@@ -159,6 +159,10 @@ let markerChosenForEditing = null;
   let destTaxiRMarker = null;
   let createdStartTaxiRank = null;
   let createdDestTaxiRank= null;
+  let contextMenuDetection = {
+    startingTR:false,
+    destTR:false,
+  }
 
   //context menu
   let chosenTRCreation = {none:true , starting:false , dest:false};
@@ -202,7 +206,6 @@ const map = new mapboxgl.Map({
     const response = await axios.get(url);
     const address = response.data.features[0]?.place_name;
     console.log('Address:', address);
-  
   
            //context menu processing
       if(chosenTRCreation.starting === true){
@@ -453,13 +456,13 @@ cancelBtnfinalMenu.addEventListener("click" , ()=>{
 });
 
 yesBtn.addEventListener("click" , ()=>{
-  lastConnection()
+  lastConnection();
   //close menu after doing the work\
   closeFinalMarkerMenu();
 });
 
 noBtn.addEventListener("click" , ()=>{
-  lastConnection()
+  lastConnection();
   //close menu after doing the work\
   closeFinalMarkerMenu();
 });
@@ -497,6 +500,7 @@ updateButton.addEventListener('click' , async (e)=>{
       //save taxiRank
       createdStartTaxiRank = new TaxiRank(nameBox.value , provBox.value ,address , 1,lnglat[0] ,  lnglat[1] , true );
       startingTRInput.value = nameBox.value ;
+      contextMenuDetection.startingTR = false;
     }else{
        console.log("Could not save TaxiRank");
        alert("fill all inputs");
@@ -508,6 +512,7 @@ updateButton.addEventListener('click' , async (e)=>{
         //save taxiRank 
       createdDestTaxiRank = new TaxiRank(nameBox.value , provBox.value ,address , 1,lnglat[0] ,  lnglat[1] , true );
       destTRInput.value = nameBox.value ;
+      contextMenuDetection.destTR = false;
     }else{
        console.log("Could not save TaxiRank");
        alert("fill all inputs");
@@ -680,12 +685,21 @@ editbtnListMenu.addEventListener("click" , ()=>{
 });
 
 removebtnListMenu.addEventListener("click" , (event)=>{
+
+  console.log("coords before removal : " , coords);
+  console.log("routeCoordinates before : " , routeCoordinates);
+  console.log("routeMarkers before : " , routeMarkers);
+
  // You can access the DOM element
  if(!markerChosenForRemoval){
   popup.showSuccessPopup("Could not remove route " , false);
   return;
  } 
   removeRoute(markerChosenForRemoval);
+
+  console.log("coords after removal : " , coords);
+  console.log("routeCoordinates after : " , routeCoordinates);
+  console.log("routeMarkers after : " , routeMarkers);
 });
 
 //=== FUNCTIONS ===
@@ -697,7 +711,6 @@ function openEditMarkerMenu(){
 
  function closeEditMarkerMenu(){
   editMarkerMenu.style.visibility = "hidden";
-  newDraggableMarker = null;
  }
 //listmenu 
 function openListMenu(){
@@ -857,7 +870,7 @@ function resuscitateTaxiRInputGroup2() {
 
   // Create input
   const input = document.createElement('input');
-  input.placeholder = 'Destination taxiRank...';
+  input.placeholder = 'Search destination taxiRank...';
 
   // Create ul
   const ul = document.createElement('ul');
@@ -868,7 +881,7 @@ function resuscitateTaxiRInputGroup2() {
 
   // Create button
   const button = document.createElement('button');
-  button.textContent = 'Create TaxiRank';
+  button.textContent = 'Create new TaxiRank';
 
   // Append input container and button to group2 div
   div.appendChild(inputContainer);
@@ -888,6 +901,7 @@ function showSuggestions(query ,  isGroup1) {
   if(isGroup1){
     suggestionList = startingTRList;
     input = startingTRInput;
+    console.log("Strting section");
   }else{
     suggestionList = destTRList;
     input = destTRInput;
@@ -928,7 +942,9 @@ function showSuggestions(query ,  isGroup1) {
             if (startingTaxiRMarker) {
            startingTaxiRMarker.remove();
            console.log("marker is removed");
-           }      
+           }
+           
+           
             startingTaxiRMarker =  new mapboxgl.Marker({ color: 'green' }).setLngLat(currentCoords).addTo(map);
             coords.push(currentCoords);
 
@@ -979,8 +995,6 @@ function showSuggestions(query ,  isGroup1) {
 
     // Position suggestions near input box
     const rect = input.getBoundingClientRect();
-    suggestionList.style.left = `${rect.left}px`;
-    suggestionList.style.top = `${rect.bottom}px`;
     suggestionList.style.display = 'block';
 }
 
@@ -1039,6 +1053,9 @@ async function fetchSuggestions(query) {
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
 
+          //approve the detection
+          contextMenuDetection.startingTR = true;
+
           //add to coords 
           if(!replaceInCoords(0 , [longitude, latitude])){
             coords.push([longitude, latitude]);
@@ -1058,6 +1075,9 @@ async function fetchSuggestions(query) {
             .addTo(map);
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
+
+          //approve the detection
+          contextMenuDetection.destTR = true;
 
           //add to coords 
           if(!replaceInCoords(1 , [longitude, latitude])){
@@ -1171,8 +1191,10 @@ function replaceInCoords(index , value){
 function turnOnDrawBar(flag){
   if(flag === true){
     drawBar.style.backgroundColor  = "#0AFF375c";
+    drawBar.classList.add('on');
     drawBarText.textContent = "ON";
   }else{
+     drawBar.classList.add('off');
     drawBar.style.backgroundColor  = "#FF0A0A5c";
     drawBarText.textContent = "OFF";
   }
@@ -1256,12 +1278,14 @@ function createCustomPointMarker(lngLat) {
     .setLngLat(lngLat)
     .addTo(map);
 
+    //add to the list for reference
+  routeMarkers.push(newMarker);
     //metaDate
     newMarker.coordIndex = coords.length-1;
     newMarker.routeStartingIndex = routeCoordinates.length-1;
-   
-  //add to the list for reference
-  routeMarkers.push(newMarker);
+    newMarker.routeMarkerIndex = routeMarkers.length-1;
+    
+  
 
   
   //add a listener
@@ -1274,6 +1298,8 @@ function createCustomPointMarker(lngLat) {
     markerChosenForEditing = newMarker; 
     }  
   });
+
+
 }
 
 function routeExists() {
@@ -1326,17 +1352,34 @@ function closeContextMenu(){
 chosenTRCreation.starting = false;
 chosenTRCreation.none = true;
 chosenTRCreation.dest = false;
+
+if(contextMenuDetection.startingTR === true){
+  contextMenuDetection.startingTR = false;
+  if(startingTaxiRMarker){
+    startingTaxiRMarker.remove();
+  }
 }
 
-function removeRoute(clickedMarker){
+if(contextMenuDetection.destTR === true){
+  contextMenuDetection.destTR = false;
+  if(destTaxiRMarker){
+    destTaxiRMarker.remove();
+  }
+}
+
+}
+
+function removeRoute(clickedMarker){  
 
   const markerCoords = clickedMarker.getLngLat(); // returns { lng: 30.3, lat: -26.0 }
   const routeStartingIndex  = clickedMarker.routeStartingIndex;
   const coordIndex = clickedMarker.coordIndex ;
+  const markerIndex = clickedMarker.routeMarkerIndex;
 
 console.log("**MARKER** coordinates found : " , markerCoords);
 console.log("**MARKER** routeStartingIndex : " ,routeStartingIndex);
 console.log("**MARKER** coordIndex : " , coordIndex);
+console.log("**MARKER** routeMarkerIndex : " , markerIndex);
 
 
   const source = map.getSource('route');
@@ -1348,7 +1391,7 @@ if (source) {
           coordinates: routeCoordinates.slice( 0, routeStartingIndex+1)
         });
 
-        for(let i = coordIndex ; i < routeMarkers.length ; i++){
+        for(let i = coordIndex-1 ; i < routeMarkers.length ; i++){
           const marker = routeMarkers[i];
           if(marker){
             marker.remove();
@@ -1356,7 +1399,8 @@ if (source) {
         }
 
    routeCoordinates =  routeCoordinates.slice( 0, routeStartingIndex+1);
-   coords = coords.slice(0 , coordIndex+1);   
+   coords = coords.slice(0 , coordIndex+1);
+   routeMarkers.length = markerIndex +1;
 }
 
 //close menu
@@ -1441,6 +1485,7 @@ if(endingIndex >= 0 ){
 //insert global data
 globalMarkerBehind = markerBehind;
 globalMarkerFoward = markerFoward;
+console.log("globalMarkerBehind : " , globalMarkerBehind);
 //close menu
 closeListMenu(true);
 
@@ -1457,7 +1502,7 @@ popup.showSuccessPopup("click in a new area to edit the route" , true);
 
     // Create new draggable marker at the same spot
     const newMarker = new mapboxgl.Marker({
-      color: 'green',
+      color: 'orange',
       draggable: true
     })
       .setLngLat(lngLat)
@@ -1520,9 +1565,22 @@ function tempRouteRemoval(){
 function editRouteArrays(startingIndex, endingIndex, markerIndex , markerPosCoord, newCoords) {
   const deleteCount = endingIndex - startingIndex + 1;
   // Replace the chunk in routeCoordinates with newCoords
+
   routeCoordinates.splice(startingIndex, deleteCount, ...newCoords);
   coords[markerIndex] = markerPosCoord;
 
+  console.log("Edit routeCoords 2 : " , ...newCoords);
+  const newEndingIndex = startingIndex + newCoords.length - 1;
+  return newEndingIndex;
+}
+
+function simpleEditRouteArrays(startingIndex, endingIndex, newCoords) {
+  const deleteCount = endingIndex - startingIndex + 1;
+  // Replace the chunk in routeCoordinates with newCoords
+
+  routeCoordinates.splice(startingIndex, deleteCount, ...newCoords);
+
+  console.log("Edit routeCoords 2 : " , ...newCoords);
   const newEndingIndex = startingIndex + newCoords.length - 1;
   return newEndingIndex;
 }
@@ -1587,29 +1645,93 @@ async function recreateRouteAfterEdit(){
   if(globalMarkerBehind){
     markerBehind = globalMarkerBehind;
   }else{
-    markerBehind = globalMarkerBehind;
+    markerBehind = startingTaxiRMarker;
   }
 
-  let markerFoward;
-  if(globalMarkerFoward){
-    markerFoward = globalMarkerFoward;
-  }else{
-    markerFoward = destTaxiRMarker;
-  }
-        const coordPair = `${[markerBehind.getLngLat().lng , markerBehind.getLngLat().lat].join(',')};${[newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat].join(',')}`;
+ 
+
+      console.log("markerBehind in[recreateRouteAfterEdit]: " , markerBehind);
+       //BEHIND
+       const routeBehind = await routeGeneration([markerBehind.getLngLat().lng , markerBehind.getLngLat().lat],[newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat]);
+        console.log("Edit routeCoords 1 : " , routeBehind);
+        console.log("Routes coord before : " ,routeCoordinates );
+        let startingIndex;
+        if(!markerBehind.routeStartingIndex){
+          startingIndex = 0;
+
+        }else{
+          startingIndex = markerBehind.routeStartingIndex;
+        }
+
+        console.log("StartingIndex : ", startingIndex);
+
+        const newRouteIndex = editRouteArrays(startingIndex, markerChosenForEditing.routeStartingIndex ,markerChosenForEditing.coordIndex , [newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat] , routeBehind);
+        console.log("Routes coord after : " ,routeCoordinates);
+        
+        //revive the hidden marker with the right position 
+        markerChosenForEditing.setLngLat([newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat]);
+        markerChosenForEditing.routeStartingIndex = newRouteIndex;
+        markerChosenForEditing.getElement().style.display = "";
+
+      //   //FOWARD
+      //    let markerFoward;
+      // if(globalMarkerFoward){
+      //  markerFoward = globalMarkerFoward;
+      //   const routeFoward = await routeGeneration([newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat] , [markerFoward.getLngLat().lng , markerFoward.getLngLat().lat]);
+      //   const MarkerFowardRouteIndex = simpleEditRouteArrays(newRouteIndex , markerFoward.routeStartingIndex , routeFoward);
+      //   markerFoward.routeStartingIndex = MarkerFowardRouteIndex;
+      // }
+       
+
+        //the other part of the route
+        deleteSideRoutes();
+
+        updateRouteOnMap({
+          type: 'LineString',
+          coordinates: routeCoordinates
+        });
+        
+        console.log("markerChosenForEditing index in Coords : " ,markerChosenForEditing.coordIndex );
+        console.log("Coords : " , coords);
+
+        //resetting 
+        closeEditMarkerMenu();
+        markerChosenForEditing = null;
+        if(newDraggableMarker){
+          newDraggableMarker.remove();
+          newDraggableMarker = null;
+        }
+
+ }
+
+
+async function routeGeneration(coordFrom , coordTo){
+ const coordPair = `${coordFrom.join(',')};${coordTo.join(',')}`;
         const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordPair}?geometries=geojson&access_token=${accessToken}`;
     
         const response = await fetch(url);
         const data = await response.json();
         const segment = data.routes[0].geometry;
 
-       const newRouteIndex = editRouteArrays(markerBehind.routeStartingIndex , markerChosenForEditing.routeStartingIndex , [newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat] ,  segment.coordinates.slice(1));
+return segment.coordinates;
 
-        //revive the hidden marker with the right position 
-        markerChosenForEditing.setLngLat([newDraggableMarker.getLngLat().lng , newDraggableMarker.getLngLat().lat]);
-        markerChosenForEditing.routeStartingIndex = newRouteIndex;
-        markerChosenForEditing.getElement().style.display = "";
 }
+
+function deleteSideRoutes() {
+  const routeIds = ['routeBehind', 'routeFoward'];
+
+  routeIds.forEach((id) => {
+    if (map.getLayer(id)) {
+      map.removeLayer(id);
+    }
+    if (map.getSource(id)) {
+      map.removeSource(id);
+    }
+  });
+
+  console.log("Both routeBehind and routeFoward have been removed.");
+}
+
 
 
 

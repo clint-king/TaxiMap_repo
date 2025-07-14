@@ -255,6 +255,7 @@ body {
 
 .taxiRInput_container{
    height:120px;
+   width:320px;
    display: flex;
    flex-direction: column;
    justify-content: center ;
@@ -265,21 +266,20 @@ body {
 .inputTR{
    display: flex;
    align-items: center;
-   gap: 15%;
+   gap: 10%;
    width:100%;
-}
-.inputTR input{
-   width:100%;
-   height:35px;
-   border-radius: 20px;
-   border: 1px solid #D3D3D3;
-   text-align: center;
    position: relative;
-   top:7px;
+}
+.inputTR input {
+  width: 96%;
+  height: 35px;
+  border-radius: 20px;
+  border: 1px solid #D3D3D3;
+  text-align: center;
 }
 
 .inputTR button{
-  padding: 7px 1px;
+   padding: 7px 1px;
    background-color:#FFD52F;
    font-weight: 600;
    border-radius: 10px;
@@ -290,18 +290,60 @@ body {
 
 .inputcontainer{
   max-width: 100%;
+  position: relative;
 }
 
-.inputcontainer ul{
-position: absolute;
-list-style-type: none;
-padding-left: 0;
-border-radius: 15px;
-background: rgba(128, 128, 128, 0.3); /* semi-transparent gray */
-backdrop-filter: blur(8px); /* applies blur to background */
--webkit-backdrop-filter: blur(8px); /* for Safari */
-z-index: 999;
+
+
+.inputcontainer.startingInput{
+   position: relative;
+  display: flex;
+  flex-direction: column;
+  /* height:45px; */
+  width:178px;
 }
+
+
+/* .inputcontainer.startingInput ul {
+  border: 2px solid rgb(3, 255, 16);
+  position: absolute;
+  left: 0;
+  top:100%;
+  width:175px;
+  list-style-type: none;
+  margin-top: 37px; 
+  border-radius: 15px;
+  background: rgba(128, 128, 128, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+} */
+
+.inputcontainer ul {
+  position: absolute;
+  top: 100%; /* now this goes right after the input */
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  border-radius: 15px;
+  background: rgba(128, 128, 128, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+
+
+.inputcontainer.destInput{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height:45px;
+  width:178px;
+}
+
 
 .inputcontainer li:hover{
    color:white;
@@ -335,7 +377,7 @@ visibility: hidden;
 .sessionInfoContainer{
   position: relative;
   border:1px solid #D3D3D3;
-  width:80%;
+  width:76%;
   height:442px;
   display: flex;
   flex-direction: column;
@@ -390,8 +432,16 @@ visibility: hidden;
   height:20px;
   font-size: small;
   padding: 5px;
+  cursor: pointer;
 }
 
+.route_div:hover{
+  border: 3px solid  #2ecc71;
+}
+
+.route_div:hover:has(.fa-times:hover) {
+  border: none !important; /* cancel yellow border */
+}
 .route_div button{
   width:18px;
   height:18px;
@@ -402,12 +452,21 @@ visibility: hidden;
   cursor: pointer;
 }
 
-.route_button{
+/* .route_button{
   border-radius: 18px;
   border: none;
   padding: 6px;
   margin-top: 5px;
+  cursor: pointer;
+} */
+
+
+
+.routeButton .fa.fa-times:hover{
+  color: red !important;
+  font-size: 18px !important;
 }
+
 
 /*Route label */
 .labelContainer{
@@ -522,7 +581,7 @@ textarea{
 }
 
 /* Map */
-.draw_flag{
+/* .draw_flag{
   position: absolute;
   LEFT: 95%;
   TOP:1%;
@@ -540,8 +599,76 @@ textarea{
 }
 
 .draw_flag p {
-  margin: 0; /* remove default p margin */
+  margin: 0; 
   padding: 0;
+} */
+
+.draw_flag {
+  position: absolute;
+  left: calc(50% - 42px);
+  top: 1%;
+  color: white;
+  background-color: #FF0A0A5c; /* red */
+  width: 84px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  box-shadow: 2px 4px 6px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  padding: 4px 10px;
+  z-index: 1000;
+  transition: background-color 0.4s;
+}
+
+.draw_flag p {
+  margin: 0;
+  padding: 0;
+}
+
+
+@keyframes expandThenSettleOn {
+  0% {
+    width: 84px;
+    left: calc(50% - 42px);
+  }
+  50% {
+    width: 100%;
+    left:0;
+  }
+  100% {
+    width: 250px;
+    left: calc(50% - 125px);
+  }
+}
+
+/* Animation for turning OFF */
+@keyframes expandThenSettleOff {
+  0% {
+     width: 250px;
+    left: calc(50% - 125px);
+  }
+  50% {
+    width: 100%;
+    left:0;
+  }
+  100% {
+    width: 84px;
+    left: calc(50% - 42px);
+  }
+}
+
+/* ON state */
+.draw_flag.on {
+  background-color: #0AFF375c; /* green */
+  animation: expandThenSettleOn 0.6s ease-in-out forwards;
+}
+
+/* OFF state */
+.draw_flag.off {
+  background-color: #FF0A0A5c; /* red */
+  animation: expandThenSettleOff 0.6s ease-in-out forwards;
 }
 
 #map {
@@ -552,6 +679,21 @@ textarea{
 
  
 /* Context Menu*/
+#suggestions{
+  border-radius: 15px;
+  background: rgba(128, 128, 128, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  list-style-type: none;
+  position: relative;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+#suggestions li:hover{
+  font-size: large;
+  color:white;
+}
 .menu_wrapper{
     position:absolute;
     border-radius: 20px;
