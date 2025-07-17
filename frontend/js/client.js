@@ -8,6 +8,8 @@ import popup from "./popup.js";
 const fromToggleBtn = document.querySelector(".toggleBtn.from");
 const toToggleBtn = document.querySelector(".toggleBtn.to");
 
+
+
 //context menu
 const confirmationContextMenu = document.querySelector(
   ".menu.markerConfirmation"
@@ -248,6 +250,8 @@ map.on("load", () => {
 });
 
 // === EVENT LISTENERS ====
+
+
 
 feedbackBtn.addEventListener("click", (event) => {});
 
@@ -561,7 +565,10 @@ async function sendsearchInfo() {
             sourceProvince: sourceProv.province,
             destinationCoords: destinationCoordinates,
             destinationProvince: destinationProv.province,
-          }
+          },
+  {
+    withCredentials: true
+  }
         );
 
         const dataReceived = response.data;
@@ -1411,7 +1418,10 @@ function hideBufferHighlight() {
 async function HighlightMap() {
   try {
     const response = await axios.get(
-      "http://localhost:3000/client/listOfAllRoutes"
+      "http://localhost:3000/client/listOfAllRoutes",
+  {
+    withCredentials: true
+  }
     );
     const resultInfo = response.data.routes;
 

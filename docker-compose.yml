@@ -1,0 +1,35 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+    networks:
+      - appnet
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: devpassword
+      MYSQL_DATABASE: dev_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - appnet
+
+  frontend:
+    image: nginx:alpine          
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    ports:
+      - "8080:80"
+    networks:
+      - appnet
+
+volumes:
+  mysql_data:
+
+networks:
+  appnet:

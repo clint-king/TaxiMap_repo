@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+
     <title>Multi-Taxi Path with Mapbox</title>
     <link
       href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
@@ -12,7 +14,13 @@
       href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-..."
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link
       href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
       rel="stylesheet"
@@ -23,23 +31,40 @@
   <body>
     <div class="wrapper">
       <!-- Top navigation bar -->
-      <div class="topnav">
-        <div class="logo">
-          <a href="Home.html"
-            ><img src="./images/Add a subheading (1).png"
-          /></a>
-        </div>
-        <div class="nav_group">
-          <a href="client.html">Find route</a>
-          <a href="clientCrowdSource.html">Suggest route</a>
-          <a href="#help">Help</a>
-        </div>
-      </div>
+      <nav class="topnav">
+        <div class="nav-container">
+          <div class="logo">
+            <a href="Home.html">
+              <img src="./images/Add a subheading (1).png" alt="Logo" />
+            </a>
+          </div>
 
+          <!-- Burger button for mobile -->
+          <div class="burger" onclick="toggleMobileMenu()">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html">Find route</a>
+            <a href="clientCrowdSource.html">Suggest route</a>
+            <a href="#help">Help</a>
+          </div>
+        </div>
+      </nav>
+      <!-- Search slider button-->
+      
       <!-- Popup -->
       <div id="popup-container"></div>
-
+       
+       
       <div class="page-content">
+
+        <button class="searchSlider">
+        <i class="fa-solid fa-caret-down"  style="color: #919191; font-size: 20px"    aria-hidden="true"></i>
+       </button>
         <!--Ui section-->
         <div id="ui_container">
           <!--Search-->
@@ -98,12 +123,12 @@
             <div class="list_container">
               <div class="listSub_container list_right">
                 <ul>
-                  <!-- <li class="rightPriceRow"><div class="route_circle"></div>Route 1</li> -->
+                  <li class="rightPriceRow"><div class="route_circle"></div>Route 1</li>
                 </ul>
               </div>
               <div class="listSub_container list_left">
                 <ul>
-                  <!-- <li class="leftPriceRow">R50.00</li> -->
+                  <li class="leftPriceRow">R50.00</li>
                 </ul>
               </div>
             </div>
@@ -119,7 +144,15 @@
             <p>Directions :</p>
             <button class="default_direction_button">Default</button>
             <div class="sub_direction_container">
-              <!-- <button class="direction_button">DA</button> -->
+              <!-- <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button>
+              <button class="direction_button">DA</button> -->
             </div>
           </div>
 
@@ -169,78 +202,37 @@
             <div class="arrow"></div>
           </div>
 
-          <!-- <div id="text-map"> -->
-
-          <!-- <div class="text-node-fail">
-                <div class="textDir bubble">Failed:Could not load text Map</div> 
-            </div>
-
-            <div class="text-node">
-                <div class="custom-mapbox">👆</div>
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-           
-            <div class="text-node">
-                <div class="custom-mapbox">👆</div>
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-
-            <div class="text-node">
-                <div class="custom-mapbox">>></div>
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-
-            <div class="text-node">
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-
-            <div class="text-node">
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-
-            <div class="text-node">
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-                <i class='far fa-arrow-alt-circle-down' style='font-size:32px'></i>
-            </div>
-
-            <div class="text-node">
-                <div class="textDir bubble">Nkowankowa , Starting</div>
-            </div> -->
-          <!-- </div> -->
-
           <div id="map">
             <!--area filter -->
             <div class="areaContainer">
               <p>Highlight clickable radius</p>
 
               <!-- toggle button -->
-          <div class="toggle-container">
-            <div class="area toggle-button" id="areatoggle">
-              <div class="area toggle-circle"></div>
+              <div class="toggle-container">
+                <div class="area toggle-button" id="areatoggle">
+                  <div class="area toggle-circle"></div>
+                </div>
+              </div>
             </div>
-          </div>
-            </div>
-
 
             <!--Location indicatiion Markers-->
             <div class="locationsContainer">
               <div class="sourceLocation">
-                <i class="fa-solid fa-location-dot sourcePin" style="font-size: 25px; color:#919191" ></i>
+                <i
+                  class="fa-solid fa-location-dot sourcePin"
+                  style="font-size: 25px; color: #919191"
+                ></i>
                 <p>Starting</p>
               </div>
 
               <div class="destLocation">
-                <i class="fa-solid fa-location-dot destPin" style="font-size: 25px; color:#919191" ></i>
+                <i
+                  class="fa-solid fa-location-dot destPin"
+                  style="font-size: 25px; color: #919191"
+                ></i>
                 <p>Ending</p>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -248,11 +240,46 @@
 
     <!-- Load popup -->
     <script>
+
+      //popup
       fetch("popup.html")
         .then((res) => res.text())
         .then((html) => {
           document.getElementById("popup-container").innerHTML = html;
         });
+
+       function toggleMobileMenu() {
+    const menu = document.getElementById("mobileMenu");
+    menu.classList.toggle("show");
+  }
+
+
+  // slide 
+
+  function attachSearchToggle() {
+    searchSliderBtn = document.querySelector(".searchSlider");
+    const searchContainer = document.querySelector(".search_container");
+
+    if (searchSliderBtn && !searchSliderBtn.dataset.bound) {
+      searchSliderBtn.addEventListener("click", () => {
+        searchContainer.classList.toggle("hidden");
+      });
+      searchSliderBtn.dataset.bound = "true"; // Prevent duplicate bindings
+    }
+  }
+
+  // Run once on load
+  document.addEventListener("DOMContentLoaded", () => {
+    attachSearchToggle();
+  });
+
+  // Re-attach on window resize (for dynamic appearance of .searchSlider)
+  window.addEventListener("resize", () => {
+    if (window.innerWidth <= 768) {
+      attachSearchToggle();
+    }
+  });
+
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -260,6 +287,5 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsts@2.11.0/dist/jsts.min.js"></script>
     <script type="module" src="./js/client.js"></script>
-
   </body>
 </html>

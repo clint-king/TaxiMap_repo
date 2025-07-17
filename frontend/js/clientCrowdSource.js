@@ -1,5 +1,8 @@
 import  axios  from 'axios';
 import popup from "./popup.js";
+
+axios.defaults.withCredentials = true;
+
  // === DOM ELEMENTS ===
 
  //label section
@@ -60,28 +63,49 @@ const messageTextArea = document.querySelector(".sendBtn");
 
  // Route adding section
 const routeCancelButton = document.querySelector(".routeButton");
+const seeRouteBtn = document.querySelector(".route_div");
 const routeAddButton = document.querySelector(".add_button") ;
 
  //=== CLASSES  ===
 
  class Route{
    name;
-   listOfCoords;
+   listOfCoords = [];
    message;
+
+   //variables for drawig management
+   routeMarkers = [];
+   coords = [];
+   isLoopRoutefinished;
 
 
    constructor(name ){
     this.name = name;
-  
+   }
+
+   hasRouteEnded(flag){
+    this.isLoopRoutefinished = flag;
    }
 
    AddMessage(message){
     this.message = message;
    }
+
+   AddListofMarkers(routeMarkers){
+    if(routeMarkers.length === 0) return false;
+    this.routeMarkers.push(...routeMarkers);
+    return true;
+   }
+
+   AddCoords(coords){
+    if(coords.length === 0) return false;
+    this.coords.push(...coords);
+    return true;
+   }
   
    AddRouteCoords(listOfCoords){
     if(listOfCoords.length === 0) return false;
-    this.listOfCoords = listOfCoords;
+    this.listOfCoords.push(...listOfCoords);
     return true;
    }
 
@@ -140,6 +164,9 @@ let isStartingMarkerListining = true;
 
 let colors = ["#EBA9B7" , "#BCF9F9", "#F9E1BC" , "#C1F9BC" , "#A9C6EB"];
 let currentColor = colors[0];
+
+//route add
+let currentStateNameId = 1;
 
 //edit
 let globalMarkerBehind = null;
@@ -369,11 +396,18 @@ const map = new mapboxgl.Map({
     }
   });
 
+//route management
+document.body.addEventListener('click', function (event) {
+  if (event.target.closest('.route_div')) {
+    const button = event.target.closest('.route_div');
+    const routeId = button.getAttribute('data-name');
+    console.log(`Clicked route button for Route ${routeId}`);
+    // Handle your logic here...
+    showRoute(routeId);
 
-//listening for the the
-// addClickListenerToMarker(startingTaxiRMarker, () => {
-//   console.log('Starting Taxi Rank Marker clicked!');
-// });
+
+  }
+});
 
 
 
@@ -538,10 +572,16 @@ searchBox.addEventListener('input', (e) => {
 
 routeAddButton.addEventListener('click' , ()=>{
   
+  if(isLoopRoutefinished === false){
+    popup.showSuccessPopup("Complete the current route first" , false);
+    return;
+  }
   //save current route information 
   const isRouteSaved = saveCurrentRoute() ;
   if(isRouteSaved === true){
 
+    console.log("*****SAVED routes : *****" , JSON.stringify(routeObj.listOfCoords));
+    console.log("current routeCoords : " , routeCoordinates);
   //remove 
   removeRouteOnly();
 
@@ -551,8 +591,8 @@ routeAddButton.addEventListener('click' , ()=>{
 
   //create html
   currentColor = colors[num-1];
-  createRouteDiv(`Route${num}` , currentColor);
-
+  createRouteDiv(`Route${num}` , currentColor, num);
+  currentStateNameId = num;
   //increase count
   routeCount++;
 
@@ -704,6 +744,51 @@ removebtnListMenu.addEventListener("click" , (event)=>{
 
 //=== FUNCTIONS ===
 
+
+//show route on click
+function showRoute(nameId){
+  if(currentStateNameId == nameId){
+    console.log("The route is in its current state");
+    return;
+  }
+  listOfRoutes.forEach((routeLocalObj)=>{
+    if(routeLocalObj.name === `${nameId}` ){
+      //remove the existing route
+      removeRouteOnly();
+
+      console.log("New route : ", JSON.stringify(routeLocalObj.listOfCoords));
+      coords.push(...routeLocalObj.coords);
+      isLoopRoutefinished = routeLocalObj.isLoopRoutefinished;
+      routeMarkers.push(...routeLocalObj.routeMarkers);
+      routeCoordinates.push(...routeLocalObj.listOfCoords);
+
+      console.log("Coords : " , coords);
+      console.log("routeMarkers : " , routeMarkers);
+      console.log("routeCoordinates : " , routeCoordinates);
+
+
+      routeMarkers.forEach((marker)=>{
+        if(marker){
+          createCustomPointMarker([marker.getLngLat().lng , marker.getLngLat().lat]);
+        }
+      });
+      
+      //draw new route
+       updateRouteOnMap({
+          type: 'LineString',
+          coordinates: routeLocalObj.listOfCoords
+        });
+    }
+  });
+}
+
+function removeRouteElement(nameId){
+  //remove the existing route (this should not apply to route 1)
+  removeRouteOnly();
+
+  //reinstate the route on the left side
+}
+
 //editmenu
 function openEditMarkerMenu(){
   editMarkerMenu.style.visibility = "visible";
@@ -722,7 +807,6 @@ listmenu.style.visibility = "hidden";
 markerChosenForRemoval = null;
 if(isEditingored === false) markerChosenForEditing = null;
 }
-
 
 //marker menu
 function addClickListenerToMarker(marker, callback) {
@@ -776,11 +860,29 @@ function saveCurrentRoute(){
       alert("There is no route has been drawn")
       return null;
     }
+    //add route coords
     const addroute = routeObj.AddRouteCoords(routeCoordinates);
 
     if(addroute === false){
-      console.log("Could not add route");
+      console.log("*********ERROR: Could not add route  ");
     }
+
+    //add coords of all Markers
+    const allMarkers = routeObj.AddCoords(coords);
+    if(allMarkers === false){
+       console.log("*********ERROR: Could not add all Marker (a.k.a coords)  ");
+    }
+
+    //add inner markers array 
+    const innerMarkers = routeObj.AddListofMarkers(routeMarkers);
+    if(innerMarkers === false){
+       console.log("*********ERROR: Could not add innerMarkers");
+    }
+
+    //add to indicate that the route is done 
+    routeObj.hasRouteEnded(isLoopRoutefinished);
+
+
     //add message
     if(messageTextArea.value.trim() === ""){
       routeObj.AddMessage("");
@@ -1134,6 +1236,7 @@ async function lastConnection(){
 
         //end route 
         isLoopRoutefinished = true;
+         turnOnDrawBar(false);
    }else{
     popup.showSuccessPopup("There is no waypoint drawn" , false);
    }
@@ -1170,6 +1273,7 @@ async function lastConnection(){
 
         //end route 
         isLoopRoutefinished = true;
+         turnOnDrawBar(false);
    }else{
     popup.showSuccessPopup("There is no waypoint drawn" , false);
    }
@@ -1313,11 +1417,12 @@ function IncreaseRouteNumber(){
   return labelNumber;
 }
 
-function createRouteDiv(routeName = "Route1" , col) {
+function createRouteDiv(routeName = "Route1" , col , number) {
   // Create the main div
   const routeDiv = document.createElement("div");
   routeDiv.className = "route_div";
   routeDiv.style.backgroundColor = col;
+  routeDiv.setAttribute('data-name', number);
 
   // Add the route name text
   routeDiv.textContent = routeName + " ";
@@ -1391,7 +1496,7 @@ if (source) {
           coordinates: routeCoordinates.slice( 0, routeStartingIndex+1)
         });
 
-        for(let i = coordIndex-1 ; i < routeMarkers.length ; i++){
+        for(let i = coordIndex ; i < routeMarkers.length ; i++){
           const marker = routeMarkers[i];
           if(marker){
             marker.remove();
@@ -1401,6 +1506,10 @@ if (source) {
    routeCoordinates =  routeCoordinates.slice( 0, routeStartingIndex+1);
    coords = coords.slice(0 , coordIndex+1);
    routeMarkers.length = markerIndex +1;
+
+   if(isLoopRoutefinished === true){
+    isLoopRoutefinished = false;
+   }
 }
 
 //close menu

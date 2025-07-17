@@ -1,5 +1,6 @@
 import  axios  from 'axios';
 
+axios.defaults.withCredentials = true;
 
  // === DOM ELEMENTS ===
 //sign up 
@@ -88,7 +89,9 @@ if (loginSubmit) {
       const response = await axios.post('http://localhost:3000/auth/login', {
         email: loginEmail.value.trim(),
         password: loginPassword.value
-      });
+      }, {
+  withCredentials: true  
+});
 
       const userType = response.data.user_type;
 
