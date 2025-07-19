@@ -6,6 +6,7 @@ body {
     height: 100vh;
     width:100vw;
    }
+
    /* == NAVIGATION BAR == */
 
     /* Wrapper to hold topbar + page content in column layout */
@@ -117,17 +118,17 @@ body {
       top:60px;
       height:70px;
       width:250px;
-      z-index: 3000;
+      z-index: 0;
     }
 
 
 
     /* Page layout (flex row) for sidebar + main content */
     .page-content {
-      padding-top: 50px;
+      padding-top:0;
       display: flex;
       height: calc(100vh - 50px);
-      width:100vw;
+      width:100%;
       flex: 1; /* fill the remaining space */
     }
 
@@ -143,7 +144,6 @@ body {
    flex-direction: column;
    align-items: center;
    justify-content: space-between;
-   border:2px solid black;
 }
 
 
@@ -445,10 +445,77 @@ z-index: 999;
    background-color: #FFEFAD;
  }
 
+ /* MENU */
+ .menu {
+  position: absolute;
+  visibility: hidden;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;            /* Responsive width */
+  max-width: 320px;       /* Prevent too wide on large screens */
+  height: auto;           /* Let height adapt */
+  padding: 1rem;
+  z-index: 10;
+  background-color: #F2EFEF;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+}
+
+.menu #title {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.menu .close_button {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.menu .close_button i {
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.menu .markerInformation,
+.menu .Information {
+  text-align: center;
+  margin-top: 1rem;
+  font-weight: 400;
+}
+
+.menu .btnContainer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.menu .btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  background-color: #ddd;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.menu .btn:hover {
+  background-color: #ccc;
+}
+
+
 
   /*Toggle button*/
 
-  .toggle-container {
+   .toggle-container {
    position: relative;
    top:6%;
    display: flex;
@@ -587,6 +654,8 @@ z-index: 999;
     }
   } */
 
+
+
      /*Area Container */
  .areaContainer{
    font-size:small;
@@ -649,11 +718,52 @@ z-index: 999;
 display: none;
  }
 
+ /*circle button*/
+
+ .circle-button {
+   position: relative;
+   top:1%;
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   border: 3px solid grey;
+   background-color: white;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   transition: transform 0.3s;
+ }
+
+ .arrow {
+   width: 1px;
+   height: 1px;
+   border-left: 15px solid grey;
+   border-top: 10px solid transparent;
+   border-bottom: 10px solid transparent;
+ 
+   transition: transform 0.3s;
+ }
+
+ .down .arrow {
+   transform: rotate(90deg);
+   border-left: 15px solid green;
+ }
+
+ .textDir.bubble{
+   border:4px solid black;
+   padding:10px;
+   text-align: center;
+   width:90%;
+   height:50px;
+   border-radius: 10px;
+ }
+
  
 
   @media (max-width: 768px) {
   #map {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -662,13 +772,52 @@ display: none;
   }
 
    .map_container {
-    position: relative;
+    position: absolute;
     z-index: 1;
-    width: 100%;
-    height: 99%;
+    width: 110%;
+    height: 100%;
     border: 1px solid blue;
+    top: 0px;
+    right: 0px;
   }
 
+    #text-map{
+   position: relative;
+   background-color: white;
+   visibility: visible;
+    left: 55%;
+    width: 80%;
+    border-radius: 5%;
+  transform: translate(-50%);
+  height: 57%;
+  overflow-x: auto;
+   overflow-y: scroll;
+   z-index: 11000;
+   border: 1px solid black;
+}
+
+    .page-content {
+      flex-direction: column;
+    }
+
+  /*circle toggle button*/
+ 
+  .circle-button {
+   position: absolute;
+   top: 49%;
+   left: 77%;
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   border: 3px solid grey;
+   background-color: white;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   z-index: 1;
+   transition: transform 0.3s;
+ }
 
 
 
@@ -679,7 +828,7 @@ display: none;
   position:relative;
   width:90px;
   height: 20px;
-  top:0.3rem;
+  top:0rem;
   left:50%;
   transform: translateX(-50%);
   display: flex;
@@ -703,22 +852,22 @@ display: none;
 
   /* Bottom section of the UI */
 .search_container {
-    position: fixed !important;
-    top: 3.4375rem; /* below the navbar */
-    left:50%;
-    transform: translateX(-50%);
+    position: sticky !important;
+    left:100%;
+    transform: translateX(-20%);
     width: 70%;
-    z-index: 10999;
+    margin-top: 1%;
+    z-index: 10;
     background-color: white;
     background: transparent;
     transition: transform 0.5s ease, opacity 0.5s ease;
   }
 
   .search_container.hidden {
-  transform: translate(-50%, -120%);
+  transform: translate(-20%, -120%);
   opacity: 0;
   pointer-events: none;
-}
+  }
 
 
   .sourceSearch.container,
@@ -755,12 +904,13 @@ display: none;
   /* Push the rest of UI to the bottom */
   #ui_container {
     position: fixed;
+    top:100%;
     bottom: 0;
-    min-width: 80%;
-    max-width:100%;
-    max-height: 50vh;
-    min-height: 40vh;   /* Helps ensure enough space */
+    width: 100%;
+    height:30%;  /* Helps ensure enough space */
     overflow-y: auto; 
+    overflow-x: auto;
+    transform: translateY(-100%);
     z-index: 2;
     background-color:  rgba(255, 255, 255, 0.95);
     padding-top: 10px;
@@ -852,6 +1002,8 @@ display: none;
 }
 
 
+ 
+
 /* feedback */
 .feedbackBtn{
    padding: 1rem 6.5625rem;
@@ -862,7 +1014,8 @@ display: none;
  .areaContainer{
    font-size:small;
    position:relative;
-   left:30rem;
+   left:100%;
+   transform: translateX(-105%);
    top:15rem;
    display: flex;
    flex-direction: column;
@@ -890,7 +1043,8 @@ display: none;
    display: flex;
    justify-content: space-between;
    align-items: center;
-   left:30rem;
+   left:100%;
+   transform: translateX(-105%);
    top:21rem;
    width:7.375rem;
    height:4.375rem;
@@ -920,46 +1074,7 @@ display: none;
 /* MEDIA ENDING (PHONE / TABLET )*/
 
 
- /*circle button*/
-
- .circle-button {
-   position: relative;
-   top:1%;
-   width: 40px;
-   height: 40px;
-   border-radius: 50%;
-   border: 3px solid grey;
-   background-color: white;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   cursor: pointer;
-   transition: transform 0.3s;
- }
-
- .arrow {
-   width: 1px;
-   height: 1px;
-   border-left: 15px solid grey;
-   border-top: 10px solid transparent;
-   border-bottom: 10px solid transparent;
  
-   transition: transform 0.3s;
- }
-
- .down .arrow {
-   transform: rotate(90deg);
-   border-left: 15px solid green;
- }
-
- .textDir.bubble{
-   border:4px solid black;
-   padding:10px;
-   text-align: center;
-   width:90%;
-   height:50px;
-   border-radius: 10px;
- }
 
 
 

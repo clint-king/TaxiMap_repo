@@ -65,10 +65,8 @@
         <button class="searchSlider">
         <i class="fa-solid fa-caret-down"  style="color: #919191; font-size: 20px"    aria-hidden="true"></i>
        </button>
-        <!--Ui section-->
-        <div id="ui_container">
-          <!--Search-->
-          <div class="search_container">
+
+        <div class="search_container">
             <div class="sourceSearch container">
               <div class="searchRow source">
                 <i
@@ -98,6 +96,10 @@
             </div>
           </div>
 
+        <!--Ui section-->
+        <div id="ui_container">
+          <!--Search-->
+         
           <!-- From and To buttons -->
           <div class="toggleButtons_container">
             <button class="toggleBtn from">From</button>
@@ -202,6 +204,12 @@
             <div class="arrow"></div>
           </div>
 
+          <!-- <div id="text-map">
+           <div style="color: red;">ER Start</div>
+           <div style="color: #F0F4F7;">>> Midpoint</div>
+           <div style="color: #00CED1;">🛑 End</div>
+          </div> -->
+
           <div id="map">
             <!--area filter -->
             <div class="areaContainer">
@@ -248,14 +256,16 @@
           document.getElementById("popup-container").innerHTML = html;
         });
 
+
+
+        
        function toggleMobileMenu() {
     const menu = document.getElementById("mobileMenu");
     menu.classList.toggle("show");
   }
 
 
-  // slide 
-
+  //slide 
   function attachSearchToggle() {
     searchSliderBtn = document.querySelector(".searchSlider");
     const searchContainer = document.querySelector(".search_container");
@@ -268,18 +278,49 @@
     }
   }
 
+  //moving search container 
+  function moveSearchContainer() {
+    const search = document.getElementById("search_container");
+    const ui = document.getElementById("ui_container");
+
+    if (window.innerWidth > 768) {
+      // Desktop: insert search_container back into ui_container
+      if (!ui.contains(search)) {
+        ui.insertBefore(search, ui.firstChild); // insert at top of ui_container
+      }
+    } else {
+      // Mobile: move it out of ui_container to body (or wrapper)
+      if (ui.contains(search)) {
+        document.body.insertBefore(search, ui);
+      }
+    }
+  }
+
+  //fix textmap
+
+  function textMapHeightAdj(){
+      if (window.innerWidth <= 768) {
+ const navbar = document.querySelector('.topnav');
+const textmap = document.querySelector('#text-map ');
+ const height = navbar.offsetHeight;
+  textmap.style.top = `${height +40}px`;
+      }
+  }
+
   // Run once on load
   document.addEventListener("DOMContentLoaded", () => {
     attachSearchToggle();
+    moveSearchContainer();
   });
 
   // Re-attach on window resize (for dynamic appearance of .searchSlider)
   window.addEventListener("resize", () => {
+     moveSearchContainer();
     if (window.innerWidth <= 768) {
       attachSearchToggle();
+      textMapHeightAdj()
     }
-  });
-
+});
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>

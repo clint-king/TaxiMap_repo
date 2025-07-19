@@ -185,7 +185,7 @@ map.on("load", () => {
 
     //prevents user from marking location without clicking from or To
     if (toggleMap.get("to") === 0 && toggleMap.get("from") === 0) {
-      popup.showSuccessPopup("Click from or to buttons , to Mark", false);
+      showPopup("Click from or to buttons , to Mark", false);
       return;
     }
     const { lng, lat } = e.lngLat; // Extract longitude and latitude
@@ -225,7 +225,7 @@ map.on("load", () => {
     });
 
     if (features.length === 0) {
-      popup.showSuccessPopup("Click is outside of the radius", false);
+      showPopup("Click is outside of the radius", false);
     }
   });
 
@@ -341,8 +341,7 @@ cancelYesBtn.addEventListener("click", (e) => {
     removeExistingObject();
 
     //popup
-    popup.showSuccessPopup("Successfully removed", true);
-
+    showPopup("Successfully removed", true);
     //turnoff the pins
     turnOffSourcePin();
     turnOffDestPin();
@@ -385,19 +384,31 @@ ArrowBtn.addEventListener("click", () => {
       //there is information to display
       textMap = createTextMapContainer(textDirectionAddresses, false);
       mapContainer.insertBefore(textMap, mapEl);
-      mapEl.style.width = "75%";
+       if (window.innerWidth > 768){
+          mapEl.style.width = "75%";
+       }
+     
     } else {
       //there is no information to display
       console.log("Thee is no Information");
       const arrAddress = ["Oops: Text map is not loaded"];
       textMap = createTextMapContainer(arrAddress, true);
       mapContainer.insertBefore(textMap, mapEl);
-      mapEl.style.width = "75%";
+      if (window.innerWidth > 768){
+           mapEl.style.width = "75%";
+           
+      }
+   
     }
+
+     textMapHeightAdj();
+     closeSearchContainer();
   } else {
     isTextDirectionOpen = false;
     removeTextDirections();
-    mapEl.style.width = "95%";
+    if (window.innerWidth > 768){
+       mapEl.style.width = "95%";
+    }
   }
 });
 
@@ -575,8 +586,7 @@ async function sendsearchInfo() {
         console.log("Route results : ", dataReceived);
 
         //check if there is no error
-        popup.showSuccessPopup("route found", true);
-
+        showPopup("route found", true);
         //draw route
         const listOfRoutes = dataReceived.routes;
 
@@ -785,7 +795,7 @@ async function sendsearchInfo() {
           ExecutePriceToggleBtn();
         }
       } catch (error) {
-        popup.showSuccessPopup("No route found", false);
+        showPopup("No route found", false);
         if (error.response) {
           // The request was made and the server responded with a status code outside 2xx
           console.log("Route results (ERROR):", error.response);
@@ -805,6 +815,45 @@ async function sendsearchInfo() {
     }
   }
 }
+
+// mobileSize funcitons
+function textMapHeightAdj(){
+      if (window.innerWidth <= 768) {
+ const navbar = document.querySelector('.topnav');
+const textmap = document.querySelector('#text-map ');
+ const height = navbar.offsetHeight;
+  textmap.style.top = `${height +40}px`;
+      }
+  }
+
+
+  function closeSearchContainer(){
+    const searchContainer = document.querySelector(".search_container");
+     if(!searchContainer.classList.contains('hidden')){
+      searchContainer.classList.add('hidden');
+     }
+  }
+
+  function popupZindexIncrease(){
+    const popup = document.getElementById("popup-container");
+    if(popup){
+      popup.style.zIndex = "3000";
+    }
+  }
+
+   function popupZindexDecrease(){
+    const popup = document.getElementById("popup-container");
+    if(popup){
+      popup.style.zIndex = "0";
+    }
+  }
+
+  function showPopup(message , isSuccess){
+    popupZindexIncrease();
+    popup.showSuccessPopup(message , isSuccess , popupZindexDecrease);
+    
+  }
+
 
 //managing pin colors
 function turnOnSourcePin() {
@@ -840,7 +889,8 @@ async function getPlaceUsingQueryRequest(query, isSource) {
       
       const isInside = isPointInBuffer(longitude, latitude);
         if(isInside === false){
-            popup.showSuccessPopup("Click is outside of the radius" , false);
+  
+            showPopup("Click is outside of the radius" , false);
             return; 
         }
 
@@ -888,11 +938,11 @@ async function getPlaceUsingQueryRequest(query, isSource) {
       sendsearchInfo();
       defaultLocationMarkerInfo();
     } else {
-      popup.showSuccessPopup("No results found.", false);
+      showPopup("No results found.", false);
     }
   } catch (error) {
     console.error(error);
-    popup.showSuccessPopup("No results found.", false);
+    showPopup("No results found.", false);
   }
 }
 
@@ -1026,7 +1076,7 @@ async function fetchSuggestions(suggestions, query) {
           const isInside = isPointInBuffer(longitude, latitude);
 
           if(isInside === false){
-            popup.showSuccessPopup("Click is outside of the radius" , false);
+            showPopup("Click is outside of the radius" , false);
             return; 
           }
 

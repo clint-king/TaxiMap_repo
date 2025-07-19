@@ -1,4 +1,4 @@
- function showSuccessPopup(message , isSuccess) {
+ function showSuccessPopup(message , isSuccess , callback) {
 
   //insert message
   const popup = document.getElementById('informPopup');
@@ -17,6 +17,7 @@
 
   setTimeout(() => {
     popup.classList.remove('show');
+    if (callback) callback(); 
   }, 3000); // hide after 3 seconds
 }
 
