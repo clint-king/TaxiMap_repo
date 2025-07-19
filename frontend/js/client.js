@@ -24,6 +24,9 @@ const confirmationYesBtn = document.querySelector(
   ".menu.markerConfirmation .btn.yes"
 );
 
+// text direction menu
+let closeTextMenuEl ;
+
 //pins
 const sourcePin = document.querySelector(".sourcePin");
 const destPin = document.querySelector(".destPin");
@@ -373,6 +376,18 @@ fromToggleBtn.addEventListener("click", () => {
   noDisturbance = false;
 });
 
+// Create the whole text map container
+function createTextMenuCloseBtn(){
+  if (window.innerWidth <= 768) {
+  closeTextMenuEl = document.querySelector(" #text-map .close_button");
+
+  closeTextMenuEl.addEventListener("click" , ()=>{
+     removeTextDirections();
+      ArrowBtn.classList.toggle("down");
+  });
+}
+}
+
 ArrowBtn.addEventListener("click", () => {
   const isDown = ArrowBtn.classList.toggle("down");
 
@@ -401,13 +416,17 @@ ArrowBtn.addEventListener("click", () => {
    
     }
 
+    //these functions check the screen size
      textMapHeightAdj();
      closeSearchContainer();
+     createTextMenuCloseBtn();
+
+
   } else {
     isTextDirectionOpen = false;
     removeTextDirections();
     if (window.innerWidth > 768){
-       mapEl.style.width = "95%";
+       mapEl.style.width = "100%";
     }
   }
 });
@@ -1800,6 +1819,9 @@ function getMatchingSegments(fullPath, directionPath, tolerance = 0.0001) {
   return matchingSegments;
 }
 
+
+
+
 // Helper function to check if two line segments are close
 function areSegmentsClose(a1, a2, b1, b2, tolerance) {
   return (
@@ -1879,10 +1901,30 @@ function createTextNode(text, showArrow, markerColor, emoji) {
   return textNode;
 }
 
-// Create the whole text map container
+
+
 function createTextMapContainer(listOfAdresses, isDefault) {
   const container = document.createElement("div");
   container.id = "text-map";
+
+  // add cross
+
+  if (window.innerWidth <= 768) {
+  const closeButton = document.createElement("button");
+closeButton.className = "close_button";
+
+const icon = document.createElement("i");
+icon.className = "fa fa-times";
+icon.setAttribute("style", "font-size: 20px; color: rblackd");
+icon.setAttribute("aria-hidden", "true");
+
+// Append icon to button
+closeButton.appendChild(icon);
+container.appendChild(closeButton);
+  }
+
+
+//END OF THE CLOSEBUTTON
 
   console.log("List : ", listOfAdresses);
   for (let i = 0; i < listOfAdresses.length; i++) {

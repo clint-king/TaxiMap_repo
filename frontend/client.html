@@ -205,6 +205,13 @@
           </div>
 
           <!-- <div id="text-map">
+             <button class="close_button" >
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
            <div style="color: red;">ER Start</div>
            <div style="color: #F0F4F7;">>> Midpoint</div>
            <div style="color: #00CED1;">🛑 End</div>
@@ -258,7 +265,7 @@
 
 
 
-        
+
        function toggleMobileMenu() {
     const menu = document.getElementById("mobileMenu");
     menu.classList.toggle("show");
@@ -280,18 +287,25 @@
 
   //moving search container 
   function moveSearchContainer() {
-    const search = document.getElementById("search_container");
+    const search = document.querySelector(".search_container");
     const ui = document.getElementById("ui_container");
+
+     if (!search || !ui) {
+    console.warn("One or both elements not found:", { search, ui });
+    return;
+  }
 
     if (window.innerWidth > 768) {
       // Desktop: insert search_container back into ui_container
       if (!ui.contains(search)) {
         ui.insertBefore(search, ui.firstChild); // insert at top of ui_container
+        console.log("Inserted in container");
       }
     } else {
       // Mobile: move it out of ui_container to body (or wrapper)
       if (ui.contains(search)) {
         document.body.insertBefore(search, ui);
+          console.log("removed from container");
       }
     }
   }
@@ -301,9 +315,9 @@
   function textMapHeightAdj(){
       if (window.innerWidth <= 768) {
  const navbar = document.querySelector('.topnav');
-const textmap = document.querySelector('#text-map ');
+const textmap = document.querySelector('#text-map');
  const height = navbar.offsetHeight;
-  textmap.style.top = `${height +40}px`;
+ if(textmap) textmap.style.top = `${height +40}px`;
       }
   }
 

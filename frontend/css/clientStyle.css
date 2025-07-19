@@ -376,7 +376,7 @@ z-index: 999;
 }
 
 /* Context menu [Marker confirmation] */
-  .menu{
+  /* .menu{
    position:absolute;
    visibility: hidden;
    top:40%;
@@ -412,6 +412,7 @@ z-index: 999;
    text-align: center;
  }
 
+ 
  .menu .close_button{
    position: absolute;
    left:88%;
@@ -419,11 +420,25 @@ z-index: 999;
    background-color: #F2EFEF;
    cursor: pointer;
    border:none;
+ } */
+
+ #text-map .close_button{
+  position: absolute;
+   left:89%;
+   top:2%;
+   background-color: #ffffff;
+   cursor: pointer;
+   border:none;
  }
 
- .menu .close_button:hover{
+  #text-map .close_button:hover{
   color: #F30909;
  }
+  
+ /* .menu .close_button:hover{
+  color: #F30909;
+ }
+
 
  .btnContainer{
    position:absolute;
@@ -443,7 +458,7 @@ z-index: 999;
 
  .btnContainer .btn:hover{
    background-color: #FFEFAD;
- }
+ } */
 
  /* MENU */
  .menu {
@@ -502,7 +517,8 @@ z-index: 999;
   border: none;
   border-radius: 0.5rem;
   font-weight: bold;
-  background-color: #ddd;
+  color: white;
+  background-color: #FFD52F;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
@@ -590,6 +606,8 @@ z-index: 999;
    font-size: medium;
    padding: 1.4375rem 6.5625rem;
    border-radius: 20px;
+   margin-top: 1rem;
+   margin-bottom: 1rem;
    border:none;
    background-color: #FFD52F ;
  }
@@ -604,7 +622,6 @@ z-index: 999;
    display: flex;
    flex-direction: row;
    gap:10px;
-   border: 1px solid blue;
 }
 
 #text-map{
@@ -804,8 +821,8 @@ display: none;
  
   .circle-button {
    position: absolute;
-   top: 49%;
-   left: 77%;
+   top: 26rem;
+   left: 80%;
    width: 40px;
    height: 40px;
    border-radius: 50%;
@@ -995,7 +1012,6 @@ display: none;
 /* directions */
 .sub_direction_container {
   background-color: #EEEEEE;
-  min-width: 90%;
   max-width: 100%;      /* 290px */
   min-height: 6.375rem;       /* 150px */
   border-radius: 1.5625rem;   /* 25px */
