@@ -1,230 +1,51 @@
-/* Reset & Base */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  font-family: 'Poppins', sans-serif;
-  background-color: #f4f6f8;
-  color: #01386A;
-  line-height: 1.6;
+  font-family: 'Open Sans', sans-serif;
+  scroll-behavior: smooth;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto', sans-serif;
 }
 
-.container {
-  width: 90%;
-  max-width: 1200px;
-  margin: auto;
+.hero-section {
+  background: linear-gradient(to right, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.4)), url('../assets/picture.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
-/* Navbar */
-.navbar {
-  background: #01386A;
-  padding: 1rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 999;
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  color: #FFD737;
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.nav-links {
-  list-style: none;
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #fff;
-  font-weight: 500;
-  transition: color 0.3s;
-}
-
-.nav-links a:hover {
-  color: #FFD737;
-}
-
-.auth-buttons {
-  display: flex;
-  gap: 1rem;
-}
-
-.btn {
-  padding: 0.5rem 1.2rem;
-  border-radius: 30px;
-  font-weight: 500;
-  transition: all 0.3s ease-in-out;
-}
-
-.btn.login {
-  border: 2px solid #FFD737;
-  background: transparent;
-  color: #FFD737;
-}
-
-.btn.login:hover {
-  background: #FFD737;
-  color: #01386A;
-}
-
-.btn.signup {
-  background: #FFD737;
-  color: #01386A;
-}
-
-.btn.signup:hover {
-  background: #e6c32c;
-  color: #01386A;
-}
-
-/* Hero Section */
-.hero {
-  background: url('../images/ChatGPT\ Image\ Jun\ 20\,\ 2025\,\ 08_46_12\ PM.png') no-repeat center/cover;
-  height: 90vh;
-  position: relative;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay {
-  background: rgba(0, 0, 0, 0.5);
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  z-index: 1;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  max-width: 700px;
-}
-
-.hero-content h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.hero-content p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-}
-
-.hero-buttons .btn {
-  margin: 0 10px;
-  padding: 0.9rem 1.7rem;
-  border-radius: 50px;
-  font-weight: 600;
-}
-
-.primary {
-  background: #FFD737;
-  color: #01386A;
-}
-
-.primary:hover {
-  background: #e6c32c;
-}
-
-.secondary {
-  border: 2px solid #FFD737;
-  color: #FFD737;
-}
-
-.secondary:hover {
-  background: #FFD737;
-  color: #01386A;
-}
-
-/* Sections */
-section {
-  padding: 4rem 0;
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-  color: #FFD737;
-}
-
-.about p,
-.cta p {
-  max-width: 800px;
-  margin: auto;
-  text-align: center;
-}
-
-/* Features, Steps, Users, Stats, Testimonials */
-.features,
-.how-it-works,
-.target-users,
-.stats,
-.testimonials {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  text-align: center;
-}
-
-.feature-card,
-.step,
-.user-card,
-.stat,
-.testimonial {
-  background: white;
-  padding: 2rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
-
-.cta {
-  background: #01386A;
-  color: white;
-  text-align: center;
-  padding: 4rem 2rem;
-}
-
-.cta .btn {
-  margin-top: 1rem;
-}
-
-/* Footer */
-footer {
-  background: #01386A;
-  color: #FFD737;
-  text-align: center;
-  padding: 2rem 0;
-  margin-top: 2rem;
-}
-
-footer a {
-  color: #FFD737;
-  margin: 0 0.5rem;
-  font-weight: 500;
+.about-card:hover,
+.contributor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
 }
 
 footer a:hover {
-  text-decoration: underline;
+  color: #FFD700;
 }
+
+textarea {
+  resize: none;
+}
+
+:where([class^="ri-"])::before {
+  content: "\f3c2";
+}
+body {
+  font-family: 'Open Sans', sans-serif;
+  scroll-behavior: smooth;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Roboto', sans-serif;
+}
+.contributor-card {
+  transition: transform 0.3s;
+}
+.contributor-card:hover {
+  transform: translateY(-4px);
+}
+
