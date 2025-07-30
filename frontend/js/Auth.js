@@ -96,7 +96,7 @@ if (loginSubmit) {
       const userType = response.data.user_type;
 
       if (userType === 'admin') {
-        window.location.href = '/index.html';
+        window.location.href = '/admin.html';
       } else if (userType === 'client') {
         window.location.href = '/client.html';
       } else {
