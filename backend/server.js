@@ -6,7 +6,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
 
-const port = 3000;
+const port = process.env.PORT || 3000 ;
 const app = express();
 
 //middleware
