@@ -1,6 +1,7 @@
 import axios from "axios";
 import * as turf from "@turf/turf";
 import popup from "./popup.js";
+import {BASE_URL} from "./AddressSelection.js";
 
 // === DOM ELEMENTS ===
 
@@ -26,6 +27,7 @@ const confirmationYesBtn = document.querySelector(
 
 // text direction menu
 let closeTextMenuEl ;
+
 
 //pins
 const sourcePin = document.querySelector(".sourcePin");
@@ -82,6 +84,15 @@ const toggleMap = new Map([
   ["from", 0],
   ["to", 0],
 ]);
+
+// let BASE_URL;
+// if(true){
+//   //local 
+//   BASE_URL = "http://localhost:3000";
+// }else{
+// //render
+//  BASE_URL = 'https://taximap-repo.onrender.com' ;
+// }
 
 //markers
 let sourceMarker = null;
@@ -589,7 +600,7 @@ async function sendsearchInfo() {
     ) {
       try {
         const response = await axios.post(
-          "http://localhost:3000/client/findingPath",
+          `${BASE_URL}/client/findingPath`,
           {
             sourceCoords: sourceCoordinates,
             sourceProvince: sourceProv.province,
@@ -1487,7 +1498,7 @@ function hideBufferHighlight() {
 async function HighlightMap() {
   try {
     const response = await axios.get(
-      "http://localhost:3000/client/listOfAllRoutes",
+      `${BASE_URL}/client/listOfAllRoutes`,
   {
     withCredentials: true
   }

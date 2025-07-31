@@ -1,5 +1,7 @@
 import  axios  from 'axios';
 import popup from "./popup.js";
+import {BASE_URL} from "./AddressSelection.js";
+
 
 axios.defaults.withCredentials = true;
 
@@ -679,7 +681,7 @@ sendButton.addEventListener("click" , async()=>{
 
     let response ;
       if(isStraightChosen === true){
-       response = await axios.post('http://localhost:3000/client//AddPendingRoute' , {
+       response = await axios.post(`${BASE_URL}/client//AddPendingRoute` , {
           caseType:caseType,
           TRSource:TRSource,
           TRDest:TRDest,
@@ -689,7 +691,7 @@ sendButton.addEventListener("click" , async()=>{
 
       }else{
 
-          response = await axios.post('http://localhost:3000/client//AddPendingRoute' , {
+          response = await axios.post(`${BASE_URL}/client//AddPendingRoute` , {
           caseType:caseType,
           TRSource:TRSource,
           TRDest:TRDest,
@@ -1102,7 +1104,7 @@ function showSuggestions(query ,  isGroup1) {
 
 async function fetchTaxiRanks() {
     try {
-        const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
+        const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
         taxiRanks = response.data; // Store data globally
     } catch (error) {
         console.error('Error fetching taxi ranks:', error);

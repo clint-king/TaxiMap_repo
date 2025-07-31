@@ -1,5 +1,6 @@
 import  axios  from 'axios';
 import * as turf from '@turf/turf';
+import {BASE_URL} from "./AddressSelection.js";
 
 
 // === DOM ELEMENTS ===
@@ -72,7 +73,7 @@ map.on('load', () => {
             const routeIDName = row.children[0].textContent;
 
             try {
-                const response = await axios.post('http://localhost:3000/admin/getRoute', {
+                const response = await axios.post(`${BASE_URL}/admin/getRoute`, {
                     uniqueRouteName: routeIDName
                 });
 
@@ -123,7 +124,7 @@ directionContainer.addEventListener('click' , (e)=>{
 //add route button click
 addRouteButton.addEventListener('click' , async ()=>{
     contextMenu.style.visibility = "visible";
-    const response = await axios.get('http://localhost:3000/admin/getUniqueRouteName');
+    const response = await axios.get(`${BASE_URL}/admin/getUniqueRouteName`);
 
     routeNameEl.textContent = response.data.name;
 })
@@ -170,7 +171,7 @@ updateButton.addEventListener('click' , async()=>{
     const dataCaptured = (await saveRouteInformation()).value;
 
     console.log("Data to be sent : "+ JSON.stringify(dataCaptured));
-    const response = await axios.post('http://localhost:3000/admin/AddRoute', {
+    const response = await axios.post(`${BASE_URL}/admin/AddRoute`, {
         data:dataCaptured
     });
 
@@ -247,7 +248,7 @@ document.body.addEventListener("click", async function (event) {
     
       console.log("deleteing ID : " , rankID);
       //call delete function
-      const response = await axios.post('http://localhost:3000/admin/deleteRoute', {
+      const response = await axios.post(`${BASE_URL}/admin/deleteRoute`, {
         routeID: rankID
     });
 
@@ -462,7 +463,7 @@ const routeList =  async()=>{
         //Send TaxiRankId
         const rank = getQueryParam('rank');
 
-        const response = await axios.post("http://localhost:3000/admin/listRoutes" , {taxiRankSelected_ID:rank});
+        const response = await axios.post(`${BASE_URL}/admin/listRoutes` , {taxiRankSelected_ID:rank});
         const respondeData = response.data;
         
         //Populate
@@ -483,7 +484,7 @@ const fetchRoutes = async () => {
     try {
         
           const rank_ID = getQueryParam('rank');  
-          const response = await axios.post('http://localhost:3000/admin/getTaxiRank', {
+          const response = await axios.post(`${BASE_URL}/admin/getTaxiRank`, {
             rankID: rank_ID // Send ID in the body of the request
         });
 
@@ -559,6 +560,7 @@ function toggleButton() {
     }
 }
 
+
 function showRouteInformation(taxiRankFrom , taxiRankTo , routeName){
 
     //set the big taxiRankName
@@ -583,7 +585,7 @@ function removeRouteInformation(){
 async function getTaxiRankName(ID){
     try {
         console.log("ID sent : " , ID);
-        const response = await axios.post('http://localhost:3000/admin/getTaxiRank', {
+        const response = await axios.post(`${BASE_URL}/admin/getTaxiRank`, {
             rankID: ID
         });
 
@@ -714,7 +716,7 @@ function createGridRow(ID,name, price, type, directions) {
 
 async function fetchTaxiRanks() {
     try {
-        const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
+        const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
         taxiRanks = response.data; // Store data globally
     } catch (error) {
         console.error('Error fetching taxi ranks:', error);
@@ -770,7 +772,7 @@ async function saveRouteInformation(){
 
     console.log("startRankId : ", startRankId);
     //Get the list of all TaxiRanks
-   const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
+   const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
    const dataReceived = response.data;
    const taxiRankFrom = dataReceived.find((tRank)=>{return destinationName === tRank.name});
    const taxiRankTo = dataReceived.find((tBRank)=>{return parseInt(startRankId,10) === tBRank.ID});

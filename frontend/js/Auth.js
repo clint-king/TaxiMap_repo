@@ -1,4 +1,5 @@
 import  axios  from 'axios';
+import {BASE_URL} from "./AddressSelection.js";
 
 axios.defaults.withCredentials = true;
 
@@ -40,7 +41,7 @@ if (signupSubmit) {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/auth/signup', {
+      const response = await axios.post(`${BASE_URL}/auth/signup`, {
         name: signupName.value,
         email: signupEmail.value.trim(),
         password: signupPassword.value
@@ -63,7 +64,7 @@ if (loginSubmit) {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', {
+      const response = await axios.post(`${BASE_URL}/auth/login`, {
         email: loginEmail.value.trim(),
         password: loginPassword.value
       });
@@ -86,7 +87,7 @@ if (loginSubmit) {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', {
+      const response = await axios.post(`${BASE_URL}/auth/login`, {
         email: loginEmail.value.trim(),
         password: loginPassword.value
       }, {

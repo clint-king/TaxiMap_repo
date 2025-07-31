@@ -1,4 +1,6 @@
 import  axios  from 'axios';
+import {BASE_URL} from "./AddressSelection.js";
+
 let currentMarker = null; 
 
 
@@ -253,7 +255,7 @@ gridTableDiv.addEventListener('click' , async (event)=>{
     const id = row.dataset.rank;
 
     //request information
-    const response = await axios.post('http://localhost:3000/admin/getTaxiRank' ,{
+    const response = await axios.post(`${BASE_URL}/admin/getTaxiRank` ,{
       rankID:id
     });
 
@@ -323,7 +325,7 @@ taxiRankAddInfo.name = nameBox.value;
 taxiRankAddInfo.province = provinceBox.value;
 
 // Send the data to the server
-fetch('http://localhost:3000/admin/addTaxiRank', {
+fetch(`${BASE_URL}/admin/addTaxiRank`, {
   method: 'POST', // HTTP method
   headers: {
     'Content-Type': 'application/json', // Send data as JSON
@@ -358,7 +360,7 @@ listOnTable();
 async function listOnTable() {
   if(gridTableDiv){
   try {
-    const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
+    const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
     const dataReceived = response.data;
     dataReceived.forEach( async TaxiRankObj=>{
    // Create the parent div with class "grid-row" and id "2"
@@ -439,7 +441,7 @@ function createGridRow(ID ,taxiName , provinceName , addressName , numRoutes) {
 async function addSingleInfoOnTable(){
   if(gridTableDiv){
     try {
-      const response = await axios.get('http://localhost:3000/admin/listTaxiRanks');
+      const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
       const dataReceived = response.data;
 
       const lastRowNum  = dataReceived.length -1;
@@ -580,7 +582,7 @@ function loadMiniRoutes(miniroutes , travelMethod) {
 
 async function populateMap(id){
   try{
-   const response = await axios.post('http://localhost:3000/admin/getTaxiRank' ,{
+   const response = await axios.post(`${BASE_URL}/admin/getTaxiRank` ,{
     rankID:id
   });
     //read information
@@ -669,7 +671,7 @@ executeDeleteBtn.addEventListener('click' , async (event)=>{
 
   console.log("delRankID : ", delRankID);
 
-   const response = await axios.post('http://localhost:3000/admin/deleteTaxiRank' , {
+   const response = await axios.post(`${BASE_URL}/admin/deleteTaxiRank` , {
       taxiRankID:delRankID
     });
 
