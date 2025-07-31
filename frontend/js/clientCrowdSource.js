@@ -198,7 +198,7 @@ let markerChosenForEditing = null;
 
 // === MAP IMPLEMENTATION ===
  //mapbox setup
-const accessToken = 'pk.eyJ1IjoiY2xpZXRpbiIsImEiOiJjbTR6eW1icmMxN3dyMmpzODBsZDQwNHN6In0.m5MSK2_0_SFpPPhB5BX86w'; 
+const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = accessToken;
 
 // Initialize the map

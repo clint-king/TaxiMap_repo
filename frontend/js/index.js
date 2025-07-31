@@ -4,7 +4,7 @@ import {BASE_URL} from "./AddressSelection.js";
 let currentMarker = null; 
 
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiY2xpZXRpbiIsImEiOiJjbTR6eW1icmMxN3dyMmpzODBsZDQwNHN6In0.m5MSK2_0_SFpPPhB5BX86w'; // Replace with your Mapbox access token
+mapboxgl.accessToken =import.meta.env.VITE_MAPBOX_TOKEN;// Replace with your Mapbox access token
 
 // Initialize the map
 const map = new mapboxgl.Map({
@@ -26,86 +26,6 @@ let allMarkerObjects = [];
 //store the iD OF THE ROW THAT REQUETED DELETE
 let delRankID = -1;
 
-//Get coordinates of the Adresss
-async function getCoordinates(address) {
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}`;
-  
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.features && data.features.length > 0) {
-      const [longitude, latitude] = data.features[0].center;
-      console.log(`Coordinates: Longitude - ${longitude}, Latitude - ${latitude}`);
-      return { longitude, latitude };
-    } else {
-      console.error('No results found for the address.');
-    }
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
-}
-
-
-// // Initialize Directions API control
-// const directions = new MapboxDirections({
-//   accessToken: mapboxgl.accessToken,
-//   unit: 'metric', // Use 'imperial' for miles
-//   profile: 'mapbox/driving', // Driving directions
-//   controls: {
-//     inputs: false,  // Disable the input fields for origin and destination
-//     instructions: true, // Enable instructions to guide the user
-//   },
-// });
-
-// // Add Directions Control to the map
-// map.addControl(directions, 'top-left');
-
-// Function to get user's current location and calculate route
-// function getCurrentLocation() {
-//   if (navigator.geolocation) {
-//     navigator.geolocation.getCurrentPosition(
-//       (position) => {
-//         const { latitude, longitude } = position.coords;
-//         map.setCenter([longitude, latitude]);
-
-//         // Set the origin to the user's current location
-//         directions.setOrigin([longitude, latitude]);
-
-//         // Define destination (you can change this dynamically)
-//         const destination = [30.6, -25.5]; // Replace with real destination
-
-//         // Define some waypoints for multi-leg route (example waypoints where the person changes taxis)
-//         const waypoints = [
-//           [30.2, -25.2], // First taxi stop
-//           [30.4, -25.4]  // Second taxi stop
-//         ];
-
-//         // Set the destination and waypoints
-//         directions.setDestination(destination);
-//         directions.setWaypoints([directions.getOrigin(), ...waypoints, directions.getDestination()]);
-
-//         // Watch for changes and update the route dynamically
-//         directions.on('route', function(e) {
-//           // Optionally, you can customize the behavior when the route is updated
-//           console.log('Route updated:', e.route);
-//         });
-//       },
-//       (error) => {
-//         console.error('Error getting current location:', error);
-//         alert('Unable to get your current location.');
-//       },
-//       { enableHighAccuracy: true }
-//     );
-//   } else {
-//     alert('Geolocation is not supported by your browser.');
-//   }
-// }
-
-// Get user's current location when the page loads
-//getCurrentLocation();
-
-//UI
 
 // Select the button and menu
 const AddButton = document.querySelector(".button.add");

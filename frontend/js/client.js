@@ -85,14 +85,7 @@ const toggleMap = new Map([
   ["to", 0],
 ]);
 
-// let BASE_URL;
-// if(true){
-//   //local 
-//   BASE_URL = "http://localhost:3000";
-// }else{
-// //render
-//  BASE_URL = 'https://taximap-repo.onrender.com' ;
-// }
+
 
 //markers
 let sourceMarker = null;
@@ -170,8 +163,7 @@ let textDirectionAddresses = [];
 // === MAP IMPLEMENTATION ===
 
 //mapbox setup
-const accessToken =
-  "pk.eyJ1IjoiY2xpZXRpbiIsImEiOiJjbTR6eW1icmMxN3dyMmpzODBsZDQwNHN6In0.m5MSK2_0_SFpPPhB5BX86w";
+const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = accessToken;
 
 // Initialize the map
