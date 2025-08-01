@@ -91,7 +91,7 @@ if (loginSubmit) {
         email: loginEmail.value.trim(),
         password: loginPassword.value
       }, {
-  withCredentials: true  
+  withCredentials: "include"  
 });
 
       const userType = response.data.user_type;
