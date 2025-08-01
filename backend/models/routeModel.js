@@ -16,7 +16,7 @@ const getAllRoutes = async () => {
 FROM 
     routes r
 JOIN 
-    riniroute mr ON r.ID = mr.Route_ID
+    miniroute mr ON r.ID = mr.Route_ID
 ORDER BY 
     r.ID, mr.route_index;
 `);
