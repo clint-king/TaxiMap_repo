@@ -656,6 +656,9 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
         return {status:200 , message:"Successful " , value:{ routeCloseToSource, routeCloseToDest, closestTaxiRanks }};
 }
 
+
+
+
 function destinationRoute(countObject, routeCloseToDest, routeExploredArr, formatedRoutes , destinationCoords){
     let loopAgain = true;
     while(loopAgain){
@@ -745,11 +748,11 @@ async function filterAreas(sourceProv, destinationProv) {
             let queryObjects = [];
             if (sourceProv === destinationProv) {
                 // One province query
-                taxiRanksQuery = "SELECT ID, name FROM TaxiRank WHERE province = ?";
+                taxiRanksQuery = "SELECT ID, name FROM taxirank WHERE province = ?";
                 queryObjects = [sourceProv];
             } else {
                 // Two provinces query
-                taxiRanksQuery = "SELECT ID, name FROM TaxiRank WHERE province IN (?, ?)";
+                taxiRanksQuery = "SELECT ID, name FROM taxirank WHERE province IN (?, ?)";
                 queryObjects = [sourceProv, destinationProv];
             }
             const [getTaxiRanks] = await db.query(taxiRanksQuery, queryObjects);
@@ -766,7 +769,7 @@ async function filterAreas(sourceProv, destinationProv) {
 
             const [getRoutes] = await db.query(
                 `SELECT ID, name, travelMethod , route_type , TaxiRankStart_ID, TaxiRankDest_ID, price  
-                 FROM Routes 
+                 FROM routes 
                  WHERE TaxiRankDest_ID IN (${placeholders}) 
                  OR TaxiRankStart_ID IN (${placeholders})`,
                 [...taxiIDs, ...taxiIDs] // Expand array to match placeholders
@@ -784,7 +787,7 @@ async function filterAreas(sourceProv, destinationProv) {
 
             const placeholders_miniroutes = routeIDs.map(() => "?").join(",");
             const [getMiniCoordinates] = await db.query(
-                `SELECT * FROM MiniRoute WHERE Route_ID IN (${placeholders_miniroutes})`,
+                `SELECT * FROM miniroute WHERE Route_ID IN (${placeholders_miniroutes})`,
                 [...routeIDs]
             );
 
@@ -870,7 +873,7 @@ async function getChosenTaxiTanks(path) {
     
 
     // `FROM TaxiRank ID IN(${placeholders})` is incorrect SQL
-    const query = `SELECT name, location_coord, address FROM TaxiRank WHERE ID IN (${placeholders})`;
+    const query = `SELECT name, location_coord, address FROM taxirank WHERE ID IN (${placeholders})`;
 
     let db;
     try {
@@ -946,7 +949,7 @@ async function getTheTaxiRanks(firstRouteId , secRouteId){
 
         await db.beginTransaction();
 
-        const query = "SELECT * FROM Routes WHERE  ID = ?";
+        const query = "SELECT * FROM routes WHERE  ID = ?";
         //first route request
         const [getFirstRoute] = await db.query(query , [firstRouteId]);
 
@@ -1059,7 +1062,7 @@ async function getDirections(chosenRoutes) {
 
     try {
         db = await poolDb.getConnection();
-        const query = "SELECT * FROM DirectionRoute WHERE Route_ID = ?";
+        const query = "SELECT * FROM directionroute WHERE Route_ID = ?";
         
         // Use map + Promise.all() to wait for all queries to complete
         const results = await Promise.all(
@@ -1101,7 +1104,7 @@ async function getMinimisedDirections(finalRoutesIds , allDirections ){
     try{
         db = await poolDb.getConnection();
         directionsLength= await db.query(`SELECT COUNT(*) AS direction_count
-            FROM DirectionRoute 
+            FROM directionroute 
             WHERE Route_ID IN(${finalRoutesIds})
             GROUP BY Route_ID 
             ORDER BY direction_count DESC
@@ -1273,7 +1276,7 @@ async function generateUniqueRouteID(connection) {
     while (!isUnique) {
         routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
     // Check if the ID already exists in the database
-    const [rows] = await connection.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
+    const [rows] = await connection.query("SELECT COUNT(*) as count FROM routes WHERE name = ?", [routeID]);
 
     if (rows[0].count === 0) {
         isUnique = true; // If no match, it's unique
@@ -1388,28 +1391,28 @@ const handleRouteInsertion = {
 };
 
 const insertRoute = async (connection, { price, sourceId, destId, routeType, travelMethod }) => {
-    const query = "INSERT INTO PendingRoutes(name,price,start_rank_id,end_rank_id, route_type,travel_method) VALUES(?,?,?,?,?,?)";
+    const query = "INSERT INTO pendingroutes(name,price,start_rank_id,end_rank_id, route_type,travel_method) VALUES(?,?,?,?,?,?)";
     const routeName = await generateUniqueRouteID(connection);
     const [result] = await connection.query(query, [routeName, price, sourceId, destId, routeType, travelMethod]);
     return result.insertId;
 };
 
 const insertDirections = async (connection, routeId, list) => {
-    const query = "INSERT INTO PendingDirectionRoutes(pending_route_id,direction_coords,direction_index) VALUES(?,?,?)";
+    const query = "INSERT INTO pendingdirectionroutes(pending_route_id,direction_coords,direction_index) VALUES(?,?,?)";
     for (let i = 0; i < list.length; i++) {
         await connection.query(query, [routeId, JSON.stringify(list[i].Coords), i + 1]);
     }
 };
 
 const insertMiniRoutes = async (connection, routeId, list) => {
-    const query = "INSERT INTO PendingMiniRoutes(pending_route_id,message,coords,route_index) VALUES(?,?,?,?)";
+    const query = "INSERT INTO pendingminiroutes(pending_route_id,message,coords,route_index) VALUES(?,?,?,?)";
     for (let i = 0; i < list.length; i++) {
         await connection.query(query, [routeId, list[i].message, JSON.stringify(list[i].Coords), i + 1]);
     }
 };
 
 const insertTaxiRank = async (connection, { name, coord, province, address }) => {
-    const query = "INSERT INTO PendingTaxiRank(name , location_coord, province, address ) VALUES (?,?,?,?)";
+    const query = "INSERT INTO pendingtaxirank(name , location_coord, province, address ) VALUES (?,?,?,?)";
     const [result] = await connection.query(query, [name, JSON.stringify(coord), province, address]);
     return result.insertId;
 };

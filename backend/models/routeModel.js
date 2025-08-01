@@ -14,9 +14,9 @@ const getAllRoutes = async () => {
     mr.route_index,
     mr.coords
 FROM 
-    Routes r
+    routes r
 JOIN 
-    MiniRoute mr ON r.ID = mr.Route_ID
+    riniroute mr ON r.ID = mr.Route_ID
 ORDER BY 
     r.ID, mr.route_index;
 `);

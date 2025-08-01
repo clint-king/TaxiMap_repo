@@ -9,7 +9,7 @@ export const AddTaxiRank = async(req , res)=>{
     try{
         db = await poolDb.getConnection();
         const { name, coord, province,address} = req.body; // Extract data from the request body
-        const query = "INSERT INTO TaxiRank(name,location_coord,province,address,num_routes) VALUES(?,?,?,?,?)";
+        const query = "INSERT INTO taxirank(name,location_coord,province,address,num_routes) VALUES(?,?,?,?,?)";
         await db.execute(query , [name, coord, province,address,0]);
 
         return res.status(201).json({message:"Successfully added"});
@@ -25,7 +25,7 @@ export const listTaxiRanks = async(req,res)=>{
     let db;
     try{
         db = await poolDb.getConnection();
-        const query = "SELECT * FROM TaxiRank";
+        const query = "SELECT * FROM taxirank";
 
         const [listOfTxRanks] = await db.execute(query);
      
@@ -68,14 +68,14 @@ export const getTaxiRank = async(req,res)=>{
         }
 
         //get the Taxirank 
-        const query = "SELECT ID , name , location_coord  FROM TaxiRank WHERE ID = ?";
+        const query = "SELECT ID , name , location_coord  FROM taxirank WHERE ID = ?";
         const [result] = await db.query(query , [rankID]);
         if(!result || result.length === 0){
             return res.status(404).send(`Could not find TaxiRank ${rankID}`);
         }
         //get the related routes
-        const routesQuery = `SELECT r.ID AS routeID , r.travelMethod , m.coords  FROM Routes r 
-        INNER JOIN MiniRoute m
+        const routesQuery = `SELECT r.ID AS routeID , r.travelMethod , m.coords  FROM routes r 
+        INNER JOIN miniroute m
         ON r.ID = m.Route_ID 
         WHERE r.TaxiRankDest_ID = ? OR r.TaxiRankStart_ID =?`;
         const [findListOfRoutes] = await db.query(routesQuery , [rankID , rankID]);
@@ -110,10 +110,10 @@ try{
 
     console.log("Coordinates : ", listOfMiniCoords);
 
-    const query = "INSERT INTO Routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
-    const queryTaxiRank = "UPDATE TaxiRank SET num_routes = num_routes+? WHERE ID =?";
-    const queryMiniRoute = "INSERT INTO MiniRoute(Route_ID,coords,route_index) VALUES(?,?,?)";
-    const queryDirectionRoute = "INSERT INTO DirectionRoute(Route_ID,direction_coords,direction_index) VALUES(?,?,?)";
+    const query = "INSERT INTO routes(name,price,TaxiRankStart_ID,TaxiRankDest_ID, route_type,totalNum_MiniRoutes,totalNum_directions,travelMethod) VALUES(?,?,?,?,?,?,?,?)";
+    const queryTaxiRank = "UPDATE taxirank SET num_routes = num_routes+? WHERE ID =?";
+    const queryMiniRoute = "INSERT INTO miniroute(Route_ID,coords,route_index) VALUES(?,?,?)";
+    const queryDirectionRoute = "INSERT INTO directionroute(Route_ID,direction_coords,direction_index) VALUES(?,?,?)";
 
      connection = await poolDb.getConnection();
     try{
@@ -157,8 +157,8 @@ export const listRoutes = async(req, res) =>{
     let db;
     const query = `
     SELECT *
-    FROM Routes
-    WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?;`;
+    FROM routes
+    WHERE taxirankstart_ID = ? OR taxirankdest_ID = ?;`;
     try{
 
         db = await  poolDb.getConnection();
@@ -202,29 +202,29 @@ export const listRoutes = async(req, res) =>{
 
 export const routeSelected = async(req,res) =>{
     let db;
-    const query = "SELECT * FROM Routes WHERE ID = ?";
+    const query = "SELECT * FROM routes WHERE ID = ?";
     const queryForTaxiRankStart = `SELECT 
-    TaxiRank.ID AS TaxiRankID,
-    TaxiRank.name AS TaxiRankName
+    taxirank.ID AS TaxiRankID,
+    taxirank.name AS TaxiRankName
   
 FROM 
-    Routes
+    routes
 INNER JOIN 
-    TaxiRank
+    taxirank
 ON 
-    Routes.TaxiRankStart_ID = TaxiRank.ID;`;
+    routes.TaxiRankStart_ID = taxirank.ID;`;
 
     const queryForTaxiRankDest =   `SELECT 
-    TaxiRank.ID AS TaxiRankID,
-    TaxiRank.name AS TaxiRankName
-    TaxiRank.location_coord AS TaxiRankCoordLocation
+    taxirank.ID AS TaxiRankID,
+    taxirank.name AS TaxiRankName
+    taxirank.location_coord AS TaxiRankCoordLocation
   
 FROM 
-    Routes
+    routes
 INNER JOIN 
-    TaxiRank
+    taxirank
 ON 
-    Routes.TaxiRankDest_ID = TaxiRank.ID;`;
+    routes.TaxiRankDest_ID = taxirank.ID;`;
 
 
     try{
@@ -309,11 +309,11 @@ export const getRoute = async(req,res)=>{
         db = await poolDb.getConnection();
 
         await db.beginTransaction();
-        const [resultRoute] = await db.query('SELECT * FROM Routes WHERE name = ?' ,[uniqueRouteName]);
+        const [resultRoute] = await db.query('SELECT * FROM routes WHERE name = ?' ,[uniqueRouteName]);
 
-        const [resultMiniRoutes] = await db.query('SELECT * FROM MiniRoute WHERE Route_ID = ?' , [resultRoute[0].ID]);
+        const [resultMiniRoutes] = await db.query('SELECT * FROM miniroute WHERE Route_ID = ?' , [resultRoute[0].ID]);
 
-        const [resultDirection] = await db.query('SELECT * FROM DirectionRoute WHERE Route_ID = ?' , [resultRoute[0].ID]);
+        const [resultDirection] = await db.query('SELECT * FROM directionroute WHERE Route_ID = ?' , [resultRoute[0].ID]);
 
         if(!resultRoute){
             return res.status(404).send("No Route found");
@@ -354,14 +354,14 @@ export const deleteTaxiRank = async(req,res)=>{
         await db.beginTransaction();
 
         //reduce the number of routes on the other TaxiRanks involved with the routes being deleted 
-        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1)  WHERE ID IN (SELECT TaxiRankDest_ID FROM  Routes WHERE TaxiRankStart_ID = ?)' ,  [taxiRankID ]);
-        const [resultDestTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1) WHERE ID IN (SELECT TaxiRankStart_ID FROM Routes WHERE  TaxiRankDest_ID = ?)' , [taxiRankID ]);
+        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1)  WHERE ID IN (SELECT TaxiRankDest_ID FROM  routes WHERE TaxiRankStart_ID = ?)' ,  [taxiRankID ]);
+        const [resultDestTaxiRank] = await db.query('UPDATE taxirank SET num_routes= GREATEST(0 , num_routes - 1) WHERE ID IN (SELECT TaxiRankStart_ID FROM routes WHERE  TaxiRankDest_ID = ?)' , [taxiRankID ]);
 
         // Delete route dependent records (if no cascading deletes)
-        const [resultMiniRoutes] = await db.query(`DELETE FROM MiniRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)`, [taxiRankID , taxiRankID]);
-        const [resultDirection] = await db.query('DELETE FROM DirectionRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)', [taxiRankID , taxiRankID]);
+        const [resultMiniRoutes] = await db.query(`DELETE FROM miniroute WHERE Route_ID IN (SELECT ID FROM routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)`, [taxiRankID , taxiRankID]);
+        const [resultDirection] = await db.query('DELETE FROM directionroute WHERE Route_ID IN (SELECT ID FROM routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?)', [taxiRankID , taxiRankID]);
        // Delete Routes
-        const [resultRoute] = await db.query('DELETE FROM Routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?', [taxiRankID , taxiRankID]);
+        const [resultRoute] = await db.query('DELETE FROM routes WHERE TaxiRankStart_ID = ? OR TaxiRankDest_ID = ?', [taxiRankID , taxiRankID]);
       
         //Delete the TaxiRank
         const [resultTaxiRank] = await db.query('DELETE FROM taxirank WHERE ID = ?', [taxiRankID]);
@@ -405,15 +405,15 @@ export const deleteRoute = async (req, res) => {
 
         //reduce nuumber of routes in a TaxiRank
         
-        const [resultDestinationTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankStart_ID FROM Routes WHERE ID = ?)' , [routeID]);
-        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankDest_ID FROM Routes WHERE ID = ?)' , [routeID]);
+        const [resultDestinationTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankStart_ID FROM routes WHERE ID = ?)' , [routeID]);
+        const [resultStartTaxiRank] = await db.query('UPDATE taxirank SET num_routes= num_routes - 1 WHERE ID IN (SELECT TaxiRankDest_ID FROM routes WHERE ID = ?)' , [routeID]);
 
         // Delete dependent records (if no cascading deletes)
-        const [resultMiniRoutes] = await db.query('DELETE FROM MiniRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE ID = ?)', [routeID]);
-        const [resultDirection] = await db.query('DELETE FROM DirectionRoute WHERE Route_ID IN (SELECT ID FROM Routes WHERE ID = ?)', [routeID]);
+        const [resultMiniRoutes] = await db.query('DELETE FROM miniroute WHERE Route_ID IN (SELECT ID FROM routes WHERE ID = ?)', [routeID]);
+        const [resultDirection] = await db.query('DELETE FROM directionroute WHERE Route_ID IN (SELECT ID FROM routes WHERE ID = ?)', [routeID]);
 
         // Delete parent record first (assuming cascading deletes are enabled)
-        const [resultRoute] = await db.query('DELETE FROM Routes WHERE ID = ?', [routeID]);
+        const [resultRoute] = await db.query('DELETE FROM routes WHERE ID = ?', [routeID]);
         if (resultRoute.affectedRows === 0) {
             await db.rollback();
             return res.status(404).json({ message: "No Route found" });
@@ -447,7 +447,7 @@ async function generateUniqueRouteID(connection) {
     while (!isUnique) {
         routeID = uuidv4().replace(/-/g, '').slice(0, 7).toUpperCase(); // Generate a 7-char ID
     // Check if the ID already exists in the database
-    const [rows] = await connection.query("SELECT COUNT(*) as count FROM Routes WHERE name = ?", [routeID]);
+    const [rows] = await connection.query("SELECT COUNT(*) as count FROM routes WHERE name = ?", [routeID]);
 
     if (rows[0].count === 0) {
         isUnique = true; // If no match, it's unique
