@@ -4,17 +4,19 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
-// const pool = await mysql.createPool({
-//   host: 'localhost',
-//   user: 'TaxiMap_database',
-//   password: '12345',
-//   database: 'taximapdb',
-//   waitForConnections: true,
-//   connectionLimit: 10,  // for example, adjust as needed
-//   queueLimit: 0
-// });
-
-const pool = await mysql.createPool({
+let pool = null;
+if(process.env.NODE_ENV = 'production'){
+  pool = await mysql.createPool({
+  host: 'localhost',
+  user: 'TaxiMap_database',
+  password: '12345',
+  database: 'taximapdb',
+  waitForConnections: true,
+  connectionLimit: 10,  // for example, adjust as needed
+  queueLimit: 0
+});
+}else{
+ pool = await mysql.createPool({
   host: 'turntable.proxy.rlwy.net',
   port: 16301,
   user: 'root',
@@ -24,6 +26,8 @@ const pool = await mysql.createPool({
   connectionLimit: 10,  // for example, adjust as needed
   queueLimit: 0
 });
+}
+
 
 console.log("Connection to database is Successful");
 

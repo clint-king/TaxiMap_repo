@@ -144,6 +144,80 @@ body {
    flex-direction: column;
    align-items: center;
    justify-content: space-between;
+   flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Mobile scroll-based functionality */
+@media (max-width: 768px) {
+  #ui_container {
+    position: fixed;
+    top: 100%;
+    bottom: 0;
+    width: 100%;
+    height: 60%;  /* Limited height for scroll-based interaction */
+    overflow-y: auto; 
+    overflow-x: auto;
+    transform: translateY(-8%);
+    z-index: 2;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding-top: 10px;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+
+  /* Expanded state - allows internal scrolling */
+  #ui_container.semi-expanded {
+    transform: translateY(-50%);
+    overflow-y: auto;
+  }
+
+  /* Expanded state - allows internal scrolling */
+  #ui_container.expanded {
+    transform: translateY(-100%);
+    overflow-y: auto;
+  }
+
+  /* Handle indicator */
+  /* The actual handle */
+.drag-handle {
+  width: 50px;
+  height: 5px;
+  background-color: gray;
+  border-radius: 5px;
+  margin: 10px auto;
+  touch-action: none; /* Prevent default browser gestures */
+}
+
+  /* Tip content when collapsed */
+  #ui_container::after {
+    content: '👆 Scroll up for options';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #01386A;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #ui_container.collapsed::after {
+    opacity: 1;
+  }
+
+  /* Prevent body scroll when UI is expanded */
+  /* body.ui-expanded {
+    overflow: hidden;
+  } */
 }
 
 
@@ -622,6 +696,7 @@ z-index: 999;
    display: flex;
    flex-direction: row;
    gap:10px;
+   flex: 1; /* Fill remaining space */
 }
 
 #text-map{
@@ -653,7 +728,14 @@ z-index: 999;
   position: relative;
   width: 100%;
   height: 100%;
+  flex: 1; /* Fill the map container */
   }
+
+  .mapboxgl-canvas{
+    width: 100% !important;
+    height: 100% !important;
+  }
+
 
   /* @media (max-width: 768px) {
     .map_container{
@@ -919,21 +1001,7 @@ display: none;
 
 
   /* Push the rest of UI to the bottom */
-  #ui_container {
-    position: fixed;
-    top:100%;
-    bottom: 0;
-    width: 100%;
-    height:30%;  /* Helps ensure enough space */
-    overflow-y: auto; 
-    overflow-x: auto;
-    transform: translateY(-100%);
-    z-index: 2;
-    background-color:  rgba(255, 255, 255, 0.95);
-    padding-top: 10px;
-    border-top-left-radius: 30px;
-    border-top-right-radius: 30px;
-  }
+
 
   .topnav {
     z-index: 3;

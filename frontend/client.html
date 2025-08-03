@@ -98,6 +98,9 @@
 
         <!--Ui section-->
         <div id="ui_container">
+
+          <!-- Draggable-->
+          <div class="drag-handle"></div>
           <!--Search-->
          
           <!-- From and To buttons -->
@@ -217,6 +220,7 @@
            <div style="color: #00CED1;">🛑 End</div>
           </div> -->
 
+
           <div id="map">
             <!--area filter -->
             <div class="areaContainer">
@@ -289,6 +293,7 @@
   function moveSearchContainer() {
     const search = document.querySelector(".search_container");
     const ui = document.getElementById("ui_container");
+    const pageContent = document.querySelector(".page-content");
 
      if (!search || !ui) {
     console.warn("One or both elements not found:", { search, ui });
@@ -304,7 +309,7 @@
     } else {
       // Mobile: move it out of ui_container to body (or wrapper)
       if (ui.contains(search)) {
-        document.body.insertBefore(search, ui);
+        pageContent.insertBefore(search, ui);
           console.log("removed from container");
       }
     }
@@ -325,6 +330,10 @@ const textmap = document.querySelector('#text-map');
   document.addEventListener("DOMContentLoaded", () => {
     attachSearchToggle();
     moveSearchContainer();
+
+    if (window.innerWidth <= 768) {
+      dragHandle();
+    }
   });
 
   // Re-attach on window resize (for dynamic appearance of .searchSlider)
@@ -332,9 +341,69 @@ const textmap = document.querySelector('#text-map');
      moveSearchContainer();
     if (window.innerWidth <= 768) {
       attachSearchToggle();
-      textMapHeightAdj()
+      textMapHeightAdj();
+      dragHandle();
     }
+
+    //ui container state
+
+
 });
+
+
+
+
+function dragHandle(){
+const uiContainer = document.getElementById('ui_container');
+const dragHandle = document.querySelector('.drag-handle');
+
+let startY = 0;
+let currentY = 0;
+
+dragHandle.addEventListener('touchstart', e => {
+  startY = e.touches[0].clientY;
+});
+
+dragHandle.addEventListener('touchmove', e => {
+  currentY = e.touches[0].clientY;
+});
+
+dragHandle.addEventListener('touchend', () => {
+  const deltaY = currentY - startY;
+
+  // Get current state
+  const isExpanded = uiContainer.classList.contains('expanded');
+  const isSemiExpanded = uiContainer.classList.contains('semi-expanded');
+
+  if (deltaY < -30) {
+    // Swipe up
+    if (!isSemiExpanded && !isExpanded) {
+      // Collapsed -> Semi
+      uiContainer.classList.add('semi-expanded');
+    } else if (isSemiExpanded && !isExpanded) {
+      // Semi -> Expanded
+      uiContainer.classList.remove('semi-expanded');
+      uiContainer.classList.add('expanded');
+    }
+  } else if (deltaY > 30) {
+    // Swipe down
+    if (isExpanded) {
+      // Expanded -> Semi
+      uiContainer.classList.remove('expanded');
+      uiContainer.classList.add('semi-expanded');
+    } else if (isSemiExpanded) {
+      // Semi -> Collapsed
+      uiContainer.classList.remove('semi-expanded');
+    }
+  }
+
+  startY = 0;
+  currentY = 0;
+});
+
+
+}
+
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
