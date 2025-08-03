@@ -5,7 +5,7 @@ dotenv.config();
 
 
 let pool = null;
-if(process.env.NODE_ENV = 'development'){
+if(process.env.NODE_ENV == 'development'){
   pool = await mysql.createPool({
   host: 'localhost',
   user: 'TaxiMap_database',
