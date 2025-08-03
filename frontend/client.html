@@ -2,8 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Multi-Taxi Path with Mapbox</title>
     <link
@@ -48,79 +47,80 @@
 
           <!-- Navigation links -->
           <div class="nav-links" id="mobileMenu">
-            <a href="client.html">Find route</a>
-            <a href="clientCrowdSource.html">Suggest route</a>
-            <a href="#help">Help</a>
+            <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+            <a href="#help" onclick="topNavZIndexDecrease()">Help</a>
           </div>
         </div>
       </nav>
       <!-- Search slider button-->
-      
+
       <!-- Popup -->
       <div id="popup-container"></div>
-       
-       
-      <div class="page-content">
 
+      <div class="page-content">
         <button class="searchSlider">
-        <i class="fa-solid fa-caret-down"  style="color: #919191; font-size: 20px"    aria-hidden="true"></i>
-       </button>
+          <i
+            class="fa-solid fa-caret-down"
+            style="color: #919191; font-size: 20px"
+            aria-hidden="true"
+          ></i>
+        </button>
 
         <div class="search_container">
-            <div class="sourceSearch container">
-              <div class="searchRow source">
-                <i
-                  class="fas fa-search"
-                  style="color: #919191; font-size: 20px"
-                ></i>
-                <input
-                  class="search_input source"
-                  placeholder="Search Starting location"
-                />
-              </div>
+          <div class="sourceSearch container">
+            <div class="searchRow source">
+              <i
+                class="fas fa-search"
+                style="color: #919191; font-size: 20px"
+              ></i>
+              <input
+                class="search_input source"
+                placeholder="Search Starting location"
+              />
+            </div>
 
-              <ul class="searchList listSource"></ul>
-            </div>
-            <div class="destinationSearch container">
-              <div class="searchRow dest">
-                <i
-                  class="fas fa-search"
-                  style="color: #919191; font-size: 20px"
-                ></i>
-                <input
-                  class="search_input destination"
-                  placeholder="Search Destination"
-                />
-              </div>
-              <ul class="searchList listDestination"></ul>
-            </div>
+            <ul class="searchList listSource"></ul>
           </div>
+          <div class="destinationSearch container">
+            <div class="searchRow dest">
+              <i
+                class="fas fa-search"
+                style="color: #919191; font-size: 20px"
+              ></i>
+              <input
+                class="search_input destination"
+                placeholder="Search Destination"
+              />
+            </div>
+            <ul class="searchList listDestination"></ul>
+          </div>
+        </div>
 
         <!--Ui section-->
         <div id="ui_container">
-
           <!-- Draggable-->
           <div class="drag-handle"></div>
           <!--Search-->
-         
+
           <!-- From and To buttons -->
           <div class="toggleButtons_container">
             <button class="toggleBtn from">From</button>
             <button class="toggleBtn to">To</button>
           </div>
 
-          <!-- Toggle button -->
-
-          <div class="toggle-container">
-            <span class="toggle-label price-off"></span>
-            <div class="toggle-button" id="toggle">
-              <div class="toggle-circle"></div>
-            </div>
-            <span class="toggle-label price-on">See Price devision</span>
-          </div>
-
           <!--Route list-->
           <div class="routeList_container">
+            <!-- Toggle button -->
+
+            <div class="toggle-container">
+              <span class="toggle-label price-off"></span>
+              <div class="toggle-button" id="toggle">
+                <div class="toggle-circle"></div>
+              </div>
+              <span class="toggle-label price-on">See Price devision</span>
+            </div>
+
             <div class="cover price">
               <p>Price</p>
             </div>
@@ -220,7 +220,6 @@
            <div style="color: #00CED1;">🛑 End</div>
           </div> -->
 
-
           <div id="map">
             <!--area filter -->
             <div class="areaContainer">
@@ -259,7 +258,6 @@
 
     <!-- Load popup -->
     <script>
-
       //popup
       fetch("popup.html")
         .then((res) => res.text())
@@ -267,143 +265,148 @@
           document.getElementById("popup-container").innerHTML = html;
         });
 
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const isShown = menu.classList.toggle("show");
 
+        if (isShown) {
+          topNavZIndexIncrease();
+        } else {
+          topNavZIndexDecrease();
+        }
+      }
 
+      //slide
+      function attachSearchToggle() {
+        searchSliderBtn = document.querySelector(".searchSlider");
+        const searchContainer = document.querySelector(".search_container");
 
-       function toggleMobileMenu() {
-    const menu = document.getElementById("mobileMenu");
-    menu.classList.toggle("show");
-  }
+        if (searchSliderBtn && !searchSliderBtn.dataset.bound) {
+          searchSliderBtn.addEventListener("click", () => {
+            searchContainer.classList.toggle("hidden");
+          });
+          searchSliderBtn.dataset.bound = "true"; // Prevent duplicate bindings
+        }
+      }
 
+      //moving search container
+      function moveSearchContainer() {
+        const search = document.querySelector(".search_container");
+        const ui = document.getElementById("ui_container");
+        const pageContent = document.querySelector(".page-content");
 
-  //slide 
-  function attachSearchToggle() {
-    searchSliderBtn = document.querySelector(".searchSlider");
-    const searchContainer = document.querySelector(".search_container");
+        if (!search || !ui) {
+          console.warn("One or both elements not found:", { search, ui });
+          return;
+        }
 
-    if (searchSliderBtn && !searchSliderBtn.dataset.bound) {
-      searchSliderBtn.addEventListener("click", () => {
-        searchContainer.classList.toggle("hidden");
+        if (window.innerWidth > 768) {
+          // Desktop: insert search_container back into ui_container
+          if (!ui.contains(search)) {
+            ui.insertBefore(search, ui.firstChild); // insert at top of ui_container
+            console.log("Inserted in container");
+          }
+        } else {
+          // Mobile: move it out of ui_container to body (or wrapper)
+          if (ui.contains(search)) {
+            pageContent.insertBefore(search, ui);
+            console.log("removed from container");
+          }
+        }
+      }
+
+      //fix textmap
+
+      function textMapHeightAdj() {
+        if (window.innerWidth <= 768) {
+          const navbar = document.querySelector(".topnav");
+          const textmap = document.querySelector("#text-map");
+          const height = navbar.offsetHeight;
+          if (textmap) textmap.style.top = `${height + 40}px`;
+        }
+      }
+
+      function topNavZIndexIncrease() {
+        const navbar = document.querySelector(".topnav");
+        navbar.style.zIndex = "3001";
+      }
+
+      function topNavZIndexDecrease() {
+        const navbar = document.querySelector(".topnav");
+        navbar.style.zIndex = "3";
+      }
+
+      // Run once on load
+      document.addEventListener("DOMContentLoaded", () => {
+        attachSearchToggle();
+        moveSearchContainer();
+
+        if (window.innerWidth <= 768) {
+          dragHandle();
+        }
       });
-      searchSliderBtn.dataset.bound = "true"; // Prevent duplicate bindings
-    }
-  }
 
-  //moving search container 
-  function moveSearchContainer() {
-    const search = document.querySelector(".search_container");
-    const ui = document.getElementById("ui_container");
-    const pageContent = document.querySelector(".page-content");
+      // Re-attach on window resize (for dynamic appearance of .searchSlider)
+      window.addEventListener("resize", () => {
+        moveSearchContainer();
+        if (window.innerWidth <= 768) {
+          attachSearchToggle();
+          textMapHeightAdj();
+          dragHandle();
+        }
 
-     if (!search || !ui) {
-    console.warn("One or both elements not found:", { search, ui });
-    return;
-  }
+        //ui container state
+      });
 
-    if (window.innerWidth > 768) {
-      // Desktop: insert search_container back into ui_container
-      if (!ui.contains(search)) {
-        ui.insertBefore(search, ui.firstChild); // insert at top of ui_container
-        console.log("Inserted in container");
+      function dragHandle() {
+        const uiContainer = document.getElementById("ui_container");
+        const dragHandle = document.querySelector(".drag-handle");
+
+        let startY = 0;
+        let currentY = 0;
+
+        dragHandle.addEventListener("touchstart", (e) => {
+          startY = e.touches[0].clientY;
+        });
+
+        dragHandle.addEventListener("touchmove", (e) => {
+          currentY = e.touches[0].clientY;
+        });
+
+        dragHandle.addEventListener("touchend", () => {
+          const deltaY = currentY - startY;
+
+          // Get current state
+          const isExpanded = uiContainer.classList.contains("expanded");
+          const isSemiExpanded =
+            uiContainer.classList.contains("semi-expanded");
+
+          if (deltaY < -30) {
+            // Swipe up
+            if (!isSemiExpanded && !isExpanded) {
+              // Collapsed -> Semi
+              uiContainer.classList.add("semi-expanded");
+            } else if (isSemiExpanded && !isExpanded) {
+              // Semi -> Expanded
+              uiContainer.classList.remove("semi-expanded");
+              uiContainer.classList.add("expanded");
+            }
+          } else if (deltaY > 30) {
+            // Swipe down
+            if (isExpanded) {
+              // Expanded -> Semi
+              uiContainer.classList.remove("expanded");
+              uiContainer.classList.add("semi-expanded");
+            } else if (isSemiExpanded) {
+              // Semi -> Collapsed
+              uiContainer.classList.remove("semi-expanded");
+            }
+          }
+
+          startY = 0;
+          currentY = 0;
+        });
       }
-    } else {
-      // Mobile: move it out of ui_container to body (or wrapper)
-      if (ui.contains(search)) {
-        pageContent.insertBefore(search, ui);
-          console.log("removed from container");
-      }
-    }
-  }
-
-  //fix textmap
-
-  function textMapHeightAdj(){
-      if (window.innerWidth <= 768) {
- const navbar = document.querySelector('.topnav');
-const textmap = document.querySelector('#text-map');
- const height = navbar.offsetHeight;
- if(textmap) textmap.style.top = `${height +40}px`;
-      }
-  }
-
-  // Run once on load
-  document.addEventListener("DOMContentLoaded", () => {
-    attachSearchToggle();
-    moveSearchContainer();
-
-    if (window.innerWidth <= 768) {
-      dragHandle();
-    }
-  });
-
-  // Re-attach on window resize (for dynamic appearance of .searchSlider)
-  window.addEventListener("resize", () => {
-     moveSearchContainer();
-    if (window.innerWidth <= 768) {
-      attachSearchToggle();
-      textMapHeightAdj();
-      dragHandle();
-    }
-
-    //ui container state
-
-
-});
-
-
-
-
-function dragHandle(){
-const uiContainer = document.getElementById('ui_container');
-const dragHandle = document.querySelector('.drag-handle');
-
-let startY = 0;
-let currentY = 0;
-
-dragHandle.addEventListener('touchstart', e => {
-  startY = e.touches[0].clientY;
-});
-
-dragHandle.addEventListener('touchmove', e => {
-  currentY = e.touches[0].clientY;
-});
-
-dragHandle.addEventListener('touchend', () => {
-  const deltaY = currentY - startY;
-
-  // Get current state
-  const isExpanded = uiContainer.classList.contains('expanded');
-  const isSemiExpanded = uiContainer.classList.contains('semi-expanded');
-
-  if (deltaY < -30) {
-    // Swipe up
-    if (!isSemiExpanded && !isExpanded) {
-      // Collapsed -> Semi
-      uiContainer.classList.add('semi-expanded');
-    } else if (isSemiExpanded && !isExpanded) {
-      // Semi -> Expanded
-      uiContainer.classList.remove('semi-expanded');
-      uiContainer.classList.add('expanded');
-    }
-  } else if (deltaY > 30) {
-    // Swipe down
-    if (isExpanded) {
-      // Expanded -> Semi
-      uiContainer.classList.remove('expanded');
-      uiContainer.classList.add('semi-expanded');
-    } else if (isSemiExpanded) {
-      // Semi -> Collapsed
-      uiContainer.classList.remove('semi-expanded');
-    }
-  }
-
-  startY = 0;
-  currentY = 0;
-});
-
-
-}
-
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>

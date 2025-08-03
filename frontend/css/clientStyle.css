@@ -104,8 +104,12 @@ body {
     padding: 10px 15px;
     border-top: 1px solid rgba(255,255,255,0.1);
   }
-}
 
+  /* Hide "Suggest route" link on phone-sized screens */
+  .nav-links a[href="clientCrowdSource.html"] {
+    display: none;
+  }
+}
 
 
     /*Popp*/
@@ -601,17 +605,20 @@ z-index: 999;
   background-color: #ccc;
 }
 
-
+/* Route list (price division) */
+.routeList_container{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
 
   /*Toggle button*/
-
    .toggle-container {
    position: relative;
-   top:6%;
    display: flex;
+   margin-bottom: 3%;
    align-items: center;
    cursor: pointer;
-   margin-bottom: 20px;
  }
  
  .toggle-button {
@@ -822,8 +829,8 @@ display: none;
  .circle-button {
    position: relative;
    top:1%;
-   width: 40px;
-   height: 40px;
+   width: 30px;
+   height: 30px;
    border-radius: 50%;
    border: 3px solid grey;
    background-color: white;
@@ -831,6 +838,7 @@ display: none;
    align-items: center;
    justify-content: center;
    cursor: pointer;
+   margin-left: 1%;
    transition: transform 0.3s;
  }
 
