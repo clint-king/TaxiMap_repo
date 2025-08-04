@@ -378,17 +378,18 @@
 
           // Get current state
           const isExpanded = uiContainer.classList.contains("expanded");
-          const isSemiExpanded =
-            uiContainer.classList.contains("semi-expanded");
+          // const isSemiExpanded =
+          //   uiContainer.classList.contains("semi-expanded");
+            const iscollapsed =
+            uiContainer.classList.contains("collapsed");
 
           if (deltaY < -30) {
             // Swipe up
-            if (!isSemiExpanded && !isExpanded) {
+            if (iscollapsed) {
               // Collapsed -> Semi
-              uiContainer.classList.add("semi-expanded");
-            } else if (isSemiExpanded && !isExpanded) {
+              uiContainer.classList.remove("collapsed");
+            } else if (!iscollapsed && !isExpanded) {
               // Semi -> Expanded
-              uiContainer.classList.remove("semi-expanded");
               uiContainer.classList.add("expanded");
             }
           } else if (deltaY > 30) {
@@ -396,10 +397,10 @@
             if (isExpanded) {
               // Expanded -> Semi
               uiContainer.classList.remove("expanded");
-              uiContainer.classList.add("semi-expanded");
-            } else if (isSemiExpanded) {
+             
+            } else if (!iscollapsed && !isExpanded) {
               // Semi -> Collapsed
-              uiContainer.classList.remove("semi-expanded");
+              uiContainer.classList.add("collapsed");
             }
           }
 
