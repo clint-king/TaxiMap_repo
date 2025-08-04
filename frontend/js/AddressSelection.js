@@ -5,7 +5,7 @@ if(false){
   baseUrl = "http://localhost:3000";
 }else{
 //render
- baseUrl = 'https://taximap-repo.onrender.com' ;
+ baseUrl = 'https://api.teksimap.co.za' ;
 }
 
 export const BASE_URL = baseUrl;

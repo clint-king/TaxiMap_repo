@@ -5,6 +5,7 @@ dotenv.config();
 
 
 let pool = null;
+console.log("NODE_ENV in db.js: " , process.env.NODE_ENV);
 if(process.env.NODE_ENV == 'development'){
   pool = await mysql.createPool({
   host: 'localhost',

@@ -54,29 +54,6 @@ if (signupSubmit) {
   });
 }
 
-// if (loginSubmit) {
-//   loginSubmit.addEventListener("click", async (e) => {
-//     e.preventDefault();
-
-//     if (loginEmail.value.trim() === '' || loginPassword.value.trim() === '') {
-
-//       return alert("Fill in all inputs");
-//     }
-
-//     try {
-//       const response = await axios.post(`${BASE_URL}/auth/login`, {
-//         email: loginEmail.value.trim(),
-//         password: loginPassword.value
-//       });
-//       console.log(response.data); // Optional: handle success message or redirect
-//     } catch (err) {
-//       console.error(err);
-//       alert("Login failed. Check your credentials.");
-//     }
-//   });
-// }
-
-
 
 if (loginSubmit) {
   loginSubmit.addEventListener("click", async (e) => {

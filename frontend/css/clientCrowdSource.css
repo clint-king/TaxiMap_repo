@@ -34,9 +34,10 @@ body {
 
 
      .topnav img{
-      height:45px;
-      width:45px;
-      border-radius: 10px;
+      height: 35px;
+      width: auto;
+      border-radius: 8px;
+      display: block;
     }
 
     .topnav a {
