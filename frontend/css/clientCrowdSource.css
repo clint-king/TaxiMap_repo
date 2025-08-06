@@ -15,44 +15,78 @@ body {
       height: 100%;
     }
 
-    /* Top navigation bar */
-     .topnav {
-      position: fixed;
-      z-index: 1000;
-      padding: 5px 10px;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background-color: #01386A;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+         /* Top navigation bar */
+      .topnav {
+       background-color: #01386A;
+       color: white;
+       position: fixed;
+       position: sticky;
+       width: 100%;
+       z-index: 1000;
+       top: 0;
+       left: 0;
+       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       padding: 10px 15px;
+     }
 
+     .topnav img {
+       height: 35px; /* smaller height */
+       width: auto;
+       border-radius: 8px;
+       display: block;
+     }
 
-     .topnav img{
-      height: 35px;
-      width: auto;
-      border-radius: 8px;
-      display: block;
-    }
+     .topnav a {
+       color: white;
+       text-decoration: none;
+       font-weight: 600;
+     }
 
-    .topnav a {
-      color: white;
-      text-decoration: none;
-      margin: 0 30px;
-    }
+     .topnav a:hover {
+       text-decoration: underline;
+     }
 
-    .topnav a:hover {
-      text-decoration: underline;
-    }
+     .topnav .nav_group {
+       display: flex;
+       gap: 30px;
+       justify-content: center;
+       align-items: center;
+      margin-right: auto;
+      margin-left: auto;
+     }
 
-    .topnav .nav_group{
-      margin-right: 20%;
-    }
+     /* Mobile styles */
+     @media (max-width: 768px) {
+       .topnav {
+         flex-direction: column;
+         padding: 10px 15px;
+       }
+
+       .topnav .nav_group {
+         display: none;
+         flex-direction: column;
+         background-color: #01386A;
+         position: absolute;
+         top: 60px;
+         left: 0;
+         width: 100%;
+         padding: 10px 0;
+         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+         margin-right: 0;
+       }
+
+       .topnav .nav_group.show {
+         display: flex;
+       }
+
+       .topnav .nav_group a {
+         padding: 10px 15px;
+         border-top: 1px solid rgba(255,255,255,0.1);
+       }
+     }
 
 
     /*Popp*/
@@ -69,9 +103,10 @@ body {
 
     /* Page layout (flex row) for sidebar + main content */
     .page-content {
-      padding-top: 50px;
       display: flex;
       flex: 1; /* fill the remaining space */
+      width: 100%;
+      height: calc(100vh - 50px);
       overflow: hidden;
     }
 
@@ -218,76 +253,250 @@ body {
  }
 
 
-   /* == UI SECTION == */
-#ui_container{
-   width:23.5%;
-   height:95%;
-   display: flex;
-   flex-direction: column;
+       /* == UI SECTION == */
+ #ui_container{
+    width:23.5%;
+    height:100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    overflow-y: scroll;
+    overflow-x: scroll;
+    padding: 1rem;
+    box-sizing: border-box;
+ }
+
+ /* Responsive breakpoints for desktop and laptop sizes */
+ @media (max-width: 1920px) {
+   #ui_container {
+     width: 25%;
+     padding: 1.2rem;
+   }
+   .taxiRInput_container {
+     max-width: 300px;
+   }
+   .sessionInfoContainer {
+     width: 80%;
+   }
+   .routeInfoContainer {
+     width: 85%;
+   }
+   .addRoute_container {
+     width: 400px;
+   }
+   .taxiRInfo_container {
+     width: 85%;
+   }
+ }
+
+ @media (max-width: 1680px) {
+   #ui_container {
+     width: 28%;
+     padding: 1rem;
+   }
+   .taxiRInput_container {
+     max-width: 280px;
+   }
+   .sessionInfoContainer {
+     width: 85%;
+   }
+   .routeInfoContainer {
+     width: 90%;
+   }
+   .addRoute_container {
+     width: 380px;
+   }
+   .taxiRInfo_container {
+     width: 88%;
+   }
+ }
+
+ @media (max-width: 1440px) {
+   #ui_container {
+     width: 30%;
+     padding: 0.8rem;
+   }
+   .taxiRInput_container {
+     max-width: 260px;
+   }
+   .sessionInfoContainer {
+     width: 90%;
+   }
+   .routeInfoContainer {
+     width: 95%;
+   }
+   .addRoute_container {
+     width: 350px;
+   }
+   .taxiRInfo_container {
+     width: 90%;
+   }
+ }
+
+ @media (max-width: 1366px) {
+   #ui_container {
+     width: 32%;
+     padding: 0.6rem;
+   }
+   .taxiRInput_container {
+     max-width: 240px;
+   }
+   .sessionInfoContainer {
+     width: 95%;
+   }
+   .routeInfoContainer {
+     width: 98%;
+   }
+   .addRoute_container {
+     width: 320px;
+   }
+   .price-slider-container {
+     width: 80%;
+   }
+   .taxiRInfo_container {
+     width: 92%;
+   }
+ }
+
+ @media (max-width: 1280px) {
+   #ui_container {
+     width: 35%;
+     padding: 0.5rem;
+   }
+   .taxiRInput_container {
+     max-width: 220px;
+   }
+   .sessionInfoContainer {
+     width: 98%;
+   }
+   .routeInfoContainer {
+     width: 100%;
+   }
+   .addRoute_container {
+     width: 300px;
+   }
+   .price-slider-container {
+     width: 85%;
+   }
+   .inputcontainer.startingInput,
+   .inputcontainer.destInput {
+     max-width: 160px;
+   }
+   .taxiRInfo_container {
+     width: 95%;
+   }
+ }
+
+ @media (max-width: 1024px) {
+   #ui_container {
+     width: 40%;
+     padding: 0.4rem;
+   }
+   .taxiRInput_container {
+     max-width: 200px;
+   }
+   .sessionInfoContainer {
+     width: 100%;
+   }
+   .routeInfoContainer {
+     width: 100%;
+   }
+   .addRoute_container {
+     width: 280px;
+   }
+   .price-slider-container {
+     width: 90%;
+   }
+   .inputcontainer.startingInput,
+   .inputcontainer.destInput {
+     max-width: 140px;
+   }
+   .route_div {
+     width: 60px;
+     height: 18px;
+     font-size: 0.7rem;
+   }
+   .sendBtn {
+     padding: 18px 70px;
+     font-size: 0.9rem;
+   }
+   .add_button {
+     width: 220px;
+     height: 45px;
+     font-size: 0.9rem;
+   }
+   .taxiRInfo_container {
+     width: 98%;
+   }
+ }
+
+  /* Taxi rank info */
+ .taxiRInfo_container{
+    border: 1px solid #D3D3D3;
+    border-radius: 20px;
+    padding: 4%;
+    width: 90%;
+    margin: 0 auto;
+ }
+
+
+ .routeTypeSelection_container{
+    display: flex;
+    height:30%;
+    gap:10%;
+    justify-content: center;
    align-items: center;
-   justify-content: space-between;
-}
-
- /* Taxi rank info */
-.taxiRInfo_container{
-   border: 1px solid #D3D3D3;
-   border-radius: 20px;
-   padding: 4%;
-}
-
-
-.routeTypeSelection_container{
-   display: flex;
-   height:30%;
-   gap:10%;
-   justify-content: center;
-  align-items: center;
-  font-size:medium;
-  font-weight: 600;
-}
-
-#routeType{
-   width:30%;
-   height: 70%;;
-   color: skyblue;
-   border: none;
-   font-size: medium;
-}
-
-.taxiRInput_container{
-   height:120px;
-   width:320px;
-   display: flex;
-   flex-direction: column;
-   justify-content: center ;
-   align-items: center;
-   gap: 15px;
-}
-
-.inputTR{
-   display: flex;
-   align-items: center;
-   gap: 10%;
-   width:100%;
-   position: relative;
-}
-.inputTR input {
-  width: 96%;
-  height: 35px;
-  border-radius: 20px;
-  border: 1px solid #D3D3D3;
-  text-align: center;
-}
-
-.inputTR button{
-   padding: 7px 1px;
-   background-color:#FFD52F;
+   font-size:medium;
    font-weight: 600;
-   border-radius: 10px;
-   border: none;
-   color: white;
-   cursor: pointer;
-}
+ }
+
+ #routeType{
+    width:30%;
+    height: 70%;;
+    color: skyblue;
+    border: none;
+    font-size: medium;
+ }
+
+ .taxiRInput_container{
+    height:120px;
+    width:100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center ;
+    align-items: center;
+    gap: 15px;
+ }
+
+ .inputTR{
+    display: flex;
+    align-items: center;
+    gap: 10%;
+    width:100%;
+    position: relative;
+ }
+ .inputTR input {
+   width: 96%;
+   height: 35px;
+   border-radius: 20px;
+   border: 1px solid #D3D3D3;
+   text-align: center;
+   font-size: clamp(0.8rem, 1vw, 1rem);
+ }
+
+ .inputTR button{
+    padding: 7px 1px;
+    background-color:#FFD52F;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: clamp(0.7rem, 0.9vw, 0.9rem);
+    white-space: normal;
+ }
 
 .inputcontainer{
   max-width: 100%;
@@ -296,54 +505,56 @@ body {
 
 
 
-.inputcontainer.startingInput{
+ .inputcontainer.startingInput{
+    position: relative;
+   display: flex;
+   flex-direction: column;
+   /* height:45px; */
+   width:100%;
+   max-width: 178px;
+ }
+
+
+ /* .inputcontainer.startingInput ul {
+   border: 2px solid rgb(3, 255, 16);
+   position: absolute;
+   left: 0;
+   top:100%;
+   width:175px;
+   list-style-type: none;
+   margin-top: 37px; 
+   border-radius: 15px;
+   background: rgba(128, 128, 128, 0.3);
+   backdrop-filter: blur(8px);
+   -webkit-backdrop-filter: blur(8px);
+   z-index: 3000;
+ } */
+
+ .inputcontainer ul {
+   position: absolute;
+   top: 100%; /* now this goes right after the input */
+   left: 0;
+   width: 100%;
+   z-index: 10;
+   border-radius: 15px;
+   background: rgba(128, 128, 128, 0.3);
+   backdrop-filter: blur(8px);
+   -webkit-backdrop-filter: blur(8px);
+   list-style-type: none;
+   padding: 0;
+   margin: 0;
+ }
+
+
+
+ .inputcontainer.destInput{
    position: relative;
-  display: flex;
-  flex-direction: column;
-  /* height:45px; */
-  width:178px;
-}
-
-
-/* .inputcontainer.startingInput ul {
-  border: 2px solid rgb(3, 255, 16);
-  position: absolute;
-  left: 0;
-  top:100%;
-  width:175px;
-  list-style-type: none;
-  margin-top: 37px; 
-  border-radius: 15px;
-  background: rgba(128, 128, 128, 0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 3000;
-} */
-
-.inputcontainer ul {
-  position: absolute;
-  top: 100%; /* now this goes right after the input */
-  left: 0;
-  width: 100%;
-  z-index: 10;
-  border-radius: 15px;
-  background: rgba(128, 128, 128, 0.3);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-
-
-.inputcontainer.destInput{
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height:45px;
-  width:178px;
-}
+   display: flex;
+   flex-direction: column;
+   height:45px;
+   width:100%;
+   max-width: 178px;
+ }
 
 
 .inputcontainer li:hover{
@@ -553,12 +764,12 @@ visibility: hidden;
     font-size: 15px;
     margin-top: 20px;
     font-size: large;
-    left:65px;
+    transform: translateX(15%);
 }
 
 /*message */
 textarea{
-   width:290px;
+   width: 90%;
    height:110px;
    border-radius: 10px;
    font-size: small;
@@ -572,7 +783,7 @@ textarea{
 
  .map_container{
    width: 80%;
-   height: 98vh;
+   height: 100%;
    position: relative;
    top:5px;
    right:5px;
@@ -674,8 +885,7 @@ textarea{
 
 #map {
   width: 100%;
-  height: 96%;
-  border-radius: 10px;
+  height: 100%;
  }
 
  
