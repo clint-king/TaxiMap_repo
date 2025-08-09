@@ -93,6 +93,14 @@
       text-decoration: underline;
     }
 
+    /* Inline error message under inputs */
+    .error-line {
+      color: #e53935; /* red */
+      font-size: 0.85rem;
+      min-height: 1.2rem; /* reserve space to avoid layout shift */
+      margin: -0.3rem 0 0.8rem; /* tuck closer to input */
+    }
+
     .image-section {
       flex: 1;
       background: url('https://images.unsplash.com/photo-1534081333815-ae5019106621') no-repeat center center/cover;
@@ -138,6 +146,8 @@
 
         <label for="password">Password</label>
         <input type="password" class="loginPassword" id="password" name="password" required />
+
+        <div class="loginError error-line" aria-live="polite"></div>
 
         <button class="loginSubmit" type="submit">Login</button>
 

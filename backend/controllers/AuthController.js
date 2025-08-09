@@ -34,20 +34,20 @@ export const login = async (req, res) => {
     const token = jwt.sign({ id: user.id , user_type: user.user_type}, 'secret_key', { expiresIn: '1h' });
 
     //if(process.env.NODE_ENV == 'production'){
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: true, // set to true in production (requires HTTPS)
-    sameSite: 'None',
-    maxAge: 3600000
-  });
-
-  //   }else{
-  //   res.cookie('token', token, {
-  //   httpOnly: false,
-  //   secure: true, 
-  //   sameSite: 'strict',
+  // res.cookie('token', token, {
+  //   httpOnly: true,
+  //   secure: true, // set to true in production (requires HTTPS)
+  //   sameSite: 'None',
   //   maxAge: 3600000
   // });
+
+  //   }else{
+    res.cookie('token', token, {
+    httpOnly: false,
+    secure: true, 
+    sameSite: 'strict',
+    maxAge: 3600000
+  });
   //   }
   
     return res.json({ message: 'Login successful' , user_type: user.user_type});

@@ -18,10 +18,11 @@ body {
     margin-left: 25px;
     border:none;
    }
+
+   
 #ui_container{
    width:55%;
    height:100vh;
-   overflow: auto;
    position: relative;
    margin-right:30px ;
    margin-left: 20px;

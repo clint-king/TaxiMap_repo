@@ -46,7 +46,12 @@ if (signupSubmit) {
         email: signupEmail.value.trim(),
         password: signupPassword.value
       });
-      console.log(response.data); // Optional: handle success message or redirect
+      // On success: clear inputs and redirect to login
+      signupName.value = '';
+      signupEmail.value = '';
+      signupPassword.value = '';
+      signupConfirm.value = '';
+      window.location.href = '/login.html';
     } catch (err) {
       console.error(err);
       alert("Signup failed. Check your details or try again.");
@@ -59,8 +64,13 @@ if (loginSubmit) {
   loginSubmit.addEventListener("click", async (e) => {
     e.preventDefault();
 
+    // Clear any previous inline error
+    const errorEl = document.querySelector('.loginError');
+    if (errorEl) errorEl.textContent = '';
+
     if (loginEmail.value.trim() === '' || loginPassword.value.trim() === '') {
-      return alert("Fill in all inputs");
+      if (errorEl) errorEl.textContent = 'Please fill in all inputs';
+      return;
     }
 
     try {
@@ -78,12 +88,16 @@ if (loginSubmit) {
       } else if (userType === 'client') {
         window.location.href = '/client.html';
       } else {
-        alert("Unknown user type.");
+        if (errorEl) errorEl.textContent = 'Unknown user type.';
       }
 
     } catch (err) {
       console.error(err);
-      alert("Login failed. Check your credentials.");
+      // Prefer inline error message
+      const message = (err?.response?.status === 401 || err?.response?.status === 400)
+        ? 'Email or password is wrong'
+        : 'Login failed. Please try again.';
+      if (errorEl) errorEl.textContent = message;
     }
   });
 }
