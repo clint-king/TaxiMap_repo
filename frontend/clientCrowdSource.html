@@ -45,16 +45,22 @@
       <!-- Popup -->
       <div id="popup-container"></div>
 
+      <!-- Mobile sidebar toggle button -->
+      <button id="sidebarToggle" class="sidebar-toggle-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+
       <div class="page-content">
         <!--Ui section-->
         <div id="ui_container">
+          <!-- Mobile close button -->
+          <button class="sidebar-close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+          
           <!-- Route Section-->
           <div class="labelContainer sessionSectionLabels">
             <h3>Session :</h3>
-            <i
-              class="fa-solid fa-circle-info"
-              style="color: #919191; font-size: 24px"
-            ></i>
           </div>
 
           <div class="sessionInfoContainer">
@@ -275,6 +281,94 @@
         .then((html) => {
           document.getElementById("popup-container").innerHTML = html;
         });
+
+      // Sidebar toggle functionality for all screen sizes
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const uiContainer = document.getElementById('ui_container');
+        const sidebarCloseBtn = document.querySelector('.sidebar-close-btn');
+        
+        if (sidebarToggle && uiContainer) {
+          // Initialize sidebar state
+          let isSidebarVisible = true;
+          
+          // Toggle sidebar function
+          function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+              // Mobile behavior
+              if (uiContainer.classList.contains('sidebar-open')) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.add('sidebar-open');
+                sidebarToggle.classList.add('hidden');
+              }
+            } else {
+              // Desktop/Laptop behavior
+              if (isSidebarVisible) {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+                isSidebarVisible = false;
+              } else {
+                uiContainer.classList.remove('sidebar-hidden');
+                uiContainer.classList.add('sidebar-visible');
+                sidebarToggle.classList.add('hidden');
+                isSidebarVisible = true;
+              }
+            }
+          }
+
+          // Toggle button click
+          sidebarToggle.addEventListener('click', toggleSidebar);
+
+          // Close button click (mobile only)
+          if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function() {
+              if (window.innerWidth <= 768) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+                isSidebarVisible = false;
+              }
+            });
+          }
+
+          // Close sidebar when clicking outside (mobile only)
+          document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+              if (!uiContainer.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              }
+            }
+          });
+
+          // Handle window resize
+          window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+              // Reset mobile classes when switching to desktop
+              uiContainer.classList.remove('sidebar-open');
+              if (!isSidebarVisible) {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.remove('sidebar-hidden');
+                uiContainer.classList.add('sidebar-visible');
+                sidebarToggle.classList.add('hidden');
+              }
+            } else {
+              // Reset desktop classes when switching to mobile
+              uiContainer.classList.remove('sidebar-hidden', 'sidebar-visible');
+              sidebarToggle.classList.remove('hidden');
+            }
+          });
+        }
+      });
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>

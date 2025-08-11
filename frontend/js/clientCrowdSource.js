@@ -2,8 +2,15 @@ import  axios  from 'axios';
 import popup from "./popup.js";
 import {BASE_URL} from "./AddressSelection.js";
 
+// Create separate axios instances for different purposes
+const apiClient = axios.create({
+  withCredentials: true,
+  baseURL: BASE_URL
+});
 
-axios.defaults.withCredentials = true;
+const mapboxClient = axios.create({
+  withCredentials: false // No credentials for external APIs
+});
 
  // === DOM ELEMENTS ===
 
@@ -232,7 +239,7 @@ const map = new mapboxgl.Map({
         
 
   try {
-    const response = await axios.get(url);
+    const response = await mapboxClient.get(url);
     const address = response.data.features[0]?.place_name;
     console.log('Address:', address);
   
@@ -524,7 +531,7 @@ updateButton.addEventListener('click' , async (e)=>{
       //use lng and lat to get an adress
      const lnglat = coords[coords.length-1];
      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lnglat[0]},${lnglat[1]}.json?access_token=${accessToken}`;
-    const response = await axios.get(url);
+    const response = await mapboxClient.get(url);
     const address = response.data.features[0]?.place_name;
     console.log('Address:', address);
 
@@ -681,7 +688,7 @@ sendButton.addEventListener("click" , async()=>{
 
     let response ;
       if(isStraightChosen === true){
-       response = await axios.post(`${BASE_URL}/client//AddPendingRoute` , {
+       response = await apiClient.post(`/client//AddPendingRoute` , {
           caseType:caseType,
           TRSource:TRSource,
           TRDest:TRDest,
@@ -691,7 +698,7 @@ sendButton.addEventListener("click" , async()=>{
 
       }else{
 
-          response = await axios.post(`${BASE_URL}/client//AddPendingRoute` , {
+          response = await apiClient.post(`/client//AddPendingRoute` , {
           caseType:caseType,
           TRSource:TRSource,
           TRDest:TRDest,
@@ -1104,7 +1111,7 @@ function showSuggestions(query ,  isGroup1) {
 
 async function fetchTaxiRanks() {
     try {
-        const response = await axios.get(`${BASE_URL}/admin/listTaxiRanks`);
+        const response = await apiClient.get(`/admin/listTaxiRanks`);
         taxiRanks = response.data; // Store data globally
     } catch (error) {
         console.error('Error fetching taxi ranks:', error);

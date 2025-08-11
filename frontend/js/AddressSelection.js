@@ -1,6 +1,6 @@
 let baseUrl;
 
-if(false){
+if(true){
   //local 
   baseUrl = "http://localhost:3000";
 }else{

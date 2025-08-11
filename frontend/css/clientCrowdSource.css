@@ -1,19 +1,21 @@
-body {
-    margin: 0;
-    padding: 0; 
-    font-family: sans-serif;
-    background-color: #ffffff;
-    height: 100vh;
-   }
+ body {
+     margin: 0;
+     padding: 0; 
+     font-family: sans-serif;
+     background-color: #ffffff;
+     height: 100vh;
+     overflow: hidden;
+    }
    /* == NAVIGATION BAR == */
 
 
-    /* Wrapper to hold topbar + page content in column layout */
-    .wrapper {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
+         /* Wrapper to hold topbar + page content in column layout */
+     .wrapper {
+       display: flex;
+       flex-direction: column;
+       height: 100vh;
+       overflow: hidden;
+     }
 
          /* Top navigation bar */
       .topnav {
@@ -101,14 +103,15 @@ body {
       z-index: 3000;
     }
 
-    /* Page layout (flex row) for sidebar + main content */
-    .page-content {
-      display: flex;
-      flex: 1; /* fill the remaining space */
-      width: 100%;
-      height: calc(100vh - 50px);
-      overflow: hidden;
-    }
+         /* Page layout (flex row) for sidebar + main content */
+     .page-content {
+       display: flex;
+       flex: 1; /* fill the remaining space */
+       width: 100%;
+       height: calc(100vh - 60px);
+       overflow: hidden;
+       position: relative;
+     }
 
     .sidebar {
       width: 200px;
@@ -123,18 +126,19 @@ body {
 
     /* - Choosing Marker - */
 
-  .listmenu{
-   position:absolute;
-   visibility: hidden;
-   top:40%;
-   left:48%;
-   width:230px;
-   height:150px;
-   z-index:10;
-   background-color: #F2EFEF;
-   border-radius: 10px;
-   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-  }
+     .listmenu{
+    position:absolute;
+    visibility: hidden;
+    top:40%;
+    left:48%;
+    width:230px;
+    height:150px;
+    z-index:10;
+    background-color: #F2EFEF;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    transform: translate(-50%, -50%);
+   }
 
    .listmenu #title{
    position: relative;
@@ -178,19 +182,20 @@ body {
      background-color: #FFD52F;
   }
 
-    /* Context menu [Marker confirmation] */
-  .menu{
-   position:absolute;
-   visibility: hidden;
-   top:40%;
-   left:48%;
-   width:290px;
-   height:150px;
-   z-index:10;
-   background-color: #F2EFEF;
-   border-radius: 10px;
-   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
- }
+         /* Context menu [Marker confirmation] */
+   .menu{
+    position:absolute;
+    visibility: hidden;
+    top:40%;
+    left:48%;
+    width:290px;
+    height:150px;
+    z-index:10;
+    background-color: #F2EFEF;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    transform: translate(-50%, -50%);
+  }
 
 
 
@@ -254,18 +259,45 @@ body {
 
 
        /* == UI SECTION == */
- #ui_container{
-    width:23.5%;
-    height:100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    overflow-y: scroll;
-    overflow-x: scroll;
-    padding: 1rem;
-    box-sizing: border-box;
- }
+      #ui_container{
+        width:23.5%;
+        height:100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 1rem;
+        box-sizing: border-box;
+     }
+
+   /* Sidebar close button - hidden by default on larger screens */
+  .sidebar-close-btn {
+    display: none;
+  }
+
+  /* Mobile sidebar toggle button */
+  .sidebar-toggle-btn {
+    display: none;
+    position: fixed;
+    top: 70px;
+    left: 10px;
+    z-index: 1001;
+    background: #01386A;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-toggle-btn:hover {
+    background: #012a4a;
+    transform: scale(1.05);
+  }
 
  /* Responsive breakpoints for desktop and laptop sizes */
  @media (max-width: 1920px) {
@@ -916,6 +948,7 @@ textarea{
     background-color: #F2EFEF;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);  
     z-index:999 ;
+    transform: translate(-50%, -50%);
 }
 
 #close_button{
@@ -996,6 +1029,295 @@ textarea{
     cursor: pointer;
 }
 
-#update_button:hover{
-  background-color: #FFD737;
-}
+ #update_button:hover{
+   background-color: #FFD737;
+ }
+
+   /* Mobile styles for sidebar functionality */
+  @media (max-width: 768px) {
+    .sidebar-toggle-btn {
+      display: block;
+    }
+
+    .sidebar-toggle-btn.hidden {
+      display: none;
+    }
+
+         #ui_container {
+       position: fixed;
+       left: -100%;
+       top: 55px; /* Position below topnav */
+       width: 85%;
+       max-width: 350px;
+       height: calc(100vh - 55px); /* Subtract topnav height */
+       background: white;
+       z-index: 1000;
+       transition: left 0.3s ease;
+       overflow-y: auto;
+       overflow-x: hidden;
+       padding: 1rem;
+       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+     }
+
+    #ui_container.sidebar-open {
+      left: 0;
+    }
+
+         /* Close button for sidebar - mobile only */
+     .sidebar-close-btn {
+       display: flex;
+       position: absolute;
+       top: 10px;
+       right: 10px;
+       background: #01386A;
+       color: white;
+       border: none;
+       border-radius: 50%;
+       width: 30px;
+       height: 30px;
+       cursor: pointer;
+       align-items: center;
+       justify-content: center;
+       font-size: 14px;
+       z-index: 1002;
+     }
+
+     .sidebar-close-btn:hover {
+       background: #012a4a;
+     }
+
+       .map_container {
+      width: 100%;
+      height: calc(100vh - 60px);
+      position: relative;
+      top: 0;
+      right: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+   /* Scale down UI elements for mobile */
+   .sessionInfoContainer {
+     width: 95%;
+     height: 350px;
+     padding: 8px;
+   }
+
+   .routeInfoContainer {
+     width: 95%;
+     height: 400px;
+     padding: 10px;
+   }
+
+   .taxiRInfo_container {
+     width: 95%;
+     padding: 3%;
+   }
+
+   .taxiRInput_container {
+     max-width: 100%;
+     height: 100px;
+   }
+
+   .inputTR {
+     gap: 5%;
+   }
+
+   .inputTR input {
+     height: 30px;
+     font-size: 0.8rem;
+   }
+
+   .inputTR button {
+     padding: 5px 8px;
+     font-size: 0.7rem;
+   }
+
+   .inputcontainer.startingInput,
+   .inputcontainer.destInput {
+     max-width: 140px;
+   }
+
+   .routeTypeSelection_container {
+     font-size: 0.9rem;
+   }
+
+   #routeType {
+     font-size: 0.8rem;
+   }
+
+   .addRoute_container {
+     width: 100%;
+     height: 60px;
+   }
+
+   .route_div {
+     width: 60px;
+     height: 18px;
+     font-size: 0.7rem;
+     padding: 3px;
+   }
+
+   .price-slider-container {
+     width: 90%;
+     height: 80px;
+   }
+
+   .price-display {
+     font-size: 0.9rem;
+     left: 50px;
+   }
+
+   textarea {
+     width: 85%;
+     height: 80px;
+     font-size: 0.8rem;
+   }
+
+   .add_button {
+     width: 200px;
+     height: 40px;
+     font-size: 0.8rem;
+   }
+
+   .sendBtn {
+     padding: 15px 60px;
+     font-size: 0.9rem;
+   }
+
+   .saveSession {
+     width: 80px;
+     height: 28px;
+     font-size: 0.8rem;
+   }
+
+   .labelContainer {
+     width: 95%;
+   }
+
+   .labelContainer h3 {
+     font-size: 1rem;
+   }
+
+       .fa-circle-info,
+    .fa-lock {
+      font-size: 20px !important;
+    }
+
+    /* Mobile modal adjustments */
+    .listmenu {
+      width: 280px;
+      height: 180px;
+      top: 50%;
+      left: 50%;
+    }
+
+    .menu {
+      width: 320px;
+      height: 180px;
+      top: 50%;
+      left: 50%;
+    }
+
+    .menu_wrapper {
+      width: 320px;
+      height: 280px;
+      top: 25%;
+      left: 50%;
+    }
+
+    /* Mobile modal content adjustments */
+    .listmenu #title {
+      font-size: 1rem;
+      top: 3%;
+    }
+
+    .menu #title {
+      font-size: 1rem;
+      top: 3%;
+    }
+
+    .btnListContainer {
+      height: 110px;
+      gap: 8px;
+    }
+
+    .btnMenu {
+      height: 32px;
+      font-size: 0.9rem;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+
+    .btnContainer {
+      top: 65%;
+      left: 25%;
+    }
+
+    .btnContainer .btn {
+      width: 65px;
+      height: 25px;
+      font-size: 0.8rem;
+    }
+
+    .input_line.name {
+      top: 40px;
+      left: 20px;
+    }
+
+    .input_line.name label {
+      margin-right: 15px;
+      font-size: 0.9rem;
+    }
+
+    .input_line input {
+      height: 28px;
+      width: 200px;
+      font-size: 0.9rem;
+    }
+
+    .input_line textarea {
+      height: 60px;
+      width: 200px;
+      font-size: 0.9rem;
+    }
+
+    .input_line.prov {
+      top: 80px;
+      left: 20px;
+    }
+
+    .input_line.address {
+      top: 120px;
+      left: 20px;
+    }
+
+    .input_line.address label {
+      font-size: 0.9rem;
+    }
+
+    .input_line.address button {
+      padding: 4px 4px;
+      font-size: 0.8rem;
+    }
+
+    #update_button {
+      left: 120px;
+      padding: 4px 8px;
+      top: 220px;
+      font-size: 0.9rem;
+    }
+
+    #close_button {
+      top: 8px;
+      right: 8px;
+      font-size: 12px;
+    }
+  }

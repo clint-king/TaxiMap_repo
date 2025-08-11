@@ -601,7 +601,7 @@ async function sendsearchInfo() {
             destinationProvince: destinationProv.province,
           },
   {
-    withCredentials: "include"
+    withCredentials: true
   }
         );
 
@@ -1493,7 +1493,7 @@ async function HighlightMap() {
     const response = await axios.get(
       `${BASE_URL}/client/listOfAllRoutes`,
   {
-    withCredentials: "include"
+    withCredentials: true
   }
     );
     const resultInfo = response.data.routes;
