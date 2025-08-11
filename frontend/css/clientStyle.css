@@ -105,10 +105,7 @@ body {
     border-top: 1px solid rgba(255,255,255,0.1);
   }
 
-  /* Hide "Suggest route" link on phone-sized screens */
-  .nav-links a[href="clientCrowdSource.html"] {
-    display: none;
-  }
+
 }
 
 
