@@ -35,7 +35,15 @@
             <img src="logo-advanced.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
           </a>
         </div>
-        <div class="nav_group">
+        
+        <!-- Burger button for mobile -->
+        <div class="burger" onclick="toggleMobileMenu()">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        
+        <div class="nav_group" id="mobileMenu">
           <a href="client.html">Find route</a>
           <a href="clientCrowdSource.html">Suggest route</a>
           <a href="#help">Help</a>
@@ -281,6 +289,20 @@
         .then((html) => {
           document.getElementById("popup-container").innerHTML = html;
         });
+
+      // Mobile menu toggle functionality
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const isShown = menu.classList.toggle("show");
+        
+        // Adjust z-index to ensure menu appears above other elements
+        const topnav = document.querySelector(".topnav");
+        if (isShown) {
+          topnav.style.zIndex = "3001";
+        } else {
+          topnav.style.zIndex = "1000";
+        }
+      }
 
       // Sidebar toggle functionality for all screen sizes
       document.addEventListener('DOMContentLoaded', function() {
