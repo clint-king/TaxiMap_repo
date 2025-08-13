@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://www.gstatic.com https://connect.facebook.net blob: data:; frame-src https://accounts.google.com;">
   <title>TaxiRoute | Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
   <style>
@@ -107,21 +108,81 @@
       min-height: 400px;
     }
 
-    .btn-google {
-      display: inline-block;
+    .social-auth-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background: white;
       color: #444;
       border: 1px solid #ddd;
-      padding: 0.6rem 1.2rem;
-      border-radius: 30px;
+      padding: 0.8rem 1.2rem;
+      border-radius: 10px;
       font-weight: 500;
-      font-size: 0.95rem;
-      text-align: center;
+      font-size: 0.9rem;
+      cursor: pointer;
       transition: all 0.3s ease;
+      width: 100%;
     }
 
-    .btn-google:hover {
-      background: #eee;
+    .social-btn:hover {
+      background: #f8f9fa;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .social-btn img {
+      height: 18px;
+      width: 18px;
+      margin-right: 8px;
+    }
+
+    .google-signin {
+      border-color: #4285f4;
+      color: #4285f4;
+    }
+
+    .facebook-signin {
+      border-color: #1877f2;
+      color: #1877f2;
+    }
+
+    .twitter-signin {
+      border-color: #1da1f2;
+      color: #1da1f2;
+    }
+
+    .instagram-signin {
+      border-color: #e4405f;
+      color: #e4405f;
+    }
+
+    .btn-link {
+      background: none;
+      border: none;
+      color: #FFD737;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+    }
+
+    .btn-link:hover {
+      color: #e6c32c;
+    }
+
+    .verification-help {
+      display: none;
+    }
+
+    .verification-help.show {
+      display: block;
     }
 
     @media (max-width: 768px) {
@@ -150,14 +211,34 @@
         <div class="loginError error-line" aria-live="polite"></div>
 
         <button class="loginSubmit" type="submit">Login</button>
+        
+        <div class="verification-help" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;">
+          <p style="color: #6c757d; margin-bottom: 0.5rem;">Need to verify your email?</p>
+          <button type="button" class="btn-link" onclick="showResendVerification()">Resend verification email</button>
+        </div>
 
         <div style="text-align: center; margin: 1rem 0;">or</div>
 
-        <div style="display: flex; justify-content: center;">
-          <a href="/auth/google" class="btn-google">
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" style="height: 18px; vertical-align: middle; margin-right: 8px;">
-            Login with Google
-          </a>
+        <div class="social-auth-buttons">
+          <button type="button" class="social-btn google-signin">
+            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="height: 18px; vertical-align: middle; margin-right: 8px;">
+            Continue with Google
+          </button>
+          
+          <button type="button" class="social-btn facebook-signin">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_%282019%29.png/1024px-Facebook_Logo_%282019%29.png" alt="Facebook" style="height: 18px; vertical-align: middle; margin-right: 8px;">
+            Continue with Facebook
+          </button>
+          
+          <button type="button" class="social-btn twitter-signin">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_of_Twitter.svg/512px-Logo_of_Twitter.svg.png" alt="Twitter" style="height: 18px; vertical-align: middle; margin-right: 8px;">
+            Continue with Twitter
+          </button>
+          
+          <button type="button" class="social-btn instagram-signin">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/132px-Instagram_logo_2016.svg.png" alt="Instagram" style="height: 18px; vertical-align: middle; margin-right: 8px;">
+            Continue with Instagram
+          </button>
         </div>
       </form>
       <div class="switch-link">
@@ -167,7 +248,11 @@
     <div class="image-section"></div>
   </div>
 
-    <script  type="module" src="./js/Auth.js"></script>
+    <!-- Social Media SDKs -->
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://connect.facebook.net/en_US/sdk.js" async defer></script>
+    
+    <script type="module" src="./js/Auth.js"></script>
 </body>
 </html>
 

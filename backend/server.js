@@ -5,6 +5,10 @@ import auth from './routes/AuthRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config({ path: './config/development.env' });
 
 const port = process.env.PORT || 3000 ;
 const app = express();

@@ -4,7 +4,8 @@ import  { body } from 'express-validator';
 
 
 //controller
-import {signup , login} from "../controllers/AuthController.js";
+import {signup , login, verifyEmail, resendVerificationEmail} from "../controllers/AuthController.js";
+import { googleAuth, facebookAuth, twitterAuth, instagramAuth, socialAuth } from "../controllers/socialAuthController.js";
 
 const router = express.Router();
 
@@ -26,4 +27,15 @@ router.post("/login" ,
   login
 );
 
-  export default router;
+// Social Authentication Routes
+router.post("/google", googleAuth);
+router.post("/facebook", facebookAuth);
+router.post("/twitter", twitterAuth);
+router.post("/instagram", instagramAuth);
+router.post("/social", socialAuth);
+
+// Email Verification Routes
+router.get("/verify/:token", verifyEmail);
+router.post("/resend-verification", resendVerificationEmail);
+
+export default router;
