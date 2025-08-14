@@ -7,6 +7,9 @@ const authenticateUser = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, 'secret_key');
+    console.log('JWT decoded:', decoded);
+    console.log('JWT payload keys:', Object.keys(decoded));
+    console.log('User ID in JWT:', decoded.id);
     req.user = decoded; // contains { id: ... }
     next();
   } catch (err) {

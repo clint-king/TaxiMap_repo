@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { BASE_URL } from "./AddressSelection.js";
 import { getSocialConfig, validateSocialConfig, showConfigStatus } from "./socialAuthConfig.js";
+import { checkAuthStatus } from "./logout.js";
 
 axios.defaults.withCredentials = true;
 
@@ -96,6 +97,14 @@ if (loginSubmit) {
 
       const userType = response.data.user_type;
 
+      // Store user data in localStorage for profile page
+      if (response.data.user) {
+        localStorage.setItem('userProfile', JSON.stringify(response.data.user));
+      }
+
+      // Update logout button visibility
+      checkAuthStatus();
+
       if (userType === 'admin') {
         window.location.href = '/admin.html';
       } else if (userType === 'client') {
@@ -134,17 +143,24 @@ const initializeSocialAuth = () => {
     return;
   }
   
-  // Initialize Google Sign-In
-  if (typeof gapi !== 'undefined') {
-    gapi.load('auth2', () => {
-      gapi.auth2.init({
-        client_id: config.google.clientId
-      }).then(() => {
-        console.log('Google Sign-In initialized successfully');
-      }).catch((error) => {
-        console.error('Google Sign-In initialization failed:', error);
+  // Initialize Google Identity Services
+  if (typeof google !== 'undefined' && google.accounts) {
+    try {
+      console.log('Initializing Google Identity Services with client ID:', config.google.clientId);
+      google.accounts.id.initialize({
+        client_id: config.google.clientId,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: (response) => {
+          console.log('Google OAuth callback received:', response);
+        }
       });
-    });
+      console.log('Google Identity Services initialized successfully');
+    } catch (error) {
+      console.error('Google Identity Services initialization error:', error);
+    }
+  } else {
+    console.warn('Google Identity Services not available');
   }
 
   // Initialize Facebook SDK
@@ -159,30 +175,49 @@ const initializeSocialAuth = () => {
   }
 };
 
-// Google Authentication
+// Google Authentication using Google Identity Services
 const googleSignIn = async () => {
   try {
     const config = getSocialConfig();
+    console.log("=== GOOGLE OAUTH DEBUG ===");
+    console.log("Current origin:", window.location.origin);
+    console.log("Current URL:", window.location.href);
+    console.log("Client ID:", config.google.clientId);
+    console.log("Client ID length:", config.google.clientId.length);
+    console.log("==========================");
     
     if (config.google.clientId === 'YOUR_GOOGLE_CLIENT_ID') {
       showError('Google authentication is not configured. Please contact the administrator.');
       return;
     }
     
-    if (typeof gapi === 'undefined') {
-      throw new Error('Google API not loaded');
+    // Check if Google Identity Services is available
+    if (typeof google === 'undefined' || !google.accounts) {
+      throw new Error('Google Identity Services not loaded');
     }
 
-    const auth2 = gapi.auth2.getAuthInstance();
-    const googleUser = await auth2.signIn();
-    const idToken = googleUser.getAuthResponse().id_token;
-    const accessToken = googleUser.getAuthResponse().access_token;
+    // Initialize Google Identity Services
+    google.accounts.id.initialize({
+      client_id: config.google.clientId,
+      callback: async (response) => {
+        try {
+          const accessToken = response.credential;
+          
+          const authResponse = await axios.post(`${BASE_URL}/auth/google`, {
+            accessToken
+          });
 
-    const response = await axios.post(`${BASE_URL}/auth/google`, {
-      accessToken
+          handleSocialAuthSuccess(authResponse);
+        } catch (error) {
+          console.error('Google authentication callback error:', error);
+          showError('Google authentication failed');
+        }
+      }
     });
 
-    handleSocialAuthSuccess(response);
+    // Prompt the user to sign in
+    google.accounts.id.prompt();
+    
   } catch (error) {
     console.error('Google sign-in error:', error);
     showError('Google authentication failed');
@@ -274,6 +309,9 @@ const handleSocialAuthSuccess = (response) => {
     localStorage.setItem('userProfile', JSON.stringify(response.data.user));
   }
 
+  // Update logout button visibility
+  checkAuthStatus();
+
   // Redirect based on user type
   if (userType === 'admin') {
     window.location.href = '/admin.html';
@@ -310,6 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show configuration status in console
   showConfigStatus();
   
+  // Test Google OAuth configuration
+  testGoogleOAuthConfig();
+  
   // Initialize social authentication
   initializeSocialAuth();
   
@@ -325,6 +366,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (instagramBtn) instagramBtn.addEventListener('click', instagramSignIn);
 });
 
+// Test Google OAuth configuration
+const testGoogleOAuthConfig = () => {
+  console.log("=== GOOGLE OAUTH CONFIGURATION TEST ===");
+  console.log("Window location origin:", window.location.origin);
+  console.log("Window location href:", window.location.href);
+  console.log("Window location protocol:", window.location.protocol);
+  console.log("Window location hostname:", window.location.hostname);
+  console.log("Window location port:", window.location.port);
+  
+  const config = getSocialConfig();
+  console.log("Google Client ID:", config.google.clientId);
+  console.log("Google Client ID valid:", config.google.clientId && config.google.clientId !== 'YOUR_GOOGLE_CLIENT_ID');
+  
+  // Check if Google Identity Services is loaded
+  console.log("Google Identity Services available:", typeof google !== 'undefined' && !!google.accounts);
+  
+  console.log("=====================================");
+};
 
 
  //=== FUNCTIONS ===

@@ -31,7 +31,7 @@ export const googleAuth = async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, user_type: user.user_type }, 
+      { id: user.ID, user_type: user.user_type }, 
       'secret_key', 
       { expiresIn: '1h' }
     );
@@ -43,15 +43,29 @@ export const googleAuth = async (req, res) => {
       maxAge: 3600000
     });
     
+    // Split name into firstName and lastName
+    const nameParts = user.name ? user.name.split(' ') : ['', ''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const userData = {
+      id: user.ID,
+      firstName,
+      lastName,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      profilePicture: user.profile_picture,
+      user_type: user.user_type,
+      email_verified: user.email_verified,
+      social_provider: user.social_provider
+    };
+    
     res.json({ 
       message: 'Google login successful', 
       user_type: user.user_type,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        profilePicture: user.profile_picture
-      }
+      user: userData
     });
     
   } catch (error) {
@@ -87,7 +101,7 @@ export const facebookAuth = async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, user_type: user.user_type }, 
+      { id: user.ID, user_type: user.user_type }, 
       'secret_key', 
       { expiresIn: '1h' }
     );
@@ -99,15 +113,29 @@ export const facebookAuth = async (req, res) => {
       maxAge: 3600000
     });
     
+    // Split name into firstName and lastName
+    const nameParts = user.name ? user.name.split(' ') : ['', ''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const userData = {
+      id: user.ID,
+      firstName,
+      lastName,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      profilePicture: user.profile_picture,
+      user_type: user.user_type,
+      email_verified: user.email_verified,
+      social_provider: user.social_provider
+    };
+    
     res.json({ 
       message: 'Facebook login successful', 
       user_type: user.user_type,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        profilePicture: user.profile_picture
-      }
+      user: userData
     });
     
   } catch (error) {
@@ -142,7 +170,7 @@ export const twitterAuth = async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, user_type: user.user_type }, 
+      { id: user.ID, user_type: user.user_type }, 
       'secret_key', 
       { expiresIn: '1h' }
     );
@@ -154,15 +182,29 @@ export const twitterAuth = async (req, res) => {
       maxAge: 3600000
     });
     
+    // Split name into firstName and lastName
+    const nameParts = user.name ? user.name.split(' ') : ['', ''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const userData = {
+      id: user.ID,
+      firstName,
+      lastName,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      profilePicture: user.profile_picture,
+      user_type: user.user_type,
+      email_verified: user.email_verified,
+      social_provider: user.social_provider
+    };
+    
     res.json({ 
       message: 'Twitter login successful', 
       user_type: user.user_type,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        profilePicture: user.profile_picture
-      }
+      user: userData
     });
     
   } catch (error) {
@@ -204,7 +246,7 @@ export const instagramAuth = async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, user_type: user.user_type }, 
+      { id: user.ID, user_type: user.user_type }, 
       'secret_key', 
       { expiresIn: '1h' }
     );
@@ -216,15 +258,29 @@ export const instagramAuth = async (req, res) => {
       maxAge: 3600000
     });
     
+    // Split name into firstName and lastName
+    const nameParts = user.name ? user.name.split(' ') : ['', ''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const userData = {
+      id: user.ID,
+      firstName,
+      lastName,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      profilePicture: user.profile_picture,
+      user_type: user.user_type,
+      email_verified: user.email_verified,
+      social_provider: user.social_provider
+    };
+    
     res.json({ 
       message: 'Instagram login successful', 
       user_type: user.user_type,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        profilePicture: user.profile_picture
-      }
+      user: userData
     });
     
   } catch (error) {

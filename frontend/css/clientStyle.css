@@ -56,6 +56,47 @@ body {
   text-decoration: underline;
 }
 
+/* Active/Current page link highlighting */
+.nav-links a.active {
+  background-color: #FFD52F !important;
+  color: #01386A !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-links a.active:hover {
+  background-color: #FFC107 !important;
+  text-decoration: none;
+}
+
+/* Logout Button in Navigation */
+.nav-logout-btn {
+  background: #dc3545;
+  color: white !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.nav-logout-btn:hover {
+  background: #c82333;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+}
+
+.nav-logout-btn i {
+  font-size: 14px;
+}
+
 /* Burger styles */
 .burger {
   display: none;
@@ -103,6 +144,42 @@ body {
   .nav-links a {
     padding: 10px 15px;
     border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Mobile active link highlighting */
+  .nav-links a.active {
+    background-color: #FFD52F !important;
+    color: #01386A !important;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .nav-links a.active:hover {
+    background-color: #FFC107 !important;
+    text-decoration: none;
+  }
+
+  /* Mobile styles for logout button */
+  .nav-logout-btn {
+    margin-left: 0 !important;
+    margin-top: 10px;
+    justify-content: center;
+    width: calc(100% - 30px);
+    padding: 12px 16px;
+  }
+
+  /* Handle nav_group for clientCrowdSource page */
+  .nav_group a {
+    padding: 10px 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .nav_group .nav-logout-btn {
+    margin-left: 0 !important;
+    margin-top: 10px;
+    justify-content: center;
+    width: calc(100% - 30px);
+    padding: 12px 16px;
   }
 
 

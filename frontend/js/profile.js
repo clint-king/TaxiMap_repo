@@ -1,4 +1,37 @@
 // Profile Page JavaScript
+import axios from 'axios';
+import { BASE_URL } from "./AddressSelection.js";
+
+axios.defaults.withCredentials = true;
+
+// Add global axios interceptor for session expiration
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            console.log('Session expired detected by interceptor');
+            // Clear local storage
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activityLog');
+            
+            // Show message to user
+            const messageContainer = document.getElementById('messageContainer');
+            if (messageContainer) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message error';
+                messageElement.textContent = 'Session expired. Redirecting to home page...';
+                messageContainer.appendChild(messageElement);
+            }
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+        }
+        return Promise.reject(error);
+    }
+);
+
 class ProfileManager {
     constructor() {
         this.currentUser = null;
@@ -6,35 +39,60 @@ class ProfileManager {
         this.init();
     }
 
-    init() {
-        this.loadUserData();
+    async init() {
+        await this.loadUserData();
         this.setupEventListeners();
         this.loadActivityLog();
         this.setupTabNavigation();
         this.setupPasswordStrength();
         this.setupModalEvents();
+        this.setupMobileMenu();
     }
 
-    loadUserData() {
-        // Load user data from localStorage (for demo purposes)
-        const savedUser = localStorage.getItem('userProfile');
-        if (savedUser) {
-            this.currentUser = JSON.parse(savedUser);
-        } else {
-            // Default user data
-            this.currentUser = {
-                firstName: 'John',
-                lastName: 'Doe',
-                username: 'johndoe',
-                email: 'john.doe@example.com',
-                phone: '+1 234 567 8900',
-                bio: 'Software developer passionate about creating amazing user experiences.',
-                location: 'New York, USA',
-                profilePicture: null
-            };
+    async loadUserData() {
+        try {
+            // Try to get user data from backend first
+            const response = await axios.get(`${BASE_URL}/auth/profile`);
+            if (response.data.success) {
+                this.currentUser = response.data.user;
+                localStorage.setItem('userProfile', JSON.stringify(this.currentUser));
+            } else {
+                const savedUser = localStorage.getItem('userProfile');
+                if (savedUser) {
+                    this.currentUser = JSON.parse(savedUser);
+                } else {
+                    // No user data found, redirect to home page
+                    window.location.href = '/index.html';
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            
+            // Check if it's an authentication error (401 or 403)
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                console.log('Session expired, redirecting to home page');
+                localStorage.removeItem('userProfile');
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            // Fallback to localStorage
+            const savedUser = localStorage.getItem('userProfile');
+            if (savedUser) {
+                this.currentUser = JSON.parse(savedUser);
+                console.log("this.currentUser:", this.currentUser);
+            } else {
+                // No user data found, redirect to home page
+                window.location.href = '/index.html';
+                return;
+            }
         }
-        this.updateProfileDisplay();
-        this.populateForms();
+        
+        if (this.currentUser) {
+            this.updateProfileDisplay();
+            this.populateForms();
+        }
     }
 
     saveUserData() {
@@ -65,18 +123,17 @@ class ProfileManager {
         // Populate personal info form
         const personalForm = document.getElementById('personalInfoForm');
         if (personalForm) {
-            personalForm.firstName.value = this.currentUser.firstName;
-            personalForm.lastName.value = this.currentUser.lastName;
-            personalForm.username.value = this.currentUser.username;
-            personalForm.phone.value = this.currentUser.phone;
-            personalForm.bio.value = this.currentUser.bio;
-            personalForm.location.value = this.currentUser.location;
+            personalForm.firstName.value = this.currentUser.firstName || '';
+            personalForm.lastName.value = this.currentUser.lastName || '';
+            personalForm.username.value = this.currentUser.username || '';
+            personalForm.phone.value = this.currentUser.phone || '';
+            personalForm.location.value = this.currentUser.location || '';
         }
 
         // Populate security forms
         const currentEmail = document.getElementById('currentEmail');
         if (currentEmail) {
-            currentEmail.value = this.currentUser.email;
+            currentEmail.value = this.currentUser.email || '';
         }
     }
 
@@ -102,6 +159,8 @@ class ProfileManager {
         if (passwordChangeForm) {
             passwordChangeForm.addEventListener('submit', (e) => this.handlePasswordChangeSubmit(e));
         }
+
+        // Logout functionality is now handled globally in logout.js
     }
 
     async handleProfilePictureUpload(event) {
@@ -175,20 +234,57 @@ class ProfileManager {
         });
     }
 
-    handlePersonalInfoSubmit(event) {
+    async handlePersonalInfoSubmit(event) {
         event.preventDefault();
         const formData = new FormData(event.target);
         const data = Object.fromEntries(formData);
 
-        // Update user data
-        Object.assign(this.currentUser, data);
-        this.saveUserData();
-        this.updateProfileDisplay();
-        this.addActivityLog('profile', 'Personal information updated');
-        this.showMessage('Personal information updated successfully!', 'success');
+        try {
+            // Update user data in backend
+            const response = await axios.put(`${BASE_URL}/auth/profile`, {
+                name: `${data.firstName} ${data.lastName}`,
+                username: data.username,
+                phone: data.phone,
+                location: data.location,
+                profile_picture: this.currentUser.profilePicture
+            });
+
+            if (response.data.success) {
+                // Update local user data
+                this.currentUser = {
+                    ...this.currentUser,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    username: data.username,
+                    phone: data.phone,
+                    location: data.location
+                };
+                
+                this.saveUserData();
+                this.updateProfileDisplay();
+                this.addActivityLog('profile', 'Personal information updated');
+                this.showMessage('Personal information updated successfully!', 'success');
+            } else {
+                this.showMessage(response.data.message || 'Failed to update profile', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            
+            // Check for session expiration
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                this.showMessage('Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    this.handleLogout();
+                }, 2000);
+                return;
+            }
+            
+            const errorMessage = error.response?.data?.message || 'Failed to update profile. Please try again.';
+            this.showMessage(errorMessage, 'error');
+        }
     }
 
-    handleEmailChangeSubmit(event) {
+    async handleEmailChangeSubmit(event) {
         event.preventDefault();
         const formData = new FormData(event.target);
         const data = Object.fromEntries(formData);
@@ -204,21 +300,48 @@ class ProfileManager {
         );
     }
 
-    confirmEmailChange(data) {
-        // Simulate email confirmation process
-        this.showMessage('Confirmation email sent to ' + data.newEmail, 'info');
-        
-        // In a real app, you would wait for email confirmation
-        setTimeout(() => {
-            this.currentUser.email = data.newEmail;
-            this.saveUserData();
-            this.updateProfileDisplay();
-            this.addActivityLog('security', 'Email address changed');
-            this.showMessage('Email address updated successfully!', 'success');
-        }, 2000);
+    async confirmEmailChange(data) {
+        try {
+            const response = await axios.put(`${BASE_URL}/auth/change-email`, {
+                newEmail: data.newEmail,
+                currentPassword: data.emailPassword
+            });
+
+            if (response.data.success) {
+                if (response.data.emailSent) {
+                    this.showMessage('Confirmation email sent to ' + data.newEmail + '. Please check your email to verify the change.', 'info');
+                } else {
+                    // Development mode - email changed directly
+                    this.currentUser.email = data.newEmail;
+                    this.saveUserData();
+                    this.updateProfileDisplay();
+                    this.addActivityLog('security', 'Email address changed');
+                    this.showMessage('Email address updated successfully!', 'success');
+                }
+                
+                // Reset the form
+                event.target.reset();
+            } else {
+                this.showMessage(response.data.message || 'Failed to change email', 'error');
+            }
+        } catch (error) {
+            console.error('Error changing email:', error);
+            
+            // Check for session expiration
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                this.showMessage('Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    this.handleLogout();
+                }, 2000);
+                return;
+            }
+            
+            const errorMessage = error.response?.data?.message || 'Failed to change email. Please try again.';
+            this.showMessage(errorMessage, 'error');
+        }
     }
 
-    handlePasswordChangeSubmit(event) {
+    async handlePasswordChangeSubmit(event) {
         event.preventDefault();
         const formData = new FormData(event.target);
         const data = Object.fromEntries(formData);
@@ -240,11 +363,42 @@ class ProfileManager {
         );
     }
 
-    confirmPasswordChange(data) {
-        // Simulate password change process
-        this.showMessage('Password changed successfully!', 'success');
-        this.addActivityLog('security', 'Password changed');
-        event.target.reset();
+    async confirmPasswordChange(data) {
+        try {
+            const response = await axios.put(`${BASE_URL}/auth/change-password`, {
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword
+            });
+
+            if (response.data.success) {
+                this.showMessage('Password changed successfully! You will be logged out for security.', 'success');
+                this.addActivityLog('security', 'Password changed');
+                
+                // Reset the form
+                event.target.reset();
+                
+                // Log out the user after password change for security
+                setTimeout(() => {
+                    this.handleLogout();
+                }, 2000);
+            } else {
+                this.showMessage(response.data.message || 'Failed to change password', 'error');
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            
+            // Check for session expiration
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                this.showMessage('Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    this.handleLogout();
+                }, 2000);
+                return;
+            }
+            
+            const errorMessage = error.response?.data?.message || 'Failed to change password. Please try again.';
+            this.showMessage(errorMessage, 'error');
+        }
     }
 
     checkPasswordStrength(password) {
@@ -455,10 +609,17 @@ class ProfileManager {
             }
         }, 5000);
     }
+
+    setupMobileMenu() {
+        // Mobile menu functionality is already defined globally at the bottom of this file
+        // This method can be used for any additional mobile menu setup if needed
+        console.log('Mobile menu setup completed');
+    }
 }
 
 // Mobile menu functionality (copied from client.html/clientCrowdSource.html)
-function toggleMobileMenu() {
+// Make functions globally available for HTML onclick attributes
+window.toggleMobileMenu = function() {
     const menu = document.getElementById("mobileMenu");
     const isShown = menu.classList.toggle("show");
     
@@ -468,14 +629,19 @@ function toggleMobileMenu() {
     } else {
         topnav.style.zIndex = "1000";
     }
-}
+};
 
-function topNavZIndexDecrease() {
+window.topNavZIndexDecrease = function() {
     const navbar = document.querySelector(".topnav");
     navbar.style.zIndex = "3";
-}
+};
 
 // Initialize profile manager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new ProfileManager();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const profileManager = new ProfileManager();
+        await profileManager.init();
+    } catch (error) {
+        console.error('Failed to initialize profile manager:', error);
+    }
 }); 

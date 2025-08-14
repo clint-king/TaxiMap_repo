@@ -84,17 +84,13 @@
                                     <input type="text" id="lastName" name="lastName" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="username">Username/Handle</label>
-                                    <input type="text" id="username" name="username" placeholder="@username">
-                                    <small>This will be your public display name</small>
+                                    <label for="username">Username</label>
+                                    <input type="text" id="username" name="username" placeholder="username" required>
+                                    <small>This will be your unique identifier</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="phone">Phone Number</label>
-                                    <input type="tel" id="phone" name="phone">
-                                </div>
-                                <div class="form-group">
-                                    <label for="bio">Bio</label>
-                                    <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself..."></textarea>
+                                    <input type="tel" id="phone" name="phone" placeholder="+1234567890">
                                 </div>
                                 <div class="form-group">
                                     <label for="location">Location</label>
@@ -192,6 +188,7 @@
     <!-- Success/Error Messages -->
     <div id="messageContainer" class="message-container"></div>
 
-    <script src="./js/profile.js"></script>
+    <script type="module" src="./js/logout.js"></script>
+    <script type="module" src="./js/profile.js"></script>
 </body>
 </html> 
