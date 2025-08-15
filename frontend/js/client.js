@@ -549,6 +549,20 @@ radiusToogleButton.addEventListener("click", (e) => {
 
 //=== FUNCTIONS ===
 
+// Helper function to get device info
+function getDeviceInfo() {
+    const userAgent = navigator.userAgent;
+    if (/Mobile|Android|iPhone|iPad/.test(userAgent)) {
+        if (/iPhone/.test(userAgent)) return 'iPhone';
+        if (/Android/.test(userAgent)) return 'Android';
+        return 'Mobile Device';
+    }
+    if (/Windows/.test(userAgent)) return 'Windows';
+    if (/Mac/.test(userAgent)) return 'Mac';
+    if (/Linux/.test(userAgent)) return 'Linux';
+    return 'Desktop';
+}
+
 //sending search information
 async function sendsearchInfo() {
   if (allMarkersPlaced() === true) {
@@ -610,6 +624,22 @@ async function sendsearchInfo() {
 
         //check if there is no error
         showPopup("route found", true);
+        
+        // Log route search activity
+        try {
+            await axios.post(`${BASE_URL}/auth/activities`, {
+                activity_type: 'search',
+                activity_title: 'Route search performed',
+                activity_description: `Searched for route from ${sourceProv.province} to ${destinationProv.province}`,
+                ip_address: null,
+                user_agent: navigator.userAgent,
+                device_info: getDeviceInfo(),
+                location_info: null
+            });
+        } catch (error) {
+            console.error('Error logging route search activity:', error);
+        }
+        
         //draw route
         const listOfRoutes = dataReceived.routes;
 

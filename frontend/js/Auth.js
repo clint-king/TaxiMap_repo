@@ -1,27 +1,23 @@
 import axios from 'axios';
 import { BASE_URL } from "./AddressSelection.js";
-import { getSocialConfig, validateSocialConfig, showConfigStatus } from "./socialAuthConfig.js";
 import { checkAuthStatus } from "./logout.js";
 
 axios.defaults.withCredentials = true;
 
- // === DOM ELEMENTS ===
+// === DOM ELEMENTS ===
 //sign up 
- const signupName = document.querySelector(".signupName");
- const signupEmail = document.querySelector(".signupEmail");
- const signupPassword = document.querySelector(".signupPassword");
- const signupConfirm = document.querySelector(".signupConfirm");
- const signupSubmit = document.querySelector(".signupSubmit");
+const signupName = document.querySelector(".signupName");
+const signupEmail = document.querySelector(".signupEmail");
+const signupPassword = document.querySelector(".signupPassword");
+const signupConfirm = document.querySelector(".signupConfirm");
+const signupSubmit = document.querySelector(".signupSubmit");
 
- //log in
- const loginEmail = document.querySelector(".loginEmail");
- const loginPassword = document.querySelector(".loginPassword");
- const loginSubmit = document.querySelector(".loginSubmit");
+//log in
+const loginEmail = document.querySelector(".loginEmail");
+const loginPassword = document.querySelector(".loginPassword");
+const loginSubmit = document.querySelector(".loginSubmit");
 
-
- //=== VARIABLES ===
-
-
+//=== VARIABLES ===
 
 // === EVENT LISTENERS ===
 if (signupSubmit) {
@@ -73,7 +69,6 @@ if (signupSubmit) {
   });
 }
 
-
 if (loginSubmit) {
   loginSubmit.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -92,8 +87,8 @@ if (loginSubmit) {
         email: loginEmail.value.trim(),
         password: loginPassword.value
       }, {
-  withCredentials:true  
-});
+        withCredentials: true  
+      });
 
       const userType = response.data.user_type;
 
@@ -132,196 +127,6 @@ if (loginSubmit) {
   });
 }
 
-// Social Authentication Functions
-const initializeSocialAuth = () => {
-  const config = getSocialConfig();
-  
-  // Check configuration validity
-  const validation = validateSocialConfig();
-  if (!validation.isValid) {
-    console.warn('Social authentication disabled due to configuration issues');
-    return;
-  }
-  
-  // Initialize Google Identity Services
-  if (typeof google !== 'undefined' && google.accounts) {
-    try {
-      console.log('Initializing Google Identity Services with client ID:', config.google.clientId);
-      google.accounts.id.initialize({
-        client_id: config.google.clientId,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: (response) => {
-          console.log('Google OAuth callback received:', response);
-        }
-      });
-      console.log('Google Identity Services initialized successfully');
-    } catch (error) {
-      console.error('Google Identity Services initialization error:', error);
-    }
-  } else {
-    console.warn('Google Identity Services not available');
-  }
-
-  // Initialize Facebook SDK
-  if (typeof FB !== 'undefined') {
-    FB.init({
-      appId: config.facebook.appId,
-      cookie: true,
-      xfbml: true,
-      version: 'v18.0'
-    });
-    console.log('Facebook SDK initialized successfully');
-  }
-};
-
-// Google Authentication using Google Identity Services
-const googleSignIn = async () => {
-  try {
-    const config = getSocialConfig();
-    console.log("=== GOOGLE OAUTH DEBUG ===");
-    console.log("Current origin:", window.location.origin);
-    console.log("Current URL:", window.location.href);
-    console.log("Client ID:", config.google.clientId);
-    console.log("Client ID length:", config.google.clientId.length);
-    console.log("==========================");
-    
-    if (config.google.clientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      showError('Google authentication is not configured. Please contact the administrator.');
-      return;
-    }
-    
-    // Check if Google Identity Services is available
-    if (typeof google === 'undefined' || !google.accounts) {
-      throw new Error('Google Identity Services not loaded');
-    }
-
-    // Initialize Google Identity Services
-    google.accounts.id.initialize({
-      client_id: config.google.clientId,
-      callback: async (response) => {
-        try {
-          const accessToken = response.credential;
-          
-          const authResponse = await axios.post(`${BASE_URL}/auth/google`, {
-            accessToken
-          });
-
-          handleSocialAuthSuccess(authResponse);
-        } catch (error) {
-          console.error('Google authentication callback error:', error);
-          showError('Google authentication failed');
-        }
-      }
-    });
-
-    // Prompt the user to sign in
-    google.accounts.id.prompt();
-    
-  } catch (error) {
-    console.error('Google sign-in error:', error);
-    showError('Google authentication failed');
-  }
-};
-
-// Facebook Authentication
-const facebookSignIn = async () => {
-  try {
-    const config = getSocialConfig();
-    
-    if (config.facebook.appId === 'YOUR_FACEBOOK_APP_ID') {
-      showError('Facebook authentication is not configured. Please contact the administrator.');
-      return;
-    }
-    
-    if (typeof FB === 'undefined') {
-      throw new Error('Facebook SDK not loaded');
-    }
-
-    const response = await new Promise((resolve, reject) => {
-      FB.login((response) => {
-        if (response.authResponse) {
-          resolve(response.authResponse.accessToken);
-        } else {
-          reject(new Error('Facebook login failed'));
-        }
-      }, { scope: config.facebook.scope });
-    });
-
-    const authResponse = await axios.post(`${BASE_URL}/auth/facebook`, {
-      accessToken: response
-    });
-
-    handleSocialAuthSuccess(authResponse);
-  } catch (error) {
-    console.error('Facebook sign-in error:', error);
-    showError('Facebook authentication failed');
-  }
-};
-
-// Twitter Authentication (Simplified)
-const twitterSignIn = async () => {
-  try {
-    // For Twitter, we'll use a simplified approach
-    // In a real implementation, you'd need OAuth 1.0a server-side flow
-    const userData = prompt('Enter your Twitter username:');
-    const email = prompt('Enter your email:');
-    const name = prompt('Enter your name:');
-    
-    if (!userData || !email || !name) {
-      throw new Error('Please provide all required information');
-    }
-
-    const response = await axios.post(`${BASE_URL}/auth/twitter`, {
-      email,
-      name,
-      profilePicture: null
-    });
-
-    handleSocialAuthSuccess(response);
-  } catch (error) {
-    console.error('Twitter sign-in error:', error);
-    showError('Twitter authentication failed');
-  }
-};
-
-// Instagram Authentication
-const instagramSignIn = async () => {
-  try {
-    const config = getSocialConfig();
-    // Instagram Basic Display API requires server-side OAuth flow
-    // For now, we'll redirect to Instagram OAuth
-    const instagramAuthUrl = `https://api.instagram.com/oauth/authorize?client_id=${config.instagram.clientId}&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/instagram/callback')}&scope=${config.instagram.scope}&response_type=code`;
-    
-    window.location.href = instagramAuthUrl;
-  } catch (error) {
-    console.error('Instagram sign-in error:', error);
-    showError('Instagram authentication failed');
-  }
-};
-
-// Handle successful social authentication
-const handleSocialAuthSuccess = (response) => {
-  const userType = response.data.user_type;
-  
-  // Store user data in localStorage for profile page
-  if (response.data.user) {
-    localStorage.setItem('userProfile', JSON.stringify(response.data.user));
-  }
-
-  // Update logout button visibility
-  checkAuthStatus();
-
-  // Redirect based on user type
-  if (userType === 'admin') {
-    window.location.href = '/admin.html';
-  } else if (userType === 'client') {
-    window.location.href = '/client.html';
-  } else {
-    showError('Unknown user type');
-  }
-};
-
 // Show error message
 const showError = (message) => {
   const errorEl = document.querySelector('.loginError') || document.querySelector('.signupError');
@@ -343,47 +148,112 @@ const showResendVerification = () => {
 // Make function globally available
 window.showResendVerification = showResendVerification;
 
-// Initialize social authentication when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Show configuration status in console
-  showConfigStatus();
+// Forgot Password Functions
+const showForgotPassword = () => {
+  const modal = document.getElementById('forgotPasswordModal');
+  const form = document.getElementById('forgotPasswordForm');
+  const successDiv = document.querySelector('.forgot-password-success');
+  const errorDiv = document.querySelector('.forgotPasswordError');
   
-  // Test Google OAuth configuration
-  testGoogleOAuthConfig();
+  // Reset form and messages
+  form.style.display = 'block';
+  successDiv.style.display = 'none';
+  errorDiv.textContent = '';
+  form.reset();
   
-  // Initialize social authentication
-  initializeSocialAuth();
-  
-  // Add event listeners for social buttons
-  const googleBtn = document.querySelector('.google-signin');
-  const facebookBtn = document.querySelector('.facebook-signin');
-  const twitterBtn = document.querySelector('.twitter-signin');
-  const instagramBtn = document.querySelector('.instagram-signin');
-
-  if (googleBtn) googleBtn.addEventListener('click', googleSignIn);
-  if (facebookBtn) facebookBtn.addEventListener('click', facebookSignIn);
-  if (twitterBtn) twitterBtn.addEventListener('click', twitterSignIn);
-  if (instagramBtn) instagramBtn.addEventListener('click', instagramSignIn);
-});
-
-// Test Google OAuth configuration
-const testGoogleOAuthConfig = () => {
-  console.log("=== GOOGLE OAUTH CONFIGURATION TEST ===");
-  console.log("Window location origin:", window.location.origin);
-  console.log("Window location href:", window.location.href);
-  console.log("Window location protocol:", window.location.protocol);
-  console.log("Window location hostname:", window.location.hostname);
-  console.log("Window location port:", window.location.port);
-  
-  const config = getSocialConfig();
-  console.log("Google Client ID:", config.google.clientId);
-  console.log("Google Client ID valid:", config.google.clientId && config.google.clientId !== 'YOUR_GOOGLE_CLIENT_ID');
-  
-  // Check if Google Identity Services is loaded
-  console.log("Google Identity Services available:", typeof google !== 'undefined' && !!google.accounts);
-  
-  console.log("=====================================");
+  modal.style.display = 'block';
 };
 
+const closeForgotPasswordModal = () => {
+  const modal = document.getElementById('forgotPasswordModal');
+  modal.style.display = 'none';
+};
 
- //=== FUNCTIONS ===
+const handleForgotPassword = async (event) => {
+  event.preventDefault();
+  
+  const form = event.target;
+  const email = form.email.value.trim();
+  const errorDiv = document.querySelector('.forgotPasswordError');
+  const successDiv = document.querySelector('.forgot-password-success');
+  const submitBtn = form.querySelector('.reset-password-btn');
+  
+  // Clear previous errors
+  errorDiv.textContent = '';
+  
+  if (!email) {
+    errorDiv.textContent = 'Please enter your email address';
+    return;
+  }
+  
+  // Disable button and show loading
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+  
+  try {
+    const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
+      email: email
+    });
+    
+    if (response.data.success) {
+      // Show success message
+      form.style.display = 'none';
+      successDiv.style.display = 'block';
+      
+      // If in development mode, show the reset URL
+      if (response.data.developmentMode && response.data.resetUrl) {
+        const successMessage = document.querySelector('.forgot-password-success p');
+        if (successMessage) {
+          successMessage.innerHTML = `
+            ✅ Reset link generated successfully!<br>
+            <strong>Development Mode:</strong> Click the link below to reset your password:<br>
+            <a href="${response.data.resetUrl}" target="_blank" style="color: #FFD737; text-decoration: underline;">
+              ${response.data.resetUrl}
+            </a>
+          `;
+        }
+      }
+    } else {
+      errorDiv.textContent = response.data.message || 'Failed to send reset link';
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    
+    if (error.response?.status === 404) {
+      errorDiv.textContent = 'Email address not found. Please check your email or sign up.';
+    } else if (error.response?.status === 429) {
+      errorDiv.textContent = 'Too many requests. Please wait a few minutes before trying again.';
+    } else {
+      errorDiv.textContent = error.response?.data?.message || 'Failed to send reset link. Please try again.';
+    }
+  } finally {
+    // Re-enable button
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Reset Link';
+  }
+};
+
+// Make functions globally available
+window.showForgotPassword = showForgotPassword;
+window.closeForgotPasswordModal = closeForgotPasswordModal;
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Add forgot password form event listener
+  const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+  }
+
+  // Close modal when clicking outside
+  const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+  if (forgotPasswordModal) {
+    forgotPasswordModal.addEventListener('click', (event) => {
+      if (event.target === forgotPasswordModal) {
+        closeForgotPasswordModal();
+      }
+    });
+  }
+});
+
+//=== FUNCTIONS ===

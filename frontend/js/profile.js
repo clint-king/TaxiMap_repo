@@ -478,37 +478,74 @@ class ProfileManager {
         this.renderActivityLog(filteredActivities);
     }
 
-    loadActivityLog() {
-        // Load activity log from localStorage (for demo purposes)
-        const savedLog = localStorage.getItem('activityLog');
-        if (savedLog) {
-            this.activityLog = JSON.parse(savedLog);
-        } else {
-            // Default activity log
-            this.activityLog = [
-                { type: 'login', title: 'Login successful', time: new Date(Date.now() - 1000 * 60 * 30), device: 'Chrome on Windows', ip: '192.168.1.1' },
-                { type: 'profile', title: 'Profile picture updated', time: new Date(Date.now() - 1000 * 60 * 60 * 2), device: 'Chrome on Windows', ip: '192.168.1.1' },
-                { type: 'security', title: 'Password changed', time: new Date(Date.now() - 1000 * 60 * 60 * 24), device: 'Chrome on Windows', ip: '192.168.1.1' },
-                { type: 'login', title: 'Login successful', time: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), device: 'Safari on iPhone', ip: '192.168.1.2' }
-            ];
+    async loadActivityLog() {
+        try {
+            // Fetch real activities from backend
+            const response = await axios.get(`${BASE_URL}/auth/activities`);
+            
+            if (response.data.success) {
+                this.activityLog = response.data.activities.map(activity => ({
+                    type: activity.activity_type,
+                    title: activity.activity_title,
+                    time: new Date(activity.created_at),
+                    device: activity.device_info || 'Unknown',
+                    ip: activity.ip_address || 'Unknown',
+                    description: activity.activity_description
+                }));
+            } else {
+                // Fallback to empty array if API fails
+                this.activityLog = [];
+            }
+        } catch (error) {
+            console.error('Error loading activity log:', error);
+            // Fallback to empty array if API fails
+            this.activityLog = [];
         }
 
         this.setupActivityFilters();
         this.renderActivityLog(this.activityLog);
     }
 
-    addActivityLog(type, title) {
+    async addActivityLog(type, title) {
         const activity = {
             type,
             title,
             time: new Date(),
-            device: 'Chrome on Windows', // In a real app, detect actual device
-            ip: '192.168.1.1' // In a real app, get actual IP
+            device: this.getDeviceInfo(),
+            ip: 'Unknown' // Will be captured by backend
         };
 
+        // Add to local array for immediate display
         this.activityLog.unshift(activity);
-        localStorage.setItem('activityLog', JSON.stringify(this.activityLog));
         this.renderActivityLog(this.activityLog);
+
+        // Send to backend (don't wait for response to avoid blocking UI)
+        try {
+            await axios.post(`${BASE_URL}/auth/activities`, {
+                activity_type: type,
+                activity_title: title,
+                activity_description: `${title} from ${this.getDeviceInfo()}`,
+                ip_address: null, // Backend will capture this
+                user_agent: navigator.userAgent,
+                device_info: this.getDeviceInfo(),
+                location_info: null
+            });
+        } catch (error) {
+            console.error('Error logging activity to backend:', error);
+        }
+    }
+
+    getDeviceInfo() {
+        const userAgent = navigator.userAgent;
+        if (/Mobile|Android|iPhone|iPad/.test(userAgent)) {
+            if (/iPhone/.test(userAgent)) return 'iPhone';
+            if (/Android/.test(userAgent)) return 'Android';
+            return 'Mobile Device';
+        }
+        if (/Windows/.test(userAgent)) return 'Windows';
+        if (/Mac/.test(userAgent)) return 'Mac';
+        if (/Linux/.test(userAgent)) return 'Linux';
+        return 'Desktop';
     }
 
     renderActivityLog(activities) {

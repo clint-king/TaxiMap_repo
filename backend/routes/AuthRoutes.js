@@ -4,8 +4,7 @@ import  { body } from 'express-validator';
 
 
 //controller
-import {signup , login, verifyEmail, resendVerificationEmail, getProfile, updateProfile, changePassword, changeEmail} from "../controllers/AuthController.js";
-import { googleAuth, facebookAuth, twitterAuth, instagramAuth, socialAuth } from "../controllers/socialAuthController.js";
+import {signup , login, verifyEmail, resendVerificationEmail, getProfile, updateProfile, changePassword, changeEmail, forgotPassword, resetPassword, getUserActivities, getUserActivityStats, createUserActivity} from "../controllers/AuthController.js";
 import authenticateUser from "../Middleware/authenticateUser.js";
 
 const router = express.Router();
@@ -28,12 +27,7 @@ router.post("/login" ,
   login
 );
 
-// Social Authentication Routes
-router.post("/google", googleAuth);
-router.post("/facebook", facebookAuth);
-router.post("/twitter", twitterAuth);
-router.post("/instagram", instagramAuth);
-router.post("/social", socialAuth);
+
 
 // Email Verification Routes
 router.get("/verify/:token", verifyEmail);
@@ -52,5 +46,16 @@ router.post("/logout", (req, res) => {
   res.clearCookie('token');
   res.json({ message: 'Logged out successfully' });
 });
+
+// Forgot password route
+router.post("/forgot-password", forgotPassword);
+
+// Reset password route
+router.post("/reset-password", resetPassword);
+
+// User activities routes (protected)
+router.get("/activities", authenticateUser, getUserActivities);
+router.get("/activities/stats", authenticateUser, getUserActivityStats);
+router.post("/activities", authenticateUser, createUserActivity);
 
 export default router;

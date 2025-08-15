@@ -20,25 +20,7 @@ const createUser = async (name, email, hashedPassword, verificationToken, userna
 
 };
 
-const createSocialUser = async (userData) => {
-  let db;
-  try{
-    db = await poolDb.getConnection();
 
-    const { name, email, socialId, socialProvider, profilePicture, username = null, phone = null, location = null } = userData;
-    
-    const [result] = await db.execute(
-      'INSERT INTO users (name, email, social_id, social_provider, profile_picture, user_type, username, phone, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, socialId, socialProvider, profilePicture, 'client', username, phone, location]
-    );
-    return result.insertId;
-  }catch(error){
-    console.log(error);
-    return null;
-  }finally {
-    if (db) db.release();
-  }
-};
 
 const getUserByEmail = async (email) => {
   let db;
@@ -70,19 +52,7 @@ const getUserById = async (id) => {
   }
 };
 
-const getUserBySocialId = async (socialId, provider) => {
-  let db;
-  try{
-    db = await poolDb.getConnection();
-    const [rows] = await db.execute('SELECT * FROM users WHERE social_id = ? AND social_provider = ?', [socialId, provider]);
-    return rows[0];
-  }catch(error){
-    console.log(error);
-    return null;
-  }finally {
-    if (db) db.release();
-  }
-};
+
 
 const getUserByVerificationToken = async (token) => {
   let db;
@@ -222,12 +192,120 @@ const updateEmailWithVerification = async (userId, newEmail, verificationToken) 
   }
 };
 
+// Forgot password functions
+const saveResetToken = async (userId, resetToken, resetTokenExpiry) => {
+  let db;
+  try{
+    db = await poolDb.getConnection();
+    const [result] = await db.execute(
+      'UPDATE users SET reset_token = ?, reset_token_expiry = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [resetToken, resetTokenExpiry, userId]
+    );
+    return result.affectedRows > 0;
+  }catch(error){
+    console.log(error);
+    return false;
+  }finally {
+    if (db) db.release();
+  }
+};
+
+const getUserByResetToken = async (resetToken) => {
+  let db;
+  try{
+    db = await poolDb.getConnection();
+    const [rows] = await db.execute(
+      'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > NOW()',
+      [resetToken]
+    );
+    return rows[0];
+  }catch(error){
+    console.log(error);
+    return null;
+  }finally {
+    if (db) db.release();
+  }
+};
+
+const resetPassword = async (userId, hashedPassword) => {
+  let db;
+  try{
+    db = await poolDb.getConnection();
+    const [result] = await db.execute(
+      'UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [hashedPassword, userId]
+    );
+    return result.affectedRows > 0;
+  }catch(error){
+    console.log(error);
+    return false;
+  }finally {
+    if (db) db.release();
+  }
+};
+
+// User activity functions
+const logUserActivity = async (userId, activityData) => {
+  let db;
+  try {
+    db = await poolDb.getConnection();
+    const { activity_type, activity_title, activity_description, ip_address, user_agent, device_info, location_info } = activityData;
+    
+    const [result] = await db.execute(
+      'INSERT INTO user_activities (user_id, activity_type, activity_title, activity_description, ip_address, user_agent, device_info, location_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, activity_type, activity_title, activity_description, ip_address, user_agent, device_info, location_info]
+    );
+    
+    return result.insertId;
+  } catch (error) {
+    console.log('Error logging user activity:', error);
+    return null;
+  } finally {
+    if (db) db.release();
+  }
+};
+
+const getUserActivities = async (userId, limit = 50, offset = 0) => {
+  let db;
+  try {
+    console.log('getUserActivities called with:', { userId, limit, offset });
+    console.log('Types:', { userId: typeof userId, limit: typeof limit, offset: typeof offset });
+    
+    db = await poolDb.getConnection();
+    const [rows] = await db.execute(
+      'SELECT * FROM user_activities WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [userId, limit, offset]
+    );
+    return rows;
+  } catch (error) {
+    console.log('Error getting user activities:', error);
+    return [];
+  } finally {
+    if (db) db.release();
+  }
+};
+
+const getUserActivityStats = async (userId) => {
+  let db;
+  try {
+    db = await poolDb.getConnection();
+    const [rows] = await db.execute(
+      'SELECT activity_type, COUNT(*) as count FROM user_activities WHERE user_id = ? GROUP BY activity_type',
+      [userId]
+    );
+    return rows;
+  } catch (error) {
+    console.log('Error getting user activity stats:', error);
+    return [];
+  } finally {
+    if (db) db.release();
+  }
+};
+
 export default {
   createUser,
-  createSocialUser,
   getUserByEmail,
   getUserById,
-  getUserBySocialId,
   getUserByVerificationToken,
   verifyUserEmail,
   updateVerificationToken,
@@ -235,5 +313,11 @@ export default {
   getUserByUsername,
   updatePassword,
   updateEmail,
-  updateEmailWithVerification
+  updateEmailWithVerification,
+  saveResetToken,
+  getUserByResetToken,
+  resetPassword,
+  logUserActivity,
+  getUserActivities,
+  getUserActivityStats
 };

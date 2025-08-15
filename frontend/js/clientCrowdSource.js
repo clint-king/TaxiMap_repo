@@ -710,6 +710,10 @@ sendButton.addEventListener("click" , async()=>{
         alert("Could not save");
       }else{
         alert("Saved!!");
+        
+        // Log route suggestion activity
+        await logActivity('suggestion', 'Route suggestion submitted', 
+          `Submitted ${routeType} route suggestion with ${listOfRoutes.length} segments`);
       }
   
   }catch(error){
@@ -752,6 +756,37 @@ removebtnListMenu.addEventListener("click" , (event)=>{
 });
 
 //=== FUNCTIONS ===
+
+// Helper function to get device info
+function getDeviceInfo() {
+    const userAgent = navigator.userAgent;
+    if (/Mobile|Android|iPhone|iPad/.test(userAgent)) {
+        if (/iPhone/.test(userAgent)) return 'iPhone';
+        if (/Android/.test(userAgent)) return 'Android';
+        return 'Mobile Device';
+    }
+    if (/Windows/.test(userAgent)) return 'Windows';
+    if (/Mac/.test(userAgent)) return 'Mac';
+    if (/Linux/.test(userAgent)) return 'Linux';
+    return 'Desktop';
+}
+
+// Log activity function
+async function logActivity(type, title, description) {
+    try {
+        await apiClient.post('/auth/activities', {
+            activity_type: type,
+            activity_title: title,
+            activity_description: description,
+            ip_address: null,
+            user_agent: navigator.userAgent,
+            device_info: getDeviceInfo(),
+            location_info: null
+        });
+    } catch (error) {
+        console.error('Error logging activity:', error);
+    }
+}
 
 
 //show route on click
