@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { axios, handleSessionExpiration } from './sessionHandler.js';
 import { BASE_URL } from './AddressSelection.js';
 
 // DOM elements
@@ -10,7 +10,7 @@ const resendSection = document.getElementById('resendSection');
 const verificationTitle = document.getElementById('verificationTitle');
 const verificationText = document.getElementById('verificationText');
 
-// Get token from URL parameters
+// Get token from URL parameters         
 const urlParams = new URLSearchParams(window.location.search);
 const token = urlParams.get('token');
 

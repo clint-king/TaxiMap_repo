@@ -273,7 +273,7 @@ const getUserActivities = async (userId, limit = 50, offset = 0) => {
     
     db = await poolDb.getConnection();
     const [rows] = await db.execute(
-      'SELECT * FROM user_activities WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT * FROM user_activities WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
       [userId, limit, offset]
     );
     return rows;

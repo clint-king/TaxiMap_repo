@@ -454,9 +454,12 @@ export const findingPath = async(req,res)=>{
 export const AddPendingRoute = async (req, res) => {
     const data = req.body;
     const { caseType } = data;
+    const userId = req.user.id; // Get the current user's ID from the request
     let connection;
 
     console.log("CaseType : " , caseType);
+    console.log('Data of the routes : ', data);
+    console.log('Current user ID: ', userId);
     try {
         connection = await poolDb.getConnection();
         await connection.beginTransaction();
@@ -465,7 +468,7 @@ export const AddPendingRoute = async (req, res) => {
             throw new Error("Unsupported caseType");
         }
 
-        const routeId = await handleRouteInsertion[caseType](connection, data);
+        const routeId = await handleRouteInsertion[caseType](connection, data, userId);
 
         await connection.commit();
         return res.status(200).json({ message: "Route added successfully", routeId });
@@ -489,6 +492,107 @@ export const listOfAllRoutes = async(req, res) =>{
         console.log(error);
     }
 }
+
+// Helper function to get TaxiRank information by ID
+const getTaxiRankById = async (id) => {
+    if (!id) {
+        throw new Error("TaxiRank ID is required");
+    }
+
+    let db;
+    try {
+        db = await poolDb.getConnection();
+        
+        const query = "SELECT * FROM taxirank WHERE ID = ?";
+        const [rows] = await db.query(query, [id]);
+        
+        if (!rows || rows.length === 0) {
+            return null; // Return null if not found
+        }
+        
+        const taxiRank = rows[0];
+        
+        // Parse the location_coord if it's stored as JSON string
+        if (taxiRank.location_coord) {
+            try {
+                // Check if it's already an object
+                if (typeof taxiRank.location_coord === 'object') {
+                    // Already parsed, keep as is
+                    console.log("location_coord is already an object");
+                } else if (typeof taxiRank.location_coord === 'string') {
+                    // Try to parse JSON string
+                    taxiRank.location_coord = JSON.parse(taxiRank.location_coord);
+                }
+            } catch (parseError) {
+                console.log("Could not parse location_coord JSON:", parseError);
+                // Keep as string if parsing fails
+            }
+        }
+        
+        return taxiRank;
+        
+    } catch (error) {
+        console.error("Database error in getTaxiRankById:", error);
+        throw error;
+    } finally {
+        if (db) db.release();
+    }
+};
+
+// Helper function to check if a TaxiRank with the same name and coordinates exists
+const checkExistingPendingTaxiRank = async (taxiRankName, coordinates) => {
+    if (!taxiRankName || !coordinates) {
+        throw new Error("TaxiRank name and coordinates are required");
+    }
+
+    let db;
+    try {
+        db = await poolDb.getConnection();
+        
+        // Convert coordinates to JSON string for comparison
+        const coordinatesJson = JSON.stringify(coordinates);
+        
+        const query = `
+            SELECT * FROM PendingTaxiRank 
+            WHERE name = ? 
+            AND location_coord = ? 
+            AND exist = true
+        `;
+        
+        const [rows] = await db.query(query, [taxiRankName, coordinatesJson]);
+        
+        if (!rows || rows.length === 0) {
+            return null; // No existing TaxiRank found
+        }
+        
+        const existingTaxiRank = rows[0];
+        
+        // Parse the location_coord if it's stored as JSON string
+        if (existingTaxiRank.location_coord) {
+            try {
+                // Check if it's already an object
+                if (typeof existingTaxiRank.location_coord === 'object') {
+                    // Already parsed, keep as is
+                    console.log("location_coord is already an object");
+                } else if (typeof existingTaxiRank.location_coord === 'string') {
+                    // Try to parse JSON string
+                    existingTaxiRank.location_coord = JSON.parse(existingTaxiRank.location_coord);
+                }
+            } catch (parseError) {
+                console.log("Could not parse location_coord JSON:", parseError);
+                // Keep as string if parsing fails
+            }
+        }
+        
+        return existingTaxiRank;
+        
+    } catch (error) {
+        console.error("Database error in checkExistingPendingTaxiRank:", error);
+        throw error;
+    } finally {
+        if (db) db.release();
+    }
+};
 
 
 // === FUNCTIONS === 
@@ -657,8 +761,6 @@ async function closestTaxiRanksF(routeExploredArr , countObject , formatedRoutes
 }
 
 
-
-
 function destinationRoute(countObject, routeCloseToDest, routeExploredArr, formatedRoutes , destinationCoords){
     let loopAgain = true;
     while(loopAgain){
@@ -733,8 +835,6 @@ function analyzeRouteDirection(route, source, destination) {
   else return false // Route is neutral to source/destination
 }
 
-
-
 async function filterAreas(sourceProv, destinationProv) {
     let db;
     try {
@@ -808,7 +908,6 @@ async function filterAreas(sourceProv, destinationProv) {
         return { status: 500, message: "Server Error", result: null };
     }
 }
-
 
 function formatRoutes(routes , miniCoords){
 
@@ -1292,41 +1391,74 @@ async function generateUniqueRouteID(connection) {
 //pending route functions 
 
 const handleRouteInsertion = {
-    "01": async (connection, data) => {
+    "01": async (connection, data, userId) => {
         const { TRSource, routeInfo } = data;
-        const sourceId = await insertTaxiRank(connection, TRSource);
+
+        //insert the taxirank
+        const sourceId = await insertTaxiRank(connection, { ...TRSource , exist:false , userId });
+
+        //insert the route
         const routeId = await insertRoute(connection, {
             price: routeInfo.price,
-            sourceId,
+            sourceId:sourceId,
             destId: sourceId,
             routeType: routeInfo.routeType,
             travelMethod: routeInfo.travelMethod,
+            userId,
         });
+
+        //inserted miniroutes and directions
         await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
         await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
         return routeId;
     },
-    "00": async (connection, data) => {
+    "00": async (connection, data, userId) => {
         const { TRSource, routeInfo } = data;
+        //get information of the taxirank
+        const TRSourceInfo = await getTaxiRankById(TRSource.IDSource);
+
+        //check if it already exists in pendingTaxiRank
+        const sourceExist = await checkExistingPendingTaxiRank(TRSourceInfo.name, TRSourceInfo.location_coord);
+        let sourceId;
+        if(sourceExist){
+            //if it exists, use the ID
+            sourceId = sourceExist.ID;
+        }else{
+            //if it doesn't exist, insert it
+            sourceId = await insertTaxiRank(connection, {
+                name: TRSourceInfo.name,
+                coord: TRSourceInfo.location_coord,
+                province: TRSourceInfo.province,
+                address: TRSourceInfo.address,
+                exist: true,
+                userId,
+            });
+        }
+        //insert the route
         const routeId = await insertRoute(connection, {
             price: routeInfo.price,
-            sourceId: TRSource.IDSource,
-            destId: TRSource.IDSource,
+            sourceId: sourceId,
+            destId: sourceId,
             routeType: routeInfo.routeType,
             travelMethod: routeInfo.travelMethod,
+            userId,
         });
+        
+        //inserted miniroutes and directions
         await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
         await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
         return routeId;
     },
-    "111": async (connection, data) => {
+    "111": async (connection, data, userId) => {
         const { TRSource, TRDest, routeInfo } = data;
-        const sourceId = await insertTaxiRank(connection, TRSource);
+        const sourceId = await insertTaxiRank(connection, { ...TRSource,exist:false , userId });
         const destId = await insertTaxiRank(connection, {
             name: TRDest.nameDest,
             coord: TRDest.coordDest,
             province: TRDest.provinceDest,
             address: TRDest.addressDest,
+            exist: false,
+            userId,
         });
         const routeId = await insertRoute(connection, {
             price: routeInfo.price,
@@ -1334,66 +1466,141 @@ const handleRouteInsertion = {
             destId,
             routeType: routeInfo.routeType,
             travelMethod: routeInfo.travelMethod,
+            userId,
         });
         await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
         await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
         return routeId;
     },
-    "100": async (connection, data) => {
+    "100": async (connection, data, userId) => {
     const { TRSource, TRDest, routeInfo } = data;
+    const TRSourceInfo = await getTaxiRankById(TRSource.IDSource);
+
+    //check if it already exists in pendingTaxiRank
+    const sourceExist = await checkExistingPendingTaxiRank(TRSourceInfo.name, TRSourceInfo.location_coord);
+    let sourceId;
+    if(sourceExist){
+        sourceId = sourceExist.ID;
+    }else{
+        sourceId = await insertTaxiRank(connection, {
+            name: TRSourceInfo.name,
+            coord: TRSourceInfo.location_coord,
+            province: TRSourceInfo.province,
+            address: TRSourceInfo.address,
+            exist: true,
+            userId,
+        });
+    }
+
+    const TRDestInfo = await getTaxiRankById(TRDest.IDDest);
+    //check if it already exists in pendingTaxiRank
+    const destExist = await checkExistingPendingTaxiRank(TRDestInfo.name, TRDestInfo.location_coord);
+    let destId;
+    if(destExist){
+        destId = destExist.ID;
+    }else{
+        destId = await insertTaxiRank(connection, {
+            name: TRDestInfo.name,
+            coord: TRDestInfo.location_coord,
+            province: TRDestInfo.province,
+            address: TRDestInfo.address,
+            exist: true,
+            userId,
+        });
+    }
+
     const routeId = await insertRoute(connection, {
         price: routeInfo.price,
-        sourceId: TRSource.IDSource,
-        destId: TRDest.IDDest,
+        sourceId:sourceId,
+        destId: destId,
         routeType: routeInfo.routeType,
         travelMethod: routeInfo.travelMethod,
+        userId,
     });
+
     await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
     await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
     return routeId;
 },
-"110": async (connection, data) => {
+"110": async (connection, data, userId) => {
     const { TRSource, TRDest, routeInfo } = data;
-    const sourceId = await insertTaxiRank(connection, TRSource);
+    const sourceId = await insertTaxiRank(connection, { ...TRSource, exist:false , userId });
+
+    const TRDestInfo = await getTaxiRankById(TRDest.IDDest);
+    //check if it already exists in pendingTaxiRank
+    const destExist = await checkExistingPendingTaxiRank(TRDestInfo.name, TRDestInfo.location_coord);
+    let destId;
+    if(destExist){
+        destId = destExist.ID;
+    }else{
+        destId = await insertTaxiRank(connection, {
+            name: TRDestInfo.name,
+            coord: TRDestInfo.location_coord,
+            province: TRDestInfo.province,
+            address: TRDestInfo.address,
+            exist: true,
+            userId,
+        });
+    }
     const routeId = await insertRoute(connection, {
         price: routeInfo.price,
         sourceId,
-        destId: TRDest.IDDest,
+        destId,
         routeType: routeInfo.routeType,
         travelMethod: routeInfo.travelMethod,
+        userId,
     });
     await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
     await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
     return routeId;
 },
-"101": async (connection, data) => {
+"101": async (connection, data, userId) => {
     const { TRSource, TRDest, routeInfo } = data;
+
+    const TRSourceInfo = await getTaxiRankById(TRSource.IDSource);
+    //check if it already exists in pendingTaxiRank
+    const sourceExist = await checkExistingPendingTaxiRank(TRSourceInfo.name, TRSourceInfo.location_coord);
+    let sourceId;
+    if(sourceExist){
+        sourceId = sourceExist.ID;
+    }else{
+        sourceId = await insertTaxiRank(connection, {
+            name: TRSourceInfo.name,
+            coord: TRSourceInfo.location_coord,
+            province: TRSourceInfo.province,
+            address: TRSourceInfo.address,
+            exist: true,
+            userId,
+        });
+    }
+
     const destId = await insertTaxiRank(connection, {
         name: TRDest.nameDest,
         coord: TRDest.coordDest,
         province: TRDest.provinceDest,
         address: TRDest.addressDest,
+        exist: false,
+        userId,
     });
-
-    console.log("destID : ",destId );
 
     const routeId = await insertRoute(connection, {
         price: routeInfo.price,
-        sourceId: TRSource.IDSource,
+        sourceId,
         destId,
         routeType: routeInfo.routeType,
         travelMethod: routeInfo.travelMethod,
+        userId,
     });
     await insertMiniRoutes(connection, routeId, routeInfo.listOfMessAndCoords);
     await insertDirections(connection, routeId, routeInfo.listOfMessAndCoords);
     return routeId;
-}    // Add similar blocks for "100", "110", "101"
+}
 };
 
-const insertRoute = async (connection, { price, sourceId, destId, routeType, travelMethod }) => {
-    const query = "INSERT INTO pendingroutes(name,price,start_rank_id,end_rank_id, route_type,travel_method) VALUES(?,?,?,?,?,?)";
+const insertRoute = async (connection, { price, sourceId, destId, routeType, travelMethod, userId }) => {
+    const query = "INSERT INTO pendingroutes(name,price,start_rank_id,end_rank_id, route_type,travel_method,user_id) VALUES(?,?,?,?,?,?,?)";
     const routeName = await generateUniqueRouteID(connection);
-    const [result] = await connection.query(query, [routeName, price, sourceId, destId, routeType, travelMethod]);
+    const [result] = await connection.query(query, [routeName, price, sourceId, destId, routeType, travelMethod, userId]);
     return result.insertId;
 };
 
@@ -1411,9 +1618,10 @@ const insertMiniRoutes = async (connection, routeId, list) => {
     }
 };
 
-const insertTaxiRank = async (connection, { name, coord, province, address }) => {
-    const query = "INSERT INTO pendingtaxirank(name , location_coord, province, address ) VALUES (?,?,?,?)";
-    const [result] = await connection.query(query, [name, JSON.stringify(coord), province, address]);
+const insertTaxiRank = async (connection, { name, coord, province, address, exist , userId }) => {
+    console.log("insertTaxiRank called with:", { name, coord, province, address, userId });
+    const query = "INSERT INTO pendingtaxirank(name , location_coord, province, address , exist,user_id) VALUES (?,?,?,?,?,?)";
+    const [result] = await connection.query(query, [name, JSON.stringify(coord), province, address, exist, userId]);
     return result.insertId;
 };
 
