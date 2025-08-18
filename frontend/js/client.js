@@ -3,6 +3,34 @@ import * as turf from "@turf/turf";
 import popup from "./popup.js";
 import {BASE_URL} from "./AddressSelection.js";
 
+// Add global axios interceptor for session expiration
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            console.log('Session expired detected by interceptor');
+            // Clear local storage
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activityLog');
+            
+            // Show message to user
+            const messageContainer = document.getElementById('messageContainer');
+            if (messageContainer) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message error';
+                messageElement.textContent = 'Session expired. Redirecting to home page...';
+                messageContainer.appendChild(messageElement);
+            }
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+        }
+        return Promise.reject(error);
+    }
+);
+
 // === DOM ELEMENTS ===
 
 //toggle button

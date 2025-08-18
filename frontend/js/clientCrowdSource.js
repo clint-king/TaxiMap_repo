@@ -12,6 +12,34 @@ const mapboxClient = axios.create({
   withCredentials: false // No credentials for external APIs
 });
 
+// Add global axios interceptor for session expiration
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            console.log('Session expired detected by interceptor');
+            // Clear local storage
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activityLog');
+            
+            // Show message to user
+            const messageContainer = document.getElementById('messageContainer');
+            if (messageContainer) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message error';
+                messageElement.textContent = 'Session expired. Redirecting to home page...';
+                messageContainer.appendChild(messageElement);
+            }
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+        }
+        return Promise.reject(error);
+    }
+);
+
  // === DOM ELEMENTS ===
 
  //label section
@@ -68,7 +96,7 @@ const slider = document.getElementById("priceRange");
 const selectedPrice = document.getElementById("selectedPrice");
 
 //message 
-const messageTextArea = document.querySelector(".sendBtn");
+const messageTextArea = document.querySelector(".routeInfoContainer textarea");
 
  // Route adding section
 const routeCancelButton = document.querySelector(".routeButton");
@@ -157,7 +185,7 @@ const routeAddButton = document.querySelector(".add_button") ;
  }
 
  let routeObj = new Route("1");
-
+ let savedCurrentRouteObj = null;
  
 //=== VARIABLES ===
 let coords = [];
@@ -270,11 +298,24 @@ const map = new mapboxgl.Map({
           if(!replaceInCoords(0 , [longitude, latitude])){
             coords.push([longitude, latitude]);
           }
+
+            addClickListenerToMarker(startingTaxiRMarker, async(e)=>{
+               e.stopPropagation(); 
+              if(isMarkersPlaced() && saveButtonActive === true){
+                isStartingMarkerListining = true;
+                openFinalMarkerMenu(); 
+              } 
+            
+            }); 
+
+            //createTaxiRank
+            createdStartTaxiRank = new TaxiRank(taxiRank.name ,taxiRank.province , taxiRank.address , 1,taxiRank.coord.longitude , taxiRank.coord.latitude , false , taxiRank.ID );
           
           // Clear suggestions and update input value
           searchBox.value =address;
           suggestions.innerHTML = '';
           console.log("starting is clicked , coords array : " , coords);
+
 
       }else if(chosenTRCreation.dest === true){
 
@@ -298,6 +339,16 @@ const map = new mapboxgl.Map({
           if(!replaceInCoords(1 , [longitude, latitude])){
             coords[1] = [longitude, latitude];
           }
+
+             addClickListenerToMarker(destTaxiRMarker, async(e)=>{
+              e.stopPropagation(); 
+              if(isMarkersPlaced() && saveButtonActive === true){
+                openFinalMarkerMenu(); 
+                isStartingMarkerListining = false;
+              } 
+              
+            });
+          
 
           // Clear suggestions and update input value
            searchBox.value =address;
@@ -411,13 +462,10 @@ document.body.addEventListener('click', function (event) {
     const button = event.target.closest('.route_div');
     const routeId = button.getAttribute('data-name');
     console.log(`Clicked route button for Route ${routeId}`);
-    // Handle your logic here...
+    // Handle logic here
     showRoute(routeId);
-
-
   }
 });
-
 
 
 //edit menu
@@ -438,13 +486,25 @@ slider.addEventListener("input", function() {
     selectedPrice.textContent = slider.value;
 }); 
 
-  destTRInput.addEventListener("input", () => {
+// destTRInput.addEventListener("input", () => {                                                
+//     if(taxiRanks.length === 0){
+//       fetchTaxiRanks();
+//     }
+
+//     showSuggestions(destTRInput.value , false);
+// });
+
+taxiRInputContainer.addEventListener("input", (event) => {
+  if (event.target.matches('.inputTR.group2 input')) {
     if(taxiRanks.length === 0){
       fetchTaxiRanks();
     }
-
-    showSuggestions(destTRInput.value , false);
+    showSuggestions(event.target.value, false);
+  }
 });
+
+
+
 
  startingTRInput.addEventListener("input", () => {
    if(taxiRanks.length === 0){
@@ -589,6 +649,7 @@ routeAddButton.addEventListener('click' , ()=>{
   const isRouteSaved = saveCurrentRoute() ;
   if(isRouteSaved === true){
 
+
     console.log("*****SAVED routes : *****" , JSON.stringify(routeObj.listOfCoords));
     console.log("current routeCoords : " , routeCoordinates);
   //remove 
@@ -615,6 +676,12 @@ routeAddButton.addEventListener('click' , ()=>{
 });
 
 sendButton.addEventListener("click" , async()=>{
+  
+  if(isLoopRoutefinished === false){
+    popup.showSuccessPopup("Complete the current route first" , false);
+    return;
+  }
+
 
   //Save current route
   const isCurrentRouteSaved = saveCurrentRoute();
@@ -707,10 +774,9 @@ sendButton.addEventListener("click" , async()=>{
       }
 
       if( response.status != 200){
-        alert("Could not save");
+        popup.showSuccessPopup("Could not save", false);
       }else{
-        alert("Saved!!");
-        
+        popup.showSuccessPopup("Route information saved!!" , true);
         // Log route suggestion activity
         await logActivity('suggestion', 'Route suggestion submitted', 
           `Submitted ${routeType} route suggestion with ${listOfRoutes.length} segments`);
@@ -926,12 +992,12 @@ function saveCurrentRoute(){
     //add to indicate that the route is done 
     routeObj.hasRouteEnded(isLoopRoutefinished);
 
-
     //add message
     if(messageTextArea.value.trim() === ""){
       routeObj.AddMessage("");
     }else{
       routeObj.AddMessage(messageTextArea.value);
+      messageTextArea.value = "";
     }
 
 
@@ -941,6 +1007,51 @@ function saveCurrentRoute(){
   }
 
   return false;
+}
+
+function saveUnfinishedCurrentRoute(){
+  //save route information 
+    //add route 
+    if(!routeCoordinates || routeCoordinates.length === 0){
+      console.log("routeCoordinates has no coordinates");
+      alert("There is no route has been drawn")
+      return false;
+    }
+    //add route coords
+    const addroute = savedCurrentRouteObj.AddRouteCoords(routeCoordinates);
+
+    if(addroute === false){
+      console.log("*********ERROR: Could not add route  ");
+      return false;
+    }
+
+    //add coords of all Markers
+    const allMarkers = savedCurrentRouteObj.AddCoords(coords);
+    if(allMarkers === false){
+       console.log("*********ERROR: Could not add all Marker (a.k.a coords)  ");
+       return false;
+    }
+
+    //add inner markers array 
+    const innerMarkers = savedCurrentRouteObj.AddListofMarkers(routeMarkers);
+    if(innerMarkers === false){
+       console.log("*********ERROR: Could not add innerMarkers");
+       return false;
+    }
+
+    //add to indicate that the route is done 
+    savedCurrentRouteObj.hasRouteEnded(isLoopRoutefinished);
+
+    //add message
+    if(messageTextArea.value.trim() === ""){
+      savedCurrentRouteObj.AddMessage("");
+    }else{
+      savedCurrentRouteObj.AddMessage(messageTextArea.value);
+      messageTextArea.value = "";
+    }
+
+    return true;
+  
 }
 
 function isMarkersPlaced(){
@@ -1017,6 +1128,7 @@ function resuscitateTaxiRInputGroup2() {
   // Create input
   const input = document.createElement('input');
   input.placeholder = 'Search destination taxiRank...';
+  input.title = "Search for an existing taxi rank where the taxi will End.";
 
   // Create ul
   const ul = document.createElement('ul');
@@ -1028,7 +1140,7 @@ function resuscitateTaxiRInputGroup2() {
   // Create button
   const button = document.createElement('button');
   button.textContent = 'Create new TaxiRank';
-
+  button.title = "Create a new taxi rank location as the ending point if it does not already exist.";
   // Append input container and button to group2 div
   div.appendChild(inputContainer);
   div.appendChild(button);
@@ -1038,6 +1150,18 @@ function resuscitateTaxiRInputGroup2() {
 
   // Resize the container if needed
   taxiRInputContainer.style.height = "120px";
+
+  // Add event listener to the newly created input (Option 2)
+  input.addEventListener("input", () => {
+    if(taxiRanks.length === 0){
+      fetchTaxiRanks();
+    }
+    showSuggestions(input.value, false);
+  });
+
+  // Update the global references to the new elements (Option 3)
+  destTRInput = input;
+  destTRList = ul;  // ← This is the key fix!
 }
 
 function showSuggestions(query ,  isGroup1) {
@@ -1092,7 +1216,7 @@ function showSuggestions(query ,  isGroup1) {
            
            
             startingTaxiRMarker =  new mapboxgl.Marker({ color: 'green' }).setLngLat(currentCoords).addTo(map);
-            coords.push(currentCoords);
+            coords[0] = currentCoords;
 
              map.flyTo({ center: currentCoords, zoom: 17 });
 
@@ -1540,7 +1664,7 @@ if (source) {
           coordinates: routeCoordinates.slice( 0, routeStartingIndex+1)
         });
 
-        for(let i = coordIndex ; i < routeMarkers.length ; i++){
+        for(let i = markerIndex +1 ; i < routeMarkers.length ; i++){
           const marker = routeMarkers[i];
           if(marker){
             marker.remove();
