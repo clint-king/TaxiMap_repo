@@ -96,6 +96,11 @@ apiClient.interceptors.response.use(
   const clearRouteYesBtn = document.querySelector(".menu.clearRoute .btn.yes");
   const clearRouteNoBtn = document.querySelector(".menu.clearRoute .btn.no");
 
+  //Remove Route context menu
+  const removeRouteMenu = document.querySelector(".menu.removeRoute");
+  const removeRouteNoBtn = document.querySelector(".menu.removeRoute .btn.no");
+  const removeRouteYesBtn = document.querySelector(".menu.removeRoute .btn.yes");
+
  
 
  // listmenu 
@@ -112,7 +117,7 @@ const selectedPrice = document.getElementById("selectedPrice");
 const messageTextArea = document.querySelector(".routeInfoContainer textarea");
 
  // Route adding section
-const routeCancelButton = document.querySelector(".routeButton");
+const routeCancelButton = document.querySelector(".routeButton i");
 const seeRouteBtn = document.querySelector(".route_div");
 const routeAddButton = document.querySelector(".add_button") ;
 
@@ -218,6 +223,7 @@ let currentColor = colors[0];
 
 //route add
 let currentStateNameId = 1;
+let routeToDelete = null;
 
 //edit
 let globalMarkerBehind = null;
@@ -486,16 +492,76 @@ const map = new mapboxgl.Map({
     }
   });
 
+
 //route management
+// document.body.addEventListener('click', function (event) {
+//   if (event.target.closest('.routeButton i')) {
+//     const cancelButton = event.target.closest('.routeButton i');
+
+//      // Find the parent route_div
+//      const routeDiv = cancelButton.closest('.route_div');
+
+//      // Get its data-name
+//     const routeName = routeDiv.dataset.name;
+
+//     //remove the route's data and drawn route
+//     removeRouteInfoDrawing(routeName);
+
+//     console.log("Clicked route data-name:", routeName);
+
+//     //remove the html element
+//     routeDiv.remove();
+
+//   } else if (event.target.closest('.route_div')) {
+//     const button = event.target.closest('.route_div');
+//     const routeId = button.getAttribute('data-name');
+//     console.log(`Clicked route button for Route ${routeId}`);
+//     // Handle logic here
+//     showRoute(routeId);
+//   }
+
+// });
+
 document.body.addEventListener('click', function (event) {
-  if (event.target.closest('.route_div')) {
-    const button = event.target.closest('.route_div');
-    const routeId = button.getAttribute('data-name');
+  const cancelButton = event.target.closest('.routeButton i');
+  const routeDiv = event.target.closest('.route_div');
+
+  if (cancelButton && routeDiv) {
+    // Case: clicked the cancel button
+    const routeName = routeDiv.dataset.name;
+
+    if(currentStateNameId !== Number(routeName)){
+          // remove the route's data and drawn route
+
+          openRemoveRouteMenu(routeName);
+          routeToDelete = routeName;
+    // removeRouteInfoDrawing(routeName);
+
+    // console.log("Clicked route data-name:", routeName);
+
+    // // remove the html element
+    // routeDiv.remove();
+
+    // //show current route
+    // showRoute(currentStateNameId);
+    }else{
+      //notify the user that the route is not the current route
+      popup.showSuccessPopup("Could not cancel route " + routeName + " , it is the current route" , false);
+      return;
+    }
+
+
+  } else if (routeDiv) {
+    // Case: clicked inside route_div (but not the cancel button)
+    const routeId = routeDiv.dataset.name;
     console.log(`Clicked route button for Route ${routeId}`);
+
     // Handle logic here
     showRoute(routeId);
   }
 });
+
+
 
 
 //edit menu
@@ -537,6 +603,31 @@ editNoBtn.addEventListener("click" , ()=>{
   clearRouteYesBtn.addEventListener("click", () => {
     clearCurrentRoute();
     closeClearRouteMenu();
+  });
+
+  //Remove Route menu event listeners
+  const removeRouteCloseBtn = document.getElementById('removeRoute_close_button');
+
+  removeRouteCloseBtn.addEventListener("click", () => {
+    closeRemoveRouteMenu();
+  });
+
+  removeRouteNoBtn.addEventListener("click", () => {
+    closeRemoveRouteMenu();
+  });
+
+  removeRouteYesBtn.addEventListener("click", () => {
+    if (routeToDelete !== null) {
+
+    removeRouteInfoDrawing(routeToDelete);
+
+    console.log("Clicked route data-name:", routeToDelete);
+
+    //show current route
+    showRoute(currentStateNameId);
+    closeRemoveRouteMenu();
+
+    }
   });
 
 //slider 
@@ -598,7 +689,7 @@ saveTRInfo.addEventListener("click" , ()=>{
 
   //save infomartion
   if(!isMarkersPlaced()){
-    alert("Could not save , please make sure you have inserted the price and the Markers are placed");
+    popup.showSuccessPopup("Could not save, please make sure you have inserted the price and the Markers are placed", false);
     return;
   }
 
@@ -669,7 +760,7 @@ updateButton.addEventListener('click' , async (e)=>{
       contextMenuDetection.startingTR = false;
     }else{
        console.log("Could not save TaxiRank");
-       alert("fill all inputs");
+       popup.showSuccessPopup("Please fill all inputs", false);
     }
 
   }else if(chosenTRCreation.dest === true){
@@ -681,7 +772,7 @@ updateButton.addEventListener('click' , async (e)=>{
       contextMenuDetection.destTR = false;
     }else{
        console.log("Could not save TaxiRank");
-       alert("fill all inputs");
+       popup.showSuccessPopup("Please fill all inputs", false);
     }
   }else{
     console.log("Could not save TaxiRank");
@@ -702,6 +793,7 @@ searchBox.addEventListener('input', (e) => {
   fetchSuggestions(e.target.value);
 });
 
+//route info
 routeAddButton.addEventListener('click' , ()=>{
   
   if(isLoopRoutefinished === false){
@@ -743,6 +835,14 @@ routeAddButton.addEventListener('click' , ()=>{
   }
 });
 
+
+
+
+
+
+
+
+//submit data  implementation
 sendButton.addEventListener("click" , async()=>{
   
   if(isLoopRoutefinished === false){
@@ -894,6 +994,32 @@ removebtnListMenu.addEventListener("click" , (event)=>{
 
 //=== FUNCTIONS ===
 
+function removeRouteInfoDrawing(nameId){
+  let getIndex = -1;
+  listOfRoutes.forEach((routeLocalObj , index)=>{
+    if(routeLocalObj.name === `${nameId}` ){
+      getIndex = index;
+    }
+  });
+
+  if(getIndex !== -1){
+    listOfRoutes.splice(getIndex, 1);
+    // Get the specific element
+let routeDiv = document.querySelector(`.route_div[data-name="${nameId}"]`);
+
+// Remove it from the DOM
+if (routeDiv) {
+  routeDiv.remove();
+}
+  }else{
+    console.log("ERROR: Could not find the route");
+  }
+
+}
+
+
+
+
 // Helper function to get device info
 function getDeviceInfo() {
     const userAgent = navigator.userAgent;
@@ -1007,12 +1133,7 @@ function showRoute(nameId){
   });
 }
 
-function removeRouteElement(nameId){
-  //remove the existing route (this should not apply to route 1)
-  removeRouteOnly();
 
-  //reinstate the route on the left side
-}
 
 //editmenu
 function openEditMarkerMenu(){
@@ -1064,6 +1185,19 @@ function openFinalMarkerMenu(){
   function closeClearRouteMenu(){
     clearRouteMenu.style.visibility = "hidden";
    }
+
+
+  function openRemoveRouteMenu(routeNumber) {
+    routeToDelete = routeNumber;
+    const removeRouteMessage = document.getElementById('removeRouteMessage');
+    removeRouteMessage.textContent = `Do you want to remove the route Route ${routeNumber}?`;
+    removeRouteMenu.style.visibility = "visible";
+  }
+
+  function closeRemoveRouteMenu() {
+    removeRouteMenu.style.visibility = "hidden";
+    routeToDelete = null;
+  }
 
   function clearCurrentRoute(){
     // Remove the route line from the map
@@ -1183,7 +1317,7 @@ function saveCurrentRoute(){
     //add route 
     if(!routeCoordinates || routeCoordinates.length === 0){
       console.log("routeCoordinates has no coordinates");
-      alert("There is no route has been drawn")
+      popup.showSuccessPopup("There is no route drawn", false);
       return null;
     }
     //add route coords
@@ -1231,7 +1365,7 @@ function saveUnfinishedCurrentRoute(){
     //add route 
     if(!routeCoordinates || routeCoordinates.length === 0){
       console.log("routeCoordinates has no coordinates");
-      alert("There is no route has been drawn")
+      popup.showSuccessPopup("There is no route drawn", false);
       return false;
     }
     //add route coords

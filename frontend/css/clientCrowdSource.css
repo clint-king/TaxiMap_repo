@@ -408,6 +408,20 @@
       font-weight: 600;
     }
 
+    /* Remove Route menu - same size as finalMarker menu */
+    .menu.removeRoute {
+      width: 290px;
+      height: 150px;
+    }
+
+    .menu.removeRoute .Information {
+      position: relative;
+      width: 100%;
+      top: 7%;
+      text-align: center;
+      font-weight: 400;
+    }
+
 
  .menu #title{
    position: relative;
@@ -1490,6 +1504,17 @@ textarea{
         height: 28px;
         font-size: 13px;
         font-weight: 600;
+      }
+
+      /* Mobile adjustments for remove route menu */
+      .menu.removeRoute {
+        width: 320px;
+        height: 180px;
+      }
+
+      .menu.removeRoute .Information {
+        top: 7%;
+        font-size: 14px;
       }
 
     .menu_wrapper {
