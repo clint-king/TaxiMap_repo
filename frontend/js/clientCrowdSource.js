@@ -59,6 +59,7 @@ apiClient.interceptors.response.use(
  const saveTRInfo = document.querySelector(".saveSession");
  const routeInfoCover = document.querySelector(".routeInfoContainerCover");
  const taxiRankInfoCover = document.querySelector(".sessionInfoContainerCover");
+ const taxiRankInfoCoverLockIcon = document.querySelector(".sessionInfoContainerCover i");
  const sendButton = document.querySelector(".sendBtn");
 
 
@@ -71,17 +72,29 @@ apiClient.interceptors.response.use(
  const provBox = document.querySelector('.input_line.prov input');
  const suggestions = document.getElementById('suggestions');
 
- //Final Marker context menu
- const finalMarkerMenu = document.querySelector(".menu.finalMarker");
- const cancelBtnfinalMenu = document.querySelector(".menu.finalMarker .close_button")
- const yesBtn = document.querySelector(".menu.finalMarker .btn.yes");
- const noBtn = document.querySelector(".menu.finalMarker .btn.no");
+   //Final Marker context menu
+  const finalMarkerMenu = document.querySelector(".menu.finalMarker");
+  const cancelBtnfinalMenu = document.querySelector(".menu.finalMarker .close_button")
+  const yesBtn = document.querySelector(".menu.finalMarker .btn.yes");
+  const noBtn = document.querySelector(".menu.finalMarker .btn.no");
 
-  //Edit Marker context menu
- const editMarkerMenu = document.querySelector(".menu.editMarker");
- const cancelBtnEditMenu = document.querySelector(".menu.editMarker .close_button")
- const editYesBtn = document.querySelector(".menu.editMarker .btn.yes");
- const editNoBtn = document.querySelector(".menu.editMarker .btn.no");
+   //Edit Marker context menu
+  const editMarkerMenu = document.querySelector(".menu.editMarker");
+  const cancelBtnEditMenu = document.querySelector(".menu.editMarker .close_button")
+  const editYesBtn = document.querySelector(".menu.editMarker .btn.yes");
+  const editNoBtn = document.querySelector(".menu.editMarker .btn.no");
+
+  //New Session context menu
+  const newSessionMenu = document.querySelector(".menu.newSession");
+  const cancelBtnNewSession = document.querySelector(".menu.newSession .close_button");
+  const newSessionYesBtn = document.querySelector(".menu.newSession .btn.yes");
+  const newSessionNoBtn = document.querySelector(".menu.newSession .btn.no");
+
+  //Clear Route context menu
+  const clearRouteMenu = document.querySelector(".menu.clearRoute");
+  const cancelBtnClearRoute = document.querySelector(".menu.clearRoute .close_button");
+  const clearRouteYesBtn = document.querySelector(".menu.clearRoute .btn.yes");
+  const clearRouteNoBtn = document.querySelector(".menu.clearRoute .btn.no");
 
  
 
@@ -186,6 +199,7 @@ const routeAddButton = document.querySelector(".add_button") ;
 
  let routeObj = new Route("1");
  let savedCurrentRouteObj = null;
+
  
 //=== VARIABLES ===
 let coords = [];
@@ -416,6 +430,12 @@ const map = new mapboxgl.Map({
         
         //make sure this is alway after updateRouteOnMap
         createCustomPointMarker(lngLat);
+
+        //check return to default if there is an unfinished route saved
+        if(savedCurrentRouteObj !== null){
+          savedCurrentRouteObj = null;
+        }
+
       }
 
      
@@ -427,6 +447,16 @@ const map = new mapboxgl.Map({
       }
       
 
+    });
+
+    // Add right-click event listener for clear route context menu
+    map.on('contextmenu', (e) => {
+      e.preventDefault();
+      
+      // Only show context menu if user is in drawing mode and has drawn something
+      if (directionSession && routeMarkers.length > 0) {
+        openClearRouteMenu();
+      }
     });
   });
 
@@ -477,9 +507,37 @@ editNoBtn.addEventListener("click" , ()=>{
   closeEditMarkerMenu();
 });
 
-editYesBtn.addEventListener("click" , ()=>{
-recreateRouteAfterEdit();
-});
+ editYesBtn.addEventListener("click" , ()=>{
+ recreateRouteAfterEdit();
+ });
+
+ //New Session menu event listeners
+ cancelBtnNewSession.addEventListener("click", () => {
+   closeNewSessionMenu();
+ });
+
+ newSessionNoBtn.addEventListener("click", () => {
+   closeNewSessionMenu();
+ });
+
+   newSessionYesBtn.addEventListener("click", () => {
+    createNewSession();
+    closeNewSessionMenu();
+  });
+
+  //Clear Route menu event listeners
+  cancelBtnClearRoute.addEventListener("click", () => {
+    closeClearRouteMenu();
+  });
+
+  clearRouteNoBtn.addEventListener("click", () => {
+    closeClearRouteMenu();
+  });
+
+  clearRouteYesBtn.addEventListener("click", () => {
+    clearCurrentRoute();
+    closeClearRouteMenu();
+  });
 
 //slider 
 slider.addEventListener("input", function() {
@@ -522,13 +580,18 @@ chosenTRCreation.none = false;
 chosenTRCreation.dest = false;
 });
 
-destTRButton.addEventListener("click" , ()=>{
-menu.style.visibility = "visible";
+ destTRButton.addEventListener("click" , ()=>{
+ menu.style.visibility = "visible";
 
-chosenTRCreation.starting = false;
-chosenTRCreation.none = false;
-chosenTRCreation.dest = true;
-});
+ chosenTRCreation.starting = false;
+ chosenTRCreation.none = false;
+ chosenTRCreation.dest = true;
+ });
+
+ //Lock icon click event for new session
+ taxiRankInfoCoverLockIcon.addEventListener("click", () => {
+   openNewSessionMenu();
+ });
 
 //save Tr button
 saveTRInfo.addEventListener("click" , ()=>{
@@ -650,15 +713,18 @@ routeAddButton.addEventListener('click' , ()=>{
   if(isRouteSaved === true){
 
 
-    console.log("*****SAVED routes : *****" , JSON.stringify(routeObj.listOfCoords));
-    console.log("current routeCoords : " , routeCoordinates);
+
+  console.log("*****SAVED routes : *****" , JSON.stringify(routeObj.listOfCoords));
+  console.log("current routeCoords : " , routeCoordinates);
+
+
   //remove 
   removeRouteOnly();
 
   //Create a new route 
   const num = IncreaseRouteNumber();
   routeObj = new Route(`${num}`);
-
+  
   //create html
   currentColor = colors[num-1];
   createRouteDiv(`Route${num}` , currentColor, num);
@@ -669,6 +735,8 @@ routeAddButton.addEventListener('click' , ()=>{
   //allow route creation
   isLoopRoutefinished = false;
 
+  //manages saving of unfinished route
+  savedCurrentRouteObj = null;
   }else{
     console.log("Route object is null");
     return null;
@@ -780,6 +848,9 @@ sendButton.addEventListener("click" , async()=>{
         // Log route suggestion activity
         await logActivity('suggestion', 'Route suggestion submitted', 
           `Submitted ${routeType} route suggestion with ${listOfRoutes.length} segments`);
+
+          //clear the current session
+          createNewSession();
       }
   
   }catch(error){
@@ -858,19 +929,63 @@ async function logActivity(type, title, description) {
 //show route on click
 function showRoute(nameId){
   if(currentStateNameId == nameId){
-    console.log("The route is in its current state");
+   
+    //load unfinished route if it exists
+    if(savedCurrentRouteObj !== null){
+      //remove the existing route
+      removeRouteOnly();
+
+      //push the objects data to the variables that manage current route 
+      coords.push(...savedCurrentRouteObj.coords);
+      isLoopRoutefinished = savedCurrentRouteObj.isLoopRoutefinished;
+      routeMarkers.push(...savedCurrentRouteObj.routeMarkers);
+      routeCoordinates.push(...savedCurrentRouteObj.listOfCoords);
+      messageTextArea.value = savedCurrentRouteObj.message;
+
+      console.log("Coords : " , coords);
+      console.log("routeMarkers : " , routeMarkers);
+      console.log("routeCoordinates : " , routeCoordinates);
+
+
+      routeMarkers.forEach((marker)=>{
+        if(marker){
+          createCustomPointMarker([marker.getLngLat().lng , marker.getLngLat().lat]);
+        }
+      });
+      
+      //draw new route
+       updateRouteOnMap({
+          type: 'LineString',
+          coordinates: savedCurrentRouteObj.listOfCoords
+        });
+    }
+
+    //cut the function excution here if the route is in its current state
     return;
   }
+
+  if(savedCurrentRouteObj === null){
+    const isUnfinishedRouteSaved = saveUnfinishedCurrentRoute();
+    if(isUnfinishedRouteSaved === false){
+      console.log("ERROR: Could not save unfinished route");
+      return;
+    }
+  }
+
+  //load the Chosen route
   listOfRoutes.forEach((routeLocalObj)=>{
     if(routeLocalObj.name === `${nameId}` ){
       //remove the existing route
       removeRouteOnly();
+
+     
 
       console.log("New route : ", JSON.stringify(routeLocalObj.listOfCoords));
       coords.push(...routeLocalObj.coords);
       isLoopRoutefinished = routeLocalObj.isLoopRoutefinished;
       routeMarkers.push(...routeLocalObj.routeMarkers);
       routeCoordinates.push(...routeLocalObj.listOfCoords);
+      messageTextArea.value = routeLocalObj.message;
 
       console.log("Coords : " , coords);
       console.log("routeMarkers : " , routeMarkers);
@@ -930,8 +1045,109 @@ function openFinalMarkerMenu(){
   finalMarkerMenu.style.visibility = "visible";
  }
 
- function closeFinalMarkerMenu(){
-  finalMarkerMenu.style.visibility = "hidden";
+  function closeFinalMarkerMenu(){
+   finalMarkerMenu.style.visibility = "hidden";
+  }
+
+ function openNewSessionMenu(){
+   newSessionMenu.style.visibility = "visible";
+  }
+
+   function closeNewSessionMenu(){
+    newSessionMenu.style.visibility = "hidden";
+   }
+
+  function openClearRouteMenu(){
+    clearRouteMenu.style.visibility = "visible";
+   }
+
+  function closeClearRouteMenu(){
+    clearRouteMenu.style.visibility = "hidden";
+   }
+
+  function clearCurrentRoute(){
+    // Remove the route line from the map
+    if (map.getLayer('route')) {
+      map.removeLayer('route');
+    }
+    if (map.getSource('route')) {
+      map.removeSource('route');
+    }
+
+    // Remove route markers (waypoints) but keep starting and destination markers
+    routeMarkers.forEach((marker) => {
+      if (marker) {
+        marker.remove();
+      }
+    });
+
+    // Reset route-related variables
+    routeMarkers.length = 0;
+    routeCoordinates.length = 0;
+    
+    // Reset coords array to only keep starting and destination markers
+    if (isStraightChosen) {
+      // For straight routes, keep starting and destination markers
+      coords.length = 2;
+    } else {
+      // For loop routes, keep only starting marker
+      coords.length = 1;
+    }
+
+    // Reset route completion status
+    isLoopRoutefinished = false;
+
+    // Show success message
+    popup.showSuccessPopup("Current route cleared successfully!", true);
+  }
+
+ function createNewSession(){
+   // Reset all variables and clear the map
+   removeRouteAndMarker();
+   
+   // Reset route-related variables
+   routeObj = new Route("1");
+   savedCurrentRouteObj = null;
+   listOfRoutes = [];
+   routeCount = 1;
+   currentStateNameId = 1;
+   labelNumber = 1;
+   currentColor = colors[0];
+   isLoopRoutefinished = false;
+   saveButtonActive = false;
+   directionSession = false;
+   
+   // Reset UI elements
+   routeNumber.textContent = "1";
+   messageTextArea.value = "";
+   selectedPrice.textContent = "0";
+   slider.value = "0";
+   
+   // Clear route divs except the first one
+   const addRouteContainer = document.querySelector(".addRoute");
+   if (addRouteContainer) {
+     const routeDivs = addRouteContainer.querySelectorAll(".route_div");
+     // Remove all route divs except the first one
+     for (let i = 1; i < routeDivs.length; i++) {
+       routeDivs[i].remove();
+     }
+   }
+   
+   // Reset taxi rank inputs
+   startingTRInput.value = "";
+   if (destTRInput) {
+     destTRInput.value = "";
+   }
+   
+   // Turn off draw bar
+   turnOnDrawBar(false);
+   
+   // Hide covers
+   taxiRankInfoCover.style.visibility = "hidden";
+   routeInfoCover.style.visibility = "visible";
+   
+   // Show success message
+   popup.showSuccessPopup("New session created successfully!", true);
  }
 
 function updateRouteOnMap(geojson) {
@@ -1010,7 +1226,8 @@ function saveCurrentRoute(){
 }
 
 function saveUnfinishedCurrentRoute(){
-  //save route information 
+   //Create a new route object
+   savedCurrentRouteObj = new Route("Unfinished");
     //add route 
     if(!routeCoordinates || routeCoordinates.length === 0){
       console.log("routeCoordinates has no coordinates");
@@ -1088,33 +1305,6 @@ function removeTaxiRInputGroup2() {
     }
 }
 
-// function resuscitateTaxiRInputGroup2(){
-//   //create group2
-
-// // Create the main div
-// const div = document.createElement('div');
-// div.className = 'inputTR group2';
-
-// // Create the input element
-// const input = document.createElement('input');
-// input.placeholder = 'Destination taxiRank...';
-
-// // Create the button element
-// const button = document.createElement('button');
-// button.textContent = 'Create TaxiRank';
-
-// // Append the input and button to the div
-// div.appendChild(input);
-// div.appendChild(button);
-
-// // Append the div to the body or another container element
-// taxiRInputContainer.appendChild(div);
-
-//   //resize the container
-//    taxiRInputContainer.style.height = "120px";
-// }
-
-// Show filtered suggestions
 
 function resuscitateTaxiRInputGroup2() {
   // Create the main group2 div

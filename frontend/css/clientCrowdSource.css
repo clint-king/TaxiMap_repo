@@ -326,6 +326,88 @@
    font-weight: 400;
   }
 
+     /* New Session menu - larger size for better text fit */
+   .menu.newSession {
+     width: 380px;
+     height: 270px;
+     padding: 20px;
+     box-sizing: border-box;
+   }
+
+   .menu.newSession .Information {
+     position: relative;
+     width: 100%;
+     top: 8%;
+     text-align: center;
+     font-weight: 400;
+     line-height: 1.5;
+   }
+
+   .menu.newSession .Information p {
+     margin: 8px 0;
+   }
+
+   .menu.newSession .Information p:first-child {
+     margin-bottom: 15px;
+   }
+
+   .menu.newSession .btnContainer {
+     position: absolute;
+     top: 80%;
+     left: 50%;
+     transform: translateX(-50%);
+     display: flex;
+     gap: 20px;
+   }
+
+       .menu.newSession .btnContainer .btn {
+      width: 80px;
+      height: 30px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Clear Route menu - same size as new session menu */
+    .menu.clearRoute {
+      width: 380px;
+      height: 270px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .menu.clearRoute .Information {
+      position: relative;
+      width: 100%;
+      top: 8%;
+      text-align: center;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    .menu.clearRoute .Information p {
+      margin: 8px 0;
+    }
+
+    .menu.clearRoute .Information p:first-child {
+      margin-bottom: 15px;
+    }
+
+    .menu.clearRoute .btnContainer {
+      position: absolute;
+      top: 80%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+    }
+
+    .menu.clearRoute .btnContainer .btn {
+      width: 80px;
+      height: 30px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
 
  .menu #title{
    position: relative;
@@ -726,6 +808,7 @@ width:100%;
 position: absolute;
 border-radius: 20px;
 visibility: hidden;
+cursor: pointer;
 }
 /*End of cover*/
 
@@ -751,6 +834,7 @@ visibility: hidden;
   border:none;
   background-color: #FFD52F;
   color: white;
+  cursor: pointer;
 }
 
 /* Route list */
@@ -1262,6 +1346,7 @@ textarea{
 
    #routeType {
      font-size: 0.8rem;
+     cursor: pointer;
    }
 
    .addRoute_container {
@@ -1323,19 +1408,89 @@ textarea{
     }
 
     /* Mobile modal adjustments */
-    .listmenu {
-      width: 280px;
-      height: 180px;
-      top: 50%;
-      left: 50%;
-    }
+     .listmenu {
+       width: 280px;
+       height: 180px;
+       top: 50%;
+       left: 50%;
+     }
 
-    .menu {
-      width: 320px;
-      height: 180px;
-      top: 50%;
-      left: 50%;
-    }
+     .menu {
+       width: 320px;
+       height: 180px;
+       top: 50%;
+       left: 50%;
+     }
+
+     /* Mobile adjustments for new session menu */
+     .menu.newSession {
+       width: 320px;
+       height: 240px;
+       padding: 15px;
+     }
+
+     .menu.newSession .Information {
+       top: 8%;
+       font-size: 14px;
+       line-height: 1.4;
+     }
+
+     .menu.newSession .Information p {
+       margin: 6px 0;
+     }
+
+     .menu.newSession .Information p:first-child {
+       margin-bottom: 12px;
+     }
+
+     .menu.newSession .btnContainer {
+       top: 80%;
+       left: 50%;
+       transform: translateX(-50%);
+       gap: 15px;
+     }
+
+           .menu.newSession .btnContainer .btn {
+        width: 75px;
+        height: 28px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* Mobile adjustments for clear route menu */
+      .menu.clearRoute {
+        width: 320px;
+        height: 240px;
+        padding: 15px;
+      }
+
+      .menu.clearRoute .Information {
+        top: 8%;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .menu.clearRoute .Information p {
+        margin: 6px 0;
+      }
+
+      .menu.clearRoute .Information p:first-child {
+        margin-bottom: 12px;
+      }
+
+      .menu.clearRoute .btnContainer {
+        top: 80%;
+        left: 50%;
+        transform: translateX(-50%);
+        gap: 15px;
+      }
+
+      .menu.clearRoute .btnContainer .btn {
+        width: 75px;
+        height: 28px;
+        font-size: 13px;
+        font-weight: 600;
+      }
 
     .menu_wrapper {
       width: 320px;
