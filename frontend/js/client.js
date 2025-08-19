@@ -195,12 +195,175 @@ const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = accessToken;
 
 // Initialize the map
+// const map = new mapboxgl.Map({
+//   container: "map", // container ID
+//   style: "mapbox://styles/mapbox/streets-v11", // style URL
+//   center: [30.0, -25.0], // Default center [lng, lat] (South Africa)
+//   zoom: 12, // Default zoom
+// });
+
+
+
+
 const map = new mapboxgl.Map({
-  container: "map", // container ID
-  style: "mapbox://styles/mapbox/streets-v11", // style URL
-  center: [30.0, -25.0], // Default center [lng, lat] (South Africa)
-  zoom: 12, // Default zoom
+  container: "map",
+  style: "mapbox://styles/mapbox/streets-v11",
+  center: [28.5, -26.2], // approximate center of Gauteng
+  zoom: 8
 });
+
+// map.on("load", () => {
+//   // Simplified Gauteng polygon (replace with real shape later)
+//   const gauteng = {
+//     "type": "Feature",
+//     "properties": { "name": "Gauteng" },
+//     "geometry": {
+//       "type": "Polygon",
+//       "coordinates": [[
+//         [27.5, -26.8],
+//         [28.5, -26.8],
+//         [28.5, -25.3],
+//         [27.5, -25.3],
+//         [27.5, -26.8]
+//       ]]
+//     }
+//   };
+
+//   // Mask polygon: full world minus Gauteng
+//   const mask = {
+//     "type": "Feature",
+//     "geometry": {
+//       "type": "Polygon",
+//       "coordinates": [
+//         [ // outer world boundary
+//           [-180, -90],
+//           [-180, 90],
+//           [180, 90],
+//           [180, -90],
+//           [-180, -90]
+//         ],
+//         gauteng.geometry.coordinates[0] // hole = Gauteng
+//       ]
+//     }
+//   };
+
+//   // Add mask layer (white opacity)
+//   map.addSource("mask", { type: "geojson", data: mask });
+//   map.addLayer({
+//     id: "mask-fill",
+//     type: "fill",
+//     source: "mask",
+//     paint: {
+//       "fill-color": "#ffffff",
+//       "fill-opacity": 0.7
+//     }
+//   });
+
+//   // Optional: add outline for Gauteng
+//   map.addSource("gauteng", { type: "geojson", data: gauteng });
+//   map.addLayer({
+//     id: "gauteng-outline",
+//     type: "line",
+//     source: "gauteng",
+//     paint: {
+//       "line-color": "#000",
+//       "line-width": 2
+//     }
+//   });
+
+//   // Fit map to Gauteng bounds
+//   const coordinates = gauteng.geometry.coordinates[0];
+//   const bounds = coordinates.reduce(
+//     (b, coord) => b.extend(coord),
+//     new mapboxgl.LngLatBounds(coordinates[0], coordinates[0])
+//   );
+//   map.fitBounds(bounds, { padding: 20 });
+// });
+
+
+HighlightRoutes();
+
+async function HighlightRoutes() {
+  try {
+    const response = await axios.get(`${BASE_URL}/client/listOfAllRoutes`, {
+      withCredentials: true
+    });
+
+    const resultInfo = response.data.routes;
+    let allCoords = [];
+
+    // Flatten all route coordinates into one array
+    resultInfo.forEach(route => {
+      allCoords = allCoords.concat(route.coords);
+    });
+
+    // Create a FeatureCollection of points
+    const points = turf.featureCollection(allCoords.map(c => turf.point(c)));
+
+    // Create a convex hull around all points
+    const hull = turf.convex(points);
+
+    // Optional: add buffer around hull (in kilometers)
+    const buffered = turf.buffer(hull, 1, { units: 'kilometers' });
+
+    // Create world mask with hole
+    const mask = {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [ // outer world boundary
+            [-180, -90],
+            [-180, 90],
+            [180, 90],
+            [180, -90],
+            [-180, -90]
+          ],
+          buffered.geometry.coordinates[0] // hole = buffered routes
+        ]
+      }
+    };
+
+    // Add mask to map
+    // if (map.getSource("mask")) {
+    //   map.getSource("mask").setData(mask);
+    // } else {
+    //   map.addSource("mask", { type: "geojson", data: mask });
+    //   map.addLayer({
+    //     id: "mask-fill",
+    //     type: "fill",
+    //     source: "mask",
+    //     paint: {
+    //       "fill-color": "#ffffff",
+    //       "fill-opacity": 0.7
+    //     }
+    //   });
+    // }
+
+    const sourceId = "mask-" + Date.now();
+const layerId = "mask-fill-" + Date.now();
+
+map.addSource(sourceId, { type: "geojson", data: mask });
+map.addLayer({
+  id: layerId,
+  type: "fill",
+  source: sourceId,
+  paint: { "fill-color": "#ffffff", "fill-opacity": 0.7 }
+});
+
+
+    // Fit map to buffered area
+    const bounds = buffered.geometry.coordinates[0].reduce(
+      (b, coord) => b.extend(coord),
+      new mapboxgl.LngLatBounds(buffered.geometry.coordinates[0][0], buffered.geometry.coordinates[0][0])
+    );
+    map.fitBounds(bounds, { padding: 50, maxZoom: 12, duration: 2000 });
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 
 //map
 map.on("load", () => {
@@ -1535,6 +1698,19 @@ const geoReader = new jsts.io.GeoJSONReader();
 function showBufferHighlight() {
   if (map.getLayer("buffer-layer")) {
     map.setPaintProperty("buffer-layer", "fill-opacity", 0.3);
+    
+    // Zoom to the buffer area
+    if (mergedBufferFeature) {
+      const bounds = mergedBufferFeature.geometry.coordinates[0].reduce(
+        (b, coord) => b.extend(coord),
+        new mapboxgl.LngLatBounds(mergedBufferFeature.geometry.coordinates[0][0], mergedBufferFeature.geometry.coordinates[0][0])
+      );
+      map.fitBounds(bounds, { 
+        padding: 50,
+        maxZoom: 12,
+        duration: 2000
+      });
+    }
   }
 }
 
@@ -1563,12 +1739,14 @@ async function HighlightMap() {
 
     addBufferedRoutesToMap(listOfRoutes);
 
-    // Optional: auto-hide highlight after a few seconds
-    // hideBufferHighlight();
+  
   } catch (error) {
     console.log(error);
   }
 }
+
+
+
 
 function isPointInBuffer(lng, lat) {
   const point = turf.point([lng, lat]);
