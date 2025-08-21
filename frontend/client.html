@@ -50,7 +50,7 @@
             <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
             <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route</a>
             <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-            <a href="#help" onclick="topNavZIndexDecrease()">Help</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
           </div>
         </div>
       </nav>
@@ -200,6 +200,51 @@
           <div class="btnContainer">
             <button class="btn no">No</button>
             <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div class="menu feedbackModal">
+          <p id="title">Submit Feedback</p>
+          <button class="close_button" id="feedback_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="feedbackForm">
+            <form id="feedbackForm">
+              <div class="form-group">
+                <label for="feedbackType">Feedback Type:</label>
+                <select id="feedbackType" name="feedback_type" required>
+                  <option value="improvement">Improvement Suggestion</option>
+                  <option value="complaint">Complaint</option>
+                  <option value="general">General Feedback</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="feedbackSubject">Subject:</label>
+                <input type="text" id="feedbackSubject" name="subject" placeholder="Brief description of your feedback" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="feedbackMessage">Message:</label>
+                <textarea id="feedbackMessage" name="message" placeholder="Please provide detailed feedback..." rows="5" required></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label for="feedbackImages">Images (optional):</label>
+                <input type="file" id="feedbackImages" name="images" multiple accept="image/*">
+                <small>You can upload up to 5 images (max 5MB each)</small>
+              </div>
+              
+              <div class="btnContainer">
+                <button type="button" class="btn no" id="cancelFeedback">Cancel</button>
+                <button type="submit" class="btn yes">Submit Feedback</button>
+              </div>
+            </form>
           </div>
         </div>
 

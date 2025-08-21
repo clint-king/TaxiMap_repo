@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & FAQ - TekeiMap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/help.css">
+    <link rel="stylesheet" href="./css/popup.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html">
+                        <img src="logo-advanced.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="client.html">Find route</a>
+                    <a href="clientCrowdSource.html">Suggest route</a>
+                    <a href="profile.html">Profile</a>
+                    <a href="help.html" class="active">Help</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Popup -->
+        <div id="informPopup" class="popup"></div>
+
+        <div class="page-content">
+            <div class="help-container">
+                <div class="help-header">
+                    <h1>Help & Support</h1>
+                    <p>Find answers to common questions or ask us something new</p>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <h2>Frequently Asked Questions</h2>
+                    
+                    <!-- Category Filter -->
+                    <div class="category-filter">
+                        <label for="categorySelect">Filter by category:</label>
+                        <select id="categorySelect">
+                            <option value="all">All Categories</option>
+                            <option value="general">General</option>
+                            <option value="routes">Routes</option>
+                            <option value="account">Account</option>
+                            <option value="technical">Technical</option>
+                            <option value="payment">Payment</option>
+                        </select>
+                    </div>
+
+                    <!-- FAQ List -->
+                    <div class="faq-list" id="faqList">
+                        <!-- FAQs will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Ask Question Section -->
+                <div class="ask-question-section">
+                    <h2>Still Need Help?</h2>
+                    <p>Can't find what you're looking for? Ask us a question and we'll get back to you.</p>
+                    
+                    <form id="questionForm" class="question-form">
+                        <div class="form-group">
+                            <label for="questionEmail">Your Email:</label>
+                            <input type="email" id="questionEmail" name="email" required placeholder="Enter your email address">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="questionText">Your Question:</label>
+                            <textarea id="questionText" name="question" rows="4" required placeholder="Please describe your question in detail..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="submit-btn">Submit Question</button>
+                    </form>
+                </div>
+
+                <!-- My Questions Section (for logged in users) -->
+                <div class="my-questions-section" id="myQuestionsSection" style="display: none;">
+                    <h2>My Questions</h2>
+                    <div class="questions-list" id="questionsList">
+                        <!-- User's questions will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/help.js"></script>
+</body>
+</html>

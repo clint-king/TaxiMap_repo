@@ -2,6 +2,11 @@ import  axios  from 'axios';
 import * as turf from '@turf/turf';
 import {BASE_URL} from "./AddressSelection.js";
 
+// Create separate axios instance for external API calls (like Mapbox)
+const externalClient = axios.create({
+  withCredentials: false // No credentials for external APIs
+});
+
 
 // === DOM ELEMENTS ===
 const addRouteButton  = document.querySelector(".button.add");
@@ -507,7 +512,8 @@ async function getWalkCoordinates(startCoordsLat , startCoordsLong , destCoordsL
     const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${startCoordsLong},${startCoordsLat};${destCoordsLong},${destCoordsLat}?geometries=geojson&access_token=${accessToken}`;
 
 try{
-    const response = await axios.get(url);
+    // Use external client for Mapbox API calls
+    const response = await externalClient.get(url);
 
      // Check if the response contains the expected data
      if (!response.data.routes || response.data.routes.length === 0) {

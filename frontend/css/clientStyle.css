@@ -797,6 +797,96 @@ z-index: 999;
   background-color: #ccc;
 }
 
+/* Feedback Modal Styles */
+.feedbackModal {
+  min-width: 500px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.feedbackForm {
+  margin-top: 20px;
+}
+
+.feedbackForm .form-group {
+  margin-bottom: 20px;
+}
+
+.feedbackForm label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.feedbackForm input,
+.feedbackForm select,
+.feedbackForm textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.feedbackForm input:focus,
+.feedbackForm select:focus,
+.feedbackForm textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.feedbackForm textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.feedbackForm small {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 12px;
+}
+
+.feedbackForm .btnContainer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.feedbackForm .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.feedbackForm .btn.yes {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #1f2937;
+}
+
+.feedbackForm .btn.yes:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.feedbackForm .btn.no {
+  background: #f8f9fa;
+  color: #333;
+  border: 2px solid #ddd;
+}
+
+.feedbackForm .btn.no:hover {
+  background: #e9ecef;
+}
+
 /* Route list (price division) */
 .routeList_container{
   display: flex;

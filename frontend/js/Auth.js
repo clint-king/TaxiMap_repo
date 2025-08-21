@@ -38,6 +38,22 @@ if (signupSubmit) {
       return alert("Passwords do not match");
     }
 
+    // Show loading state for signup
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const submitButton = document.querySelector('.signupSubmit');
+    const loadingText = document.querySelector('.loading-text');
+    
+    if (loadingOverlay) loadingOverlay.classList.add('show');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Creating Account...';
+    }
+
+    // Update loading text after a short delay to show progress
+    setTimeout(() => {
+      if (loadingText) loadingText.textContent = 'Setting up your profile...';
+    }, 1000);
+
     try {
       const response = await axios.post(`${BASE_URL}/auth/signup`, {
         name: signupName.value,
@@ -62,6 +78,16 @@ if (signupSubmit) {
       
       window.location.href = '/login.html';
     } catch (err) {
+      // Reset signup button state and hide loading overlay
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const submitButton = document.querySelector('.signupSubmit');
+      
+      if (loadingOverlay) loadingOverlay.classList.remove('show');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign Up';
+      }
+      
       console.error(err);
       const errorMessage = err.response?.data?.message || "Signup failed. Check your details or try again.";
       alert(errorMessage);
@@ -81,6 +107,23 @@ if (loginSubmit) {
       if (errorEl) errorEl.textContent = 'Please fill in all inputs';
       return;
     }
+
+    // Show loading state
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const submitButton = document.querySelector('.loginSubmit');
+    const loadingText = document.querySelector('.loading-text');
+    
+    if (loadingOverlay) loadingOverlay.classList.add('show');
+    if (submitButton) {
+      submitButton.classList.add('loading');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Logging in...';
+    }
+
+    // Update loading text after a short delay to show progress
+    setTimeout(() => {
+      if (loadingText) loadingText.textContent = 'Verifying credentials...';
+    }, 1000);
 
     try {
       const response = await axios.post(`${BASE_URL}/auth/login`, {
@@ -109,6 +152,16 @@ if (loginSubmit) {
       }
 
     } catch (err) {
+      // Hide loading state on error
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const submitButton = document.querySelector('.loginSubmit');
+      
+      if (loadingOverlay) loadingOverlay.classList.remove('show');
+      if (submitButton) {
+        submitButton.classList.remove('loading');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Login';
+      }
       console.error(err);
       
       if (err?.response?.status === 403 && err?.response?.data?.emailNotVerified) {

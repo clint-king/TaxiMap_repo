@@ -2,6 +2,12 @@ import axios from "axios";
 import * as turf from "@turf/turf";
 import popup from "./popup.js";
 import {BASE_URL} from "./AddressSelection.js";
+import { initFeedback } from "./feedback.js";
+
+// Create separate axios instance for external API calls (like Mapbox)
+const externalClient = axios.create({
+  withCredentials: false // No credentials for external APIs
+});
 
 // Add global axios interceptor for session expiration
 axios.interceptors.response.use(
@@ -451,7 +457,8 @@ map.on("load", () => {
 
 
 
-feedbackBtn.addEventListener("click", (event) => {});
+// Initialize feedback functionality
+initFeedback();
 
 sourceSearchBtn.addEventListener("click", async (e) => {
   //get address
@@ -1123,7 +1130,8 @@ async function getPlaceUsingQueryRequest(query, isSource) {
   )}.json?access_token=${accessToken}&limit=1`;
 
   try {
-    const response = await axios.get(endpoint);
+    // Use external client for Mapbox API calls
+    const response = await externalClient.get(endpoint);
     const data = response.data;
 
     if (data.features && data.features.length > 0) {
@@ -2079,7 +2087,8 @@ async function getWalkCoordinates(
   const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${startCoordsLong},${startCoordsLat};${destCoordsLong},${destCoordsLat}?geometries=geojson&access_token=${accessToken}`;
 
   try {
-    const response = await axios.get(url);
+    // Use external client for Mapbox API calls
+    const response = await externalClient.get(url);
 
     // Check if the response contains the expected data
     if (!response.data.routes || response.data.routes.length === 0) {

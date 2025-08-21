@@ -234,6 +234,82 @@ re  <meta http-equiv="Content-Security-Policy" content="
       font-weight: 500;
     }
 
+    /* Loading Animation Styles */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(1, 56, 106, 0.9);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 215, 55, 0.3);
+      border-top: 4px solid #FFD737;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: #FFD737;
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .loading-subtext {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Button loading state */
+    .loginSubmit.loading {
+      background: #ccc;
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    .loginSubmit.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #01386A;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
     @media (max-width: 768px) {
       .auth-container {
         flex-direction: column;
@@ -277,6 +353,13 @@ re  <meta http-equiv="Content-Security-Policy" content="
       </div>
     </div>
     <div class="image-section"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Logging you in...</div>
+    <div class="loading-subtext">Please wait while we verify your credentials</div>
   </div>
 
   <!-- Forgot Password Modal -->
