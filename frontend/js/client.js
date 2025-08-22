@@ -387,17 +387,17 @@ async function HighlightRoutes() {
     const buffered = turf.buffer(hull, 1, { units: 'kilometers' });
 
     // Create world mask with hole
-    const mask = {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
+  const mask = {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
         "coordinates": [
           [ // outer world boundary
-            [-180, -90],
-            [-180, 90],
-            [180, 90],
-            [180, -90],
-            [-180, -90]
+        [-180, -90],
+        [-180, 90],
+        [180, 90],
+        [180, -90],
+        [-180, -90]
           ],
           buffered.geometry.coordinates[0] // hole = buffered routes
         ]
@@ -424,9 +424,9 @@ async function HighlightRoutes() {
 const layerId = "mask-fill-" + Date.now();
 
 map.addSource(sourceId, { type: "geojson", data: mask });
-map.addLayer({
+  map.addLayer({
   id: layerId,
-  type: "fill",
+    type: "fill",
   source: sourceId,
   paint: { "fill-color": "#ffffff", "fill-opacity": 0.7 }
 });
@@ -533,6 +533,233 @@ map.on("load", () => {
 
 // Initialize feedback functionality
 initFeedback();
+
+// First-time user onboarding
+function checkFirstTimeUser() {
+  const hasSeenOnboarding = localStorage.getItem('teksimap_onboarding_completed');
+  if (!hasSeenOnboarding) {
+    showOnboardingModal();
+  }
+}
+
+function showOnboardingModal() {
+  const modal = document.createElement('div');
+  modal.className = 'onboarding-modal';
+  modal.innerHTML = `
+    <div class="onboarding-content">
+      <div class="onboarding-header">
+        <h2>🚗 Welcome to TeksiMap!</h2>
+        <button class="onboarding-close">×</button>
+      </div>
+      
+      <div class="onboarding-body">
+        <div class="onboarding-step active" data-step="1">
+          <h3>🎯 How to Use TeksiMap</h3>
+          <p>Find the best taxi routes in South Africa with just a few clicks!</p>
+          <div class="onboarding-feature">
+            <span class="feature-icon">📍</span>
+            <span>Click "From" to set your starting point</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🎯</span>
+            <span>Click "To" to set your destination</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🚕</span>
+            <span>View routes, prices, and directions instantly</span>
+          </div>
+        </div>
+
+        <div class="onboarding-step" data-step="2">
+          <h3>🗺️ Understanding the Map</h3>
+          <p><strong>Important:</strong> The white filtered areas should be ignored since the data for these areas are not yet available.</p>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🔵</span>
+            <span>Blue areas = Available taxi routes</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">⚪</span>
+            <span>White areas = No data available yet</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🔘</span>
+            <span>Use "Highlight clickable radius" toggle to see available areas</span>
+          </div>
+        </div>
+
+        <div class="onboarding-step" data-step="3">
+          <h3>📱 Mobile Tips</h3>
+          <div class="onboarding-feature">
+            <span class="feature-icon">👆</span>
+            <span>Tap and hold to place markers precisely</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">📋</span>
+            <span>Use the arrow button to view step-by-step directions</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">💰</span>
+            <span>Toggle price view to see route costs</span>
+          </div>
+        </div>
+
+        <div class="onboarding-step" data-step="4">
+          <h3>🤝 Contribute to Your Community</h3>
+          <p><strong>Help make TeksiMap better for everyone!</strong></p>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🗺️</span>
+            <span>Suggest new routes that aren't in the app yet</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">👥</span>
+            <span>Help locals get directions to places they want to visit</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🚕</span>
+            <span>Make taxi travel easier for your community</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🏆</span>
+            <span>Get featured on our Contributors page as a thank you!</span>
+          </div>
+          <p style="margin-top: 16px; font-style: italic; color: #6c757d;">
+            Access the contribution feature from the main menu to start helping your community today!
+          </p>
+        </div>
+
+        <div class="onboarding-step" data-step="5">
+          <h3>🎉 You're All Set!</h3>
+          <p>Start exploring taxi routes in South Africa. Remember:</p>
+          <ul>
+            <li>Only click within the blue highlighted areas</li>
+            <li>Use the toggle buttons to customize your view</li>
+            <li>Right-click to cancel routes anytime</li>
+            <li>Contribute new routes to help your community</li>
+          </ul>
+          <p><strong>Happy traveling! 🚗💨</strong></p>
+        </div>
+      </div>
+
+      <div class="onboarding-footer">
+        <div class="onboarding-progress">
+          <span class="progress-dot active" data-step="1"></span>
+          <span class="progress-dot" data-step="2"></span>
+          <span class="progress-dot" data-step="3"></span>
+          <span class="progress-dot" data-step="4"></span>
+          <span class="progress-dot" data-step="5"></span>
+        </div>
+        <div class="onboarding-buttons">
+          <button class="onboarding-btn secondary" id="prevBtn" style="display: none;">Previous</button>
+          <button class="onboarding-btn primary" id="nextBtn">Next</button>
+          <button class="onboarding-btn primary" id="completeBtn" style="display: none;">Get Started!</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  
+  // Add event listeners for all interactive elements
+  const closeBtn = modal.querySelector('.onboarding-close');
+  const prevBtn = modal.querySelector('#prevBtn');
+  const nextBtn = modal.querySelector('#nextBtn');
+  const completeBtn = modal.querySelector('#completeBtn');
+  const progressDots = modal.querySelectorAll('.progress-dot');
+  
+  // Close button
+  closeBtn.addEventListener('click', closeOnboardingModal);
+  
+  // Navigation buttons
+  prevBtn.addEventListener('click', previousOnboardingStep);
+  nextBtn.addEventListener('click', nextOnboardingStep);
+  completeBtn.addEventListener('click', completeOnboarding);
+  
+  // Progress dots
+  progressDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const step = parseInt(dot.dataset.step);
+      showOnboardingStep(step);
+    });
+  });
+}
+
+let currentOnboardingStep = 1;
+const totalOnboardingSteps = 5;
+
+function showOnboardingStep(step) {
+  // Hide all steps
+  const steps = document.querySelectorAll('.onboarding-step');
+  steps.forEach(s => s.classList.remove('active'));
+  
+  // Show current step
+  const currentStep = document.querySelector(`[data-step="${step}"]`);
+  if (currentStep) {
+    currentStep.classList.add('active');
+  }
+  
+  // Update progress dots
+  const dots = document.querySelectorAll('.progress-dot');
+  dots.forEach((dot, index) => {
+    if (index + 1 <= step) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
+  
+  // Update buttons
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const completeBtn = document.getElementById('completeBtn');
+  
+  if (step === 1) {
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'inline-block';
+    completeBtn.style.display = 'none';
+  } else if (step === totalOnboardingSteps) {
+    prevBtn.style.display = 'inline-block';
+    nextBtn.style.display = 'none';
+    completeBtn.style.display = 'inline-block';
+  } else {
+    prevBtn.style.display = 'inline-block';
+    nextBtn.style.display = 'inline-block';
+    completeBtn.style.display = 'none';
+  }
+  
+  currentOnboardingStep = step;
+}
+
+function nextOnboardingStep() {
+  if (currentOnboardingStep < totalOnboardingSteps) {
+    showOnboardingStep(currentOnboardingStep + 1);
+  }
+}
+
+function previousOnboardingStep() {
+  if (currentOnboardingStep > 1) {
+    showOnboardingStep(currentOnboardingStep - 1);
+  }
+}
+
+function completeOnboarding() {
+  localStorage.setItem('teksimap_onboarding_completed', 'true');
+  closeOnboardingModal();
+}
+
+function closeOnboardingModal() {
+  const modal = document.querySelector('.onboarding-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Check for first-time user when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Small delay to ensure everything is loaded
+  setTimeout(() => {
+    checkFirstTimeUser();
+  }, 1000);
+});
 
 sourceSearchBtn.addEventListener("click", async (e) => {
   //get address
