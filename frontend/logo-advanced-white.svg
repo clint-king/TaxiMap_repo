@@ -1,0 +1,74 @@
+<svg width="240" height="60" viewBox="0 0 240 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="whiteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F0F0F0;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Enhanced glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Subtle shadow for depth -->
+    <filter id="textShadow">
+      <feDropShadow dx="0.5" dy="0.5" stdDeviation="0.5" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Custom styled "TeksiMap" text with enhanced styling -->
+  <!-- T with unique styling -->
+  <text x="60" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#goldGradient)" filter="url(#glow) url(#textShadow)">
+    T
+  </text>
+  
+  <!-- e with slight rotation -->
+  <text x="78" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#goldGradient)" transform="rotate(2 78 32)" filter="url(#textShadow)">
+    e
+  </text>
+  
+  <!-- k with custom styling -->
+  <text x="96" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#goldGradient)" filter="url(#textShadow)">
+    k
+  </text>
+  
+  <!-- s with slight styling -->
+  <text x="114" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#goldGradient)" transform="rotate(-1 114 32)" filter="url(#textShadow)">
+    s
+  </text>
+  
+  <!-- i with dot styling -->
+  <text x="132" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#goldGradient)" filter="url(#textShadow)">
+    i
+  </text>
+  
+  <!-- Map part with WHITE color for blue backgrounds -->
+  <text x="150" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#whiteGradient)" filter="url(#textShadow)">
+    M
+  </text>
+  
+  <text x="174" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#whiteGradient)" filter="url(#textShadow)">
+    a
+  </text>
+  
+  <text x="192" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#whiteGradient)" filter="url(#textShadow)">
+    p
+  </text>
+  
+  <!-- 4 decorative particles - improved positioning and sizing for better visual balance -->
+  <circle cx="210" cy="15" r="2.5" fill="url(#goldGradient)" opacity="0.7"/>
+  <circle cx="215" cy="45" r="1.8" fill="#FFA500" opacity="0.6"/>
+  <circle cx="220" cy="8" r="2.2" fill="url(#goldGradient)" opacity="0.8"/>
+  <circle cx="225" cy="42" r="2" fill="#FFA500" opacity="0.5"/>
+</svg>

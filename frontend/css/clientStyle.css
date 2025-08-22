@@ -963,7 +963,108 @@ z-index: 999;
    cursor: pointer;
  }
  
- .message{
+ /* Mapbox Popup Styles */
+.mapboxgl-popup {
+  max-width: 320px !important;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.mapboxgl-popup-content {
+  padding: 16px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #f8f9fa !important;
+  border-bottom-color: #f8f9fa !important;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 18px !important;
+  color: #6c757d !important;
+  padding: 4px 8px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.mapboxgl-popup-close-button:hover {
+  background-color: #e9ecef !important;
+  color: #495057 !important;
+}
+
+/* Custom Popup Content Styles */
+.map-popup-content {
+  max-width: 280px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.popup-main-message {
+  font-weight: 600;
+  font-size: 15px;
+  color: #2c3e50;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #FFD52F;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.popup-location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup-location-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popup-label {
+  font-weight: 600;
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popup-value {
+  font-size: 13px;
+  color: #495057;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  max-width: 100%;
+  display: block;
+}
+
+/* Responsive popup adjustments */
+@media (max-width: 768px) {
+  .mapboxgl-popup {
+    max-width: 280px !important;
+  }
+  
+  .map-popup-content {
+    max-width: 240px;
+    font-size: 13px;
+  }
+  
+  .popup-main-message {
+    font-size: 14px;
+  }
+  
+  .popup-value {
+    font-size: 12px;
+  }
+}
+
+/* Legacy message styles for backward compatibility */
+.message{
    max-width:260px;
    max-height:300px;
    font-family: 'Open Sans', sans-serif;
@@ -998,7 +1099,7 @@ z-index: 999;
 /* == MAP SECTION ==*/
 .map_container{
    width: 80%;
-   height: 99%;
+   height: 99vh; /* Use viewport height for consistent sizing */
    position: relative;
    top:5px;
    right:5px;
@@ -1006,6 +1107,7 @@ z-index: 999;
    flex-direction: row;
    gap:10px;
    flex: 1; /* Fill remaining space */
+   min-height: 600px; /* Ensure minimum height */
 }
 
 #text-map{
@@ -1038,6 +1140,7 @@ z-index: 999;
   width: 100%;
   height: 100%;
   flex: 1; /* Fill the map container */
+  min-height: 600px; /* Ensure minimum height */
   }
 
   .mapboxgl-canvas{

@@ -215,7 +215,81 @@ const map = new mapboxgl.Map({
   container: "map",
   style: "mapbox://styles/mapbox/streets-v11",
   center: [28.5, -26.2], // approximate center of Gauteng
-  zoom: 8
+  zoom: 8,
+  // Limit map bounds to South Africa
+  maxBounds: [
+    [16.0, -35.0], // Southwest coordinates (min longitude, min latitude)
+    [33.0, -22.0]  // Northeast coordinates (max longitude, max latitude)
+  ],
+  // Prevent zooming out too far
+  minZoom: 5,
+  maxZoom: 18
+});
+
+// Fix for map sizing issues on desktop screens
+// Function to ensure map is properly sized
+function ensureMapSizing() {
+  if (map) {
+    // Force a resize to recalculate dimensions
+    map.resize();
+    
+    // Trigger a repaint
+    map.triggerRepaint();
+    
+    // Ensure the map container has proper dimensions
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      const computedStyle = window.getComputedStyle(mapContainer);
+      const width = computedStyle.width;
+      const height = computedStyle.height;
+      
+      // If dimensions are not properly set, force them
+      if (width === '0px' || height === '0px' || width === 'auto' || height === 'auto') {
+        mapContainer.style.width = '100%';
+        mapContainer.style.height = '100%';
+        map.resize();
+      }
+    }
+  }
+}
+
+// Trigger a resize event after the map loads to ensure proper sizing
+map.on("load", () => {
+  // Small delay to ensure DOM is fully ready
+  setTimeout(() => {
+    ensureMapSizing();
+  }, 100);
+  
+  // Additional resize after a longer delay to catch any late layout changes
+  setTimeout(() => {
+    ensureMapSizing();
+  }, 500);
+  
+  // One more resize after 1 second to ensure everything is settled
+  setTimeout(() => {
+    ensureMapSizing();
+  }, 1000);
+});
+
+// Add window resize listener to handle dynamic resizing
+window.addEventListener('resize', () => {
+  if (map) {
+    ensureMapSizing();
+  }
+});
+
+// Force resize on DOM content loaded
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    ensureMapSizing();
+  }, 200);
+});
+
+// Also trigger on window load to catch any late loading issues
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    ensureMapSizing();
+  }, 300);
 });
 
 // map.on("load", () => {
@@ -1550,10 +1624,18 @@ function placeMarkerGeneral(
   emojiMarker.innerHTML = imageTxt;
 
   const popupContent = `
-  <div class="message">
-      <div class="main">${message}</div>
-      <p class="currentLocation"> <strong>Current Location : </strong>${msg_currentLocation}</p>
-      <p class ="nextLocation"> <strong>Next Location : </strong>${msg_nextLocation}</p>
+  <div class="map-popup-content">
+      <div class="popup-main-message">${message}</div>
+      <div class="popup-location-info">
+          <div class="popup-location-item">
+              <span class="popup-label">Current Location:</span>
+              <span class="popup-value">${msg_currentLocation}</span>
+          </div>
+          <div class="popup-location-item">
+              <span class="popup-label">Next Location:</span>
+              <span class="popup-value">${msg_nextLocation}</span>
+          </div>
+      </div>
   </div>
 `;
 
@@ -1571,7 +1653,12 @@ function placeMarkerGeneral(
   // Add Marker
   newMarker = new mapboxgl.Marker({ element: emojiMarker, anchor: "bottom" }) // Adjust based on pin height
     .setLngLat([lng, lat])
-    .setPopup(new mapboxgl.Popup().setHTML(popupContent))
+    .setPopup(new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: '320px',
+      className: 'custom-mapbox-popup'
+    }).setHTML(popupContent))
     .addTo(map);
 
   //add to collector
