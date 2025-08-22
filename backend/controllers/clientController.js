@@ -102,7 +102,38 @@ export const findingPath = async(req,res)=>{
             return res.status(closestRouteInfo.status).send("Internal server error");
         }
     }else{
-        flag = false;
+        // NEW: Validate that all routes in the path actually exist
+        console.log("Dijkstra found path:", fastestPathResults.path);
+        const pathValidation = validatePathExists(formatedRoutes, fastestPathResults.path);
+        
+        if(pathValidation.isValid){
+            console.log("✅ Path validation successful, proceeding with route selection");
+            flag = false; // Path is valid, proceed
+        } else {
+            console.log(`❌ Path validation failed: Missing route between ${pathValidation.missingConnection.from} and ${pathValidation.missingConnection.to}`);
+            console.log("Trying next closest routes...");
+            
+            // Continue the while loop to try next closest routes
+            closestRouteInfo = await closestTaxiRanksF(arrObj, countObj, formatedRoutes, sourceCoords, destinationCoords, closestTaxiCount);
+            console.log(" closestRouteInfo in validation retry:" ,  closestRouteInfo);
+            
+            if(closestRouteInfo.status != 200){
+                console.error(closestRouteInfo.message);
+                return res.status(closestRouteInfo.status).send("Internal server error");
+            }
+            
+            // Update the graph with new routes and try again
+            const newGraph = insertInGraph(formatedRoutes);
+            // Update source and destination taxi ranks for next iteration
+            const newRanksIDs = closestRouteInfo.value.closestTaxiRanks.result;
+            if(sourceCoords.longitude > destinationCoords.longitude){
+                sourceTaxiRankRank = newRanksIDs.firstR_taxiRankSource;
+                destinationTaxiRank = newRanksIDs.secR_taxiRankDestination;
+            }else if(sourceCoords.longitude < destinationCoords.longitude){
+                sourceTaxiRankRank = newRanksIDs.firstR_taxiRankDestination;
+                destinationTaxiRank = newRanksIDs.secR_taxiRankSource;
+            }
+        }
     }
 }
 
@@ -111,6 +142,7 @@ export const findingPath = async(req,res)=>{
 
     //get The Taxi TaxiRank 
     const chosenTaxiRanks = await getChosenTaxiTanks( fastestPathResults.path );
+    console.log("Chosen taxi ranks : " , chosenTaxiRanks);
 
     if(chosenTaxiRanks === null || chosenTaxiRanks.length === 0){
         console.log("chosenTaxiRanks is null or has length of zero");
@@ -1111,6 +1143,44 @@ function routesConnectionCheck(firstR_trSource ,firstR_trDest  , secR_trSource ,
     return {flag:false , commonTaxiR_ID:-1};
 }
 
+function validatePathExists(formatedRoutes, taxiRankPath) {
+    console.log("Validating path:", taxiRankPath);
+    
+    // Check each consecutive pair of taxi ranks in the path
+    for (let i = 0; i < taxiRankPath.length - 1; i++) {
+        const currentTaxiRank = Number(taxiRankPath[i]);
+        const nextTaxiRank = Number(taxiRankPath[i + 1]);
+        
+        console.log(`Checking connection: ${currentTaxiRank} → ${nextTaxiRank}`);
+        
+        // Look for a route that connects these two taxi ranks
+        const routeExists = formatedRoutes.some(route => {
+            const routeSource = route.TaxiRankStart_ID;
+            const routeDest = route.TaxiRankDest_ID;
+            
+            // Check both directions (since routes are bidirectional)
+            return (routeSource === currentTaxiRank && routeDest === nextTaxiRank) ||
+                   (routeSource === nextTaxiRank && routeDest === currentTaxiRank);
+        });
+        
+        if (!routeExists) {
+            console.log(`❌ No route found between taxi ranks ${currentTaxiRank} and ${nextTaxiRank}`);
+            return {
+                isValid: false,
+                missingConnection: {
+                    from: currentTaxiRank,
+                    to: nextTaxiRank
+                }
+            };
+        }
+        
+        console.log(`✅ Route found between taxi ranks ${currentTaxiRank} and ${nextTaxiRank}`);
+    }
+    
+    console.log("✅ All connections in path are valid");
+    return { isValid: true };
+}
+
 function printGraphConnections(graph) {
     // Validate graph structure
     if (!graph || !graph.nodes || typeof graph.nodes !== 'object') {
@@ -1237,12 +1307,74 @@ return dynamicArr;
 
 }
 
+ function expandTaxiRanks(taxiRanks , routeCloseToSourceTRStart , routeCloseToSourceTRDest , routeCloseToDestTRStart , routeCloseToDestTRDest){
+
+    //Source and destination check
+    let sourceStart = false;
+    let sourceDest = false;
+
+    let destStart = false;
+    let destDest = false;
+
+    console.log("routeCloseToSourceTRStart converted to number : " , Number(routeCloseToSourceTRStart));
+    console.log("routeCloseToSourceTRDest converted to number : " , Number(routeCloseToSourceTRDest));
+    console.log("routeCloseToDestTRStart converted to number : " , Number(routeCloseToDestTRStart));
+    console.log("routeCloseToDestTRDest converted to number : " , Number(routeCloseToDestTRDest));
+    
+
+    taxiRanks.forEach((taxiRank)=>{
+        if(Number(taxiRank) === Number(routeCloseToSourceTRStart)){
+            sourceStart = true;
+        }
+        if(Number(taxiRank) === Number(routeCloseToSourceTRDest)){
+            sourceDest = true;
+        }
+
+
+        if(Number(taxiRank) === Number(routeCloseToDestTRStart)){
+            destStart = true;
+        }
+        if(Number(taxiRank) === Number(routeCloseToDestTRDest)){
+            destDest = true;
+        }
+    });
+
+
+    //source modification
+    if(sourceStart === false){
+        taxiRanks.unshift(`${routeCloseToSourceTRStart}`);
+    }
+
+    if(sourceDest === false){
+        taxiRanks.unshift(`${routeCloseToSourceTRDest}`);
+    }
+
+    //destination modification
+    if(destStart === false){
+        taxiRanks.push(`${routeCloseToDestTRStart}`);
+    }
+
+    if(destDest === false){
+        taxiRanks.push(`${routeCloseToDestTRDest}`);
+    }
+
+    return taxiRanks;
+
+}
+
+
 function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToDest){
 
     let chosenRoutes = [];
     let isSourceLoop = false ;
     let isDestLoop = false;
     let properTaxiRankList = [];
+    
+    console.log("=== getChosenRoutes DEBUG ===");
+    console.log("Taxi ranks path:", taxiRanks);
+    console.log("Source route:", routeCloseToSource.name, "TaxiRanks:", routeCloseToSource.TaxiRankStart_ID, "→", routeCloseToSource.TaxiRankDest_ID);
+    console.log("Dest route:", routeCloseToDest.name, "TaxiRanks:", routeCloseToDest.TaxiRankStart_ID, "→", routeCloseToDest.TaxiRankDest_ID);
+    
     if(routes === null|| taxiRanks === null){
         console.log("Routes or pathRouteIds is null");
         return null;
@@ -1253,9 +1385,9 @@ function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToD
         return null;
     }
 
-    //check if it is a loop case 
-        //add to chosen routes
-        chosenRoutes.push(routeCloseToSource);
+    // ESSENTIAL: Add the closest route to source so user can walk to it
+    console.log("Adding source route for user access:", routeCloseToSource.name);
+    chosenRoutes.push(routeCloseToSource);
 
     if(routeCloseToSource.route_type == "Loop"){
         isSourceLoop = true;
@@ -1265,7 +1397,11 @@ function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToD
         isDestLoop = true;
     }
 
-    //refactoring the list in taxiRanks [FALSE IS WHAT WE ARE LOOKING FOR]
+    console.log("isSourceLoop : " , isSourceLoop);
+    console.log("isDestLoop : " , isDestLoop);
+    taxiRanks = expandTaxiRanks(taxiRanks , routeCloseToSource.TaxiRankStart_ID , routeCloseToSource.TaxiRankDest_ID , routeCloseToDest.TaxiRankStart_ID , routeCloseToDest.TaxiRankDest_ID);
+    console.log("taxiRanks : " , taxiRanks);
+    // Get the taxi ranks that need connecting routes (excluding source and destination)
     if(isSourceLoop === false && isDestLoop === false){
         for(let i = 1 ; i < taxiRanks.length-1 ; i++){
             properTaxiRankList.push(taxiRanks[i]);
@@ -1284,34 +1420,40 @@ function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToD
         }
     }
 
+    console.log("Taxi ranks needing connections:", properTaxiRankList);
 
-
-
+    // Find connecting routes between consecutive taxi ranks
     for(let i = 0; i < properTaxiRankList.length-1 ; i++){
         const source =  Number(properTaxiRankList[i]);
         const destination = Number(properTaxiRankList[i+1]);
+        
+        console.log(`Looking for route connecting: ${source} → ${destination}`);
 
+        let connectingRouteFound = false;
         routes.forEach((route)=>{
             const routeSource = route.TaxiRankStart_ID ;
             const routeDestination  = route.TaxiRankDest_ID;
 
-            //source check first
-            if(routeSource === source){
-                if(destination === routeDestination){
-                    chosenRoutes.push(route);
-                }
-            }else if(routeDestination === source){
-                if(routeSource === destination){
-                    chosenRoutes.push(route);
-                }
+            // Check both directions (bidirectional routes)
+            if((routeSource === source && destination === routeDestination) ||
+               (routeDestination === source && routeSource === destination)){
+                console.log(`✅ Found connecting route: ${route.name} (${routeSource} → ${routeDestination})`);
+                chosenRoutes.push(route);
+                connectingRouteFound = true;
             }
         });
+        
+        if(!connectingRouteFound){
+            console.log(`❌ No connecting route found between ${source} and ${destination}`);
+            return []; // Return empty if no connection found
+        }
     }
 
-//add to chosen routes for destination
-chosenRoutes.push(routeCloseToDest);
+    // ESSENTIAL: Add the closest route to destination so user can walk from it
+    console.log("Adding destination route for user access:", routeCloseToDest.name);
+    chosenRoutes.push(routeCloseToDest);
     
-
+    console.log("Final chosen routes:", chosenRoutes.map(r => `${r.name} (${r.TaxiRankStart_ID}→${r.TaxiRankDest_ID})`));
     return chosenRoutes;
 }
 
