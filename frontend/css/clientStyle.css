@@ -216,7 +216,7 @@ body {
 #ui_container{
    position: relative;
    width:20%;
-   height:90%;
+   height:100%;
    overflow-y: auto;
    display: flex;
    flex-direction: column;
@@ -298,6 +298,7 @@ body {
     top: 100%;
     bottom: 0;
     width: 100%;
+    width: 100vw;
     height: 30%;  /* Small height for collapsed state */
     transform: translateY(-100%);
     overflow-y: scroll; 
@@ -799,10 +800,12 @@ z-index: 999;
 
 /* Feedback Modal Styles */
 .feedbackModal {
-  min-width: 500px;
+  min-width: 300px; /* Reduced from 500px for mobile */
   max-width: 600px;
+  width: 90vw; /* Use viewport width for mobile */
   max-height: 80vh;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .feedbackForm {
@@ -885,6 +888,65 @@ z-index: 999;
 
 .feedbackForm .btn.no:hover {
   background: #e9ecef;
+}
+
+/* Mobile responsive styles for feedback modal */
+@media (max-width: 768px) {
+  .feedbackModal {
+    min-width: 280px;
+    width: 95vw;
+    max-width: 95vw;
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .feedbackForm {
+    margin-top: 15px;
+  }
+  
+  .feedbackForm .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .feedbackForm input,
+  .feedbackForm select,
+  .feedbackForm textarea {
+    padding: 8px;
+    font-size: 16px; /* Better for mobile touch */
+  }
+  
+  .feedbackForm .btnContainer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .feedbackForm .btn {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .feedbackModal {
+    min-width: 250px;
+    width: 98vw;
+    max-width: 98vw;
+    margin: 5px;
+    padding: 10px;
+  }
+  
+  .feedbackForm input,
+  .feedbackForm select,
+  .feedbackForm textarea {
+    padding: 10px; /* Larger touch targets */
+    font-size: 16px;
+  }
+  
+  .feedbackForm .btn {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
 }
 
 /* Route list (price division) */
@@ -1284,11 +1346,11 @@ z-index: 999;
 /* Mobile Responsive Design */
 @media (max-width: 768px) {
   .onboarding-modal {
-    padding: 10px;
+    padding: 0px;
   }
   
   .onboarding-content {
-    max-width: 100%;
+    max-width: 98%;
     max-height: 95vh;
     border-radius: 16px;
   }
@@ -1418,7 +1480,7 @@ z-index: 999;
 /* == MAP SECTION ==*/
 .map_container{
    width: 80%;
-   height: 99vh; /* Use viewport height for consistent sizing */
+   height: 99%; /* Use viewport height for consistent sizing */
    position: relative;
    top:5px;
    right:5px;
