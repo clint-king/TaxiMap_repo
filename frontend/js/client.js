@@ -1062,6 +1062,30 @@ function getDeviceInfo() {
     return 'Desktop';
 }
 
+
+function checkLastRouteBounded(lastRoute , destIsFullyBounded , listOfRoutesLength , listOfRoutes){
+  //return true means Full length
+  //return false means not full length (length - 1)
+  console.log("lastRoute : " , lastRoute);
+  console.log("destIsFullyBounded : " , destIsFullyBounded);
+
+  if(lastRoute.route_type === 'Loop'){
+    if(listOfRoutesLength === 2){
+      if(listOfRoutes[0].id === listOfRoutes[1].id){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if(destIsFullyBounded === true){
+    return false;
+  }else{
+    return true;
+  }
+}
+
+
 //sending search information
 async function sendsearchInfo() {
   if (allMarkersPlaced() === true) {
@@ -1255,9 +1279,30 @@ async function sendsearchInfo() {
           dataReceived.chosenTaxiRanks
         );
 
-        for (let i = 0; i < taxiRanksLength - 1; i++) {
+
+        const isFullLength = checkLastRouteBounded(listOfRoutes[listOfRoutes.length - 1] , dataReceived.destIsFullyBounded , listOfRoutes.length , listOfRoutes);
+        console.log("isFullLength : " , isFullLength);
+        console.log("listOfRoutes.length : " , listOfRoutes.length);
+        console.log("Routes : " , listOfRoutes);
+        let modifiedLength;
+        if(isFullLength === true){
+          modifiedLength = taxiRanksLength;
+        }else{
+          modifiedLength = taxiRanksLength - 1;
+        }
+
+        for (let i = 0; i < modifiedLength; i++) {
           let taxiRank = dataReceived.chosenTaxiRanks[i];
-          let nextTaxiRank = dataReceived.chosenTaxiRanks[i + 1];
+
+          let destMessage;
+          if(i+1 === modifiedLength){
+            destMessage = `Next location is where you get off the Taxi:  ${destAdress}`
+          }else{
+            let nextTaxiRank = dataReceived.chosenTaxiRanks[i + 1];
+            destMessage = `${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`
+          }
+
+
           placeMarkerGeneral(
             taxiRank.location_coord.longitude,
             taxiRank.location_coord.latitude,
@@ -1265,30 +1310,13 @@ async function sendsearchInfo() {
             ">>",
             " Take a Taxi that is going to the Next Location(Walk to the Next Location if the Path is in dots)",
             `${taxiRank.address}, [TaxiRank : ${taxiRank.name}] `,
-            `${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`
+            destMessage
           );
           textDirectionAddresses.push(
             `${taxiRank.address}, [TaxiRank : ${taxiRank.name}]`
           );
         }
 
-        // //Last TaxiRank
-
-        if(listOfRoutes.length <= 2){
-        const lastTaxiRank = taxiRanksLength - 1;
-        placeMarkerGeneral(
-          dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.longitude,
-          dataReceived.chosenTaxiRanks[lastTaxiRank].location_coord.latitude,
-          "taxiRank",
-          ">>",
-          "Message",
-          `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`,
-          `${destAdress}`
-        );
-        textDirectionAddresses.push(
-          `${dataReceived.chosenTaxiRanks[lastTaxiRank].address}, [TaxiRank : ${dataReceived.chosenTaxiRanks[lastTaxiRank].name}]`
-        );
-        }
        
         //store stop adress
         textDirectionAddresses.push(destAdress);

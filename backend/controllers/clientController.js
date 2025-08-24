@@ -150,8 +150,9 @@ export const findingPath = async(req,res)=>{
     }
 
     //Get paths from the Ids of TaxiRanks provided by [fastestPathResults]
-    const chosenRoutes = getChosenRoutes(formatedRoutes , fastestPathResults.path , closestRouteInfo.value.routeCloseToSource.closestRoute, closestRouteInfo.value.routeCloseToDest.closestRoute);
+    const {chosenRoutes  , destIsFullyBounded} = getChosenRoutes(formatedRoutes , fastestPathResults.path , closestRouteInfo.value.routeCloseToSource.closestRoute, closestRouteInfo.value.routeCloseToDest.closestRoute);
     console.log("Chosen routes : " , chosenRoutes);
+    console.log("destIsFullyBounded from getChosenRoutes : " , destIsFullyBounded);
     if(chosenRoutes.length === 0){
         console.log("Could not get the chosen routes in [getChosenRoutes]=>[findingPath]");
         return res.status(400).send("Internal server error");
@@ -188,7 +189,8 @@ export const findingPath = async(req,res)=>{
         routes: chosenRoutes,
         prices:priceCollectionO2,
         directions:directionsO2,
-        chosenTaxiRanks:chosenTaxiRanks
+        chosenTaxiRanks:chosenTaxiRanks,
+        destIsFullyBounded:destIsFullyBounded
     });
 }
 
@@ -668,6 +670,9 @@ function reverseCoordinates(coords) {
 async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sourceCoords , destinationCoords){
     console.log("Routes have common taxiRanks");
 
+    console.log("routeCloseToSource in shortPath: " , routeCloseToSource);
+    console.log("routeCloseToDest in shortPath: " , routeCloseToDest);
+
     //price 
     let priceCollectionO1;
     //get directions
@@ -693,15 +698,20 @@ async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sour
     }
    
       //get The Taxi TaxiRank 
-       const formedTaxiIds = [`${ranksIDs.firstR_taxiRankSource}` , `${ranksIDs.firstR_taxiRankDestination}` , `${ranksIDs.secR_taxiRankSource}` ];
+       const formedTaxiIds = taxiRanksfilterForShortPath(ranksIDs.firstR_taxiRankSource , ranksIDs.firstR_taxiRankDestination , ranksIDs.secR_taxiRankSource , ranksIDs.secR_taxiRankDestination);
+       console.log("formedTaxiIds : ", formedTaxiIds);
        const chosenTaxiRanks1 = await getChosenTaxiTanks(formedTaxiIds);
    
        if(chosenTaxiRanks1 === null || chosenTaxiRanks1.length === 0){
            console.log("chosenTaxiRanks is null or has length of zero");
            return {status:400, result:"Internal server error"};
        }
-   
 
+
+       //get typesOfBounded Start and Dest routes (Fully Bounded Means it has two of its TaxiRanks in the routes list)
+       const  destIsFullyBounded = ShortRouteBoundedRouteCheck(formedTaxiIds , routeCloseToDest.closestRoute.TaxiRankStart_ID , routeCloseToDest.closestRoute.TaxiRankDest_ID);
+
+       console.log("destIsFullyBounded : " , destIsFullyBounded);
        //modify directions
 
        fixRouteDirections(directionsO1 , sourceCoords , destinationCoords);
@@ -714,7 +724,8 @@ async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sour
                routes: [routeCloseToSource.closestRoute ,routeCloseToDest.closestRoute],
                prices:priceCollectionO1,
                directions:directionsO1,
-               chosenTaxiRanks:chosenTaxiRanks1
+               chosenTaxiRanks:chosenTaxiRanks1,
+               destIsFullyBounded:destIsFullyBounded
            } };
 }
 
@@ -1004,12 +1015,13 @@ async function getChosenTaxiTanks(path) {
     
 
     // `FROM TaxiRank ID IN(${placeholders})` is incorrect SQL
-    const query = `SELECT name, location_coord, address FROM taxirank WHERE ID IN (${placeholders})`;
+    const query = `SELECT name, location_coord, address FROM taxirank WHERE ID IN (${placeholders})  ORDER BY FIELD(ID, ${placeholders})`;
 
     let db;
     try {
+        const params = [...intArray, ...intArray]; 
         db = await poolDb.getConnection();
-        const [result] = await db.query(query, intArray); // no need to wrap intArray in another array
+        const [result] = await db.query(query, params); // no need to wrap intArray in another array
 
         if (!result || result.length === 0) {
             console.log("Result from database query has length of zero [getChosenTaxiTanks]");
@@ -1142,6 +1154,38 @@ function routesConnectionCheck(firstR_trSource ,firstR_trDest  , secR_trSource ,
 
     return {flag:false , commonTaxiR_ID:-1};
 }
+
+function taxiRanksfilterForShortPath(firstR_trSource ,firstR_trDest  , secR_trSource , secR_trDest ){
+
+    if(!firstR_trSource || !firstR_trDest || !secR_trSource || !secR_trDest){
+        console.log("Invalid Argument [routesConnectionCheck()]");
+        return {flag:false , commonTaxiR_ID:-1};
+    }
+
+    let arr = [];
+    // first check
+    if(firstR_trSource === secR_trSource){
+         arr = [ firstR_trDest ,firstR_trSource ,secR_trDest];
+    }else if(firstR_trSource === secR_trDest){
+        arr = [ firstR_trDest ,firstR_trSource ,secR_trSource];
+    }else if(firstR_trDest === secR_trSource){
+        arr = [ firstR_trSource ,firstR_trDest ,secR_trDest];
+    }else{
+//if(firstR_trDest === secR_trDest)
+       arr = [ firstR_trSource ,firstR_trDest ,secR_trSource]; 
+    }
+
+    return removeDuplicatesToStrings(arr);
+}
+
+function removeDuplicatesToStrings(arr) {
+    const seen = new Set();
+    return arr.filter(num => {
+      if (seen.has(num)) return false;
+      seen.add(num);
+      return true;
+    }).map(num => String(num)); // convert numbers to strings
+  }
 
 function validatePathExists(formatedRoutes, taxiRankPath) {
     console.log("Validating path:", taxiRankPath);
@@ -1316,11 +1360,14 @@ return dynamicArr;
     let destStart = false;
     let destDest = false;
 
+    //get typesOfBounded Start and Dest routes (Fullly Bounded Means it has two of its TaxiRanks in the routes list)
+    let destIsFullyBounded = true;
+
     console.log("routeCloseToSourceTRStart converted to number : " , Number(routeCloseToSourceTRStart));
     console.log("routeCloseToSourceTRDest converted to number : " , Number(routeCloseToSourceTRDest));
     console.log("routeCloseToDestTRStart converted to number : " , Number(routeCloseToDestTRStart));
     console.log("routeCloseToDestTRDest converted to number : " , Number(routeCloseToDestTRDest));
-    
+
 
     taxiRanks.forEach((taxiRank)=>{
         if(Number(taxiRank) === Number(routeCloseToSourceTRStart)){
@@ -1358,8 +1405,44 @@ return dynamicArr;
         taxiRanks.push(`${routeCloseToDestTRDest}`);
     }
 
-    return taxiRanks;
+    //fully bounded check
+    if(destStart === false || destDest === false){
+        destIsFullyBounded = false;
+    }
 
+    const newTaxiRanks = [...taxiRanks];
+    return {newTaxiRanks  , destIsFullyBounded};
+
+}
+function ShortRouteBoundedRouteCheck(taxiRanks , routeCloseToDestTRStart , routeCloseToDestTRDest){
+
+     let destStart = false;
+    let destDest = false;
+    //get typesOfBounded Start and Dest routes (Fullly Bounded Means it has two of its TaxiRanks in the routes list)
+    let destIsFullyBounded = true;
+
+    console.log("routeCloseToDestTRStart before conversion  : " , routeCloseToDestTRStart);
+    console.log("routeCloseToDestTRDest before conversion  : " , routeCloseToDestTRDest);
+
+    console.log("routeCloseToDestTRStart converted to number : " , Number(routeCloseToDestTRStart));
+    console.log("routeCloseToDestTRDest converted to number : " , Number(routeCloseToDestTRDest));
+
+
+    taxiRanks.forEach((taxiRank)=>{
+        if(Number(taxiRank) === Number(routeCloseToDestTRStart)){
+            destStart = true;
+        }
+        if(Number(taxiRank) === Number(routeCloseToDestTRDest)){
+            destDest = true;
+        }
+    });
+
+    //fully bounded check
+    if(destStart === false || destDest === false){
+        destIsFullyBounded = false;
+    }
+
+    return destIsFullyBounded;
 }
 
 
@@ -1399,7 +1482,8 @@ function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToD
 
     console.log("isSourceLoop : " , isSourceLoop);
     console.log("isDestLoop : " , isDestLoop);
-    taxiRanks = expandTaxiRanks(taxiRanks , routeCloseToSource.TaxiRankStart_ID , routeCloseToSource.TaxiRankDest_ID , routeCloseToDest.TaxiRankStart_ID , routeCloseToDest.TaxiRankDest_ID);
+    const {newTaxiRanks  , destIsFullyBounded} = expandTaxiRanks(taxiRanks , routeCloseToSource.TaxiRankStart_ID , routeCloseToSource.TaxiRankDest_ID , routeCloseToDest.TaxiRankStart_ID , routeCloseToDest.TaxiRankDest_ID);
+    taxiRanks = newTaxiRanks;
     console.log("taxiRanks : " , taxiRanks);
     // Get the taxi ranks that need connecting routes (excluding source and destination)
     if(isSourceLoop === false && isDestLoop === false){
@@ -1454,7 +1538,7 @@ function getChosenRoutes(routes , taxiRanks , routeCloseToSource , routeCloseToD
     chosenRoutes.push(routeCloseToDest);
     
     console.log("Final chosen routes:", chosenRoutes.map(r => `${r.name} (${r.TaxiRankStart_ID}→${r.TaxiRankDest_ID})`));
-    return chosenRoutes;
+    return {chosenRoutes , destIsFullyBounded};
 }
 
 function PriceCalc(chosenRoutes){
