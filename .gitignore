@@ -1,1 +1,18 @@
 node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+*.env
+
+# Backend environment files
+backend/config/*.env
+backend/config/development.env
+backend/config/production.env
+
+# Frontend environment files
+frontend/.env*
