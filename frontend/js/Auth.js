@@ -59,6 +59,8 @@ if (signupSubmit) {
         name: signupName.value,
         email: signupEmail.value.trim(),
         password: signupPassword.value
+      }, {
+        withCredentials: true
       });
       
       // Clear form inputs
@@ -246,6 +248,8 @@ const handleForgotPassword = async (event) => {
   try {
     const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
       email: email
+    }, {
+      withCredentials: true
     });
     
     if (response.data.success) {
