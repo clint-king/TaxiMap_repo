@@ -15,11 +15,16 @@ axios.interceptors.response.use(
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             console.log('Session expired detected by interceptor');
+            console.log('Error details:', error.response.status, error.response.data);
+            console.log('Current path:', window.location.pathname);
             
             // Check if user profile exists in localStorage (user is logged in)
             const userProfile = localStorage.getItem('userProfile');
+            console.log('User profile exists:', !!userProfile);
+            
             if (!userProfile) {
                 // No user profile, redirect to login
+                console.log('No user profile found, redirecting to login');
                 window.location.href = '/login.html';
                 return Promise.reject(error);
             }
@@ -28,6 +33,7 @@ axios.interceptors.response.use(
             // Only redirect if we're not on the login page and the error is persistent
             const currentPath = window.location.pathname;
             if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
+                console.log('User profile exists but request failed, clearing storage and redirecting');
                 // Clear local storage
                 localStorage.removeItem('userProfile');
                 localStorage.removeItem('activityLog');
@@ -45,6 +51,8 @@ axios.interceptors.response.use(
                 setTimeout(() => {
                     window.location.href = '/index.html';
                 }, 2000);
+            } else {
+                console.log('On login/signup page, not redirecting');
             }
         }
         return Promise.reject(error);
@@ -377,6 +385,14 @@ window.addEventListener('load', () => {
 
 // Delay HighlightRoutes to ensure user is properly authenticated
 setTimeout(() => {
+  // Add authentication check before making the request
+  const userProfile = localStorage.getItem('userProfile');
+  if (!userProfile) {
+    console.log('No user profile found, redirecting to login');
+    window.location.href = '/login.html';
+    return;
+  }
+  
   HighlightRoutes();
 }, 1000);
 
@@ -457,7 +473,16 @@ map.addSource(sourceId, { type: "geojson", data: mask });
     map.fitBounds(bounds, { padding: 50, maxZoom: 12, duration: 2000 });
 
   } catch (err) {
-    console.error(err);
+    console.error('Error in HighlightRoutes:', err);
+    
+    // Only redirect if it's an authentication error and we're not already on login page
+    if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
+        console.log('Authentication error in HighlightRoutes, redirecting to login');
+        window.location.href = '/login.html';
+      }
+    }
   }
 }
 
@@ -558,9 +583,15 @@ function checkFirstTimeUser() {
   const userProfile = localStorage.getItem('userProfile');
   const hasSeenOnboarding = localStorage.getItem('teksimap_onboarding_completed');
   
+  console.log('checkFirstTimeUser - userProfile exists:', !!userProfile);
+  console.log('checkFirstTimeUser - hasSeenOnboarding:', hasSeenOnboarding);
+  
   // Only show onboarding if user has no profile AND hasn't seen onboarding
   if (!userProfile && !hasSeenOnboarding) {
+    console.log('Showing onboarding modal');
     showOnboardingModal();
+  } else {
+    console.log('Not showing onboarding modal');
   }
 }
 
@@ -781,8 +812,13 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     // Only show onboarding if user is properly authenticated
     const userProfile = localStorage.getItem('userProfile');
+    console.log('DOMContentLoaded - User profile exists:', !!userProfile);
+    
     if (userProfile) {
+      console.log('Checking for first-time user...');
       checkFirstTimeUser();
+    } else {
+      console.log('No user profile found, not showing onboarding');
     }
   }, 1500);
 });
