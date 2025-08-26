@@ -1,24 +1,17 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import config from "../config/configurations.js";
 
-// Dynamic email configuration function
-const getEmailConfig = () => {
-  return {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASS || 'your-app-password'
-    }
-  };
-};
-
-// Create transporter dynamically
-const createTransporter = () => {
-  const emailConfig = getEmailConfig();
-  return nodemailer.createTransport(emailConfig);
-};
+// Create transporter using config
+const transporter = nodemailer.createTransport({
+  host: config.email.host,
+  port: config.email.port,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: config.email.user,
+    pass: config.email.pass
+  }
+});
 
 // Generate verification token
 export const generateVerificationToken = () => {
@@ -27,16 +20,10 @@ export const generateVerificationToken = () => {
 
 // Send verification email
 export const sendVerificationEmail = async (email, name, verificationToken) => {
-  const emailConfig = getEmailConfig();
-  const transporter = createTransporter();
-  
-  console.log("[FROM EMAIL SERVICE] app email : " , emailConfig.auth.user);
-  console.log("[FROM EMAIL SERVICE] app email pass : " , emailConfig.auth.pass);
-
-  const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/verify-email.html?token=${verificationToken}`;
+  const verificationUrl = `${config.frontend.url}/verify-email.html?token=${verificationToken}`;
   
   const mailOptions = {
-    from: `"TeksiMap" <${emailConfig.auth.user}>`,
+    from: `"TeksiMap" <${config.email.user}>`,
     to: email,
     subject: 'Verify Your Email - TeksiMap',
     html: `
@@ -102,13 +89,10 @@ export const sendVerificationEmail = async (email, name, verificationToken) => {
 
 // Send password reset email
 export const sendPasswordResetEmail = async (email, name, resetToken) => {
-  const emailConfig = getEmailConfig();
-  const transporter = createTransporter();
-  
-  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/reset-password.html?token=${resetToken}`;
+  const resetUrl = `${config.frontend.url}/reset-password.html?token=${resetToken}`;
   
   const mailOptions = {
-    from: `"TeksiMap" <${emailConfig.auth.user}>`,
+    from: `"TeksiMap" <${config.email.user}>`,
     to: email,
     subject: 'Reset Your Password - TeksiMap',
     html: `
@@ -175,7 +159,6 @@ export const sendPasswordResetEmail = async (email, name, resetToken) => {
 // Test email configuration
 export const testEmailConnection = async () => {
   try {
-    const transporter = createTransporter();
     await transporter.verify();
     console.log('Email server connection verified successfully');
     return true;

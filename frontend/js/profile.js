@@ -253,25 +253,45 @@ class ProfileManager {
         const formData = new FormData(event.target);
         const data = Object.fromEntries(formData);
 
+        // Filter out empty values and construct name properly
+        const updateData = {};
+        
+        // Handle name construction - only include non-empty parts
+        const firstName = data.firstName?.trim() || '';
+        const lastName = data.lastName?.trim() || '';
+        if (firstName || lastName) {
+            updateData.name = `${firstName} ${lastName}`.trim();
+        }
+        
+        // Only include non-empty values
+        if (data.username?.trim()) {
+            updateData.username = data.username.trim();
+        }
+        if (data.phone?.trim()) {
+            updateData.phone = data.phone.trim();
+        }
+        if (data.location?.trim()) {
+            updateData.location = data.location.trim();
+        }
+        
+        // Always include profile picture if it exists
+        if (this.currentUser.profilePicture) {
+            updateData.profile_picture = this.currentUser.profilePicture;
+        }
+
         try {
             // Update user data in backend
-            const response = await axios.put(`${BASE_URL}/auth/profile`, {
-                name: `${data.firstName} ${data.lastName}`,
-                username: data.username,
-                phone: data.phone,
-                location: data.location,
-                profile_picture: this.currentUser.profilePicture
-            });
+            const response = await axios.put(`${BASE_URL}/auth/profile`, updateData);
 
             if (response.data.success) {
-                // Update local user data
+                // Update local user data with new values, keeping existing ones for empty fields
                 this.currentUser = {
                     ...this.currentUser,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    username: data.username,
-                    phone: data.phone,
-                    location: data.location
+                    firstName: firstName || this.currentUser.firstName || '',
+                    lastName: lastName || this.currentUser.lastName || '',
+                    username: data.username?.trim() || this.currentUser.username || '',
+                    phone: data.phone?.trim() || this.currentUser.phone || '',
+                    location: data.location?.trim() || this.currentUser.location || ''
                 };
                 
                 this.saveUserData();

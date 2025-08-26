@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>Our Contributors - TeksiMap</title>
+  <title>Our Contributors - TeksiMap</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -17,8 +17,32 @@
       },
     };
   </script>
+  <style>
+    /* Additional mobile-friendly styles */
+    @media (max-width: 768px) {
+      .contributors-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0 1rem;
+      }
+      
+      .contributor-card {
+        margin-bottom: 1rem;
+      }
+      
+      footer .grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+      }
+      
+      footer .flex-col {
+        align-items: center;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
   <nav class="bg-white shadow-md fixed w-full z-50">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -77,10 +101,10 @@
   </nav>
 
   <!-- Contributors Section -->
-  <section class="pt-28 pb-20 bg-white">
+  <section class="pt-28 pb-20 bg-white flex-grow">
     <div class="container mx-auto px-4">
       <h1 class="text-3xl font-bold text-center mb-12">Meet Our Contributors</h1>
-             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 contributors-grid">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 contributors-grid">
 
         <!-- Contributor Card Example -->
         <!-- Contributor 1 -->
@@ -328,7 +352,7 @@
   </section>
 
   <!-- Footer-->
-  <footer class="bg-gray-900 text-white py-12">
+  <footer class="bg-gray-900 text-white py-12 mt-auto">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
@@ -399,6 +423,6 @@
     </div>
   </footer>
 
-     <script src="../js/contributors.js"></script>
+     <script type="module" src="../js/contributors.js"></script>
 </body>
 </html>

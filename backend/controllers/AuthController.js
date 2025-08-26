@@ -2,6 +2,7 @@ import User from '../models/userModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { generateVerificationToken, sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import config from "../config/configurations.js";
 
 
 export const signup = async (req, res) => {
@@ -94,13 +95,13 @@ export const login = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.ID, user_type: user.user_type }, 'secret_key', { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.ID, user_type: user.user_type }, config.jwt.secret, { expiresIn: '1h' });
 
     res.cookie('token', token, {
-      httpOnly: true,
-      secure: true, // set to true in production (requires HTTPS)
-      sameSite: 'None',
-      maxAge: 3600000
+      httpOnly: config.cookies.httpOnly,
+      secure: config.cookies.secure,
+      sameSite: config.cookies.sameSite,
+      maxAge: config.cookies.maxAge
     });
 
     // Log successful login activity
@@ -487,7 +488,7 @@ export const forgotPassword = async (req, res) => {
 
     if (!isEmailConfigured) {
       // Development mode: Return token directly
-      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password.html?token=${resetToken}`;
+      const resetUrl = `${config.frontend.url}/reset-password.html?token=${resetToken}`;
       res.json({ 
         success: true, 
         message: 'Password reset link generated successfully!',
@@ -497,7 +498,7 @@ export const forgotPassword = async (req, res) => {
       });
     } else {
       // Production mode: Send email
-      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password.html?token=${resetToken}`;
+      const resetUrl = `${config.frontend.url}/reset-password.html?token=${resetToken}`;
       const emailResult = await sendPasswordResetEmail(email, user.name, resetUrl);
       
       if (emailResult.success) {

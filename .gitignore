@@ -1,18 +1,9 @@
 node_modules/
-
-# Environment files
-.env
-.env.local
-.env.development
-.env.production
-.env.staging
-.env.test
-*.env
+docker-compose.yml
+docker-compose.dev.yml
+docker-compose.prod.yml
 
 # Backend environment files
-backend/config/*.env
-backend/config/development.env
-backend/config/production.env
+backend/.env.development
+backend/.env.production
 
-# Frontend environment files
-frontend/.env*

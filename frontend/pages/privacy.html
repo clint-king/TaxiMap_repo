@@ -41,8 +41,36 @@ tailwind.config = {
   href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
 />
 <link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Additional mobile-friendly styles */
+  @media (max-width: 768px) {
+    .content-section {
+      padding: 1rem;
+    }
+    
+    .content-section h2 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .content-section p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    
+    footer .grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      text-align: center;
+    }
+    
+    footer .flex-col {
+      align-items: center;
+    }
+  }
+</style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 min-h-screen flex flex-col">
 <nav class="bg-white shadow-md fixed w-full z-50">
   <div class="container mx-auto px-4 py-3">
     <div class="flex justify-between items-center">
@@ -123,7 +151,7 @@ tailwind.config = {
       </div>
     </div>
 </nav>
-<main class="pt-24 pb-20">
+<main class="pt-24 pb-20 flex-grow">
   <div class="container mx-auto px-4">
     <div class="max-w-4xl mx-auto">
       <div class="mb-12">
@@ -322,8 +350,8 @@ tailwind.config = {
     </div>
   </div>
 </main>
-<footer class="bg-gray-900 text-white py-12">
- <div class="container mx-auto px-4">
+<footer class="bg-gray-900 text-white py-12 mt-auto">
+  <div class="container mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
       <div class="md:col-span-1">
         <a href="index.html" class="text-2xl font-['Pacifico'] text-primary mb-4 inline-block"

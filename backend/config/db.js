@@ -1,33 +1,21 @@
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-
-dotenv.config();
+import config from "./configurations.js";
 
 
-let pool = null;
-console.log("NODE_ENV in db.js: " , process.env.NODE_ENV);
-//if(process.env.NODE_ENV == 'development'){
-//   pool = await mysql.createPool({
-//   host: 'localhost',
-//   user: 'TaxiMap_database',
-//   password: '12345',
-//   database: 'taximapdb',
-//   waitForConnections: true,
-//   connectionLimit: 10,  // for example, adjust as needed
-//   queueLimit: 0
-// });
-// }else{
- pool = await mysql.createPool({
-  host: 'turntable.proxy.rlwy.net',
-  port: 16301,
-  user: 'root',
-  password: 'BQGqyvPPCWSjCHKCIjRQsaobCexagOdQ',
-  database: 'railway',
+
+console.log("config.env : " , config.env);
+
+ const pool = await mysql.createPool({
+  host: config.database.host,
+  port:config.database.port,
+  user: config.database.user,
+  password:config.database.password,
+  database: config.database.name,
   waitForConnections: true,
   connectionLimit: 10,  // for example, adjust as needed
   queueLimit: 0
 });
-//}
+
 
 
 console.log("Connection to database is Successful");

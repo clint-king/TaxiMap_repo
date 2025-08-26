@@ -8,25 +8,21 @@ import contactRoutes from './routes/contactRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
+import config from "./config/configurations.js"; 
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load environment variables from .env file
-dotenv.config({ path: './config/development.env' });
 
-const port = process.env.PORT || 3000 ;
+const port = config.port || 3000 ;
 const app = express();
 
 //middleware
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({
-    origin: ["http://localhost:5174","http://localhost:5173", "https://www.teksimap.co.za" ], // Allow Vite frontend
-    methods: "GET, POST, PUT, DELETE",
-    credentials: true  // Allow cookies & auth headers
+  origin: [config.frontend.url, "https://www.teksimap.co.za"], // Use config for frontend URL
+  credentials: true
 }));
-app.use(express.urlencoded({limit:'50mb', extended: true }));
-app.use(express.json({limit:'50mb'}));
 app.use(cookieParser());
 
 // Serve static files from uploads directory
@@ -45,5 +41,9 @@ app.use("/contact", contactRoutes);
 
 
 app.listen(port , ()=>{
-    console.log(`Server running on server ${port}`);
+    console.log(`🚀 Server running on port ${port}`);
+    console.log(`🌍 Environment: ${config.env}`);
+    console.log(`🔗 Frontend URL: ${config.frontend.url}`);
+    console.log(`📊 Database: ${config.database.host}:${config.database.port}/${config.database.name}`);
+    console.log('✅ Server is ready to handle requests!');
 })

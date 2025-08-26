@@ -1,18 +1,17 @@
 import nodemailer from 'nodemailer';
+import config from "../config/configurations.js";
 
-// Configure email transporter
+// Create transporter using config
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: config.email.host,
+  port: config.email.port,
+  secure: false,
   auth: {
-    user: 'fiqaroute@gmail.com', // Your company email
-    pass: process.env.EMAIL_PASSWORD // Use EMAIL_PASS if available, fallback to EMAIL_PASSWORD
-  },
-  tls: {
-    rejectUnauthorized: false
+    user: config.email.user,
+    pass: config.email.pass
   }
 });
 
-console.log("process.env.EMAIL_PASSWORD", process.env.EMAIL_PASSWORD);
 
 // Send contact form email
 export const sendContactEmail = async (req, res) => {
@@ -26,8 +25,8 @@ export const sendContactEmail = async (req, res) => {
 
     // Email content
     const mailOptions = {
-      from: 'fiqaroute@gmail.com',
-      to: 'fiqaroute@gmail.com',
+      from: config.email.user, // Use config for company email
+      to: config.email.user, // Use config for company email
       subject: `New Contact Form Submission from ${name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

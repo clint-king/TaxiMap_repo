@@ -1,7 +1,7 @@
 // routes/authRoutes.js
 import express from "express";
 import  { body } from 'express-validator';
-
+import config from "../config/configurations.js";
 
 //controller
 import {signup , login, verifyEmail, resendVerificationEmail, getProfile, updateProfile, changePassword, changeEmail, forgotPassword, resetPassword, getUserActivities, getUserActivityStats, createUserActivity} from "../controllers/AuthController.js";
@@ -43,7 +43,11 @@ router.put("/change-email", authenticateUser, changeEmail);
 
 // Logout route
 router.post("/logout", (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: config.cookies.httpOnly,
+    secure: config.cookies.secure,
+    sameSite: config.cookies.sameSite
+  });
   res.json({ message: 'Logged out successfully' });
 });
 

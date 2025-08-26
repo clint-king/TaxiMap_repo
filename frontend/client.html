@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Temporarily disabled CSP for testing
     <meta http-equiv="Content-Security-Policy" content="
     script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://api.mapbox.com https://cdn.jsdelivr.net;
     frame-src 'self';
@@ -12,7 +11,6 @@
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
     img-src 'self' data: blob: https://api.mapbox.com;
 ">
-    -->
 
     <title>Multi-Taxi Path with Mapbox</title>
     <link
@@ -37,7 +35,7 @@
     <link rel="stylesheet" href="./css/clientStyle.css" />
     <link rel="stylesheet" href="./css/popup.css" />
   </head>
-  <body>
+  <body class="has-map-layout">
     <div class="wrapper">
       <!-- Top navigation bar -->
       <nav class="topnav">

@@ -114,10 +114,42 @@ const updateUserProfile = async (userId, profileData) => {
     console.log("profile_picture:", profile_picture);
     console.log("userId:", userId);
     
-    const [result] = await db.execute(
-      'UPDATE users SET name = ?, username = ?, phone = ?, location = ?, profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [name, username, phone, location, profile_picture, userId]
-    );
+    // Build dynamic update query based on provided fields
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (username !== undefined) {
+      updateFields.push('username = ?');
+      updateValues.push(username);
+    }
+    if (phone !== undefined) {
+      updateFields.push('phone = ?');
+      updateValues.push(phone);
+    }
+    if (location !== undefined) {
+      updateFields.push('location = ?');
+      updateValues.push(location);
+    }
+    if (profile_picture !== undefined) {
+      updateFields.push('profile_picture = ?');
+      updateValues.push(profile_picture);
+    }
+    
+    // Always update the updated_at timestamp
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
+    
+    // Add userId to the end for WHERE clause
+    updateValues.push(userId);
+    
+    const updateQuery = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+    console.log("Update query:", updateQuery);
+    console.log("Update values:", updateValues);
+    
+    const [result] = await db.execute(updateQuery, updateValues);
     return result.affectedRows > 0;
   }catch(error){
     console.log(error);
@@ -272,9 +304,10 @@ const getUserActivities = async (userId, limit = 50, offset = 0) => {
     console.log('Types:', { userId: typeof userId, limit: typeof limit, offset: typeof offset });
     
     db = await poolDb.getConnection();
-    const [rows] = await db.execute(
+    // Use query instead of execute for LIMIT and OFFSET
+    const [rows] = await db.query(
       'SELECT * FROM user_activities WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
-      [userId, limit, offset]
+      [userId, parseInt(limit), parseInt(offset)]
     );
     return rows;
   } catch (error) {
