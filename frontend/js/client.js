@@ -15,23 +15,37 @@ axios.interceptors.response.use(
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
             console.log('Session expired detected by interceptor');
-            // Clear local storage
-            localStorage.removeItem('userProfile');
-            localStorage.removeItem('activityLog');
             
-            // Show message to user
-            const messageContainer = document.getElementById('messageContainer');
-            if (messageContainer) {
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message error';
-                messageElement.textContent = 'Session expired. Redirecting to home page...';
-                messageContainer.appendChild(messageElement);
+            // Check if user profile exists in localStorage (user is logged in)
+            const userProfile = localStorage.getItem('userProfile');
+            if (!userProfile) {
+                // No user profile, redirect to login
+                window.location.href = '/login.html';
+                return Promise.reject(error);
             }
             
-            // Redirect to home page after a short delay
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 2000);
+            // User profile exists but request failed - this might be a session expiration
+            // Only redirect if we're not on the login page and the error is persistent
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
+                // Clear local storage
+                localStorage.removeItem('userProfile');
+                localStorage.removeItem('activityLog');
+                
+                // Show message to user
+                const messageContainer = document.getElementById('messageContainer');
+                if (messageContainer) {
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message error';
+                    messageElement.textContent = 'Session expired. Redirecting to home page...';
+                    messageContainer.appendChild(messageElement);
+                }
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+            }
         }
         return Promise.reject(error);
     }
@@ -361,7 +375,10 @@ window.addEventListener('load', () => {
 // });
 
 
-HighlightRoutes();
+// Delay HighlightRoutes to ensure user is properly authenticated
+setTimeout(() => {
+  HighlightRoutes();
+}, 1000);
 
 async function HighlightRoutes() {
   try {
@@ -760,10 +777,14 @@ function closeOnboardingModal() {
 
 // Check for first-time user when page loads
 document.addEventListener('DOMContentLoaded', () => {
-  // Small delay to ensure everything is loaded
+  // Small delay to ensure everything is loaded and user is authenticated
   setTimeout(() => {
-    checkFirstTimeUser();
-  }, 1000);
+    // Only show onboarding if user is properly authenticated
+    const userProfile = localStorage.getItem('userProfile');
+    if (userProfile) {
+      checkFirstTimeUser();
+    }
+  }, 1500);
 });
 
 sourceSearchBtn.addEventListener("click", async (e) => {
