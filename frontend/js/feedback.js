@@ -2,6 +2,8 @@ import axios from "axios";
 import popup from "./popup.js";
 import { BASE_URL } from "./AddressSelection.js";
 
+axios.defaults.withCredentials = true;
+
 // Feedback modal elements
 const feedbackBtn = document.querySelector(".feedbackBtn");
 const feedbackModal = document.querySelector(".feedbackModal");

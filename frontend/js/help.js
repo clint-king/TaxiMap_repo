@@ -2,6 +2,8 @@ import axios from "axios";
 import popup from "./popup.js";
 import { BASE_URL } from "./AddressSelection.js";
 
+axios.defaults.withCredentials = true;
+
 // Help page elements
 const categorySelect = document.querySelector("#categorySelect");
 const faqList = document.querySelector("#faqList");

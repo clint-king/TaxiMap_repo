@@ -1,6 +1,8 @@
 import  axios  from 'axios';
 import {BASE_URL} from "./AddressSelection.js";
 
+axios.defaults.withCredentials = true;
+
 let currentMarker = null; 
 
 

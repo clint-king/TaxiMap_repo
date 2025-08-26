@@ -29,9 +29,7 @@ async function verifyEmail(token) {
   try {
     showLoading(true);
     
-    const response = await axios.get(`${BASE_URL}/auth/verify/${token}`, {
-      withCredentials: true
-    });
+    const response = await axios.get(`${BASE_URL}/auth/verify/${token}`);
     
     showLoading(false);
     showSuccess(response.data.message);
@@ -71,8 +69,6 @@ async function resendVerification() {
     
     const response = await axios.post(`${BASE_URL}/auth/resend-verification`, {
       email: email
-    }, {
-      withCredentials: true
     });
     
     showLoading(false);

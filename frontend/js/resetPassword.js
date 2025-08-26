@@ -107,8 +107,6 @@ class ResetPasswordManager {
       const response = await axios.post(`${BASE_URL}/auth/reset-password`, {
         token: cleanToken,
         newPassword: newPassword
-      }, {
-        withCredentials: true
       });
       
       if (response.data.success) {

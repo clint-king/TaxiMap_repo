@@ -1158,6 +1158,8 @@ async function sendsearchInfo() {
                 user_agent: navigator.userAgent,
                 device_info: getDeviceInfo(),
                 location_info: null
+            }, {
+                withCredentials: true
             });
         } catch (error) {
             console.error('Error logging route search activity:', error);
