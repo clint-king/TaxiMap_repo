@@ -536,8 +536,13 @@ initFeedback();
 
 // First-time user onboarding
 function checkFirstTimeUser() {
+  // Only show onboarding for truly new users
+  // Check if user has a profile (meaning they've logged in before)
+  const userProfile = localStorage.getItem('userProfile');
   const hasSeenOnboarding = localStorage.getItem('teksimap_onboarding_completed');
-  if (!hasSeenOnboarding) {
+  
+  // Only show onboarding if user has no profile AND hasn't seen onboarding
+  if (!userProfile && !hasSeenOnboarding) {
     showOnboardingModal();
   }
 }

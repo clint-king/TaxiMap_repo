@@ -1,4 +1,6 @@
 // Contact form functionality
+import { BASE_URL } from './AddressSelection.js';
+
 class ContactForm {
   constructor() {
     this.form = document.getElementById('contact-form');
@@ -30,7 +32,7 @@ class ContactForm {
     this.showLoading();
 
     try {
-      const response = await fetch('http://localhost:3000/contact/send', {
+      const response = await fetch(`${BASE_URL}/contact/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

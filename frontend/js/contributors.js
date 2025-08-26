@@ -1,4 +1,6 @@
 // Contributors page functionality
+import { BASE_URL } from './AddressSelection.js';
+
 class ContributorsManager {
   constructor() {
     this.contributors = [];
@@ -12,7 +14,7 @@ class ContributorsManager {
 
   async loadContributors() {
     try {
-      const response = await fetch('http://localhost:3000/admin/contributors');
+      const response = await fetch(`${BASE_URL}/admin/contributors`);
       if (response.ok) {
         const data = await response.json();
         this.contributors = data.contributors || [];
