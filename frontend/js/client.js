@@ -657,30 +657,70 @@ function showOnboardingModal() {
         </div>
 
         <div class="onboarding-step" data-step="4">
-          <h3>🤝 Contribute to Your Community</h3>
-          <p><strong>Help make TeksiMap better for everyone!</strong></p>
+          <h3>🤝 How Crowdsourcing Works</h3>
+          <p><strong>Help build the most comprehensive taxi map in South Africa!</strong></p>
           <div class="onboarding-feature">
-            <span class="feature-icon">🗺️</span>
-            <span>Suggest new routes that aren't in the app yet</span>
+            <span class="feature-icon">📝</span>
+            <span><strong>Submit Routes:</strong> Add new taxi routes you know about</span>
           </div>
           <div class="onboarding-feature">
-            <span class="feature-icon">👥</span>
-            <span>Help locals get directions to places they want to visit</span>
+            <span class="feature-icon">📍</span>
+            <span><strong>Map Taxi Ranks:</strong> Mark pickup and drop-off locations</span>
           </div>
           <div class="onboarding-feature">
-            <span class="feature-icon">🚕</span>
-            <span>Make taxi travel easier for your community</span>
+            <span class="feature-icon">💰</span>
+            <span><strong>Update Prices:</strong> Keep fare information current</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">📸</span>
+            <span><strong>Add Photos:</strong> Upload images of taxi ranks and route signs</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">✅</span>
+            <span><strong>Verification Process:</strong> Our team reviews and approves submissions</span>
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">🏆</span>
-            <span>Get featured on our Contributors page as a thank you!</span>
+            <span><strong>Recognition:</strong> Get featured on our Contributors page</span>
           </div>
           <p style="margin-top: 16px; font-style: italic; color: #6c757d;">
-            Access the contribution feature from the main menu to start helping your community today!
+            <strong>How it works:</strong> Click "Contribute" in the menu → Draw your route → Add details → Submit for approval → Help thousands of commuters!
           </p>
         </div>
 
         <div class="onboarding-step" data-step="5">
+          <h3>📋 Crowdsourcing Process</h3>
+          <p><strong>Here's exactly how you can contribute:</strong></p>
+          <div class="onboarding-feature">
+            <span class="feature-icon">1️⃣</span>
+            <span><strong>Access:</strong> Click "Contribute" in the main menu</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">2️⃣</span>
+            <span><strong>Draw Route:</strong> Click on the map to create your route path</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">3️⃣</span>
+            <span><strong>Add Details:</strong> Enter route number, fare, and description</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">4️⃣</span>
+            <span><strong>Upload Photos:</strong> Add images of taxi ranks or route signs</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">5️⃣</span>
+            <span><strong>Submit:</strong> Send for review by our verification team</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">6️⃣</span>
+            <span><strong>Approval:</strong> Get notified when your route goes live (24-48 hours)</span>
+          </div>
+          <p style="margin-top: 16px; font-style: italic; color: #6c757d;">
+            <strong>Your contributions help thousands of commuters find their way!</strong>
+          </p>
+        </div>
+
+        <div class="onboarding-step" data-step="6">
           <h3>🎉 You're All Set!</h3>
           <p>Start exploring taxi routes in South Africa. Remember:</p>
           <ul>
@@ -700,6 +740,7 @@ function showOnboardingModal() {
           <span class="progress-dot" data-step="3"></span>
           <span class="progress-dot" data-step="4"></span>
           <span class="progress-dot" data-step="5"></span>
+          <span class="progress-dot" data-step="6"></span>
         </div>
         <div class="onboarding-buttons">
           <button class="onboarding-btn secondary" id="prevBtn" style="display: none;">Previous</button>
@@ -737,7 +778,7 @@ function showOnboardingModal() {
 }
 
 let currentOnboardingStep = 1;
-const totalOnboardingSteps = 5;
+const totalOnboardingSteps = 6;
 
 function showOnboardingStep(step) {
   // Hide all steps
