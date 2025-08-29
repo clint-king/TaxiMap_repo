@@ -311,13 +311,15 @@ export const getRoute = async(req,res)=>{
         await db.beginTransaction();
         const [resultRoute] = await db.query('SELECT * FROM routes WHERE name = ?' ,[uniqueRouteName]);
 
+        if(!resultRoute || resultRoute.length === 0){
+            return res.status(404).send("No Route found");
+        }
+
         const [resultMiniRoutes] = await db.query('SELECT * FROM miniroute WHERE Route_ID = ?' , [resultRoute[0].ID]);
 
         const [resultDirection] = await db.query('SELECT * FROM directionroute WHERE Route_ID = ?' , [resultRoute[0].ID]);
 
-        if(!resultRoute){
-            return res.status(404).send("No Route found");
-        }else if(!resultMiniRoutes){
+        if(!resultMiniRoutes){
             return res.status(404).send("No MiniRoutes found");
         }else if(!resultDirection){
             return res.status(404).send("No directions found");
@@ -335,7 +337,7 @@ export const getRoute = async(req,res)=>{
 
     }catch(error){
         console.log(error);
-        await connection.rollback(); 
+        if (db) await db.rollback(); 
         return res.status(500).send("Server Error");
         }finally{
         if (db) db.release(); // release connection back to the pool
@@ -344,12 +346,13 @@ export const getRoute = async(req,res)=>{
 //Delete TaxiRank
 export const deleteTaxiRank = async(req,res)=>{
     let db;
-    
+    try {
+        const { taxiRankID } = req.body;
+        
         if (!taxiRankID) {
             return res.status(400).json({ message: "taxiRankID is required" });
         }
 
-        try{
         db = await poolDb.getConnection();
         await db.beginTransaction();
 

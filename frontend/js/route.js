@@ -2,8 +2,6 @@ import  axios  from 'axios';
 import * as turf from '@turf/turf';
 import {BASE_URL} from "./AddressSelection.js";
 
-axios.defaults.withCredentials = true;
-
 // Create separate axios instance for external API calls (like Mapbox)
 const externalClient = axios.create({
   withCredentials: false // No credentials for external APIs

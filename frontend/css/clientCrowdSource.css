@@ -5,6 +5,9 @@
      background-color: #ffffff;
      height: 100vh;
      overflow: hidden;
+     /* Prevent mobile browser address bar from affecting layout */
+     position: fixed;
+     width: 100%;
     }
    /* == NAVIGATION BAR == */
 
@@ -1262,10 +1265,12 @@ textarea{
        background: white;
        z-index: 1000;
        transition: left 0.3s ease;
-       overflow-y: auto;
+       overflow-y: scroll;
        overflow-x: hidden;
        padding: 1rem;
        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+       -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
+       scroll-behavior: smooth;
      }
 
     #ui_container.sidebar-open {
@@ -1400,6 +1405,7 @@ textarea{
    .sendBtn {
      padding: 15px 60px;
      font-size: 0.9rem;
+     margin-bottom: 20px; /* Add bottom margin to ensure it's not cut off */
    }
 
    .saveSession {
@@ -1427,6 +1433,28 @@ textarea{
        height: 180px;
        top: 50%;
        left: 50%;
+     }
+
+     /* Additional mobile fixes for UI container scrolling */
+     #ui_container {
+       /* Ensure proper scrolling on mobile devices */
+       -webkit-overflow-scrolling: touch;
+       scroll-behavior: smooth;
+       /* Prevent horizontal scrolling */
+       overflow-x: hidden;
+       /* Ensure content doesn't get cut off */
+       padding-bottom: 20px;
+       /* Ensure proper height calculation on mobile */
+       height: calc(100vh - 55px - env(safe-area-inset-bottom));
+       /* Force scroll to work */
+       overflow-y: scroll !important;
+     }
+
+     /* Ensure the send button is always visible */
+     .sendBtn {
+       position: relative;
+       z-index: 10;
+       margin-bottom: 20px;
      }
 
      .menu {
