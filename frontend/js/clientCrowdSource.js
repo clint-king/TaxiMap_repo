@@ -329,7 +329,7 @@ const map = new mapboxgl.Map({
             }); 
 
             //createTaxiRank
-            createdStartTaxiRank = new TaxiRank(taxiRank.name ,taxiRank.province , taxiRank.address , 1,taxiRank.coord.longitude , taxiRank.coord.latitude , false , taxiRank.ID );
+            
           
           // Clear suggestions and update input value
           searchBox.value =address;
@@ -1567,6 +1567,7 @@ function showSuggestions(query ,  isGroup1) {
             coords[1] = currentCoords;
 
             map.flyTo({ center: currentCoords, zoom: 17 });
+            
              addClickListenerToMarker(destTaxiRMarker, async(e)=>{
               e.stopPropagation(); 
               if(isMarkersPlaced() && saveButtonActive === true){
@@ -1647,6 +1648,15 @@ async function fetchSuggestions(query) {
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
 
+          addClickListenerToMarker(startingTaxiRMarker, async(e)=>{
+            e.stopPropagation(); 
+           if(isMarkersPlaced() && saveButtonActive === true){
+             isStartingMarkerListining = true;
+             openFinalMarkerMenu(); 
+           } 
+         
+         }); 
+
           //approve the detection
           contextMenuDetection.startingTR = true;
 
@@ -1669,6 +1679,15 @@ async function fetchSuggestions(query) {
             .addTo(map);
 
           map.flyTo({ center: [longitude, latitude], zoom: 12 });
+
+          addClickListenerToMarker(destTaxiRMarker, async(e)=>{
+            e.stopPropagation(); 
+            if(isMarkersPlaced() && saveButtonActive === true){
+              openFinalMarkerMenu(); 
+              isStartingMarkerListining = false;
+            } 
+            
+          });
 
           //approve the detection
           contextMenuDetection.destTR = true;
