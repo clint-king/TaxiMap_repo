@@ -30,6 +30,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        environment: config.env,
+        uptime: process.uptime()
+    });
+});
+
 //route
 app.use("/admin", adminRoutes);
 app.use("/client" , clientRoutes);
