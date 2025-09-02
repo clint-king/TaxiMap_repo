@@ -34,23 +34,23 @@ axios.interceptors.response.use(
             const currentPath = window.location.pathname;
             if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
                 console.log('User profile exists but request failed, clearing storage and redirecting');
-                // Clear local storage
-                localStorage.removeItem('userProfile');
-                localStorage.removeItem('activityLog');
-                
-                // Show message to user
-                const messageContainer = document.getElementById('messageContainer');
-                if (messageContainer) {
-                    const messageElement = document.createElement('div');
-                    messageElement.className = 'message error';
-                    messageElement.textContent = 'Session expired. Redirecting to home page...';
-                    messageContainer.appendChild(messageElement);
-                }
-                
-                // Redirect to home page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
+            // Clear local storage
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activityLog');
+            
+            // Show message to user
+            const messageContainer = document.getElementById('messageContainer');
+            if (messageContainer) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message error';
+                messageElement.textContent = 'Session expired. Redirecting to home page...';
+                messageContainer.appendChild(messageElement);
+            }
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
             } else {
                 console.log('On login/signup page, not redirecting');
             }
@@ -1403,7 +1403,7 @@ async function sendsearchInfo() {
           if(i+1 === modifiedLength){
             destMessage = `Next location is where you get off the Taxi:  ${destAdress}`
           }else{
-            let nextTaxiRank = dataReceived.chosenTaxiRanks[i + 1];
+          let nextTaxiRank = dataReceived.chosenTaxiRanks[i + 1];
             destMessage = `${nextTaxiRank.address}, [TaxiRank :${nextTaxiRank.name}]`
           }
 
