@@ -373,7 +373,7 @@
     /* Clear Route menu - same size as new session menu */
     .menu.clearRoute {
       width: 380px;
-      height: 270px;
+      height: 320px;
       padding: 20px;
       box-sizing: border-box;
     }
@@ -1502,7 +1502,7 @@ textarea{
       /* Mobile adjustments for clear route menu */
       .menu.clearRoute {
         width: 320px;
-        height: 240px;
+        height: 290px;
         padding: 15px;
       }
 
