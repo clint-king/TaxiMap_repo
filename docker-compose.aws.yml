@@ -27,7 +27,7 @@ services:
       - EMAIL_HOST=${EMAIL_HOST}
       - EMAIL_PORT=${EMAIL_PORT}
       - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_PASS=${EMAIL_PASS}
       - EMAIL_FROM=${EMAIL_FROM:-noreply@teksimap.co.za}
       # AWS specific
       - AWS_REGION=${AWS_REGION:-us-east-1}
@@ -90,6 +90,7 @@ services:
         max-file: "3"
 
   # Nginx Reverse Proxy for AWS
+    # Nginx Reverse Proxy for AWS with SSL
   nginx:
     image: nginx:alpine
     container_name: teksimap_nginx_aws
@@ -98,8 +99,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.aws.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/nginx.production.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./backend/uploads:/var/www/uploads:ro
       - /var/log/teksimap/nginx:/var/log/nginx
     depends_on:
