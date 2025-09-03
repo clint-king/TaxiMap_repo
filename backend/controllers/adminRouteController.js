@@ -21,10 +21,10 @@ export const getPendingRoutes = async (req, res) => {
         ptr_start.location_coord as start_coords,
         ptr_end.name as end_rank_name,
         ptr_end.location_coord as end_coords
-      FROM PendingRoutes pr
+      FROM pendingroutes pr
       JOIN users u ON pr.user_id = u.ID
-      JOIN PendingTaxiRank ptr_start ON pr.start_rank_id = ptr_start.ID
-      JOIN PendingTaxiRank ptr_end ON pr.end_rank_id = ptr_end.ID
+      JOIN pendingtaxirank ptr_start ON pr.start_rank_id = ptr_start.ID
+      JOIN pendingtaxirank ptr_end ON pr.end_rank_id = ptr_end.ID
       WHERE pr.status = 'pending'
       ORDER BY pr.created_at ASC
     `;
@@ -61,10 +61,10 @@ export const getPendingRouteDetails = async (req, res) => {
         ptr_end.location_coord as end_coords,
         ptr_end.province as end_province,
         ptr_end.address as end_address
-      FROM PendingRoutes pr
+      FROM pendingroutes pr
       JOIN users u ON pr.user_id = u.ID
-      JOIN PendingTaxiRank ptr_start ON pr.start_rank_id = ptr_start.ID
-      JOIN PendingTaxiRank ptr_end ON pr.end_rank_id = ptr_end.ID
+      JOIN pendingtaxirank ptr_start ON pr.start_rank_id = ptr_start.ID
+      JOIN pendingtaxirank ptr_end ON pr.end_rank_id = ptr_end.ID
       WHERE pr.ID = ?
     `;
     
@@ -76,7 +76,7 @@ export const getPendingRouteDetails = async (req, res) => {
     
     // Get mini routes
     const miniRoutesQuery = `
-      SELECT * FROM PendingMiniRoutes 
+      SELECT * FROM pendingminiroutes 
       WHERE pending_route_id = ? 
       ORDER BY route_index
     `;
@@ -84,7 +84,7 @@ export const getPendingRouteDetails = async (req, res) => {
     
     // Get direction routes
     const directionRoutesQuery = `
-      SELECT * FROM PendingDirectionRoutes 
+      SELECT * FROM pendingdirectionroutes 
       WHERE pending_route_id = ? 
       ORDER BY direction_index
     `;
@@ -116,7 +116,7 @@ export const approveRoute = async (req, res) => {
     
     // Get the pending route details
     const [routeRows] = await db.execute(
-      'SELECT * FROM PendingRoutes WHERE ID = ? AND status = "pending"',
+      'SELECT * FROM pendingroutes WHERE ID = ? AND status = "pending"',
       [routeId]
     );
     
@@ -129,12 +129,12 @@ export const approveRoute = async (req, res) => {
     
     // Get taxi rank details
     const [startRankRows] = await db.execute(
-      'SELECT * FROM PendingTaxiRank WHERE ID = ?',
+      'SELECT * FROM pendingtaxirank WHERE ID = ?',
       [pendingRoute.start_rank_id]
     );
     
     const [endRankRows] = await db.execute(
-      'SELECT * FROM PendingTaxiRank WHERE ID = ?',
+      'SELECT * FROM pendingtaxirank WHERE ID = ?',
       [pendingRoute.end_rank_id]
     );
     
@@ -200,7 +200,7 @@ export const approveRoute = async (req, res) => {
     
     // Insert mini routes
     const [miniRoutes] = await db.execute(
-      'SELECT * FROM PendingMiniRoutes WHERE pending_route_id = ? ORDER BY route_index',
+      'SELECT * FROM pendingminiroutes WHERE pending_route_id = ? ORDER BY route_index',
       [routeId]
     );
     
@@ -213,7 +213,7 @@ export const approveRoute = async (req, res) => {
     
     // Insert direction routes
     const [directionRoutes] = await db.execute(
-      'SELECT * FROM PendingDirectionRoutes WHERE pending_route_id = ? ORDER BY direction_index',
+      'SELECT * FROM pendingdirectionroutes WHERE pending_route_id = ? ORDER BY direction_index',
       [routeId]
     );
     
@@ -245,7 +245,7 @@ export const approveRoute = async (req, res) => {
     
     // Update pending route status
     await db.execute(
-      'UPDATE PendingRoutes SET status = "approved" WHERE ID = ?',
+      'UPDATE pendingroutes SET status = "approved" WHERE ID = ?',
       [routeId]
     );
     
@@ -300,7 +300,7 @@ export const rejectRoute = async (req, res) => {
     db = await poolDb.getConnection();
     
     const [result] = await db.execute(
-      'UPDATE PendingRoutes SET status = "rejected" WHERE ID = ? AND status = "pending"',
+      'UPDATE pendingroutes SET status = "rejected" WHERE ID = ? AND status = "pending"',
       [routeId]
     );
     

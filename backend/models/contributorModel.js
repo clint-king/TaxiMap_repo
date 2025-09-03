@@ -14,7 +14,7 @@ const getAllContributors = async () => {
         c.created_at,
         u.email,
         u.username
-             FROM Contributors c
+             FROM contributors c
        LEFT JOIN users u ON c.user_id = u.ID
        WHERE c.status = 'active'
       ORDER BY c.routes_contributed DESC, c.created_at DESC
@@ -34,7 +34,7 @@ const getContributorByUserId = async (userId) => {
   let db;
   try {
     db = await poolDb.getConnection();
-    const query = 'SELECT * FROM Contributors WHERE user_id = ?';
+    const query = 'SELECT * FROM contributors WHERE user_id = ?';
     const [rows] = await db.execute(query, [userId]);
     return rows[0] || null;
   } catch (error) {
@@ -51,7 +51,7 @@ const createContributor = async (contributorData) => {
     db = await poolDb.getConnection();
     const { user_id, name, region } = contributorData;
     
-    const query = 'INSERT INTO Contributors (user_id, name, region) VALUES (?, ?, ?)';
+    const query = 'INSERT INTO contributors (user_id, name, region) VALUES (?, ?, ?)';
     const [result] = await db.execute(query, [user_id, name, region]);
     
     return result.insertId;
@@ -67,7 +67,7 @@ const updateContributorRoutes = async (userId, routesCount) => {
   let db;
   try {
     db = await poolDb.getConnection();
-    const query = 'UPDATE Contributors SET routes_contributed = routes_contributed + ? WHERE user_id = ?';
+    const query = 'UPDATE contributors SET routes_contributed = routes_contributed + ? WHERE user_id = ?';
     const [result] = await db.execute(query, [routesCount, userId]);
     return result.affectedRows > 0;
   } catch (error) {
@@ -93,9 +93,9 @@ const getPendingRoutesForUser = async (userId) => {
         pr.created_at,
         ptr_start.name as start_rank_name,
         ptr_end.name as end_rank_name
-      FROM PendingRoutes pr
-      JOIN PendingTaxiRank ptr_start ON pr.start_rank_id = ptr_start.ID
-      JOIN PendingTaxiRank ptr_end ON pr.end_rank_id = ptr_end.ID
+      FROM pendingroutes pr
+      JOIN pendingtaxirank ptr_start ON pr.start_rank_id = ptr_start.ID
+      JOIN pendingtaxirank ptr_end ON pr.end_rank_id = ptr_end.ID
       WHERE pr.user_id = ?
       ORDER BY pr.created_at DESC
     `;

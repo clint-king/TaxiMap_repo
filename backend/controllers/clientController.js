@@ -587,7 +587,7 @@ const checkExistingPendingTaxiRank = async (taxiRankName, coordinates) => {
         const coordinatesJson = JSON.stringify(coordinates);
         
         const query = `
-            SELECT * FROM PendingTaxiRank 
+            SELECT * FROM pendingtaxirank 
             WHERE name = ? 
             AND location_coord = ? 
             AND exist = true
