@@ -395,10 +395,6 @@
       document.addEventListener("DOMContentLoaded", () => {
         attachSearchToggle();
         moveSearchContainer();
-
-        if (window.innerWidth <= 768) {
-          dragHandle();
-        }
       });
 
       // Re-attach on window resize (for dynamic appearance of .searchSlider)
@@ -407,96 +403,13 @@
         if (window.innerWidth <= 768) {
           attachSearchToggle();
           textMapHeightAdj();
-          dragHandle();
+        
         }
 
         //ui container state
       });
 
-      function dragHandle() {
-        const uiContainer = document.getElementById("ui_container");
-        const dragHandle = document.querySelector(".drag-handle");
 
-        let startY = 0;
-        let currentY = 0;
-        let isDragging = false;
-
-        // Touch events for mobile
-        dragHandle.addEventListener("touchstart", (e) => {
-          e.preventDefault();
-          startY = e.touches[0].clientY;
-          isDragging = true;
-        });
-
-        dragHandle.addEventListener("touchmove", (e) => {
-          if (isDragging) {
-            e.preventDefault();
-            currentY = e.touches[0].clientY;
-          }
-        });
-
-        dragHandle.addEventListener("touchend", () => {
-          if (isDragging) {
-            handleDragEnd();
-          }
-        });
-
-        // Mouse events for desktop testing
-        dragHandle.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          startY = e.clientY;
-          isDragging = true;
-        });
-
-        document.addEventListener("mousemove", (e) => {
-          if (isDragging) {
-            currentY = e.clientY;
-          }
-        });
-
-        document.addEventListener("mouseup", () => {
-          if (isDragging) {
-            handleDragEnd();
-          }
-        });
-
-        function handleDragEnd() {
-          const deltaY = currentY - startY;
-
-          // Get current state
-          const isExpanded = uiContainer.classList.contains("expanded");
-          const isSemiExpanded = uiContainer.classList.contains("semi-expanded");
-          const isCollapsed = uiContainer.classList.contains("collapsed");
-
-          if (deltaY < -10) {
-            // Swipe up - expand
-            if (isCollapsed) {
-              // Collapsed -> Semi-expanded
-              uiContainer.classList.remove("collapsed");
-              uiContainer.classList.add("semi-expanded");
-            } else if (isSemiExpanded) {
-              // Semi-expanded -> Expanded
-              uiContainer.classList.remove("semi-expanded");
-              uiContainer.classList.add("expanded");
-            }
-          } else if (deltaY > 10) {
-            // Swipe down - collapse
-            if (isExpanded) {
-              // Expanded -> Semi-expanded
-              uiContainer.classList.remove("expanded");
-              uiContainer.classList.add("semi-expanded");
-            } else if (isSemiExpanded) {
-              // Semi-expanded -> Collapsed
-              uiContainer.classList.remove("semi-expanded");
-              uiContainer.classList.add("collapsed");
-            }
-          }
-
-          startY = 0;
-          currentY = 0;
-          isDragging = false;
-        }
-      }
     </script>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
