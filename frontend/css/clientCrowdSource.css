@@ -1258,7 +1258,7 @@ textarea{
          #ui_container {
        position: fixed;
        left: -100%;
-       top: 55px; /* Position below topnav */
+       /*top: 55px; /* Position below topnav */
        width: 85%;
        max-width: 350px;
        height: 100%; /*calc(100% - 55px);*/ /* Subtract topnav height */
