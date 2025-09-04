@@ -1,72 +1,66 @@
--- Create pending tables for route approval system
+-- Create pending tables for user contributions
+-- These tables store user-submitted data before admin approval
 
--- Pending TaxiRank table
-CREATE TABLE IF NOT EXISTS PendingTaxiRank (
+CREATE TABLE IF NOT EXISTS pendingtaxirank (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    location_coord JSON NOT NULL,
-    province VARCHAR(100),
+    location_coord POINT NOT NULL,
+    province VARCHAR(100) NOT NULL,
     address TEXT,
     exist BOOLEAN DEFAULT FALSE,
-    user_id BIGINT,
+    user_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_location (location_coord),
+    INDEX idx_province (province),
+    INDEX idx_user (user_id)
 );
 
--- Pending Routes table
-CREATE TABLE IF NOT EXISTS PendingRoutes (
+CREATE TABLE IF NOT EXISTS pendingroutes (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
     start_rank_id INT NOT NULL,
     end_rank_id INT NOT NULL,
-    route_type ENUM('straight', 'loop') NOT NULL,
-    travel_method VARCHAR(50) NOT NULL,
-    user_id BIGINT,
+    travelMethod VARCHAR(50) NOT NULL,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    user_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (start_rank_id) REFERENCES PendingTaxiRank(ID) ON DELETE CASCADE,
-    FOREIGN KEY (end_rank_id) REFERENCES PendingTaxiRank(ID) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (start_rank_id) REFERENCES pendingtaxirank(ID) ON DELETE CASCADE,
+    FOREIGN KEY (end_rank_id) REFERENCES pendingtaxirank(ID) ON DELETE CASCADE,
+    INDEX idx_status (status),
+    INDEX idx_user (user_id)
 );
 
--- Pending Mini Routes table
-CREATE TABLE IF NOT EXISTS PendingMiniRoutes (
+CREATE TABLE IF NOT EXISTS pendingminiroutes (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     pending_route_id INT NOT NULL,
-    message TEXT,
-    coords JSON NOT NULL,
     route_index INT NOT NULL,
+    coords POINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (pending_route_id) REFERENCES PendingRoutes(ID) ON DELETE CASCADE
+    FOREIGN KEY (pending_route_id) REFERENCES pendingroutes(ID) ON DELETE CASCADE,
+    INDEX idx_route (pending_route_id),
+    INDEX idx_index (route_index)
 );
 
--- Pending Direction Routes table
-CREATE TABLE IF NOT EXISTS PendingDirectionRoutes (
+CREATE TABLE IF NOT EXISTS pendingdirectionroutes (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     pending_route_id INT NOT NULL,
-    direction_coords JSON NOT NULL,
     direction_index INT NOT NULL,
+    coords POINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (pending_route_id) REFERENCES PendingRoutes(ID) ON DELETE CASCADE
+    FOREIGN KEY (pending_route_id) REFERENCES pendingroutes(ID) ON DELETE CASCADE,
+    INDEX idx_route (pending_route_id),
+    INDEX idx_index (direction_index)
 );
 
--- Contributors table to track dynamic contributors
-CREATE TABLE IF NOT EXISTS Contributors (
+CREATE TABLE IF NOT EXISTS contributors (
     ID INT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT,
-    name VARCHAR(255) NOT NULL,
-    region VARCHAR(255),
-    routes_contributed INT DEFAULT 0,
-    status ENUM('active', 'inactive') DEFAULT 'active',
+    user_id INT NOT NULL,
+    contribution_count INT DEFAULT 0,
+    total_approved INT DEFAULT 0,
+    total_rejected INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id)
 );
-
--- Insert default contributors (5 static ones)
-INSERT INTO Contributors (name, region, routes_contributed, status) VALUES
-('Thabo Baloyi', 'Johannesburg Routes', 28, 'active'),
-('Nomsa Mthembu', 'Durban Routes', 42, 'active'),
-('Lungile Ndlovu', 'Cape Town Routes', 35, 'active'),
-('Sipho Mbatha', 'Pretoria Routes', 23, 'active'),
-('Zanele Khumalo', 'East London Routes', 18, 'active');

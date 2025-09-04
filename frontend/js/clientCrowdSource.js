@@ -458,7 +458,7 @@ const map = new mapboxgl.Map({
     // Add right-click event listener for clear route context menu
     map.on('contextmenu', (e) => {
       e.preventDefault();
-      
+
       // Only show context menu if user is in drawing mode and has drawn something
       if (directionSession && routeMarkers.length > 0) {
         openClearRouteMenu();
@@ -1200,13 +1200,24 @@ function openFinalMarkerMenu(){
   }
 
   function clearCurrentRoute(){
-    // Remove the route line from the map
+    // Remove the route line from the map completely
     if (map.getLayer('route')) {
       map.removeLayer('route');
     }
     if (map.getSource('route')) {
       map.removeSource('route');
     }
+    
+    // Also remove any other route-related layers that might exist
+    const routeLayerIds = ['routeBehind', 'routeFoward'];
+    routeLayerIds.forEach(layerId => {
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+      if (map.getSource(layerId)) {
+        map.removeSource(layerId);
+      }
+    });
 
     // Remove route markers (waypoints) but keep starting and destination markers
     routeMarkers.forEach((marker) => {
@@ -1230,9 +1241,56 @@ function openFinalMarkerMenu(){
 
     // Reset route completion status
     isLoopRoutefinished = false;
+    
+    // Reset direction session to allow new route requests
+    directionSession = false;
+    
+    // Reset price display
+    selectedPrice.textContent = "0";
+    if (slider) {
+      slider.value = "0";
+    }
+    
+    // Clear any saved route objects that might interfere
+    if (savedCurrentRouteObj !== null) {
+      savedCurrentRouteObj = null;
+    }
+    
+    // Reset route object for new route
+    routeObj = new Route("1");
+    
+    // Clear message text area
+    if (messageTextArea) {
+      messageTextArea.value = "";
+    }
+    
+    // Clear global marker references that might interfere with new routes
+    globalMarkerBehind = null;
+    globalMarkerFoward = null;
+    markerChosenForRemoval = null;
+    markerChosenForEditing = null;
+    
+    // Reset route state variables
+    isStartingMarkerListining = true;
+    saveButtonActive = false;
+    
+    // Clear any temporary markers
+    if (newDraggableMarker) {
+      newDraggableMarker.remove();
+      newDraggableMarker = null;
+    }
 
     // Show success message
     popup.showSuccessPopup("Current route cleared successfully!", true);
+    
+    // Debug logging to help identify issues
+    console.log("Route cleared - Current state:");
+    console.log("routeMarkers length:", routeMarkers.length);
+    console.log("routeCoordinates length:", routeCoordinates.length);
+    console.log("coords length:", coords.length);
+    console.log("directionSession:", directionSession);
+    console.log("isLoopRoutefinished:", isLoopRoutefinished);
+    console.log("savedCurrentRouteObj:", savedCurrentRouteObj);
   }
 
  function createNewSession(){
@@ -1902,11 +1960,13 @@ function createCustomPointMarker(lngLat) {
     
   
 
-  
+
   //add a listener
   newMarker.getElement().addEventListener('contextmenu', (event)=>{
     event.preventDefault();
+    event.stopPropagation(); 
 
+    
     if(markerChosenForRemoval === null && markerChosenForEditing === null){
     openListMenu();
     markerChosenForRemoval = newMarker;

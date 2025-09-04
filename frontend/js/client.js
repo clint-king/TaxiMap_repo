@@ -314,74 +314,6 @@ window.addEventListener('load', () => {
   }, 300);
 });
 
-// map.on("load", () => {
-//   // Simplified Gauteng polygon (replace with real shape later)
-//   const gauteng = {
-//     "type": "Feature",
-//     "properties": { "name": "Gauteng" },
-//     "geometry": {
-//       "type": "Polygon",
-//       "coordinates": [[
-//         [27.5, -26.8],
-//         [28.5, -26.8],
-//         [28.5, -25.3],
-//         [27.5, -25.3],
-//         [27.5, -26.8]
-//       ]]
-//     }
-//   };
-
-//   // Mask polygon: full world minus Gauteng
-//   const mask = {
-//     "type": "Feature",
-//     "geometry": {
-//       "type": "Polygon",
-//       "coordinates": [
-//         [ // outer world boundary
-//           [-180, -90],
-//           [-180, 90],
-//           [180, 90],
-//           [180, -90],
-//           [-180, -90]
-//         ],
-//         gauteng.geometry.coordinates[0] // hole = Gauteng
-//       ]
-//     }
-//   };
-
-//   // Add mask layer (white opacity)
-//   map.addSource("mask", { type: "geojson", data: mask });
-//   map.addLayer({
-//     id: "mask-fill",
-//     type: "fill",
-//     source: "mask",
-//     paint: {
-//       "fill-color": "#ffffff",
-//       "fill-opacity": 0.7
-//     }
-//   });
-
-//   // Optional: add outline for Gauteng
-//   map.addSource("gauteng", { type: "geojson", data: gauteng });
-//   map.addLayer({
-//     id: "gauteng-outline",
-//     type: "line",
-//     source: "gauteng",
-//     paint: {
-//       "line-color": "#000",
-//       "line-width": 2
-//     }
-//   });
-
-//   // Fit map to Gauteng bounds
-//   const coordinates = gauteng.geometry.coordinates[0];
-//   const bounds = coordinates.reduce(
-//     (b, coord) => b.extend(coord),
-//     new mapboxgl.LngLatBounds(coordinates[0], coordinates[0])
-//   );
-//   map.fitBounds(bounds, { padding: 20 });
-// });
-
 
 // Delay HighlightRoutes to ensure user is properly authenticated
 setTimeout(() => {
@@ -504,7 +436,13 @@ map.on("load", () => {
 
     //prevents user from marking location without clicking from or To
     if (toggleMap.get("to") === 0 && toggleMap.get("from") === 0) {
-      showPopup("Click from or to buttons , to Mark", false);
+
+      // Ignore clicks on custom markers or popups
+      if (e.originalEvent.target.closest('.custom-mapbox, .mapboxgl-popup')) {
+        return;
+      }
+
+      showPopup("Click from or to buttons , to Mark a location", false);
       return;
     }
     const { lng, lat } = e.lngLat; // Extract longitude and latitude
