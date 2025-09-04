@@ -33,6 +33,8 @@ services:
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      # Frontend URL
+      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./backend/uploads:/app/uploads
       - /var/log/teksimap:/app/logs

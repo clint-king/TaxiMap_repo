@@ -42,7 +42,7 @@ const config = {
   frontend: {
     url: process.env.FRONTEND_URL || "http://localhost:5173"
   },
-  
+
   // Social Authentication Credentials
   social: {
     google: {
@@ -79,6 +79,7 @@ const config = {
 // Print config values to console
 console.log('🔧 BACKEND CONFIGURATION VALUES:');
 console.log('================================');
+console.log("Pure FRONTEND_URL :" , process.env.FRONTEND_URL);
 console.log(`Environment: ${config.env}`);
 console.log(`Port: ${config.port}`);
 console.log(`Frontend URL: ${config.frontend.url}`);
