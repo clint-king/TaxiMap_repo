@@ -1261,7 +1261,7 @@ textarea{
        top: 55px; /* Position below topnav */
        width: 85%;
        max-width: 350px;
-       height: calc(100vh - 55px); /* Subtract topnav height */
+       height: 100%; /*calc(100% - 55px);*/ /* Subtract topnav height */
        background: white;
        z-index: 1000;
        transition: left 0.3s ease;
