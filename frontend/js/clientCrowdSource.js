@@ -829,6 +829,9 @@ routeAddButton.addEventListener('click' , ()=>{
 
   //manages saving of unfinished route
   savedCurrentRouteObj = null;
+
+  //turn on draw bar for new route
+  turnOnDrawBar(true);
   }else{
     console.log("Route object is null");
     return null;
