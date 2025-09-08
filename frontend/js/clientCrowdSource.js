@@ -669,6 +669,16 @@ menu.style.visibility = "visible";
 chosenTRCreation.starting = true;
 chosenTRCreation.none = false;
 chosenTRCreation.dest = false;
+
+// Close mobile sidebar when creating new taxi rank
+if (window.innerWidth <= 768) {
+  const uiContainer = document.getElementById('ui_container');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  if (uiContainer && sidebarToggle) {
+    uiContainer.classList.remove('sidebar-open');
+    sidebarToggle.classList.remove('hidden');
+  }
+}
 });
 
  destTRButton.addEventListener("click" , ()=>{
@@ -677,6 +687,16 @@ chosenTRCreation.dest = false;
  chosenTRCreation.starting = false;
  chosenTRCreation.none = false;
  chosenTRCreation.dest = true;
+
+ // Close mobile sidebar when creating new taxi rank
+ if (window.innerWidth <= 768) {
+   const uiContainer = document.getElementById('ui_container');
+   const sidebarToggle = document.getElementById('sidebarToggle');
+   if (uiContainer && sidebarToggle) {
+     uiContainer.classList.remove('sidebar-open');
+     sidebarToggle.classList.remove('hidden');
+   }
+ }
  });
 
  //Lock icon click event for new session
@@ -702,6 +722,16 @@ saveTRInfo.addEventListener("click" , ()=>{
   taxiRankInfoCover.style.visibility = "visible";
   //release on route
 routeInfoCover.style.visibility = "hidden";
+
+ // Close mobile sidebar when creating new taxi rank
+ if (window.innerWidth <= 768) {
+  const uiContainer = document.getElementById('ui_container');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  if (uiContainer && sidebarToggle) {
+    uiContainer.classList.remove('sidebar-open');
+    sidebarToggle.classList.remove('hidden');
+  }
+}
 });
 
 // noBtn.addEventListener("click" , ()=>{

@@ -197,6 +197,14 @@
     <div id="messageContainer" class="message-container"></div>
 
     <script type="module" src="./js/logout.js"></script>
+    <script type="module">
+      import { requireAuth } from './js/logout.js';
+      
+      // Check authentication before loading the page
+      document.addEventListener('DOMContentLoaded', () => {
+        requireAuth();
+      });
+    </script>
     <script type="module" src="./js/profile.js"></script>
 </body>
 </html> 
