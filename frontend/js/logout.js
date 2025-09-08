@@ -61,6 +61,20 @@ export function checkAuthStatus() {
     }
 }
 
+// Check if user is authenticated and redirect to home if not
+export function requireAuth() {
+    const userProfile = localStorage.getItem('userProfile');
+    
+    if (!userProfile) {
+        // User is not logged in, redirect to home page
+        console.log('User not authenticated, redirecting to home page');
+        window.location.href = '/index.html';
+        return false;
+    }
+    
+    return true;
+}
+
 // Highlight current page in navigation
 function highlightCurrentPage() {
     const currentPath = window.location.pathname;

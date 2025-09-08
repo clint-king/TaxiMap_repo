@@ -1406,7 +1406,6 @@ textarea{
    .sendBtn {
      padding: 15px 60px;
      font-size: 0.9rem;
-     margin-bottom: 40px; /* Add bottom margin to ensure it's not cut off */
    }
 
    .saveSession {
@@ -1455,7 +1454,7 @@ textarea{
      .sendBtn {
        position: relative;
        z-index: 10;
-       margin-bottom: 20px;
+       margin-bottom: 40px; /* Increased margin to ensure full button visibility */
      }
 
      .menu {
