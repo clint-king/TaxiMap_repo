@@ -677,13 +677,16 @@ async function shortPath(routeCloseToSource , routeCloseToDest , ranksIDs , sour
     let priceCollectionO1;
     //get directions
     let  directionsO1;
-    if(ranksIDs.firstR_taxiRankSource ===  ranksIDs.secR_taxiRankSource && ranksIDs.firstR_taxiRankDestination === ranksIDs.secR_taxiRankDestination){
+    //ranksIDs.firstR_taxiRankSource ===  ranksIDs.secR_taxiRankSource && ranksIDs.firstR_taxiRankDestination === ranksIDs.secR_taxiRankDestination
+    if(routeCloseToSource.closestRoute.id === routeCloseToDest.closestRoute.id){
         directionsO1 =   await getDirections([routeCloseToSource.closestRoute]);
         priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute]);
     }else{
         directionsO1 =   await getDirections([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
         priceCollectionO1 = PriceCalc([routeCloseToSource.closestRoute, routeCloseToDest.closestRoute]);
     }
+
+   
 
 
     if(priceCollectionO1 === null){
