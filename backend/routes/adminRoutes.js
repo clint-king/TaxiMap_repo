@@ -2,6 +2,7 @@ import express from "express";
 import {AddTaxiRank , getRoute , listTaxiRanks, getTaxiRank, getUniqueRouteName , listRoutes, AddRoute, deleteRoute , deleteTaxiRank} from "../controllers/adminController.js";
 import adminFeedbackController from "../controllers/adminFeedbackController.js";
 import adminRouteController from "../controllers/adminRouteController.js";
+import adminReportsController from "../controllers/adminReportsController.js";
 
 
 
@@ -41,5 +42,10 @@ router.put("/pending-routes/:routeId/reject", adminRouteController.rejectRoute);
 
 // Contributors management routes
 router.get("/contributors", adminRouteController.getAllContributors);
+
+// Reports and analytics routes
+router.get("/reports", adminReportsController.getAnalyticsData);
+router.get("/reports/user-activities", adminReportsController.getUserActivityDetails);
+router.get("/reports/route-usage", adminReportsController.getRouteUsageDetails);
 
 export default router;

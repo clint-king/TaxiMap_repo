@@ -3,14 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multi-Taxi Path with Mapbox</title>
+  <title>Admin Dashboard - TeksiMap</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
   <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/adminStyle.css">
 </head>
-<body  class="has-map-layout">
+<body class="has-map-layout">
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html" class="active">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
     <div id="ui_container">
         <h1>Taxi Ranks</h1>
         <div class="subtop">
@@ -112,10 +143,16 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
   <script type="module" src="./js/logout.js"></script>
+  <script type="module" src="./js/admin/adminCommon.js"></script>
   <script type="module">
     import { requireAuth } from './js/logout.js';
+    import { toggleAdminMobileMenu, logout } from './js/admin/adminCommon.js';
     
-    // Check authentication before loading the page
+    // Make functions globally available
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+    window.logout = logout;
+    
+    // Check authentication
     document.addEventListener('DOMContentLoaded', () => {
       requireAuth();
     });
