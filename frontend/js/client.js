@@ -1382,7 +1382,6 @@ async function sendsearchInfo() {
         //populate the new price list
         const priceInfo = dataReceived.prices;
         const listOfPrices = priceInfo.listOfPrices;
-
         for (let i = 0; i < listOfPrices.length; i++) {
           const price = listOfPrices[i].price;
           const routeName = listOfRoutes[i].name;

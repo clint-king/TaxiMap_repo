@@ -14,7 +14,7 @@ export const getPendingRoutes = async (req, res) => {
         pr.route_type,
         pr.travel_method,
         pr.status,
-        pr.created_at,
+        pr.submission_date as created_at,
         u.username,
         u.email,
         ptr_start.name as start_rank_name,
@@ -26,10 +26,12 @@ export const getPendingRoutes = async (req, res) => {
       JOIN pendingtaxirank ptr_start ON pr.start_rank_id = ptr_start.ID
       JOIN pendingtaxirank ptr_end ON pr.end_rank_id = ptr_end.ID
       WHERE pr.status = 'pending'
-      ORDER BY pr.created_at ASC
+      ORDER BY pr.submission_date ASC
     `;
     
     const [rows] = await db.execute(query);
+    console.log("Rows : "+ JSON.stringify(rows));
+    
     res.json({ pendingRoutes: rows });
   } catch (error) {
     console.error('Error fetching pending routes:', error);
