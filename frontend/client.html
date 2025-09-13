@@ -34,6 +34,7 @@
     />
     <link rel="stylesheet" href="./css/clientStyle.css" />
     <link rel="stylesheet" href="./css/popup.css" />
+    <link rel="stylesheet" href="./css/clientUX.css" />
   </head>
   <body class="has-map-layout">
     <div class="wrapper">
@@ -56,7 +57,9 @@
           <!-- Navigation links -->
           <div class="nav-links" id="mobileMenu">
             <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-            <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+            <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route (Advanced)</a>
+            <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+            <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
             <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
             <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
           </div>
@@ -77,7 +80,18 @@
         </button>
 
         <div class="search_container">
+          <!-- Search Header -->
+          <div class="search-header">
+            <h3><i class="fas fa-route"></i> Plan Your Journey</h3>
+            <p>Enter your starting point and destination to find the best taxi routes</p>
+          </div>
+          
+          <!-- Source Search -->
           <div class="sourceSearch container">
+            <div class="search-label">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>From</span>
+            </div>
             <div class="searchRow source">
               <i
                 class="fas fa-search"
@@ -85,13 +99,26 @@
               ></i>
               <input
                 class="search_input source"
-                placeholder="Search Starting location"
+                placeholder="Where are you starting from?"
               />
+              <div class="search-status" id="sourceStatus"></div>
             </div>
-
             <ul class="searchList listSource"></ul>
           </div>
+          
+          <!-- Visual Divider -->
+          <div class="search-divider">
+            <div class="divider-line"></div>
+            <i class="fas fa-arrow-down"></i>
+            <div class="divider-line"></div>
+          </div>
+          
+          <!-- Destination Search -->
           <div class="destinationSearch container">
+            <div class="search-label">
+              <i class="fas fa-flag-checkered"></i>
+              <span>To</span>
+            </div>
             <div class="searchRow dest">
               <i
                 class="fas fa-search"
@@ -99,11 +126,13 @@
               ></i>
               <input
                 class="search_input destination"
-                placeholder="Search Destination"
+                placeholder="Where do you want to go?"
               />
+              <div class="search-status" id="destinationStatus"></div>
             </div>
             <ul class="searchList listDestination"></ul>
           </div>
+          
         </div>
 
         <!-- External drag handle for mobile -->
@@ -121,18 +150,20 @@
 
           <!--Route list-->
           <div class="routeList_container">
-            <!-- Toggle button -->
-
-            <div class="toggle-container">
-              <span class="toggle-label price-off"></span>
-              <div class="toggle-button" id="toggle">
-                <div class="toggle-circle"></div>
+            
+            <!-- Price Toggle Section -->
+            <div class="price-toggle-section">
+              <div class="toggle-container">
+                <span class="toggle-label price-off">Hide color codes</span>
+                <div class="toggle-button" id="toggle">
+                  <div class="toggle-circle"></div>
+                </div>
+                <span class="toggle-label price-on">Show price color codes</span>
               </div>
-              <span class="toggle-label price-on">See Price devision</span>
             </div>
 
-            <div class="cover price">
-              <p>Price</p>
+            <div class="cover price" id="priceHeader">
+              <p><i class="fas fa-money-bill-wave"></i> Price Breakdown</p>
             </div>
 
             <div class="list_container">
@@ -152,26 +183,34 @@
               <p>Total:</p>
               <p>R0.00</p>
             </div>
+            
           </div>
 
           <!--Directions -->
           <div class="direction_container">
-            <p>Directions :</p>
-            <button class="default_direction_button">Default</button>
-            <div class="sub_direction_container">
-              <!-- <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button>
-              <button class="direction_button">DA</button> -->
+            <div class="direction-header">
+              <h4><i class="fas fa-directions"></i> Route Directions</h4>
+              <p>Click direction buttons (D1, D2, D3...) for step-by-step directions</p>
+            </div>
+            
+            <div class="direction-controls">
+              <button class="default_direction_button" id="defaultDirectionBtn">
+                <i class="fas fa-times"></i> Clear Directions
+              </button>
+            </div>
+            
+            <div class="directions-content">
+              <div class="no-directions" id="noDirections">
+                <i class="fas fa-info-circle"></i>
+                <p>Click direction button to simulate taxi movement</p>
+              </div>
+              
+              <div class="sub_direction_container" id="directionsList">
+                <!-- Direction buttons (D1, D2, D3, etc.) will be dynamically added here -->
+              </div>
             </div>
           </div>
 
-          <button class="feedbackBtn">Feedback</button>
         </div>
         <!--Context menu-->
         <div class="menu markerConfirmation">
@@ -276,9 +315,27 @@
           </div> -->
 
           <div id="map">
-            <!--area filter -->
+            <!-- Loading Overlay -->
+            <div class="map-loading" id="mapLoading">
+              <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+              </div>
+              <p>Finding routes...</p>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+              <button class="map-control-btn" id="zoomInBtn" title="Zoom In">
+                <i class="fas fa-plus"></i>
+              </button>
+              <button class="map-control-btn" id="zoomOutBtn" title="Zoom Out">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+            
+            <!-- Area Filter -->
             <div class="areaContainer">
-              <p>Show Route Coverage</p>
+              <p><i class="fas fa-layer-group"></i> Show Route Coverage</p>
 
               <!-- toggle button -->
               <div class="toggle-container">
@@ -288,23 +345,33 @@
               </div>
             </div>
 
-            <!--Location indicatiion Markers-->
+            <!-- Location Indication Markers -->
             <div class="locationsContainer">
-              <div class="sourceLocation">
+              <div class="sourceLocation" id="sourceLocationIndicator">
                 <i
                   class="fa-solid fa-location-dot sourcePin"
-                  style="font-size: 25px; color: #919191"
+                  style="font-size: 25px;"
                 ></i>
                 <p>Starting</p>
               </div>
 
-              <div class="destLocation">
+              <div class="destLocation" id="destLocationIndicator">
                 <i
                   class="fa-solid fa-location-dot destPin"
-                  style="font-size: 25px; color: #919191"
+                  style="font-size: 25px;"
                 ></i>
-                <p>Ending</p>
+                <p>Destination</p>
               </div>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+              <button class="map-control-btn" id="centerMapBtn" title="Center map">
+                <i class="fas fa-crosshairs"></i>
+              </button>
+              <button class="map-control-btn" id="fullscreenBtn" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -391,10 +458,80 @@
         navbar.style.zIndex = "3";
       }
 
+      // Enhanced UI functionality
+      function initializeEnhancedUI() {
+        // Search input enhancements
+        const sourceInput = document.querySelector('.search_input.source');
+        const destinationInput = document.querySelector('.search_input.destination');
+        
+        // Input validation and status updates
+        function updateInputStatus(input, statusElement) {
+          const value = input.value.trim();
+          if (value.length > 0) {
+            input.classList.add('valid');
+            statusElement.textContent = '✓';
+            statusElement.classList.add('show', 'valid');
+          } else {
+            input.classList.remove('valid');
+            statusElement.classList.remove('show', 'valid');
+          }
+        }
+        
+        // Event listeners
+        if (sourceInput) {
+          sourceInput.addEventListener('input', () => {
+            updateInputStatus(sourceInput, document.getElementById('sourceStatus'));
+          });
+        }
+        
+        if (destinationInput) {
+          destinationInput.addEventListener('input', () => {
+            updateInputStatus(destinationInput, document.getElementById('destinationStatus'));
+          });
+        }
+        
+        // Map loading state
+        function showMapLoading() {
+          const mapLoading = document.getElementById('mapLoading');
+          if (mapLoading) mapLoading.classList.add('show');
+        }
+        
+        function hideMapLoading() {
+          const mapLoading = document.getElementById('mapLoading');
+          if (mapLoading) mapLoading.classList.remove('show');
+        }
+        
+        // Map controls
+        const centerMapBtn = document.getElementById('centerMapBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        if (centerMapBtn) {
+          centerMapBtn.addEventListener('click', () => {
+            // This would integrate with the existing map centering logic
+            console.log('Center map clicked');
+          });
+        }
+        
+        if (fullscreenBtn) {
+          fullscreenBtn.addEventListener('click', () => {
+            const mapContainer = document.getElementById('map');
+            if (!document.fullscreenElement) {
+              mapContainer.requestFullscreen().catch(err => {
+                console.log('Error attempting to enable fullscreen:', err);
+              });
+            } else {
+              document.exitFullscreen();
+            }
+          });
+        }
+        
+      }
+
       // Run once on load
       document.addEventListener("DOMContentLoaded", () => {
         attachSearchToggle();
         moveSearchContainer();
+        initializeEnhancedUI();
       });
 
       // Re-attach on window resize (for dynamic appearance of .searchSlider)

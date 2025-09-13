@@ -2,7 +2,6 @@ import axios from "axios";
 import * as turf from "@turf/turf";
 import popup from "./popup.js";
 import {BASE_URL} from "./AddressSelection.js";
-import { initFeedback } from "./feedback.js";
 
 // Create separate axios instance for external API calls (like Mapbox)
 const externalClient = axios.create({
@@ -305,6 +304,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     ensureMapSizing();
   }, 200);
+  
+  // Initialize pin colors to grey
+  if (sourcePin) {
+    sourcePin.style.color = "#919191";
+  }
+  if (destPin) {
+    destPin.style.color = "#919191";
+  }
 });
 
 // Also trigger on window load to catch any late loading issues
@@ -511,8 +518,6 @@ map.on("load", () => {
 
 
 
-// Initialize feedback functionality
-initFeedback();
 
 // First-time user onboarding
 function checkFirstTimeUser() {
@@ -1086,6 +1091,28 @@ priceToogleButton.addEventListener("click", (e) => {
 radiusToogleButton.addEventListener("click", (e) => {
   areaFilterToggleBtn();
 });
+
+// Map zoom controls
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+if (zoomInBtn) {
+  zoomInBtn.addEventListener('click', () => {
+    if (map) {
+      const currentZoom = map.getZoom();
+      map.zoomTo(currentZoom + 1, { duration: 300 });
+    }
+  });
+}
+
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', () => {
+    if (map) {
+      const currentZoom = map.getZoom();
+      map.zoomTo(currentZoom - 1, { duration: 300 });
+    }
+  });
+}
 
 //=== FUNCTIONS ===
 

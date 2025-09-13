@@ -561,9 +561,6 @@ document.body.addEventListener('click', function (event) {
   }
 });
 
-
-
-
 //edit menu
 cancelBtnEditMenu.addEventListener("click" , ()=>{
 closeEditMarkerMenu();
@@ -1051,8 +1048,6 @@ if (routeDiv) {
 }
 
 
-
-
 // Helper function to get device info
 function getDeviceInfo() {
     const userAgent = navigator.userAgent;
@@ -1083,7 +1078,6 @@ async function logActivity(type, title, description) {
         console.error('Error logging activity:', error);
     }
 }
-
 
 //show route on click
 function showRoute(nameId){
@@ -1165,8 +1159,6 @@ function showRoute(nameId){
     }
   });
 }
-
-
 
 //editmenu
 function openEditMarkerMenu(){
