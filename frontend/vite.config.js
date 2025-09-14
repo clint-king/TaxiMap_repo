@@ -12,6 +12,7 @@ export default defineConfig({
         popup: resolve(__dirname, 'popup.html'),
         clientCrowdSource: resolve(__dirname, 'clientCrowdSource.html'),
         client: resolve(__dirname, 'client.html'),
+        'route-suggestion': resolve(__dirname, 'route-suggestion.html'),
         admin: resolve(__dirname, 'admin.html'),
         'admin-reports': resolve(__dirname, 'admin-reports.html'),
         'admin-pending': resolve(__dirname, 'admin-pending.html'),
@@ -19,6 +20,7 @@ export default defineConfig({
         'admin-feedback': resolve(__dirname, 'admin-feedback.html'),
         profile: resolve(__dirname, 'profile.html'),
         help: resolve(__dirname, 'help.html'),
+        feedback: resolve(__dirname, 'feedback.html'),
         'verify-email': resolve(__dirname, 'verify-email.html'),
         'reset-password': resolve(__dirname, 'reset-password.html'),
         // Pages directory
