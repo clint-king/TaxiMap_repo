@@ -456,7 +456,7 @@ map.on("load", () => {
     console.log(`Coordinates clicked: Longitude - ${lng}, Latitude - ${lat}`);
 
     // Fetch the address using reverse geocoding
-    const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+    const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&country=ZA`;
 
     try {
       const response = await fetch(reverseGeocodeUrl);
@@ -1525,7 +1525,7 @@ function turnOffDestPin() {
 async function getPlaceUsingQueryRequest(query, isSource) {
   const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
     query
-  )}.json?access_token=${accessToken}&limit=1`;
+  )}.json?access_token=${accessToken}&country=ZA&limit=1`;
 
   try {
     // Use external client for Mapbox API calls
@@ -1597,7 +1597,7 @@ async function getPlaceUsingQueryRequest(query, isSource) {
 }
 
 async function getAdress(lng, lat) {
-  const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+  const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&country=ZA`;
 
   try {
     const response = await fetch(reverseGeocodeUrl);
@@ -1701,7 +1701,7 @@ async function fetchSuggestions(suggestions, query) {
 
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
     query
-  )}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=10`;
+  )}.json?access_token=${mapboxgl.accessToken}&country=ZA&autocomplete=true&limit=10`;
   try {
     const response = await fetch(url);
     const data = await response.json();

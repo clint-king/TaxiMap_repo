@@ -45,12 +45,17 @@ const submitFeedback = async (req, res) => {
         return res.status(400).json({ error: err.message });
       }
 
-      const { feedback_type, subject, message } = req.body;
+      const { feedback_type, subject, message, rating } = req.body;
       const user_id = req.user.id;
 
       // Validate required fields
       if (!subject || !message) {
         return res.status(400).json({ error: 'Subject and message are required' });
+      }
+
+      // Validate rating if provided
+      if (rating && (isNaN(rating) || rating < 1 || rating > 5)) {
+        return res.status(400).json({ error: 'Rating must be a number between 1 and 5' });
       }
 
       // Process uploaded images
@@ -65,7 +70,8 @@ const submitFeedback = async (req, res) => {
         feedback_type: feedback_type || 'general',
         subject,
         message,
-        images: imageUrls.length > 0 ? imageUrls : null
+        images: imageUrls.length > 0 ? imageUrls : null,
+        rating: rating ? parseInt(rating) : null
       });
 
       res.status(201).json({

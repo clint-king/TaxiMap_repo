@@ -68,7 +68,7 @@ async function fetchSuggestions(query) {
     return;
   }
 
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=5`;
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=ZA&autocomplete=true&limit=5`;
   try {
     const response = await fetch(url);
     const data = await response.json();
@@ -125,7 +125,7 @@ map.on('click', async (e) => {
   console.log(`Coordinates clicked: Longitude - ${lng}, Latitude - ${lat}`);
 
   // Fetch the address using reverse geocoding
-  const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+  const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&country=ZA`;
   
   try {
     const response = await fetch(reverseGeocodeUrl);

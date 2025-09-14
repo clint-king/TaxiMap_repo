@@ -4,11 +4,11 @@ const createFeedback = async (feedbackData) => {
   let db;
   try {
     db = await poolDb.getConnection();
-    const { user_id, feedback_type, subject, message, images } = feedbackData;
+    const { user_id, feedback_type, subject, message, images, rating } = feedbackData;
     
     const [result] = await db.execute(
-      'INSERT INTO feedback (user_id, feedback_type, subject, message, images, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, feedback_type, subject, message, JSON.stringify(images || []), 'pending']
+      'INSERT INTO feedback (user_id, feedback_type, subject, message, images, rating, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [user_id, feedback_type, subject, message, JSON.stringify(images || []), rating || null, 'pending']
     );
     
     return result.insertId;

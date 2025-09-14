@@ -1,4 +1,19 @@
 // Feedback Page JavaScript
+import axios from 'axios';
+import {BASE_URL} from "./AddressSelection.js";
+
+// Add global axios interceptor for session expiration
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Session expired, redirect to login
+            localStorage.removeItem('userProfile');
+            window.location.href = '/login.html';
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Mobile menu toggle
 function toggleMobileMenu() {
@@ -33,6 +48,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const feedbackForm = document.getElementById('feedbackForm');
   const successMessage = document.getElementById('successMessage');
   
+  // Initialize image upload functionality
+  initializeImageUpload();
+  
   // Form submission
   feedbackForm.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -48,17 +66,18 @@ document.addEventListener('DOMContentLoaded', function() {
       // Get form data
       const formData = new FormData(feedbackForm);
       const feedbackData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        feedbackType: formData.get('feedbackType'),
+        feedback_type: formData.get('feedback_type'),
         subject: formData.get('subject'),
         message: formData.get('message'),
-        rating: formData.get('rating') || null,
-        timestamp: new Date().toISOString()
+        rating: formData.get('rating') || null
       };
       
-      // Simulate API call (replace with actual API endpoint)
-      await submitFeedback(feedbackData);
+      // Get image files if any
+      const imageInput = document.getElementById('imageInput');
+      const imageFiles = imageInput ? Array.from(imageInput.files) : [];
+      
+      // Submit to actual backend
+      await submitFeedback(feedbackData, imageFiles);
       
       // Show success message
       showSuccessMessage();
@@ -111,31 +130,57 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Submit feedback function (replace with actual API call)
-async function submitFeedback(feedbackData) {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Here you would make an actual API call to your backend
-  // Example:
-  /*
-  const response = await fetch('/api/feedback', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(feedbackData)
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to submit feedback');
+// Submit feedback function
+async function submitFeedback(feedbackData, imageFiles = []) {
+  try {
+    // Check if user is authenticated
+    const userProfile = localStorage.getItem('userProfile');
+    if (!userProfile) {
+      throw new Error('Please log in to submit feedback');
+    }
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    
+    // Add feedback data
+    formData.append('feedback_type', feedbackData.feedback_type);
+    formData.append('subject', feedbackData.subject);
+    formData.append('message', feedbackData.message);
+    if (feedbackData.rating) {
+      formData.append('rating', feedbackData.rating);
+    }
+    
+    // Add images if any
+    if (imageFiles && imageFiles.length > 0) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('images', imageFiles[i]);
+      }
+    }
+
+    // Submit to backend using axios
+    const response = await axios.post(`${BASE_URL}/feedback/submit`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      withCredentials: true // Include cookies for authentication
+    });
+    
+    console.log('Feedback submitted successfully:', response.data);
+    return response.data;
+    
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    
+    // Handle axios error response
+    if (error.response) {
+      const errorMessage = error.response.data?.error || error.response.statusText || 'Failed to submit feedback';
+      throw new Error(errorMessage);
+    } else if (error.request) {
+      throw new Error('Network error. Please check your connection.');
+    } else {
+      throw error;
+    }
   }
-  
-  return response.json();
-  */
-  
-  console.log('Feedback submitted:', feedbackData);
-  return { success: true };
 }
 
 // Show success message
@@ -162,6 +207,11 @@ function showForm() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Make functions available globally for inline event handlers
+window.showForm = showForm;
+window.clearForm = clearForm;
+window.toggleMobileMenu = toggleMobileMenu;
+
 // Clear form
 function clearForm() {
   const feedbackForm = document.getElementById('feedbackForm');
@@ -185,10 +235,185 @@ function clearForm() {
   const ratingText = document.querySelector('.rating-text');
   ratingText.textContent = 'Rate your experience with TeksiMap';
   
+  // Clear image uploads
+  clearImageUploads();
+  
   // Focus on first input
   const firstInput = feedbackForm.querySelector('input[type="text"]');
   if (firstInput) {
     firstInput.focus();
+  }
+}
+
+// Initialize image upload functionality
+function initializeImageUpload() {
+  const imageUploadArea = document.getElementById('imageUploadArea');
+  const imageInput = document.getElementById('imageInput');
+
+  if (!imageUploadArea || !imageInput) {
+    return; // Exit if elements don't exist
+  }
+
+  // Click to upload
+  imageUploadArea.addEventListener('click', () => {
+    imageInput.click();
+  });
+
+  // Drag and drop functionality
+  imageUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.add('dragover');
+  });
+
+  imageUploadArea.addEventListener('dragleave', () => {
+    imageUploadArea.classList.remove('dragover');
+  });
+
+  imageUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.remove('dragover');
+    
+    const files = Array.from(e.dataTransfer.files);
+    handleImageFiles(files);
+  });
+
+  // File input change
+  imageInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    handleImageFiles(files);
+  });
+}
+
+// Handle image files
+function handleImageFiles(files) {
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+  
+  if (!imagePreviewContainer || !imagePreviewGrid) {
+    return; // Exit if elements don't exist
+  }
+  
+  // Filter only image files
+  const imageFiles = files.filter(file => file.type.startsWith('image/'));
+  
+  if (imageFiles.length === 0) {
+    showImageError('Please select only image files (PNG, JPG, GIF)');
+    return;
+  }
+
+  // Check file size (5MB limit)
+  const oversizedFiles = imageFiles.filter(file => file.size > 5 * 1024 * 1024);
+  if (oversizedFiles.length > 0) {
+    showImageError('Some files are too large. Maximum size is 5MB per file.');
+    return;
+  }
+
+  // Check total number of images (max 5)
+  const currentImages = imagePreviewGrid.children.length;
+  if (currentImages + imageFiles.length > 5) {
+    showImageError('Maximum 5 images allowed. Please remove some images first.');
+    return;
+  }
+
+  // Clear any existing errors
+  clearImageError();
+
+  // Process each image
+  imageFiles.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      createImagePreview(e.target.result, file.name);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Show preview container
+  imagePreviewContainer.style.display = 'block';
+}
+
+// Create image preview
+function createImagePreview(imageSrc, fileName) {
+  const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+  
+  if (!imagePreviewGrid) return;
+  
+  const previewItem = document.createElement('div');
+  previewItem.className = 'image-preview-item';
+  
+  const img = document.createElement('img');
+  img.src = imageSrc;
+  img.alt = fileName;
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-image';
+  removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+  removeBtn.onclick = () => removeImagePreview(previewItem);
+  
+  previewItem.appendChild(img);
+  previewItem.appendChild(removeBtn);
+  imagePreviewGrid.appendChild(previewItem);
+}
+
+// Remove image preview
+function removeImagePreview(previewItem) {
+  previewItem.remove();
+  
+  const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  
+  // Hide container if no images left
+  if (imagePreviewGrid && imagePreviewContainer && imagePreviewGrid.children.length === 0) {
+    imagePreviewContainer.style.display = 'none';
+  }
+}
+
+// Clear all image uploads
+function clearImageUploads() {
+  const imageInput = document.getElementById('imageInput');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+  
+  // Reset file input
+  if (imageInput) {
+    imageInput.value = '';
+  }
+  
+  // Clear preview
+  if (imagePreviewGrid) {
+    imagePreviewGrid.innerHTML = '';
+  }
+  if (imagePreviewContainer) {
+    imagePreviewContainer.style.display = 'none';
+  }
+  
+  // Clear any errors
+  clearImageError();
+}
+
+// Show image error
+function showImageError(message) {
+  clearImageError();
+  
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'image-error';
+  errorDiv.textContent = message;
+  
+  const imageUploadContainer = document.querySelector('.image-upload-container');
+  if (imageUploadContainer) {
+    imageUploadContainer.appendChild(errorDiv);
+    
+    // Auto-hide error after 5 seconds
+    setTimeout(() => {
+      errorDiv.remove();
+    }, 5000);
+  }
+}
+
+// Clear image error
+function clearImageError() {
+  const existingError = document.querySelector('.image-error');
+  if (existingError) {
+    existingError.remove();
   }
 }
 
@@ -206,13 +431,6 @@ function validateField(event) {
     return false;
   }
   
-  if (field.type === 'email' && value) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
-      showFieldError(field, 'Please enter a valid email address');
-      return false;
-    }
-  }
   
   if (field.type === 'text' && value && value.length < 2) {
     showFieldError(field, 'This field must be at least 2 characters long');

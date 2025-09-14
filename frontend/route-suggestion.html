@@ -30,7 +30,6 @@
                 <!-- Navigation links -->
                 <div class="nav-links" id="mobileMenu">
                     <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                    <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route (Advanced)</a>
                     <a href="route-suggestion.html" class="active" onclick="topNavZIndexDecrease()">Suggest route</a>
                     <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
                     <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
@@ -399,7 +398,16 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script type="module" src="./js/logout.js"></script>
   <script type="module" src="./js/route-suggestion.js"></script>
+  <script type="module">
+    import { requireAuth } from './js/logout.js';
+    
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+    });
+  </script>
 </body>
 </html>
 

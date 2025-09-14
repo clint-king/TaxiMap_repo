@@ -31,7 +31,6 @@
           <!-- Navigation links -->
           <div class="nav-links" id="mobileMenu">
             <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-            <a href="clientCrowdSource.html" onclick="topNavZIndexDecrease()">Suggest route (Advanced)</a>
             <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
             <a href="feedback.html" class="active" onclick="topNavZIndexDecrease()">Feedback</a>
             <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
@@ -52,27 +51,13 @@
           <!-- Feedback Form -->
           <div class="feedback-form-container">
             <form class="feedback-form" id="feedbackForm">
-              <!-- Personal Information -->
-              <div class="form-section">
-                <h3><i class="fas fa-user"></i> Personal Information</h3>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="name">Name *</label>
-                    <input type="text" id="name" name="name" required placeholder="Your full name">
-                  </div>
-                  <div class="form-group">
-                    <label for="email">Email *</label>
-                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
-                  </div>
-                </div>
-              </div>
 
               <!-- Feedback Type -->
               <div class="form-section">
                 <h3><i class="fas fa-tag"></i> Feedback Type</h3>
                 <div class="feedback-type-grid">
                   <label class="feedback-type-option">
-                    <input type="radio" name="feedbackType" value="bug" required>
+                    <input type="radio" name="feedback_type" value="bug" required>
                     <div class="option-card">
                       <i class="fas fa-bug"></i>
                       <span>Bug Report</span>
@@ -80,7 +65,7 @@
                     </div>
                   </label>
                   <label class="feedback-type-option">
-                    <input type="radio" name="feedbackType" value="feature" required>
+                    <input type="radio" name="feedback_type" value="feature" required>
                     <div class="option-card">
                       <i class="fas fa-lightbulb"></i>
                       <span>Feature Request</span>
@@ -88,7 +73,7 @@
                     </div>
                   </label>
                   <label class="feedback-type-option">
-                    <input type="radio" name="feedbackType" value="improvement" required>
+                    <input type="radio" name="feedback_type" value="improvement" required>
                     <div class="option-card">
                       <i class="fas fa-arrow-up"></i>
                       <span>Improvement</span>
@@ -96,7 +81,7 @@
                     </div>
                   </label>
                   <label class="feedback-type-option">
-                    <input type="radio" name="feedbackType" value="general" required>
+                    <input type="radio" name="feedback_type" value="general" required>
                     <div class="option-card">
                       <i class="fas fa-comment"></i>
                       <span>General Feedback</span>
@@ -142,6 +127,25 @@
                 </div>
               </div>
 
+              <!-- Image Upload (Optional) -->
+              <div class="form-section">
+                <h3><i class="fas fa-images"></i> Attach Images (Optional)</h3>
+                <div class="image-upload-container">
+                  <div class="image-upload-area" id="imageUploadArea">
+                    <input type="file" id="imageInput" name="images" multiple accept="image/*" style="display: none;">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt"></i>
+                      <p>Click to upload images or drag and drop</p>
+                      <small>Maximum 5 images, 5MB each (JPG, PNG, GIF)</small>
+                    </div>
+                  </div>
+                  <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                    <div class="image-preview-grid" id="imagePreviewGrid"></div>
+                  </div>
+                  <div class="image-error" id="imageError" style="display: none;"></div>
+                </div>
+              </div>
+
               <!-- Submit Button -->
               <div class="form-actions">
                 <button type="submit" class="submit-btn">
@@ -171,6 +175,14 @@
 
     <!-- Scripts -->
     <script type="module" src="./js/logout.js"></script>
-    <script src="./js/feedback.js"></script>
+    <script type="module" src="./js/feedback.js"></script>
+    <script type="module">
+      import { requireAuth } from './js/logout.js';
+      
+      // Check authentication on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        requireAuth();
+      });
+    </script>
   </body>
 </html>

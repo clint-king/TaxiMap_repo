@@ -283,7 +283,7 @@ const map = new mapboxgl.Map({
       if(chosenTRCreation.starting === true || chosenTRCreation.dest === true){
 
         //ffff
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${accessToken}`;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${accessToken}&country=ZA`;
         
 
   try {
@@ -771,7 +771,7 @@ updateButton.addEventListener('click' , async (e)=>{
     
       //use lng and lat to get an adress
      const lnglat = coords[coords.length-1];
-     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lnglat[0]},${lnglat[1]}.json?access_token=${accessToken}`;
+     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lnglat[0]},${lnglat[1]}.json?access_token=${accessToken}&country=ZA`;
     const response = await mapboxClient.get(url);
     const address = response.data.features[0]?.place_name;
     console.log('Address:', address);
@@ -1691,7 +1691,7 @@ async function fetchSuggestions(query) {
     return;
   }
 
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&limit=5`;
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=ZA&autocomplete=true&limit=5`;
   try {
     const response = await fetch(url);
     const data = await response.json();
