@@ -521,20 +521,17 @@ map.on("load", () => {
 
 // First-time user onboarding
 function checkFirstTimeUser() {
-  // Only show onboarding for truly new users
-  // Check if user has a profile (meaning they've logged in before)
-  const userProfile = localStorage.getItem('userProfile');
+  // Check if user has seen the onboarding before
   const hasSeenOnboarding = localStorage.getItem('teksimap_onboarding_completed');
   
-  console.log('checkFirstTimeUser - userProfile exists:', !!userProfile);
   console.log('checkFirstTimeUser - hasSeenOnboarding:', hasSeenOnboarding);
   
-  // Only show onboarding if user has no profile AND hasn't seen onboarding
-  if (!userProfile && !hasSeenOnboarding) {
+  // Only show onboarding if user hasn't seen it before
+  if (!hasSeenOnboarding) {
     console.log('Showing onboarding modal');
     showOnboardingModal();
   } else {
-    console.log('Not showing onboarding modal');
+    console.log('Not showing onboarding modal - already seen');
   }
 }
 
@@ -554,15 +551,27 @@ function showOnboardingModal() {
           <p>Find the best taxi routes in South Africa with just a few clicks!</p>
           <div class="onboarding-feature">
             <span class="feature-icon">📍</span>
-            <span>Click "From" to set your starting point</span>
+            <span>Type or search for your starting location in the "From" input</span>
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">🎯</span>
-            <span>Click "To" to set your destination</span>
+            <span>Type or search for your destination in the "To" input</span>
           </div>
           <div class="onboarding-feature">
-            <span class="feature-icon">🚕</span>
-            <span>View routes, prices, and directions instantly</span>
+            <span class="feature-icon">🔘</span>
+            <span>Click the "From" or "To" button for more accurate location selection</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">📍</span>
+            <span>Routes are found automatically when both starting and destination markers are placed</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">📋</span>
+            <span>Use the direction buttons (D1, D2, D3...) to view step-by-step directions</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">🎨</span>
+            <span>Use "Show price color codes" to change route colors based on price</span>
           </div>
         </div>
 
@@ -579,98 +588,71 @@ function showOnboardingModal() {
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">🔘</span>
-            <span>Use "Highlight clickable radius" toggle to see available areas</span>
+            <span>Use "Show Route Coverage" toggle to see available areas</span>
           </div>
         </div>
 
         <div class="onboarding-step" data-step="3">
           <h3>📱 Mobile Tips</h3>
           <div class="onboarding-feature">
+            <span class="feature-icon">🔍</span>
+            <span>Access search inputs by pressing the arrow button below the navigation bar</span>
+          </div>
+          <div class="onboarding-feature">
             <span class="feature-icon">👆</span>
-            <span>Tap and hold to place markers precisely</span>
+            <span>Click the "From" or "To" button and click on your preferred location</span>
           </div>
           <div class="onboarding-feature">
-            <span class="feature-icon">📋</span>
-            <span>Use the arrow button to view step-by-step directions</span>
+            <span class="feature-icon">🔄</span>
+            <span>Hold to clear routes when you want to start over</span>
           </div>
           <div class="onboarding-feature">
-            <span class="feature-icon">💰</span>
-            <span>Toggle price view to see route costs</span>
+            <span class="feature-icon">📱</span>
+            <span>Use pinch-to-zoom for better map navigation</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">👆</span>
+            <span>Tap and drag to move around the map</span>
           </div>
         </div>
 
         <div class="onboarding-step" data-step="4">
-          <h3>🤝 How Crowdsourcing Works</h3>
+          <h3>🤝 Suggest New Routes</h3>
           <p><strong>Help build the most comprehensive taxi map in South Africa!</strong></p>
           <div class="onboarding-feature">
             <span class="feature-icon">📝</span>
-            <span><strong>Submit Routes:</strong> Add new taxi routes you know about</span>
+            <span><strong>Suggest Routes:</strong> Add new taxi routes you know about</span>
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">📍</span>
-            <span><strong>Map Taxi Ranks:</strong> Mark pickup and drop-off locations</span>
+            <span><strong>Select Taxi Ranks:</strong> Choose pickup and drop-off locations</span>
+          </div>
+          <div class="onboarding-feature">
+            <span class="feature-icon">✏️</span>
+            <span><strong>Draw Route:</strong> Create the route path on the map</span>
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">💰</span>
-            <span><strong>Update Prices:</strong> Keep fare information current</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">📸</span>
-            <span><strong>Add Photos:</strong> Upload images of taxi ranks and route signs</span>
+            <span><strong>Set Price:</strong> Add fare information for the route</span>
           </div>
           <div class="onboarding-feature">
             <span class="feature-icon">✅</span>
-            <span><strong>Verification Process:</strong> Our team reviews and approves submissions</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">🏆</span>
-            <span><strong>Recognition:</strong> Get featured on our Contributors page</span>
+            <span><strong>Submit:</strong> Send your route suggestion for review</span>
           </div>
           <p style="margin-top: 16px; font-style: italic; color: #6c757d;">
-            <strong>How it works:</strong> Click "Contribute" in the menu → Draw your route → Add details → Submit for approval → Help thousands of commuters!
+            <strong>How it works:</strong> Click "Suggest route" in the menu → Choose taxi ranks → Draw your route → Set price → Submit!
           </p>
         </div>
 
         <div class="onboarding-step" data-step="5">
-          <h3>📋 Crowdsourcing Process</h3>
-          <p><strong>Here's exactly how you can contribute:</strong></p>
-          <div class="onboarding-feature">
-            <span class="feature-icon">1️⃣</span>
-            <span><strong>Access:</strong> Click "Contribute" in the main menu</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">2️⃣</span>
-            <span><strong>Draw Route:</strong> Click on the map to create your route path</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">3️⃣</span>
-            <span><strong>Add Details:</strong> Enter route number, fare, and description</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">4️⃣</span>
-            <span><strong>Upload Photos:</strong> Add images of taxi ranks or route signs</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">5️⃣</span>
-            <span><strong>Submit:</strong> Send for review by our verification team</span>
-          </div>
-          <div class="onboarding-feature">
-            <span class="feature-icon">6️⃣</span>
-            <span><strong>Approval:</strong> Get notified when your route goes live (24-48 hours)</span>
-          </div>
-          <p style="margin-top: 16px; font-style: italic; color: #6c757d;">
-            <strong>Your contributions help thousands of commuters find their way!</strong>
-          </p>
-        </div>
-
-        <div class="onboarding-step" data-step="6">
           <h3>🎉 You're All Set!</h3>
           <p>Start exploring taxi routes in South Africa. Remember:</p>
           <ul>
             <li>Only click within the blue highlighted areas</li>
             <li>Use the toggle buttons to customize your view</li>
             <li>Right-click to cancel routes anytime</li>
-            <li>Contribute new routes to help your community</li>
+            <li>Suggest new routes to help your community</li>
+            <li>Use "Feedback" to report issues or suggest improvements</li>
           </ul>
           <p><strong>Happy traveling! 🚗💨</strong></p>
         </div>
@@ -683,7 +665,6 @@ function showOnboardingModal() {
           <span class="progress-dot" data-step="3"></span>
           <span class="progress-dot" data-step="4"></span>
           <span class="progress-dot" data-step="5"></span>
-          <span class="progress-dot" data-step="6"></span>
         </div>
         <div class="onboarding-buttons">
           <button class="onboarding-btn secondary" id="prevBtn" style="display: none;">Previous</button>
@@ -721,7 +702,7 @@ function showOnboardingModal() {
 }
 
 let currentOnboardingStep = 1;
-const totalOnboardingSteps = 6;
+const totalOnboardingSteps = 5;
 
 function showOnboardingStep(step) {
   // Hide all steps
@@ -792,18 +773,10 @@ function closeOnboardingModal() {
 
 // Check for first-time user when page loads
 document.addEventListener('DOMContentLoaded', () => {
-  // Small delay to ensure everything is loaded and user is authenticated
+  // Small delay to ensure everything is loaded
   setTimeout(() => {
-    // Only show onboarding if user is properly authenticated
-    const userProfile = localStorage.getItem('userProfile');
-    console.log('DOMContentLoaded - User profile exists:', !!userProfile);
-    
-    if (userProfile) {
-      console.log('Checking for first-time user...');
-      checkFirstTimeUser();
-    } else {
-      console.log('No user profile found, not showing onboarding');
-    }
+    console.log('Checking for first-time user...');
+    checkFirstTimeUser();
   }, 1500);
 });
 
