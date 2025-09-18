@@ -1,0 +1,36 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#01386A" stroke="#FFD700" stroke-width="4"/>
+  
+  <!-- Main T letter -->
+  <g transform="translate(100, 100)">
+    <!-- T horizontal bar -->
+    <rect x="-35" y="-45" width="70" height="15" rx="7" fill="#FFD700" filter="url(#shadow)"/>
+    <!-- T vertical bar -->
+    <rect x="-8" y="-45" width="16" height="60" rx="8" fill="#FFD700" filter="url(#shadow)"/>
+  </g>
+  
+  <!-- Map pin -->
+  <g transform="translate(100, 140)">
+    <!-- Map pin body -->
+    <circle cx="0" cy="-8" r="12" fill="#FFD700" filter="url(#shadow)"/>
+    <!-- Map pin point -->
+    <path d="M0 4 L-8 20 L8 20 Z" fill="#FFD700" filter="url(#shadow)"/>
+    <!-- Connection line -->
+    <path d="M0 -30 L0 -20" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="50" cy="50" r="4" fill="#FFD700" opacity="0.6"/>
+  <circle cx="150" cy="50" r="4" fill="#FFD700" opacity="0.6"/>
+  <circle cx="50" cy="150" r="4" fill="#FFD700" opacity="0.6"/>
+  <circle cx="150" cy="150" r="4" fill="#FFD700" opacity="0.6"/>
+</svg>
+
