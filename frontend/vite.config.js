@@ -21,6 +21,8 @@ export default defineConfig({
         profile: resolve(__dirname, 'profile.html'),
         help: resolve(__dirname, 'help.html'),
         feedback: resolve(__dirname, 'feedback.html'),
+        'booking-trip-info': resolve(__dirname, 'booking-trip-info.html'),
+        'booking-select-transport': resolve(__dirname, 'booking-select-transport.html'),
         'verify-email': resolve(__dirname, 'verify-email.html'),
         'reset-password': resolve(__dirname, 'reset-password.html'),
         // Pages directory

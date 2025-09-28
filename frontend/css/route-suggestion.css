@@ -42,6 +42,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
+  min-height: 60px;
 }
 
 .topnav img {
@@ -103,7 +104,7 @@ body {
 
 /* Main Container */
 .main-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   margin-top: 80px; /* Account for fixed navigation */
@@ -216,7 +217,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -447,7 +448,7 @@ body {
 
 /* Form Styles */
 .form-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -545,24 +546,35 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
 }
 
 .location-input-container {
   display: flex;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .location-input-container input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .location-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   background: white;
   display: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .location-suggestions.show {
@@ -1195,6 +1207,37 @@ body {
     left: 1rem;
     max-width: none;
   }
+  
+  /* Success overlay mobile adjustments */
+  .success-overlay {
+    padding: 0.5rem;
+  }
+  
+  .success-card {
+    width: 100%;
+    max-width: calc(100vw - 1rem);
+    padding: 1.5rem;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  .success-card h2 {
+    font-size: 1.5rem;
+  }
+  
+  .success-icon {
+    font-size: 3rem;
+  }
+  
+  .success-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .success-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1223,6 +1266,65 @@ body {
   .btn {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
+  }
+  
+  /* Success overlay extra small mobile adjustments */
+  .success-overlay {
+    padding: 0.25rem;
+  }
+  
+  .success-card {
+    width: 100%;
+    max-width: calc(100vw - 0.5rem);
+    padding: 1rem;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  .success-card h2 {
+    font-size: 1.3rem;
+  }
+  
+  .success-icon {
+    font-size: 2.5rem;
+  }
+  
+  .success-card p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Extra small mobile devices (very narrow screens) */
+@media (max-width: 360px) {
+  .success-overlay {
+    padding: 0.1rem;
+  }
+  
+  .success-card {
+    width: 100%;
+    max-width: calc(100vw - 0.2rem);
+    padding: 0.75rem;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  .success-card h2 {
+    font-size: 1.1rem;
+    line-height: 1.3;
+  }
+  
+  .success-icon {
+    font-size: 2rem;
+  }
+  
+  .success-card p {
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+  
+  .success-actions .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -1275,10 +1377,11 @@ textarea:focus {
 
 /* Marker Context Menu */
 .listmenu {
-  position: absolute;
+  position: fixed;
   visibility: hidden;
-  top: 40%;
-  left: 48%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 230px;
   height: 150px;
   z-index: 10;
@@ -1358,10 +1461,11 @@ textarea:focus {
 
 /* Edit Marker Confirmation Menu */
 .menu {
-  position: absolute;
+  position: fixed;
   visibility: hidden;
-  top: 40%;
-  left: 48%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 290px;
   height: 150px;
   z-index: 10;
@@ -1436,6 +1540,216 @@ textarea:focus {
 
 .menu .btn.no:hover {
   background-color: #c82333;
+}
+
+/* Mobile menu positioning fixes */
+@media (max-width: 768px) {
+  .listmenu {
+    width: 280px;
+    height: 180px;
+    max-width: 90vw;
+  }
+  
+  .menu {
+    width: 320px;
+    height: 180px;
+    max-width: 90vw;
+  }
+  
+  .listmenu #title,
+  .menu #title {
+    font-size: 1rem;
+    top: 3%;
+  }
+  
+  .btnListContainer {
+    height: 100px;
+    gap: 8px;
+    padding: 0 15px;
+  }
+  
+  .btnMenu {
+    height: 40px;
+    font-size: 14px;
+    margin-left: 15px;
+    margin-right: 15px;
+  }
+  
+  .btnContainer {
+    height: 70px;
+    gap: 15px;
+    margin-top: 15px;
+  }
+  
+  .menu .btn {
+    height: 40px;
+    width: 90px;
+    font-size: 14px;
+  }
+  
+  .listmenu .close_button,
+  .menu .close_button {
+    left: 90%;
+    bottom: 85%;
+    padding: 8px;
+  }
+}
+
+/* Desktop-specific improvements */
+@media (min-width: 1024px) {
+  .main-container {
+    max-width: 1500px;
+    padding: 2.5rem;
+  }
+  
+  .route-type-selection {
+    max-width: 1100px;
+    gap: 2.5rem;
+  }
+  
+  .route-type-card {
+    padding: 2.25rem;
+  }
+  
+  .step-content {
+    padding: 2.5rem;
+  }
+  
+  .form-container {
+    max-width: 900px;
+  }
+  
+  .drawing-map {
+    height: 65vh;
+    min-height: 550px;
+  }
+  
+  /* Enhanced UI elements for desktop */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  .btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+  }
+  
+  .location-input-container input {
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  .location-input-container .btn {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  /* Make step content much wider on desktop */
+  .location-selection {
+    max-width: 1300px;
+    margin: 0 auto;
+    gap: 3rem;
+  }
+  
+  .drawing-container {
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+  
+  .review-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    gap: 3rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .main-container {
+    max-width: 1600px;
+    padding: 3rem;
+  }
+  
+  .route-type-selection {
+    max-width: 1200px;
+    gap: 3rem;
+  }
+  
+  .route-type-card {
+    padding: 2.5rem;
+  }
+  
+  .step-content {
+    padding: 3rem;
+  }
+  
+  .form-container {
+    max-width: 1000px;
+  }
+  
+  .drawing-map {
+    height: 70vh;
+    min-height: 600px;
+  }
+  
+  /* Even wider for larger screens */
+  .location-selection {
+    max-width: 1500px;
+    margin: 0 auto;
+    gap: 4rem;
+  }
+  
+  .drawing-container {
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+  
+  .review-container {
+    max-width: 1500px;
+    margin: 0 auto;
+    gap: 4rem;
+  }
+}
+
+/* Large desktop screens */
+@media (min-width: 1600px) {
+  .main-container {
+    max-width: 1800px;
+    padding: 4rem;
+  }
+  
+  .route-type-selection {
+    max-width: 1400px;
+    gap: 4rem;
+  }
+  
+  .route-type-card {
+    padding: 3rem;
+  }
+  
+  .step-content {
+    padding: 4rem;
+  }
+  
+  /* Ultra-wide for large screens */
+  .location-selection {
+    max-width: 1700px;
+    margin: 0 auto;
+    gap: 5rem;
+  }
+  
+  .drawing-container {
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+  
+  .review-container {
+    max-width: 1700px;
+    margin: 0 auto;
+    gap: 5rem;
+  }
 }
 
 /* High contrast mode support */

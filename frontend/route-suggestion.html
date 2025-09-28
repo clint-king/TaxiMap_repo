@@ -4,10 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Suggest a Route - TeksiMap</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="favicon-16x16.svg" sizes="16x16" />
+  <link rel="icon" type="image/svg+xml" href="favicon-32x32.svg" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.svg" />
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="./css/route-suggestion.css">
+  
 </head>
 <body class="has-map-layout">
   <div class="wrapper">
@@ -31,6 +38,7 @@
                 <div class="nav-links" id="mobileMenu">
                     <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
                     <a href="route-suggestion.html" class="active" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="booking-trip-info.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
                     <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
                     <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
                     <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
@@ -40,6 +48,7 @@
 
   <!-- Main Content -->
   <div class="main-container">
+
     <!-- Progress Steps -->
     <div class="progress-container">
       <div class="progress-steps">
@@ -408,6 +417,7 @@
       requireAuth();
     });
   </script>
+  
 </body>
 </html>
 

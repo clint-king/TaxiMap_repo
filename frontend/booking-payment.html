@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Taxi - Payment | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="./favicon-16x16.svg" sizes="16x16">
+    <link rel="icon" type="image/svg+xml" href="./favicon-32x32.svg" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="./site.webmanifest">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./css/booking.css">
+    <link rel="stylesheet" href="./css/clientStyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        body, html {
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .page-content {
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+        
+        .payment-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        /* Progress Indicator Styles */
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .step-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active .step-number {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .progress-step.active .step-label {
+            color: #01386A;
+            font-weight: 700;
+        }
+        
+        .progress-step.completed .step-number {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .progress-step.completed .step-label {
+            color: #28a745;
+            font-weight: 700;
+        }
+        
+        .progress-line {
+            width: 60px;
+            height: 3px;
+            background: #e9ecef;
+            margin: 0 1rem;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-line.completed {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        @media (max-width: 768px) {
+            .progress-indicator {
+                padding: 1rem;
+            }
+            
+            .step-number {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            
+            .step-label {
+                font-size: 0.8rem;
+            }
+            
+            .progress-line {
+                width: 40px;
+                margin: 0 0.5rem;
+            }
+        }
+        
+        .payment-header {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(1, 56, 106, 0.3);
+        }
+        
+        .payment-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .payment-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .payment-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        .selected-vehicle {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .vehicle-summary {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .vehicle-image {
+            width: 120px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        
+        .vehicle-info h3 {
+            color: #01386A;
+            margin-bottom: 0.5rem;
+        }
+        
+        .vehicle-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .detail-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .trip-details {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .trip-section {
+            margin-bottom: 1rem;
+        }
+        
+        .trip-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 0.5rem;
+        }
+        
+        .route-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .route-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .route-icon.pickup {
+            background: #28a745;
+        }
+        
+        .route-icon.destination {
+            background: #dc3545;
+        }
+        
+        .route-text {
+            flex: 1;
+        }
+        
+        .route-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .route-address {
+            font-weight: 600;
+            color: #333;
+            margin-top: 0.2rem;
+        }
+        
+        .payment-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .payment-methods {
+            margin-bottom: 2rem;
+        }
+        
+        .payment-method {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method:hover {
+            border-color: #01386A;
+            background: #f8f9fa;
+        }
+        
+        .payment-method.selected {
+            border-color: #01386A;
+            background: #e3f2fd;
+        }
+        
+        .payment-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .payment-icon.cash {
+            background: #28a745;
+        }
+        
+        .payment-icon.card {
+            background: #007bff;
+        }
+        
+        .payment-icon.mobile {
+            background: #6f42c1;
+        }
+        
+        .payment-info h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .payment-info p {
+            margin: 0.3rem 0 0 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .cost-breakdown {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .cost-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .cost-item:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #01386A;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            border-top: 2px solid #01386A;
+        }
+        
+        .cost-label {
+            color: #6c757d;
+        }
+        
+        .cost-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn-payment {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-share {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+        
+        .btn-share:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(23, 162, 184, 0.3);
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        /* Share Modal Styles */
+        .share-modal {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .share-modal .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .share-modal .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        .share-modal .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .share-modal .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .share-modal .booking-summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .share-modal .booking-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .share-modal .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .share-modal .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .share-modal .detail-value {
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .share-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .share-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .share-description {
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .link-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .link-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: #f8f9fa;
+            color: #666;
+        }
+        
+        .btn-copy {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .btn-copy:hover {
+            background: #138496;
+        }
+        
+        .share-options h4 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .share-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-whatsapp {
+            background: #25d366;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-whatsapp:hover {
+            background: #1ea952;
+        }
+        
+        .btn-email {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-email:hover {
+            background: #c82333;
+        }
+        
+        .btn-sms {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-sms:hover {
+            background: #5a6268;
+        }
+        
+        @media (max-width: 768px) {
+            .link-container {
+                flex-direction: column;
+            }
+            
+            .share-buttons {
+                flex-direction: column;
+            }
+            
+            .share-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        .btn-primary:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .booking-summary {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #01386A;
+        }
+        
+        .summary-title {
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-item:last-child {
+            margin-bottom: 0;
+            font-weight: 700;
+            color: #01386A;
+            font-size: 1.1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #01386A;
+        }
+        
+        /* Payment Splitting Styles */
+        .payment-splitting {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #01386A;
+        }
+        
+        .split-info p {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+        
+        .split-amounts {
+            display: grid;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .split-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .split-item:hover {
+            border-color: #01386A;
+            box-shadow: 0 2px 8px rgba(1, 56, 106, 0.1);
+        }
+        
+        .passenger-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .passenger-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        .passenger-details h5 {
+            margin: 0;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .passenger-details p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+        
+        .split-amount {
+            font-weight: 700;
+            color: #01386A;
+            font-size: 1.1rem;
+        }
+        
+        .payment-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .payment-status.pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .payment-status.paid {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        /* Social Sharing Styles */
+        .social-sharing {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .social-sharing h4 {
+            color: #01386A;
+            margin-bottom: 0.5rem;
+        }
+        
+        .social-sharing p {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+        
+        .share-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.8rem;
+        }
+        
+        .share-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .share-btn.whatsapp {
+            background: #25d366;
+            color: white;
+        }
+        
+        .share-btn.whatsapp:hover {
+            background: #1ea952;
+            transform: translateY(-2px);
+        }
+        
+        .share-btn.facebook {
+            background: #1877f2;
+            color: white;
+        }
+        
+        .share-btn.facebook:hover {
+            background: #166fe5;
+            transform: translateY(-2px);
+        }
+        
+        .share-btn.twitter {
+            background: #1da1f2;
+            color: white;
+        }
+        
+        .share-btn.twitter:hover {
+            background: #1a91da;
+            transform: translateY(-2px);
+        }
+        
+        .share-btn.copy {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .share-btn.copy:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        /* Wallet Styles */
+        .wallet-section {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #01386A;
+        }
+        
+        .wallet-balance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .balance-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .balance-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .balance-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+        }
+        
+        .btn-add-funds {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-add-funds:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .payment-container {
+                padding: 1rem;
+                min-height: auto;
+            }
+            
+            .payment-content {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .payment-actions {
+                flex-direction: column;
+            }
+            
+            .share-buttons {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .wallet-balance {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            /* Ensure mobile scrolling */
+            body, html {
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="index.html">
+                        <img src="logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                    <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="booking-trip-info.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                    <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <div class="payment-container">
+        <!-- Progress Indicator -->
+        <div class="progress-indicator">
+            <div class="progress-step completed">
+                <div class="step-number">1</div>
+                <div class="step-label">Trip Info</div>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step completed">
+                <div class="step-number">2</div>
+                <div class="step-label">Select Transport</div>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step completed">
+                <div class="step-number">3</div>
+                <div class="step-label">Passenger Info</div>
+            </div>
+            <div class="progress-line completed"></div>
+            <div class="progress-step active">
+                <div class="step-number">4</div>
+                <div class="step-label">Payment</div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="payment-header">
+            <h1 class="payment-title">
+                <i class="fas fa-credit-card"></i>
+                Complete Your Booking
+            </h1>
+            <p class="payment-subtitle">Review your selection and make payment</p>
+        </div>
+
+        <div class="payment-content">
+            <!-- Selected Vehicle -->
+            <div class="selected-vehicle">
+                <h2 style="color: #01386A; margin-bottom: 1.5rem;">
+                    <i class="fas fa-car"></i> Selected Vehicle
+                </h2>
+                
+                <div class="vehicle-summary" id="vehicleSummary">
+                    <!-- Vehicle details will be loaded here -->
+                </div>
+                
+                <div class="trip-details">
+                    <div class="trip-section">
+                        <h3 class="section-title">Trip Details</h3>
+                        <div class="route-info">
+                            <div class="route-icon pickup">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="route-text">
+                                <div class="route-label">Pickup Location</div>
+                                <div class="route-address" id="pickupLocation">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="route-info">
+                            <div class="route-icon destination">
+                                <i class="fas fa-flag"></i>
+                            </div>
+                            <div class="route-text">
+                                <div class="route-label">Destination</div>
+                                <div class="route-address" id="destinationLocation">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="trip-section">
+                        <h3 class="section-title">Trip Information</h3>
+                        <div class="vehicle-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Date:</span>
+                                <span class="detail-value" id="tripDate">Loading...</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Time:</span>
+                                <span class="detail-value" id="tripTime">Loading...</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Distance:</span>
+                                <span class="detail-value" id="tripDistance">Loading...</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Duration:</span>
+                                <span class="detail-value" id="tripDuration">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Section -->
+            <div class="payment-section">
+                <h2 style="color: #01386A; margin-bottom: 1.5rem;">
+                    <i class="fas fa-credit-card"></i> Payment
+                </h2>
+                
+                <!-- Payment Methods -->
+                <div class="payment-methods">
+                    <h3 class="section-title">Choose Payment Method</h3>
+                    
+                    <div class="payment-method" onclick="selectPaymentMethod('cash')">
+                        <div class="payment-icon cash">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="payment-info">
+                            <h4>Cash Payment</h4>
+                            <p>Pay directly to the driver</p>
+                        </div>
+                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 1.2rem; display: none;" id="cashCheck"></i>
+                    </div>
+                    
+                    <div class="payment-method" onclick="selectPaymentMethod('card')">
+                        <div class="payment-icon card">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="payment-info">
+                            <h4>Credit/Debit Card</h4>
+                            <p>Secure online payment</p>
+                        </div>
+                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 1.2rem; display: none;" id="cardCheck"></i>
+                    </div>
+                    
+                    <div class="payment-method" onclick="selectPaymentMethod('mobile')">
+                        <div class="payment-icon mobile">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="payment-info">
+                            <h4>Mobile Payment</h4>
+                            <p>PayPal, Apple Pay, Google Pay</p>
+                        </div>
+                        <i class="fas fa-check-circle" style="color: #28a745; font-size: 1.2rem; display: none;" id="mobileCheck"></i>
+                    </div>
+                </div>
+                
+                <!-- Cost Breakdown -->
+                <div class="cost-breakdown">
+                    <h3 class="section-title">Cost Breakdown</h3>
+                    <div class="cost-item">
+                        <span class="cost-label">Base Rate:</span>
+                        <span class="cost-value" id="baseRate">R 0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="cost-label">Distance (km):</span>
+                        <span class="cost-value" id="distance">0 km</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="cost-label">Distance Cost:</span>
+                        <span class="cost-value" id="distanceCost">R 0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="cost-label">Service Fee:</span>
+                        <span class="cost-value">R 15.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span class="cost-label">Total Amount:</span>
+                        <span class="cost-value" id="totalAmount">R 0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Payment Splitting -->
+                <div class="payment-splitting" id="paymentSplitting" style="display: none;">
+                    <h3 class="section-title">Payment Splitting</h3>
+                    <div class="split-info">
+                        <p>Split the cost among passengers. Each person can pay their share individually.</p>
+                        <div class="split-amounts" id="splitAmounts">
+                            <!-- Split amounts will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="social-sharing">
+                        <h4>Share Payment Request</h4>
+                        <p>Send payment links to other passengers:</p>
+                        <div class="share-buttons">
+                            <button class="share-btn whatsapp" onclick="sharePaymentRequest('whatsapp')">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button class="share-btn facebook" onclick="sharePaymentRequest('facebook')">
+                                <i class="fab fa-facebook"></i> Facebook
+                            </button>
+                            <button class="share-btn twitter" onclick="sharePaymentRequest('twitter')">
+                                <i class="fab fa-twitter"></i> Twitter
+                            </button>
+                            <button class="share-btn copy" onclick="copyPaymentLink()">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Wallet Balance -->
+                <div class="wallet-section">
+                    <h3 class="section-title">Your Wallet</h3>
+                    <div class="wallet-balance">
+                        <div class="balance-info">
+                            <span class="balance-label">Available Balance:</span>
+                            <span class="balance-amount" id="walletBalance">R 0.00</span>
+                        </div>
+                        <div class="balance-actions">
+                            <button class="btn-add-funds" onclick="addFunds()">
+                                <i class="fas fa-plus"></i> Add Funds
+                            </button>
+                        </div>
+                    </div>
+                    <div class="payment-status" id="paymentStatus">
+                        <!-- Payment status will be shown here -->
+                    </div>
+                </div>
+                
+                <!-- Payment Actions -->
+                <div class="payment-actions">
+                    <button class="btn-payment btn-secondary" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn-payment btn-share" onclick="sharePaymentLink()">
+                        <i class="fas fa-share-alt"></i> Share Payment
+                    </button>
+                    <button class="btn-payment btn-primary" id="payButton" onclick="processPayment()" disabled>
+                        <i class="fas fa-credit-card"></i> Pay Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedVehicle = null;
+        let selectedPaymentMethod = null;
+        let tripDetails = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSelectedVehicle();
+            loadTripDetails();
+        });
+
+        // Load selected vehicle
+        function loadSelectedVehicle() {
+            const vehicleData = sessionStorage.getItem('selectedVehicle');
+            if (!vehicleData) {
+                alert('No vehicle selected. Redirecting to vehicle selection.');
+                window.location.href = 'booking-select-transport.html';
+                return;
+            }
+
+            selectedVehicle = JSON.parse(vehicleData);
+            displayVehicleSummary();
+        }
+
+        // Display vehicle summary
+        function displayVehicleSummary() {
+            const vehicleSummary = document.getElementById('vehicleSummary');
+            vehicleSummary.innerHTML = `
+                <img src="${selectedVehicle.images[0].url}" alt="${selectedVehicle.name}" class="vehicle-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjgwIiB2aWV3Qm94PSIwIDAgMTIwIDgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iODAiIGZpbGw9IiMwMTM4NkEiLz48dGV4dCB4PSI2MCIgeT0iNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iI0ZGRDUyRiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VmVoaWNsZTwvdGV4dD48L3ZnPg=='">
+                <div class="vehicle-info">
+                    <h3>${selectedVehicle.name}</h3>
+                    <div class="vehicle-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value">${selectedVehicle.type === 'minibus' ? 'Minibus Taxi' : '22-Seater Bus'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Capacity:</span>
+                            <span class="detail-value">${selectedVehicle.capacity} seats</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Rate:</span>
+                            <span class="detail-value">R ${selectedVehicle.rate}/km</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Owner:</span>
+                            <span class="detail-value">${selectedVehicle.owner.name}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load trip details
+        function loadTripDetails() {
+            // Get trip details from sessionStorage or URL parameters
+            const tripData = sessionStorage.getItem('tripDetails');
+            if (tripData) {
+                tripDetails = JSON.parse(tripData);
+            } else {
+                // Default trip details for demo
+                tripDetails = {
+                    pickup: "123 Main Street, Johannesburg",
+                    destination: "456 Oak Avenue, Pretoria",
+                    date: "2024-01-15",
+                    time: "14:30",
+                    distance: 45.5,
+                    duration: "1h 15min"
+                };
+            }
+
+            displayTripDetails();
+            calculateCost();
+        }
+
+        // Display trip details
+        function displayTripDetails() {
+            document.getElementById('pickupLocation').textContent = tripDetails.pickup;
+            document.getElementById('destinationLocation').textContent = tripDetails.destination;
+            document.getElementById('tripDate').textContent = tripDetails.date;
+            document.getElementById('tripTime').textContent = tripDetails.time;
+            document.getElementById('tripDistance').textContent = tripDetails.distance + ' km';
+            document.getElementById('tripDuration').textContent = tripDetails.duration;
+        }
+
+        // Calculate cost
+        function calculateCost() {
+            const baseRate = selectedVehicle.rate;
+            const distance = tripDetails.distance;
+            const distanceCost = baseRate * distance;
+            const serviceFee = 15.00;
+            const totalAmount = distanceCost + serviceFee;
+
+            document.getElementById('baseRate').textContent = `R ${baseRate.toFixed(2)}`;
+            document.getElementById('distance').textContent = `${distance} km`;
+            document.getElementById('distanceCost').textContent = `R ${distanceCost.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `R ${totalAmount.toFixed(2)}`;
+        }
+
+        // Select payment method
+        function selectPaymentMethod(method) {
+            // Remove previous selections
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelectorAll('[id$="Check"]').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Select new method
+            const methodElement = event.currentTarget;
+            methodElement.classList.add('selected');
+            document.getElementById(method + 'Check').style.display = 'block';
+
+            selectedPaymentMethod = method;
+            document.getElementById('payButton').disabled = false;
+        }
+
+        // Process payment
+        function processPayment() {
+            if (!selectedPaymentMethod) {
+                alert('Please select a payment method.');
+                return;
+            }
+
+            // Show loading state
+            const payButton = document.getElementById('payButton');
+            const originalText = payButton.innerHTML;
+            payButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            payButton.disabled = true;
+
+            // Simulate payment processing
+            setTimeout(() => {
+                // Create booking confirmation
+                const booking = {
+                    id: 'BK' + Date.now(),
+                    vehicle: selectedVehicle,
+                    trip: tripDetails,
+                    paymentMethod: selectedPaymentMethod,
+                    totalAmount: document.getElementById('totalAmount').textContent,
+                    status: 'confirmed',
+                    timestamp: new Date().toISOString()
+                };
+
+                // Store booking in sessionStorage
+                sessionStorage.setItem('currentBooking', JSON.stringify(booking));
+                
+                // Move from pending to confirmed bookings
+                moveBookingToConfirmed(booking);
+
+                // Redirect to confirmation page
+                window.location.href = 'booking-confirmation.html';
+            }, 2000);
+        }
+
+        // Go back to vehicle selection
+        function goBack() {
+            window.location.href = 'booking-select-transport.html';
+        }
+        
+        // Payment Splitting Functions
+        function setupPaymentSplitting() {
+            const tripData = sessionStorage.getItem('tripInfo');
+            if (tripData) {
+                const tripInfo = JSON.parse(tripData);
+                const passengerCount = tripInfo.passengerCount || 1;
+                
+                if (passengerCount > 1) {
+                    document.getElementById('paymentSplitting').style.display = 'block';
+                    generateSplitAmounts(passengerCount);
+                }
+            }
+        }
+        
+        function generateSplitAmounts(passengerCount) {
+            const totalAmount = parseFloat(document.getElementById('totalAmount').textContent.replace('R ', ''));
+            const amountPerPerson = totalAmount / passengerCount;
+            const splitAmounts = document.getElementById('splitAmounts');
+            
+            splitAmounts.innerHTML = '';
+            
+            for (let i = 1; i <= passengerCount; i++) {
+                const splitItem = document.createElement('div');
+                splitItem.className = 'split-item';
+                splitItem.innerHTML = `
+                    <div class="passenger-info">
+                        <div class="passenger-avatar">${i}</div>
+                        <div class="passenger-details">
+                            <h5>Passenger ${i}</h5>
+                            <p>Share of the trip cost</p>
+                        </div>
+                    </div>
+                    <div class="split-amount">R ${amountPerPerson.toFixed(2)}</div>
+                `;
+                splitAmounts.appendChild(splitItem);
+            }
+        }
+        
+        // Social Sharing Functions
+        function sharePaymentRequest(platform) {
+            const tripData = sessionStorage.getItem('tripInfo');
+            const vehicleData = sessionStorage.getItem('selectedVehicle');
+            
+            if (!tripData || !vehicleData) {
+                alert('No trip or vehicle data found.');
+                return;
+            }
+            
+            const tripInfo = JSON.parse(tripData);
+            const vehicle = JSON.parse(vehicleData);
+            const totalAmount = document.getElementById('totalAmount').textContent;
+            
+            const message = `🚗 TeksiMap Payment Request\n\n` +
+                          `Trip: ${tripInfo.pickup} → ${tripInfo.destination}\n` +
+                          `Vehicle: ${vehicle.name}\n` +
+                          `Date: ${tripInfo.date}\n` +
+                          `Time: ${tripInfo.time}\n` +
+                          `Your share: ${totalAmount}\n\n` +
+                          `Please pay your share: ${window.location.origin}/payment-request/${generatePaymentId()}`;
+            
+            const url = encodeURIComponent(message);
+            
+            switch(platform) {
+                case 'whatsapp':
+                    window.open(`https://wa.me/?text=${url}`, '_blank');
+                    break;
+                case 'facebook':
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
+                    break;
+                case 'twitter':
+                    window.open(`https://twitter.com/intent/tweet?text=${url}`, '_blank');
+                    break;
+            }
+        }
+        
+        function copyPaymentLink() {
+            const paymentId = generatePaymentId();
+            const paymentLink = `${window.location.origin}/payment-request/${paymentId}`;
+            
+            navigator.clipboard.writeText(paymentLink).then(() => {
+                alert('Payment link copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = paymentLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Payment link copied to clipboard!');
+            });
+        }
+        
+        function generatePaymentId() {
+            return 'PAY' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+        }
+        
+        // Wallet Functions
+        function loadWalletBalance() {
+            // In a real app, this would fetch from the backend
+            const balance = localStorage.getItem('walletBalance') || '0.00';
+            document.getElementById('walletBalance').textContent = `R ${parseFloat(balance).toFixed(2)}`;
+        }
+        
+        function addFunds() {
+            const amount = prompt('Enter amount to add to wallet:');
+            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+                const currentBalance = parseFloat(localStorage.getItem('walletBalance') || '0.00');
+                const newBalance = currentBalance + parseFloat(amount);
+                localStorage.setItem('walletBalance', newBalance.toFixed(2));
+                loadWalletBalance();
+                alert(`R ${amount} added to your wallet!`);
+            }
+        }
+        
+        // Booking Status Management
+        function moveBookingToConfirmed(booking) {
+            // Remove from pending bookings
+            const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
+            const updatedPending = pendingBookings.filter(b => b.id !== booking.id);
+            localStorage.setItem('pendingBookings', JSON.stringify(updatedPending));
+            
+            // Add to confirmed bookings
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            confirmedBookings.push(booking);
+            localStorage.setItem('confirmedBookings', JSON.stringify(confirmedBookings));
+        }
+        
+        function moveBookingToHistory(booking) {
+            // Remove from confirmed bookings
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            const updatedConfirmed = confirmedBookings.filter(b => b.id !== booking.id);
+            localStorage.setItem('confirmedBookings', JSON.stringify(updatedConfirmed));
+            
+            // Add to history
+            const historyBookings = JSON.parse(localStorage.getItem('historyBookings') || '[]');
+            booking.status = 'completed';
+            booking.completedAt = new Date().toISOString();
+            historyBookings.push(booking);
+            localStorage.setItem('historyBookings', JSON.stringify(historyBookings));
+        }
+        
+        // Navigation functions
+        function toggleMobileMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('show');
+        }
+
+        function topNavZIndexDecrease() {
+            const topnav = document.querySelector('.topnav');
+            if (topnav) {
+                topnav.style.zIndex = '999';
+            }
+        }
+        
+        // Share Payment Link Functions
+        function sharePaymentLink() {
+            console.log('Share payment link clicked');
+            alert('Share payment link clicked!'); // Temporary debug alert
+            
+            const tripData = sessionStorage.getItem('tripInfo');
+            const vehicleData = sessionStorage.getItem('selectedVehicle');
+            
+            console.log('Trip data:', tripData);
+            console.log('Vehicle data:', vehicleData);
+            
+            if (!tripData || !vehicleData) {
+                alert('Trip information not found. Please go back and try again.');
+                return;
+            }
+            
+            try {
+                const trip = JSON.parse(tripData);
+                const vehicle = JSON.parse(vehicleData);
+                
+                console.log('Parsed trip:', trip);
+                console.log('Parsed vehicle:', vehicle);
+                
+                // Generate payment link
+                const paymentLink = generatePaymentLink();
+                console.log('Generated payment link:', paymentLink);
+                
+                // Show share modal
+                showShareModal(trip, vehicle, paymentLink);
+            } catch (error) {
+                console.error('Error parsing data:', error);
+                alert('Error loading trip data. Please try again.');
+            }
+        }
+
+        function generatePaymentLink() {
+            // Generate a unique payment link
+            const baseUrl = window.location.origin + window.location.pathname.replace('booking-payment.html', '');
+            const paymentToken = btoa('payment_' + Date.now()); // Simple encoding
+            return `${baseUrl}payment-link.html?token=${paymentToken}&trip=${encodeURIComponent(JSON.stringify({
+                pickup: sessionStorage.getItem('tripInfo') ? JSON.parse(sessionStorage.getItem('tripInfo')).pickup : '',
+                destination: sessionStorage.getItem('tripInfo') ? JSON.parse(sessionStorage.getItem('tripInfo')).destination : '',
+                date: sessionStorage.getItem('tripInfo') ? JSON.parse(sessionStorage.getItem('tripInfo')).date : '',
+                time: sessionStorage.getItem('tripInfo') ? JSON.parse(sessionStorage.getItem('tripInfo')).time : '',
+                totalAmount: sessionStorage.getItem('tripInfo') ? JSON.parse(sessionStorage.getItem('tripInfo')).totalAmount : ''
+            }))}`;
+        }
+
+        function showShareModal(trip, vehicle, paymentLink) {
+            console.log('Showing share modal');
+            console.log('Trip:', trip);
+            console.log('Vehicle:', vehicle);
+            console.log('Payment link:', paymentLink);
+            
+            const modalHTML = `
+                <div class="modal-overlay" id="shareModal">
+                    <div class="modal-content share-modal">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-share-alt"></i> Share Payment Link</h2>
+                            <button class="close-btn" onclick="closeShareModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <div class="booking-summary">
+                                <h3><i class="fas fa-info-circle"></i> Trip Details</h3>
+                                <div class="booking-details">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Vehicle</span>
+                                        <span class="detail-value">${vehicle.name}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Date</span>
+                                        <span class="detail-value">${trip.date}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Time</span>
+                                        <span class="detail-value">${trip.time}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Amount</span>
+                                        <span class="detail-value">${trip.totalAmount}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="share-section">
+                                <h3><i class="fas fa-link"></i> Payment Link</h3>
+                                <p class="share-description">
+                                    Share this link with passengers or sponsors to allow them to pay for this trip.
+                                </p>
+                                
+                                <div class="link-container">
+                                    <input type="text" id="paymentLinkInput" value="${paymentLink}" readonly class="link-input">
+                                    <button class="btn btn-copy" onclick="copyPaymentLink()">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                
+                                <div class="share-options">
+                                    <h4>Share via:</h4>
+                                    <div class="share-buttons">
+                                        <button class="btn btn-whatsapp" onclick="shareViaWhatsApp('${paymentLink}')">
+                                            <i class="fab fa-whatsapp"></i> WhatsApp
+                                        </button>
+                                        <button class="btn btn-email" onclick="shareViaEmail('${paymentLink}')">
+                                            <i class="fas fa-envelope"></i> Email
+                                        </button>
+                                        <button class="btn btn-sms" onclick="shareViaSMS('${paymentLink}')">
+                                            <i class="fas fa-sms"></i> SMS
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeShareModal()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Inserting modal HTML');
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            console.log('Modal inserted successfully');
+        }
+
+        function closeShareModal() {
+            const modal = document.getElementById('shareModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function copyPaymentLink() {
+            const linkInput = document.getElementById('paymentLinkInput');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                // Show success message
+                const copyBtn = document.querySelector('.btn-copy');
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyBtn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = '';
+                }, 2000);
+            } catch (err) {
+                alert('Failed to copy link. Please copy manually.');
+            }
+        }
+
+        function shareViaWhatsApp(link) {
+            const message = `Please help pay for my taxi booking: ${link}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function shareViaEmail(link) {
+            const subject = 'Payment Request - Taxi Booking';
+            const body = `Please help pay for my taxi booking by clicking this link: ${link}`;
+            const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = emailUrl;
+        }
+
+        function shareViaSMS(link) {
+            const message = `Please help pay for my taxi booking: ${link}`;
+            const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+            window.location.href = smsUrl;
+        }
+
+        // Initialize payment splitting and wallet
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSelectedVehicle();
+            loadTripDetails();
+            setupPaymentSplitting();
+            loadWalletBalance();
+        });
+    </script>
+        </div>
+    </div>
+</body>
+</html>

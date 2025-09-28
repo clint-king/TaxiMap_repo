@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Owner Dashboard | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="./favicon-16x16.svg" sizes="16x16">
+    <link rel="icon" type="image/svg+xml" href="./favicon-32x32.svg" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="./site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./css/clientStyle.css">
+    <link rel="stylesheet" href="./css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css">
+    
+    <style>
+        /* Owner Dashboard Specific Styles */
+        .owner-dashboard {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        
+        .dashboard-content {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        html {
+            height: 100%;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 16px rgba(1, 56, 106, 0.3);
+        }
+        
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .dashboard-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 3px solid #01386A;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .dashboard-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            padding: 0.3rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #6c757d;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+            height: 80vh;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+            height: 80vh;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+        
+        .vehicle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .vehicles-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-bottom: 8rem;
+            height: 100%;
+        }
+        
+        .vehicle-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+            min-height: 350px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .vehicle-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-color: #01386A;
+        }
+        
+        .vehicle-image {
+            height: 100px;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+        }
+        
+        .vehicle-info {
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 100px);
+        }
+        
+        .vehicle-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 0.4rem;
+            line-height: 1.2;
+        }
+        
+        .vehicle-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+            flex: 1;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.65rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            margin-bottom: 0.1rem;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.8rem;
+            line-height: 1.1;
+        }
+        
+        .vehicle-status {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            margin-bottom: 0.6rem;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .vehicle-actions {
+            display: flex;
+            gap: 0.2rem;
+            margin-top: auto;
+        }
+        
+        .btn-action {
+            flex: 1;
+            padding: 0.3rem 0.4rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+        }
+        
+        .btn-edit {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+        
+        .btn-toggle {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-toggle:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+        
+        .add-vehicle-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #01386A;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 350px;
+        }
+        
+        .add-vehicle-card:hover {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            transform: translateY(-4px);
+        }
+        
+        .add-vehicle-icon {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .add-vehicle-text {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .coverage-map {
+            height: 300px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .coverage-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-bottom: 8rem;
+            height: 100%;
+        }
+        
+        .analytics-chart {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .analytics-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-bottom: 8rem;
+            height: 100%;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 0.8rem;
+        }
+        
+        .chart-placeholder {
+            height: 200px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #01386A;
+            box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        /* Booking Cards Styles */
+        .bookings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-bottom: 8rem;
+            height: 100%;
+        }
+        
+        .booking-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #01386A;
+        }
+        
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .booking-id {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #01386A;
+        }
+        
+        .booking-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .booking-time {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .route-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .route-from, .route-to {
+            margin-bottom: 0.5rem;
+        }
+        
+        .booking-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0;
+        }
+        
+        .info-item .label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+        
+        .info-item .value {
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .info-item .value.amount {
+            color: #28a745;
+            font-size: 1.1rem;
+        }
+        
+        .booking-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-accept {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-accept:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-contact {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-contact:hover {
+            background: #0056b3;
+        }
+        
+        .btn-decline {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-decline:hover {
+            background: #c82333;
+        }
+        
+        .btn-view {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #5a6268;
+        }
+        
+        .btn-cancel {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-cancel:hover {
+            background: #e0a800;
+        }
+        
+        @media (max-width: 768px) {
+            .owner-dashboard {
+                padding: 10px;
+            }
+            
+            .vehicle-grid {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+            
+            .dashboard-header {
+                padding: 1rem;
+            }
+            
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+            
+            .vehicle-grid {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+            
+            .dashboard-tabs {
+                flex-direction: column;
+                padding: 0.2rem;
+            }
+            
+            .tab-button {
+                text-align: center;
+                padding: 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            .vehicle-card {
+                min-height: 320px;
+            }
+            
+            .vehicle-image {
+                height: 80px;
+                font-size: 1.3rem;
+            }
+            
+            .vehicle-info {
+                padding: 0.6rem;
+            }
+            
+            .vehicle-name {
+                font-size: 0.9rem;
+            }
+            
+            .btn-action {
+                padding: 0.25rem 0.3rem;
+                font-size: 0.65rem;
+            }
+            
+            .detail-label {
+                font-size: 0.6rem;
+            }
+            
+            .detail-value {
+                font-size: 0.75rem;
+            }
+            
+            .tab-content {
+                height: 70vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="owner-dashboard">
+        <div class="dashboard-content">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div>
+                    <h1 class="dashboard-title">
+                        <i class="fas fa-taxi"></i>
+                        Taxi Owner Dashboard
+                    </h1>
+                    <p class="dashboard-subtitle">Manage your fleet and monitor your business performance</p>
+                </div>
+            </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Active Vehicles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">127</div>
+                <div class="stat-label">Total Bookings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">R 15,420</div>
+                <div class="stat-label">Monthly Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4.8</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tabs -->
+        <div class="dashboard-tabs">
+            <button class="tab-button active" onclick="showTab('vehicles')">
+                <i class="fas fa-car"></i> My Vehicles
+            </button>
+            <button class="tab-button" onclick="showTab('coverage')">
+                <i class="fas fa-map-marked-alt"></i> Coverage Areas
+            </button>
+            <button class="tab-button" onclick="showTab('analytics')">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
+            <button class="tab-button" onclick="showTab('bookings')">
+                <i class="fas fa-calendar-check"></i> Bookings
+            </button>
+        </div>
+
+        <!-- Vehicles Tab -->
+        <div id="vehicles-tab" class="tab-content active">
+            <div class="vehicles-container">
+                <div class="vehicle-grid">
+                <!-- Existing Vehicles -->
+                <div class="vehicle-card">
+                    <div class="vehicle-image">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <div class="vehicle-info">
+                        <h3 class="vehicle-name">Golden Arrow Minibus</h3>
+                        <div class="vehicle-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Type</span>
+                                <span class="detail-value">Minibus (16 seats)</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Registration</span>
+                                <span class="detail-value">CA 123-456</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Rate</span>
+                                <span class="detail-value">R 15.50/km</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Rating</span>
+                                <span class="detail-value">4.8/5</span>
+                            </div>
+                        </div>
+                        <span class="vehicle-status status-active">Active</span>
+                        <div class="vehicle-actions">
+                            <button class="btn-action btn-edit" onclick="editVehicle(1)">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn-action btn-toggle" onclick="toggleVehicle(1)">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteVehicle(1)">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vehicle-card">
+                    <div class="vehicle-image">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <div class="vehicle-info">
+                        <h3 class="vehicle-name">City Express Bus</h3>
+                        <div class="vehicle-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Type</span>
+                                <span class="detail-value">22-Seater Bus</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Registration</span>
+                                <span class="detail-value">GP 789-012</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Rate</span>
+                                <span class="detail-value">R 12.00/km</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Rating</span>
+                                <span class="detail-value">4.6/5</span>
+                            </div>
+                        </div>
+                        <span class="vehicle-status status-active">Active</span>
+                        <div class="vehicle-actions">
+                            <button class="btn-action btn-edit" onclick="editVehicle(2)">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn-action btn-toggle" onclick="toggleVehicle(2)">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteVehicle(2)">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add New Vehicle Card -->
+                <div class="vehicle-card add-vehicle-card" onclick="openAddVehicleModal()">
+                    <div class="add-vehicle-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="add-vehicle-text">Add New Vehicle</div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Coverage Areas Tab -->
+        <div id="coverage-tab" class="tab-content">
+            <div class="coverage-container">
+                <div class="analytics-chart">
+                <h3 class="chart-title">Service Coverage Areas</h3>
+                <div class="coverage-map" id="coverageMap">
+                    <!-- Map will be initialized here -->
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="editCoverageAreas()">
+                        <i class="fas fa-edit"></i> Edit Coverage Areas
+                    </button>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="analytics-container">
+                <div class="analytics-chart">
+                <h3 class="chart-title">Booking Trends</h3>
+                <div class="chart-placeholder">
+                    <i class="fas fa-chart-line" style="font-size: 3rem; margin-right: 1rem;"></i>
+                    Booking trends chart will be displayed here
+                </div>
+            </div>
+            
+            <div class="analytics-chart">
+                <h3 class="chart-title">Revenue Analytics</h3>
+                <div class="chart-placeholder">
+                    <i class="fas fa-chart-pie" style="font-size: 3rem; margin-right: 1rem;"></i>
+                    Revenue breakdown chart will be displayed here
+                </div>
+            </div>
+            
+            <div class="analytics-chart">
+                <h3 class="chart-title">Vehicle Performance</h3>
+                <div class="chart-placeholder">
+                    <i class="fas fa-chart-bar" style="font-size: 3rem; margin-right: 1rem;"></i>
+                    Vehicle performance metrics will be displayed here
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Bookings Tab -->
+        <div id="bookings-tab" class="tab-content">
+            <div class="bookings-container">
+                <!-- Booking 1 -->
+                <div class="booking-card">
+                    <div class="booking-header">
+                        <div class="booking-id">#BK-2025-001</div>
+                        <div class="booking-status status-pending">Pending</div>
+                        <div class="booking-time">2 hours ago</div>
+                    </div>
+                    <div class="booking-details">
+                        <div class="route-info">
+                            <div class="route-from">
+                                <strong>From:</strong> Sandton City, Johannesburg
+                            </div>
+                            <div class="route-to">
+                                <strong>To:</strong> OR Tambo Airport, Kempton Park
+                            </div>
+                        </div>
+                        <div class="booking-info">
+                            <div class="info-item">
+                                <span class="label">Customer:</span>
+                                <span class="value">Sarah Mthembu</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Date & Time:</span>
+                                <span class="value">Today, 2:30 PM</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Passengers:</span>
+                                <span class="value">3 adults, 2 children</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Distance:</span>
+                                <span class="value">28.5 km</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Total Amount:</span>
+                                <span class="value amount">R 516.75</span>
+                            </div>
+                        </div>
+                        <div class="booking-actions">
+                            <button class="btn-action btn-accept" onclick="acceptBooking('BK-2025-001')">
+                                <i class="fas fa-check"></i> Accept
+                            </button>
+                            <button class="btn-action btn-contact" onclick="contactCustomer('Sarah Mthembu')">
+                                <i class="fas fa-phone"></i> Contact
+                            </button>
+                            <button class="btn-action btn-decline" onclick="declineBooking('BK-2025-001')">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking 2 -->
+                <div class="booking-card">
+                    <div class="booking-header">
+                        <div class="booking-id">#BK-2025-002</div>
+                        <div class="booking-status status-confirmed">Confirmed</div>
+                        <div class="booking-time">1 day ago</div>
+                    </div>
+                    <div class="booking-details">
+                        <div class="route-info">
+                            <div class="route-from">
+                                <strong>From:</strong> Rosebank Mall, Johannesburg
+                            </div>
+                            <div class="route-to">
+                                <strong>To:</strong> Pretoria CBD, Pretoria
+                            </div>
+                        </div>
+                        <div class="booking-info">
+                            <div class="info-item">
+                                <span class="label">Customer:</span>
+                                <span class="value">John Dlamini</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Date & Time:</span>
+                                <span class="value">Tomorrow, 8:00 AM</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Passengers:</span>
+                                <span class="value">2 adults</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Distance:</span>
+                                <span class="value">45.2 km</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Total Amount:</span>
+                                <span class="value amount">R 750.60</span>
+                            </div>
+                        </div>
+                        <div class="booking-actions">
+                            <button class="btn-action btn-view" onclick="viewBookingDetails('BK-2025-002')">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                            <button class="btn-action btn-contact" onclick="contactCustomer('John Dlamini')">
+                                <i class="fas fa-phone"></i> Contact
+                            </button>
+                            <button class="btn-action btn-cancel" onclick="cancelBooking('BK-2025-002')">
+                                <i class="fas fa-ban"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Vehicle Modal -->
+    <div id="vehicleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Vehicle</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="vehicleForm">
+                    <div class="form-group">
+                        <label class="form-label" for="vehicleName">Vehicle Name</label>
+                        <input type="text" id="vehicleName" class="form-input" placeholder="Enter vehicle name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="vehicleType">Vehicle Type</label>
+                        <select id="vehicleType" class="form-input" required>
+                            <option value="">Select vehicle type</option>
+                            <option value="minibus">Minibus Taxi (16-18 seats)</option>
+                            <option value="bus">22-Seater Bus</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registration">Registration Number</label>
+                        <input type="text" id="registration" class="form-input" placeholder="e.g., CA 123-456" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="ratePerKm">Rate per Kilometer (R)</label>
+                        <input type="number" id="ratePerKm" class="form-input" placeholder="15.50" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="amenities">Amenities (comma-separated)</label>
+                        <input type="text" id="amenities" class="form-input" placeholder="AC, Music, WiFi, Charging Ports">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" class="form-input form-textarea" placeholder="Describe your vehicle..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="vehicleImage">Vehicle Image</label>
+                        <input type="file" id="vehicleImage" class="form-input" accept="image/*">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Vehicle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coverage Areas Modal -->
+    <div id="coverageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Coverage Areas</h2>
+                <button class="close-btn" onclick="closeCoverageModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Areas You're Willing to Travel To</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="johannesburg"> Johannesburg CBD
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="soweto"> Soweto
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="sandton"> Sandton
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="pretoria"> Pretoria
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="centurion"> Centurion
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" value="midrand"> Midrand
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Maximum Travel Distance (km)</label>
+                    <input type="number" id="maxDistance" class="form-input" placeholder="50" min="1" max="200">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCoverageModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCoverageAreas()">Save Coverage</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script>
+        // Global variables
+        let currentTab = 'vehicles';
+        let map;
+        let coverageAreas = [];
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            loadDashboardData();
+        });
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            currentTab = tabName;
+            
+            // Initialize map if coverage tab is selected
+            if (tabName === 'coverage') {
+                setTimeout(() => {
+                    initializeMap();
+                }, 100);
+            }
+        }
+
+        // Initialize map for coverage areas
+        function initializeMap() {
+            if (map) {
+                map.remove();
+            }
+            
+            map = new mapboxgl.Map({
+                container: 'coverageMap',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [-26.2041, 28.0473], // Johannesburg
+                zoom: 10
+            });
+            
+            map.on('load', function() {
+                // Add coverage areas
+                addCoverageAreas();
+            });
+        }
+
+        // Add coverage areas to map
+        function addCoverageAreas() {
+            // Example coverage areas (in real app, this would come from backend)
+            const areas = [
+                {
+                    name: 'Johannesburg CBD',
+                    center: [-26.2041, 28.0473],
+                    radius: 5
+                },
+                {
+                    name: 'Soweto',
+                    center: [-26.2485, 27.9083],
+                    radius: 8
+                },
+                {
+                    name: 'Sandton',
+                    center: [-26.1076, 28.0567],
+                    radius: 6
+                }
+            ];
+            
+            areas.forEach(area => {
+                // Add circle for coverage area
+                map.addSource(`coverage-${area.name}`, {
+                    type: 'geojson',
+                    data: {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: area.center
+                        }
+                    }
+                });
+                
+                map.addLayer({
+                    id: `coverage-${area.name}`,
+                    type: 'circle',
+                    source: `coverage-${area.name}`,
+                    paint: {
+                        'circle-radius': area.radius * 1000, // Convert km to meters
+                        'circle-color': '#01386A',
+                        'circle-opacity': 0.3,
+                        'circle-stroke-color': '#01386A',
+                        'circle-stroke-width': 2
+                    }
+                });
+            });
+        }
+
+        // Vehicle management functions
+        function openAddVehicleModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Vehicle';
+            document.getElementById('vehicleForm').reset();
+            document.getElementById('vehicleModal').style.display = 'block';
+        }
+
+        function editVehicle(vehicleId) {
+            document.getElementById('modalTitle').textContent = 'Edit Vehicle';
+            // In real app, load vehicle data from backend
+            document.getElementById('vehicleModal').style.display = 'block';
+        }
+
+        function deleteVehicle(vehicleId) {
+            if (confirm('Are you sure you want to delete this vehicle?')) {
+                // In real app, delete from backend
+                alert('Vehicle deleted successfully!');
+                location.reload();
+            }
+        }
+
+        function toggleVehicle(vehicleId) {
+            // In real app, toggle vehicle status in backend
+            alert('Vehicle status updated!');
+        }
+
+        function closeModal() {
+            document.getElementById('vehicleModal').style.display = 'none';
+        }
+
+        function editCoverageAreas() {
+            document.getElementById('coverageModal').style.display = 'block';
+        }
+
+        function closeCoverageModal() {
+            document.getElementById('coverageModal').style.display = 'none';
+        }
+
+        function saveCoverageAreas() {
+            // In real app, save coverage areas to backend
+            alert('Coverage areas updated successfully!');
+            closeCoverageModal();
+        }
+
+        // Form submission
+        document.getElementById('vehicleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('vehicleName').value,
+                type: document.getElementById('vehicleType').value,
+                registration: document.getElementById('registration').value,
+                rate: document.getElementById('ratePerKm').value,
+                amenities: document.getElementById('amenities').value,
+                description: document.getElementById('description').value
+            };
+            
+            // In real app, send to backend
+            console.log('Vehicle data:', formData);
+            alert('Vehicle added successfully!');
+            closeModal();
+            location.reload();
+        });
+
+        // Load dashboard data
+        function loadDashboardData() {
+            // In real app, load data from backend
+            console.log('Loading dashboard data...');
+        }
+
+        // Booking action functions
+        function acceptBooking(bookingId) {
+            alert(`Booking ${bookingId} accepted! Customer will be notified.`);
+            // In real app, update booking status in backend
+        }
+
+        function declineBooking(bookingId) {
+            if (confirm(`Are you sure you want to decline booking ${bookingId}?`)) {
+                alert(`Booking ${bookingId} declined. Customer will be notified.`);
+                // In real app, update booking status in backend
+            }
+        }
+
+        function contactCustomer(customerName) {
+            alert(`Opening contact options for ${customerName}...`);
+            // In real app, open contact modal or redirect to messaging
+        }
+
+        function viewBookingDetails(bookingId) {
+            alert(`Viewing details for booking ${bookingId}...`);
+            // In real app, open booking details modal
+        }
+
+        function cancelBooking(bookingId) {
+            if (confirm(`Are you sure you want to cancel booking ${bookingId}?`)) {
+                alert(`Booking ${bookingId} cancelled. Customer will be notified.`);
+                // In real app, update booking status in backend
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const vehicleModal = document.getElementById('vehicleModal');
+            const coverageModal = document.getElementById('coverageModal');
+            
+            if (event.target === vehicleModal) {
+                closeModal();
+            }
+            if (event.target === coverageModal) {
+                closeCoverageModal();
+            }
+        }
+    </script>
+</body>
+</html>

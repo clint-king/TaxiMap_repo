@@ -1449,21 +1449,21 @@ const textmap = document.querySelector('#text-map ');
   }
 
 
-  function closeSearchContainer(){
+function closeSearchContainer(){
     const searchContainer = document.querySelector(".search_container");
      if(!searchContainer.classList.contains('hidden')){
       searchContainer.classList.add('hidden');
      }
   }
 
-  function popupZindexIncrease(){
+function popupZindexIncrease(){
     const popup = document.getElementById("popup-container");
     if(popup){
       popup.style.zIndex = "3000";
     }
   }
 
-   function popupZindexDecrease(){
+function popupZindexDecrease(){
     const popup = document.getElementById("popup-container");
     if(popup){
       popup.style.zIndex = "0";
@@ -1821,6 +1821,7 @@ function saveLocationMarkerInfo(lng, lat, address) {
   confirmationMenu_latitude = lat;
   confirmationMenu_adresss = address;
 }
+
 function isLocationInfoAvailable() {
   return (
     confirmationMenu_longitude > -500 &&
@@ -2137,9 +2138,6 @@ async function HighlightMap() {
   }
 }
 
-
-
-
 function isPointInBuffer(lng, lat) {
   const point = turf.point([lng, lat]);
   if(!mergedBufferFeature || mergedBufferFeature === null){
@@ -2450,8 +2448,6 @@ function getMatchingSegments(fullPath, directionPath, tolerance = 0.0001) {
 
   return matchingSegments;
 }
-
-
 
 
 // Helper function to check if two line segments are close
