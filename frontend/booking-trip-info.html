@@ -1156,8 +1156,6 @@
                 justify-content: center;
             }
         }
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
         
         .modal-header {
             padding: 1.5rem;
@@ -1251,6 +1249,83 @@
         .passenger-details span {
             margin-right: 1rem;
         }
+        
+        /* Auth buttons styling */
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-left: auto;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .btn-login {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            background: white;
+            color: #333;
+        }
+        
+        .btn-signup {
+            background: #FFD700;
+            color: #333;
+            border: 2px solid #FFD700;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-signup:hover {
+            background: transparent;
+            color: white;
+            border-color: white;
+        }
+        
+        .full-navigation {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        /* Ensure nav-container has relative positioning */
+        .nav-container {
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-buttons {
+                position: static;
+                transform: none;
+                margin-left: 0;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            
+            .btn-login, .btn-signup {
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body class="has-map-layout">
@@ -1274,11 +1349,20 @@
                 <!-- Navigation links -->
                 <div class="nav-links" id="mobileMenu">
                     <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                    <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
                     <a href="booking-trip-info.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
-                    <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
-                    <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
                     <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
+                    <!-- Login/Signup buttons for non-logged in users -->
+                    <div id="authButtons" class="auth-buttons">
+                        <a href="login.html" class="btn-login">Login</a>
+                        <a href="signup.html" class="btn-signup">Sign Up</a>
+                    </div>
+                    <!-- Full navigation for logged in users -->
+                    <div id="fullNav" class="full-navigation" style="display: none;">
+                        <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                        <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                        <a href="profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -1503,12 +1587,28 @@
     <!-- Scripts -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script type="module" src="./js/booking-trip-info.js"></script>
-    <script type="module" src="./js/logout.js"></script>
+    <!-- Removed logout.js import to allow access without authentication -->
     
     <script>
         
-        // Initialize dashboard on page load
+        // Check authentication status and update navigation
         document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+            
+            if (isLoggedIn) {
+                // User is logged in - show full navigation
+                authButtons.style.display = 'none';
+                fullNav.style.display = 'block';
+            } else {
+                // User is not logged in - show auth buttons
+                authButtons.style.display = 'block';
+                fullNav.style.display = 'none';
+            }
+            
             loadBookingDashboard();
             
             // Ensure dashboard is shown by default

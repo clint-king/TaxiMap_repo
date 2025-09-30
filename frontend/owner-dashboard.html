@@ -64,6 +64,63 @@
             opacity: 0.9;
         }
         
+        /* Navigation Bar Styles */
+        .dashboard-nav {
+            background: white;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #333;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            border-color: #01386A;
+        }
+        
+        .nav-link i {
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+            
+            .nav-link {
+                justify-content: center;
+                padding: 0.6rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -96,6 +153,259 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+        }
+        
+        /* Analytics Styles */
+        .analytics-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        .analytics-container {
+            padding: 0 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .analytics-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .analytics-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .analytics-period {
+            font-size: 0.8rem;
+            color: #6c757d;
+            background: #f8f9fa;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+        }
+        
+        /* Chart Styles */
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: end;
+            gap: 0.5rem;
+            padding: 1rem 0;
+        }
+        
+        .chart-bars {
+            display: flex;
+            align-items: end;
+            gap: 0.5rem;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .chart-bar:hover {
+            transform: scaleY(1.05);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        /* Booking Stats */
+        .booking-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .booking-stat {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .stat-icon.completed {
+            background: #d4edda;
+            color: #28a745;
+        }
+        
+        .stat-icon.pending {
+            background: #fff3cd;
+            color: #ffc107;
+        }
+        
+        .stat-icon.cancelled {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        /* Routes List */
+        .routes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .route-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .route-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+        
+        .route-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .route-count {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .route-percentage {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 0.9rem;
+        }
+        
+        /* Performance Metrics */
+        .metrics-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .metric-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .metric-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 150px;
+            }
+            
+            .booking-stats {
+                gap: 0.75rem;
+            }
+            
+            .booking-stat {
+                padding: 0.75rem;
+            }
         }
         
         .dashboard-tabs {
@@ -137,7 +447,7 @@
         
         .tab-content.active {
             display: block;
-            height: 80vh;
+            height: 40vh;
             overflow-y: auto;
             padding: 1rem 0;
         }
@@ -502,6 +812,446 @@
             background: #5a6268;
         }
         
+        /* Image Upload Styles */
+        .image-upload-container {
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+            transition: border-color 0.3s ease;
+        }
+        
+        .image-upload-container:hover {
+            border-color: #01386A;
+        }
+        
+        .image-preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .image-preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .image-preview-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .image-preview-item.main-image {
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3);
+        }
+        
+        .image-preview-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .image-preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .image-preview-item:hover .image-preview-overlay {
+            opacity: 1;
+        }
+        
+        .image-preview-item.main-image .image-preview-overlay {
+            opacity: 1;
+            background: rgba(40, 167, 69, 0.9);
+        }
+        
+        .image-remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .image-remove-btn:hover {
+            background: #dc3545;
+            transform: scale(1.1);
+        }
+        
+        .image-upload-info {
+            margin-top: 0.5rem;
+        }
+        
+        .text-muted {
+            color: #6c757d;
+        }
+        
+        /* Coverage Areas Styles */
+        .province-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .province-item {
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .province-item:hover {
+            border-color: #01386A;
+            background: #f0f8ff;
+        }
+        
+        .province-item input[type="checkbox"] {
+            margin-bottom: 0.5rem;
+        }
+        
+        .province-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .province-cities {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        
+        .areas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .area-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .area-item:hover {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .area-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+        }
+        
+        .area-name {
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+        
+        .area-distance {
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .area-item input[type="checkbox"]:checked + .area-name {
+            color: #28a745;
+        }
+        
+        .area-item input[type="checkbox"]:checked {
+            background: #28a745;
+        }
+        
+        /* Coverage Display Styles */
+        .coverage-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .coverage-stat {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .coverage-stat .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .coverage-stat .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .coverage-stat .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .coverage-settings {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .settings-section {
+            margin-bottom: 2rem;
+        }
+        
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .settings-section h4 {
+            color: #333;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .settings-section h4 i {
+            color: #01386A;
+        }
+        
+        .areas-list, .excluded-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .province-tag {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            margin: 0.25rem;
+        }
+        
+        .provinces-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .coverage-summary-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #01386A;
+        }
+        
+        .coverage-summary-info p {
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+        
+        .coverage-summary-info strong {
+            color: #01386A;
+        }
+        
+        /* Base Location Styles */
+        .base-location-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+        
+        .location-search {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .location-search input {
+            flex: 1;
+        }
+        
+        .location-map {
+            height: 300px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+        
+        .selected-location {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 2px solid #28a745;
+        }
+        
+        .selected-location h4 {
+            color: #28a745;
+            margin-bottom: 0.5rem;
+        }
+        
+        .location-details p {
+            margin-bottom: 0.25rem;
+            color: #6c757d;
+        }
+        
+        .location-details strong {
+            color: #333;
+        }
+        
+        /* Multi-Day Trip Styles */
+        .multi-day-options {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        .option-item {
+            margin-bottom: 1rem;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .multi-day-settings {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .conditions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .conditions-list .checkbox-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        /* Coverage Display Styles */
+        .base-location-info, .multi-day-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #01386A;
+        }
+        
+        .base-location-info p, .multi-day-info p {
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+        
+        .base-location-info strong, .multi-day-info strong {
+            color: #333;
+        }
+        
+        .status-enabled {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .distance-info p {
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+        
+        .distance-info strong {
+            color: #333;
+        }
+        
+        .coverage-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
         /* Booking Cards Styles */
         .bookings-container {
             display: flex;
@@ -723,6 +1473,20 @@
                 -webkit-overflow-scrolling: touch;
             }
         }
+        
+        .full-navigation {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -738,6 +1502,33 @@
                     <p class="dashboard-subtitle">Manage your fleet and monitor your business performance</p>
                 </div>
             </div>
+
+            <!-- Navigation Bar -->
+            <nav class="dashboard-nav">
+                <div class="nav-links">
+                    <a href="client.html" class="nav-link">
+                        <i class="fas fa-route"></i> Find Route
+                    </a>
+                    <a href="booking-trip-info.html" class="nav-link">
+                        <i class="fas fa-calendar-alt"></i> Book Taxi
+                    </a>
+                    <a href="help.html" class="nav-link">
+                        <i class="fas fa-question-circle"></i> Help
+                    </a>
+                    <!-- Full navigation for logged in users -->
+                    <div id="fullNav" class="full-navigation" style="display: none;">
+                        <a href="route-suggestion.html" class="nav-link">
+                            <i class="fas fa-lightbulb"></i> Suggest Route
+                        </a>
+                        <a href="feedback.html" class="nav-link">
+                            <i class="fas fa-comments"></i> Feedback
+                        </a>
+                        <a href="profile.html" class="nav-link">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                    </div>
+                </div>
+            </nav>
 
         <!-- Stats Overview -->
         <div class="stats-grid">
@@ -872,46 +1663,264 @@
         <!-- Coverage Areas Tab -->
         <div id="coverage-tab" class="tab-content">
             <div class="coverage-container">
-                <div class="analytics-chart">
-                <h3 class="chart-title">Service Coverage Areas</h3>
-                <div class="coverage-map" id="coverageMap">
-                    <!-- Map will be initialized here -->
+                <div class="coverage-summary">
+                    <h3 class="chart-title">Current Coverage Settings</h3>
+                    
+                    <!-- Coverage Overview -->
+                    <div class="coverage-overview">
+                        <div class="coverage-stat">
+                            <div class="stat-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">1</div>
+                                <div class="stat-label">Provinces Covered</div>
+                            </div>
+                        </div>
+                        
+                        <div class="coverage-stat">
+                            <div class="stat-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">150 km</div>
+                                <div class="stat-label">Max Distance</div>
+                            </div>
+                        </div>
+                        
+                        <div class="coverage-stat">
+                            <div class="stat-icon">
+                                <i class="fas fa-map"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value">Gauteng</div>
+                                <div class="stat-label">Primary Province</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Settings -->
+                    <div class="coverage-settings">
+                        <div class="settings-section">
+                            <h4><i class="fas fa-map"></i> Provinces You Cover</h4>
+                            <div class="provinces-list">
+                                <span class="province-tag">Gauteng</span>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4><i class="fas fa-map-marker-alt"></i> Base Location</h4>
+                            <div class="base-location-info">
+                                <p><strong>Address:</strong> Johannesburg CBD, Gauteng, South Africa</p>
+                                <p><strong>Coordinates:</strong> -26.2041, 28.0475</p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4><i class="fas fa-route"></i> Distance Limits</h4>
+                            <div class="distance-info">
+                                <p><strong>Maximum Distance:</strong> 150 km from base location</p>
+                                <p><strong>Coverage Radius:</strong> 150 km radius from Johannesburg CBD</p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4><i class="fas fa-calendar-alt"></i> Multi-Day Trip Options</h4>
+                            <div class="multi-day-info">
+                                <p><strong>Multi-Day Trips:</strong> <span class="status-enabled">Enabled</span></p>
+                                <p><strong>Maximum Stay:</strong> 3 days at destination</p>
+                                <p><strong>Return Trip Rate:</strong> R500 per day</p>
+                                <p><strong>Conditions:</strong> Return booking required, flexible dates allowed</p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h4><i class="fas fa-info-circle"></i> Coverage Summary</h4>
+                            <div class="coverage-summary-info">
+                                <p>You currently cover <strong>1 province</strong> (Gauteng) with a maximum travel distance of <strong>150 km</strong> from your base in Johannesburg.</p>
+                                <p>Multi-day trips are enabled, allowing your taxi to stay at destinations for up to 3 days with a daily rate of R500.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="coverage-actions">
+                        <button class="btn btn-primary" onclick="editCoverageAreas()">
+                            <i class="fas fa-edit"></i> Edit Coverage Settings
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewCoverageMap()">
+                            <i class="fas fa-map"></i> View Coverage Map
+                        </button>
+                    </div>
                 </div>
-                <div style="margin-top: 1rem;">
-                    <button class="btn btn-primary" onclick="editCoverageAreas()">
-                        <i class="fas fa-edit"></i> Edit Coverage Areas
-                    </button>
-                </div>
-            </div>
             </div>
         </div>
 
         <!-- Analytics Tab -->
         <div id="analytics-tab" class="tab-content">
             <div class="analytics-container">
-                <div class="analytics-chart">
-                <h3 class="chart-title">Booking Trends</h3>
-                <div class="chart-placeholder">
-                    <i class="fas fa-chart-line" style="font-size: 3rem; margin-right: 1rem;"></i>
-                    Booking trends chart will be displayed here
+                <!-- Analytics Section -->
+                <div class="analytics-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Business Analytics
+                    </h2>
+                    
+                    <!-- Analytics Grid -->
+                    <div class="analytics-grid">
+                        <!-- Revenue Chart -->
+                        <div class="analytics-card">
+                            <div class="analytics-header">
+                                <h3><i class="fas fa-money-bill-wave"></i> Revenue Trends</h3>
+                                <div class="analytics-period">Last 7 Days</div>
+                            </div>
+                            <div class="chart-container">
+                                <div class="chart-bars">
+                                    <div class="chart-bar" style="height: 60%;" data-value="R 2,400">
+                                        <span class="bar-label">Mon</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 80%;" data-value="R 3,200">
+                                        <span class="bar-label">Tue</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 45%;" data-value="R 1,800">
+                                        <span class="bar-label">Wed</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 90%;" data-value="R 3,600">
+                                        <span class="bar-label">Thu</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 100%;" data-value="R 4,000">
+                                        <span class="bar-label">Fri</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 75%;" data-value="R 3,000">
+                                        <span class="bar-label">Sat</span>
+                                    </div>
+                                    <div class="chart-bar" style="height: 55%;" data-value="R 2,200">
+                                        <span class="bar-label">Sun</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Booking Analytics -->
+                        <div class="analytics-card">
+                            <div class="analytics-header">
+                                <h3><i class="fas fa-calendar-check"></i> Booking Analytics</h3>
+                                <div class="analytics-period">This Month</div>
+                            </div>
+                            <div class="booking-stats">
+                                <div class="booking-stat">
+                                    <div class="stat-icon completed">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-value">89</div>
+                                        <div class="stat-label">Completed</div>
+                                    </div>
+                                </div>
+                                <div class="booking-stat">
+                                    <div class="stat-icon pending">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-value">12</div>
+                                        <div class="stat-label">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="booking-stat">
+                                    <div class="stat-icon cancelled">
+                                        <i class="fas fa-times-circle"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-value">3</div>
+                                        <div class="stat-label">Cancelled</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Popular Routes -->
+                        <div class="analytics-card">
+                            <div class="analytics-header">
+                                <h3><i class="fas fa-route"></i> Popular Routes</h3>
+                                <div class="analytics-period">Top 5</div>
+                            </div>
+                            <div class="routes-list">
+                                <div class="route-item">
+                                    <div class="route-info">
+                                        <div class="route-name">Johannesburg → Pretoria</div>
+                                        <div class="route-count">24 bookings</div>
+                                    </div>
+                                    <div class="route-percentage">19%</div>
+                                </div>
+                                <div class="route-item">
+                                    <div class="route-info">
+                                        <div class="route-name">Cape Town → Airport</div>
+                                        <div class="route-count">18 bookings</div>
+                                    </div>
+                                    <div class="route-percentage">14%</div>
+                                </div>
+                                <div class="route-item">
+                                    <div class="route-info">
+                                        <div class="route-name">Durban → Umhlanga</div>
+                                        <div class="route-count">15 bookings</div>
+                                    </div>
+                                    <div class="route-percentage">12%</div>
+                                </div>
+                                <div class="route-item">
+                                    <div class="route-info">
+                                        <div class="route-name">Johannesburg → Airport</div>
+                                        <div class="route-count">12 bookings</div>
+                                    </div>
+                                    <div class="route-percentage">9%</div>
+                                </div>
+                                <div class="route-item">
+                                    <div class="route-info">
+                                        <div class="route-name">Cape Town → Stellenbosch</div>
+                                        <div class="route-count">9 bookings</div>
+                                    </div>
+                                    <div class="route-percentage">7%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <div class="analytics-card">
+                            <div class="analytics-header">
+                                <h3><i class="fas fa-tachometer-alt"></i> Performance Metrics</h3>
+                                <div class="analytics-period">Current Status</div>
+                            </div>
+                            <div class="metrics-grid">
+                                <div class="metric-item">
+                                    <div class="metric-label">On-Time Rate</div>
+                                    <div class="metric-value">94%</div>
+                                    <div class="metric-bar">
+                                        <div class="metric-fill" style="width: 94%; background: #28a745;"></div>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Customer Satisfaction</div>
+                                    <div class="metric-value">4.8/5</div>
+                                    <div class="metric-bar">
+                                        <div class="metric-fill" style="width: 96%; background: #17a2b8;"></div>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Vehicle Utilization</div>
+                                    <div class="metric-value">87%</div>
+                                    <div class="metric-bar">
+                                        <div class="metric-fill" style="width: 87%; background: #ffc107;"></div>
+                                    </div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Fuel Efficiency</div>
+                                    <div class="metric-value">8.2 L/100km</div>
+                                    <div class="metric-bar">
+                                        <div class="metric-fill" style="width: 82%; background: #6c757d;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="analytics-chart">
-                <h3 class="chart-title">Revenue Analytics</h3>
-                <div class="chart-placeholder">
-                    <i class="fas fa-chart-pie" style="font-size: 3rem; margin-right: 1rem;"></i>
-                    Revenue breakdown chart will be displayed here
-                </div>
-            </div>
-            
-            <div class="analytics-chart">
-                <h3 class="chart-title">Vehicle Performance</h3>
-                <div class="chart-placeholder">
-                    <i class="fas fa-chart-bar" style="font-size: 3rem; margin-right: 1rem;"></i>
-                    Vehicle performance metrics will be displayed here
-                </div>
-            </div>
             </div>
         </div>
 
@@ -1070,8 +2079,16 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="vehicleImage">Vehicle Image</label>
-                        <input type="file" id="vehicleImage" class="form-input" accept="image/*">
+                        <label class="form-label">Vehicle Images (Max 5 images)</label>
+                        <div class="image-upload-container">
+                            <input type="file" id="vehicleImages" class="form-input" accept="image/*" multiple onchange="handleImageUpload(event)">
+                            <div class="image-preview-container" id="imagePreviewContainer">
+                                <!-- Image previews will be displayed here -->
+                            </div>
+                            <div class="image-upload-info">
+                                <small class="text-muted">Upload up to 5 images. Click on an image to set it as the main picture.</small>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-actions">
@@ -1087,42 +2104,145 @@
     <div id="coverageModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Edit Coverage Areas</h2>
+                <h2 class="modal-title">Edit Coverage Areas & Limits</h2>
                 <button class="close-btn" onclick="closeCoverageModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Base Location Selection -->
                 <div class="form-group">
-                    <label class="form-label">Select Areas You're Willing to Travel To</label>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="johannesburg"> Johannesburg CBD
+                    <label class="form-label">Select Your Base Location</label>
+                    <div class="base-location-container">
+                        <div class="location-search">
+                            <input type="text" id="baseLocationSearch" class="form-input" placeholder="Search for your base location (e.g., Johannesburg, Sandton)" onkeyup="searchBaseLocation()">
+                            <button type="button" class="btn btn-secondary" onclick="useCurrentLocation()">
+                                <i class="fas fa-location-arrow"></i> Use Current Location
+                            </button>
+                        </div>
+                        <div class="location-map" id="baseLocationMap">
+                            <!-- Map will be initialized here -->
+                        </div>
+                        <div class="selected-location" id="selectedBaseLocation" style="display: none;">
+                            <h4><i class="fas fa-map-marker-alt"></i> Selected Base Location</h4>
+                            <div class="location-details">
+                                <p><strong>Address:</strong> <span id="baseAddress"></span></p>
+                                <p><strong>Coordinates:</strong> <span id="baseCoordinates"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distance Limits -->
+                <div class="form-group">
+                    <label class="form-label" for="maxDistance">Maximum Distance (km)</label>
+                    <input type="number" id="maxDistance" class="form-input" placeholder="100" min="10" max="500" value="150">
+                    <small class="text-muted">Maximum distance you're willing to travel from your base location</small>
+                </div>
+
+                <!-- Multi-Day Trip Options -->
+                <div class="form-group">
+                    <label class="form-label">Multi-Day Trip Options</label>
+                    <div class="multi-day-options">
+                        <div class="option-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="allowMultiDayTrips" onchange="toggleMultiDayOptions()">
+                                <span class="checkmark"></span>
+                                Allow multi-day trips (taxi stays at destination)
+                            </label>
+                        </div>
+                        
+                        <div class="multi-day-settings" id="multiDaySettings" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label" for="maxStayDays">Maximum Stay Duration (days)</label>
+                                <input type="number" id="maxStayDays" class="form-input" placeholder="3" min="1" max="30" value="3">
+                                <small class="text-muted">Maximum number of days your taxi can stay at destination</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="returnTripRate">Return Trip Rate (R per day)</label>
+                                <input type="number" id="returnTripRate" class="form-input" placeholder="500" min="100" max="5000" value="500">
+                                <small class="text-muted">Daily rate for staying at destination (covers parking, driver accommodation, etc.)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Return Trip Conditions</label>
+                                <div class="conditions-list">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="requireReturnBooking" checked>
+                                        <span class="checkmark"></span>
+                                        Require return trip booking confirmation
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="allowFlexibleReturn" checked>
+                                        <span class="checkmark"></span>
+                                        Allow flexible return dates
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="provideDriverAccommodation">
+                                        <span class="checkmark"></span>
+                                        Provide driver accommodation at destination
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Provinces You Cover -->
+                <div class="form-group">
+                    <label class="form-label">Provinces You're Willing to Travel To</label>
+                    <div class="province-grid">
+                        <label class="province-item">
+                            <input type="checkbox" value="gauteng" id="cover-gauteng" checked>
+                            <span class="province-name">Gauteng</span>
+                            <small class="province-cities">Johannesburg, Pretoria, Soweto, Sandton</small>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="soweto"> Soweto
+                        <label class="province-item">
+                            <input type="checkbox" value="western-cape" id="cover-western-cape">
+                            <span class="province-name">Western Cape</span>
+                            <small class="province-cities">Cape Town, Stellenbosch, Paarl</small>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="sandton"> Sandton
+                        <label class="province-item">
+                            <input type="checkbox" value="eastern-cape" id="cover-eastern-cape">
+                            <span class="province-name">Eastern Cape</span>
+                            <small class="province-cities">Port Elizabeth, East London, Grahamstown</small>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="pretoria"> Pretoria
+                        <label class="province-item">
+                            <input type="checkbox" value="kwa-zulu-natal" id="cover-kzn">
+                            <span class="province-name">KwaZulu-Natal</span>
+                            <small class="province-cities">Durban, Pietermaritzburg, Newcastle</small>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="centurion"> Centurion
+                        <label class="province-item">
+                            <input type="checkbox" value="free-state" id="cover-free-state">
+                            <span class="province-name">Free State</span>
+                            <small class="province-cities">Bloemfontein, Welkom, Bethlehem</small>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" value="midrand"> Midrand
+                        <label class="province-item">
+                            <input type="checkbox" value="north-west" id="cover-north-west">
+                            <span class="province-name">North West</span>
+                            <small class="province-cities">Rustenburg, Potchefstroom, Klerksdorp</small>
+                        </label>
+                        <label class="province-item">
+                            <input type="checkbox" value="limpopo" id="cover-limpopo">
+                            <span class="province-name">Limpopo</span>
+                            <small class="province-cities">Polokwane, Tzaneen, Thohoyandou</small>
+                        </label>
+                        <label class="province-item">
+                            <input type="checkbox" value="mpumalanga" id="cover-mpumalanga">
+                            <span class="province-name">Mpumalanga</span>
+                            <small class="province-cities">Nelspruit, Witbank, Secunda</small>
+                        </label>
+                        <label class="province-item">
+                            <input type="checkbox" value="northern-cape" id="cover-northern-cape">
+                            <span class="province-name">Northern Cape</span>
+                            <small class="province-cities">Kimberley, Upington, Springbok</small>
                         </label>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">Maximum Travel Distance (km)</label>
-                    <input type="number" id="maxDistance" class="form-input" placeholder="50" min="1" max="200">
-                </div>
-                
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeCoverageModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveCoverageAreas()">Save Coverage</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCoverageSettings()">Save Coverage Settings</button>
                 </div>
             </div>
         </div>
@@ -1131,6 +2251,22 @@
     <!-- Scripts -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script>
+        // Check authentication status and update navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const fullNav = document.getElementById('fullNav');
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+            
+            if (isLoggedIn) {
+                // User is logged in - show full navigation
+                fullNav.style.display = 'block';
+            } else {
+                // User is not logged in - hide full navigation
+                fullNav.style.display = 'none';
+            }
+        });
+        
         // Global variables
         let currentTab = 'vehicles';
         let map;
@@ -1238,17 +2374,91 @@
             });
         }
 
+        // Image upload variables
+        let uploadedImages = [];
+        let mainImageIndex = 0;
+
         // Vehicle management functions
         function openAddVehicleModal() {
             document.getElementById('modalTitle').textContent = 'Add New Vehicle';
             document.getElementById('vehicleForm').reset();
+            uploadedImages = [];
+            mainImageIndex = 0;
+            updateImagePreview();
             document.getElementById('vehicleModal').style.display = 'block';
         }
 
         function editVehicle(vehicleId) {
             document.getElementById('modalTitle').textContent = 'Edit Vehicle';
             // In real app, load vehicle data from backend
+            uploadedImages = [];
+            mainImageIndex = 0;
+            updateImagePreview();
             document.getElementById('vehicleModal').style.display = 'block';
+        }
+
+        // Image upload handling
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            
+            // Check if adding these files would exceed the limit
+            if (uploadedImages.length + files.length > 5) {
+                alert('You can only upload a maximum of 5 images.');
+                return;
+            }
+            
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        uploadedImages.push({
+                            file: file,
+                            url: e.target.result
+                        });
+                        updateImagePreview();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Clear the input
+            event.target.value = '';
+        }
+
+        function updateImagePreview() {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            
+            uploadedImages.forEach((image, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = `image-preview-item ${index === mainImageIndex ? 'main-image' : ''}`;
+                imageItem.onclick = () => setMainImage(index);
+                
+                imageItem.innerHTML = `
+                    <img src="${image.url}" alt="Vehicle image ${index + 1}">
+                    <div class="image-preview-overlay">
+                        ${index === mainImageIndex ? 'Main Image' : 'Click to set as main'}
+                    </div>
+                    <button class="image-remove-btn" onclick="removeImage(${index})" title="Remove image">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                container.appendChild(imageItem);
+            });
+        }
+
+        function setMainImage(index) {
+            mainImageIndex = index;
+            updateImagePreview();
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            if (mainImageIndex >= uploadedImages.length) {
+                mainImageIndex = Math.max(0, uploadedImages.length - 1);
+            }
+            updateImagePreview();
         }
 
         function deleteVehicle(vehicleId) {
@@ -1276,10 +2486,136 @@
             document.getElementById('coverageModal').style.display = 'none';
         }
 
-        function saveCoverageAreas() {
-            // In real app, save coverage areas to backend
-            alert('Coverage areas updated successfully!');
+        // Base location and multi-day trip variables
+        let baseLocation = null;
+        let baseLocationMap = null;
+
+        function searchBaseLocation() {
+            const searchTerm = document.getElementById('baseLocationSearch').value;
+            if (searchTerm.length > 2) {
+                // In real app, use geocoding API
+                console.log('Searching for:', searchTerm);
+                // Simulate search results
+                setTimeout(() => {
+                    if (searchTerm.toLowerCase().includes('johannesburg')) {
+                        setBaseLocation({
+                            address: 'Johannesburg CBD, Gauteng, South Africa',
+                            coordinates: [-26.2041, 28.0475],
+                            lat: -26.2041,
+                            lng: 28.0475
+                        });
+                    }
+                }, 500);
+            }
+        }
+
+        function useCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setBaseLocation({
+                            address: `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                            coordinates: [lng, lat],
+                            lat: lat,
+                            lng: lng
+                        });
+                    },
+                    function(error) {
+                        alert('Unable to get current location. Please search manually.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+
+        function setBaseLocation(location) {
+            baseLocation = location;
+            document.getElementById('baseAddress').textContent = location.address;
+            document.getElementById('baseCoordinates').textContent = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+            document.getElementById('selectedBaseLocation').style.display = 'block';
+            
+            // Initialize map with location
+            initializeBaseLocationMap();
+        }
+
+        function initializeBaseLocationMap() {
+            const mapContainer = document.getElementById('baseLocationMap');
+            mapContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+                    <i class="fas fa-map" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Map will be initialized here</p>
+                    <small>Base Location: ${baseLocation ? baseLocation.address : 'Not selected'}</small>
+                </div>
+            `;
+        }
+
+        function toggleMultiDayOptions() {
+            const allowMultiDay = document.getElementById('allowMultiDayTrips').checked;
+            const settingsDiv = document.getElementById('multiDaySettings');
+            
+            if (allowMultiDay) {
+                settingsDiv.style.display = 'block';
+            } else {
+                settingsDiv.style.display = 'none';
+            }
+        }
+
+        function saveCoverageSettings() {
+            const maxDistance = document.getElementById('maxDistance').value;
+            
+            // Get selected provinces
+            const selectedProvinces = [];
+            const provinceCheckboxes = document.querySelectorAll('.province-item input[type="checkbox"]:checked');
+            provinceCheckboxes.forEach(checkbox => {
+                selectedProvinces.push(checkbox.value);
+            });
+            
+            // Get multi-day trip settings
+            const allowMultiDay = document.getElementById('allowMultiDayTrips').checked;
+            const maxStayDays = document.getElementById('maxStayDays').value;
+            const returnTripRate = document.getElementById('returnTripRate').value;
+            const requireReturnBooking = document.getElementById('requireReturnBooking').checked;
+            const allowFlexibleReturn = document.getElementById('allowFlexibleReturn').checked;
+            const provideDriverAccommodation = document.getElementById('provideDriverAccommodation').checked;
+            
+            const coverageData = {
+                maxDistance: parseInt(maxDistance),
+                selectedProvinces: selectedProvinces,
+                baseLocation: baseLocation,
+                multiDayTrips: {
+                    allowed: allowMultiDay,
+                    maxStayDays: allowMultiDay ? parseInt(maxStayDays) : null,
+                    returnTripRate: allowMultiDay ? parseInt(returnTripRate) : null,
+                    requireReturnBooking: allowMultiDay ? requireReturnBooking : false,
+                    allowFlexibleReturn: allowMultiDay ? allowFlexibleReturn : false,
+                    provideDriverAccommodation: allowMultiDay ? provideDriverAccommodation : false
+                }
+            };
+            
+            console.log('Coverage settings:', coverageData);
+            
+            // In real app, save to backend
+            let message = `Coverage settings saved!\nMax Distance: ${maxDistance}km\nSelected Provinces: ${selectedProvinces.length}\nProvinces: ${selectedProvinces.join(', ')}`;
+            
+            if (baseLocation) {
+                message += `\nBase Location: ${baseLocation.address}`;
+            }
+            
+            if (allowMultiDay) {
+                message += `\nMulti-day trips: Enabled (Max ${maxStayDays} days, R${returnTripRate}/day)`;
+            } else {
+                message += `\nMulti-day trips: Disabled`;
+            }
+            
+            alert(message);
             closeCoverageModal();
+        }
+
+        function viewCoverageMap() {
+            alert('Coverage map feature coming soon! This will show your service areas on an interactive map.');
         }
 
         // Form submission
@@ -1292,12 +2628,22 @@
                 registration: document.getElementById('registration').value,
                 rate: document.getElementById('ratePerKm').value,
                 amenities: document.getElementById('amenities').value,
-                description: document.getElementById('description').value
+                description: document.getElementById('description').value,
+                images: uploadedImages,
+                mainImageIndex: mainImageIndex
             };
             
             // In real app, send to backend
             console.log('Vehicle data:', formData);
-            alert('Vehicle added successfully!');
+            console.log('Main image index:', mainImageIndex);
+            console.log('Total images:', uploadedImages.length);
+            
+            if (uploadedImages.length === 0) {
+                alert('Please upload at least one image for your vehicle.');
+                return;
+            }
+            
+            alert(`Vehicle added successfully with ${uploadedImages.length} image(s)! Main image is image ${mainImageIndex + 1}.`);
             closeModal();
             location.reload();
         });

@@ -21,16 +21,25 @@ axios.interceptors.response.use(
             const userProfile = localStorage.getItem('userProfile');
             console.log('User profile exists:', !!userProfile);
             
-            if (!userProfile) {
-                // No user profile, redirect to login
+            // Check if we're on a public page (Find Route or Help)
+            const currentPath = window.location.pathname;
+            const isPublicPage = currentPath.includes('client.html') || currentPath.includes('help.html');
+            
+            if (!userProfile && !isPublicPage) {
+                // No user profile and not on public page, redirect to login
                 console.log('No user profile found, redirecting to login');
                 window.location.href = '/login.html';
                 return Promise.reject(error);
             }
             
+            if (!userProfile && isPublicPage) {
+                // On public page without user profile - just reject the error, don't redirect
+                console.log('On public page without user profile, not redirecting');
+                return Promise.reject(error);
+            }
+            
             // User profile exists but request failed - this might be a session expiration
             // Only redirect if we're not on the login page and the error is persistent
-            const currentPath = window.location.pathname;
             if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
                 console.log('User profile exists but request failed, clearing storage and redirecting');
             // Clear local storage
@@ -324,13 +333,13 @@ window.addEventListener('load', () => {
 
 // Delay HighlightRoutes to ensure user is properly authenticated
 setTimeout(() => {
-  // Add authentication check before making the request
-  const userProfile = localStorage.getItem('userProfile');
-  if (!userProfile) {
-    console.log('No user profile found, redirecting to login');
-    window.location.href = '/login.html';
-    return;
-  }
+  // // Add authentication check before making the request
+  // const userProfile = localStorage.getItem('userProfile');
+  // if (!userProfile) {
+  //   console.log('No user profile found, redirecting to login');
+  //   window.location.href = '/login.html';
+  //   return;
+  // }
   
   HighlightRoutes();
 }, 1000);
@@ -1189,22 +1198,22 @@ async function sendsearchInfo() {
         //check if there is no error
         showPopup("route found", true);
         
-        // Log route search activity
-        try {
-            await axios.post(`${BASE_URL}/auth/activities`, {
-                activity_type: 'search',
-                activity_title: 'Route search performed',
-                activity_description: `Searched for route from ${sourceProv.province} to ${destinationProv.province}`,
-                ip_address: null,
-                user_agent: navigator.userAgent,
-                device_info: getDeviceInfo(),
-                location_info: null
-            }, {
-                withCredentials: true
-            });
-        } catch (error) {
-            console.error('Error logging route search activity:', error);
-        }
+        // Log route search activity - DISABLED
+        // try {
+        //     await axios.post(`${BASE_URL}/auth/activities`, {
+        //         activity_type: 'search',
+        //         activity_title: 'Route search performed',
+        //         activity_description: `Searched for route from ${sourceProv.province} to ${destinationProv.province}`,
+        //         ip_address: null,
+        //         user_agent: navigator.userAgent,
+        //         device_info: getDeviceInfo(),
+        //         location_info: null
+        //     }, {
+        //         withCredentials: true
+        //     });
+        // } catch (error) {
+        //     console.error('Error logging route search activity:', error);
+        // }
         
         //draw route
         const listOfRoutes = dataReceived.routes;

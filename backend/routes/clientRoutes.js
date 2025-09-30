@@ -5,8 +5,8 @@ import authenticateUser from '../Middleware/authenticateUser.js';
 const router = express.Router();
 
 
-router.post("/findingPath", authenticateUser, findingPath);
-router.post("/AddPendingRoute" , authenticateUser , AddPendingRoute);
-router.get("/listOfAllRoutes" , authenticateUser , listOfAllRoutes);
+router.post("/findingPath",  findingPath);
+router.post("/AddPendingRoute" ,  AddPendingRoute);
+router.get("/listOfAllRoutes" , listOfAllRoutes);
 
 export default router;
