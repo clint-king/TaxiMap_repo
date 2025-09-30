@@ -23,6 +23,11 @@ export default defineConfig({
         feedback: resolve(__dirname, 'feedback.html'),
         'booking-trip-info': resolve(__dirname, 'booking-trip-info.html'),
         'booking-select-transport': resolve(__dirname, 'booking-select-transport.html'),
+        'owner-dashboard': resolve(__dirname, 'owner-dashboard.html'),
+        'owner-vehicle-post': resolve(__dirname, 'owner-vehicle-post.html'),
+        'owner-portal': resolve(__dirname, 'owner-portal.html'),
+        'owner-booking-notification': resolve(__dirname, 'owner-booking-notification.html'),
+        'owner-analytics': resolve(__dirname, 'owner-analytics.html'),
         'verify-email': resolve(__dirname, 'verify-email.html'),
         'reset-password': resolve(__dirname, 'reset-password.html'),
         // Pages directory
