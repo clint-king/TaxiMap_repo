@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Routes - TeksiMap</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/routeStyle.css">
+  <link rel="stylesheet" href="./css/adminStyle.css">
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html" class="active">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+    <div id="ui_container">
+        <h1><span id="taxiRankName_label"> </span> Routes</h1>
+        <div class="subtop">
+            <button class="button add">Add <br>Route</button>
+            <div class="inputContainer" ><input placeholder="Search..."></div>
+        </div>
+        
+
+        <!-- Grid table -->
+        <div class="grid-table">
+            <!-- Header row -->
+            <div class="grid-row grid-header">
+              <div class="grid-cell" id="header_name">Route ID</div>
+              <div class="grid-cell" id="header_price">Price</div>
+              <div class="grid-cell" id="header_type">Type</div>
+              <div class="grid-cell" id="header_directions">No. directions</div>
+              <div class="grid-cell" id="header_buttons"></div>
+            </div>
+
+            <!-- Data rows rendered in script -->
+             
+             <!-- <div class="grid-row">
+                <div class="grid-cell">
+                    3UJHBND
+                </div> 
+             
+                <div class="grid-cell">
+                    R20.00
+                </div> 
+
+              
+                <div class="grid-cell">
+                    Loop
+                </div>
+                
+                 
+                <div class="grid-cell">
+                    20
+                </div>   
+                
+                <div class="grid-cell">
+                  <div id="route_button">
+                    <button class="btn edit">Edit</button>
+                    <button class="btn del" >Del</button>
+                  </div>
+                </div>
+              </div> -->
+
+          </div>
+     
+
+        <!-- Context Menu -->
+        <div class="menu_wrapper">
+            <p id="routeID">Route:<span id="routeName">546252</span></p>
+            <button id="close_button"><i class="fa fa-times" style="font-size:20px;color:red;" aria-hidden="true"></i></button>
+
+            <!-- Toggle button -->
+
+            <div class="toggle-container" >
+                <span class="toggle-label taxi-label">Taxi</span>
+                <div class="toggle-button" id="toggle">
+                    <div class="toggle-circle"></div>
+                </div>
+                <span class="toggle-label walk-label">Walk</span>
+            </div>
+        
+
+            <!-- Coordinate input section-->
+
+            <div class="coordinate_container">
+                <div class="coordinate_subContainer miniCoords">
+                    <button>Add Mini Coords</button>
+                    <div class="coords_info">
+                        <p>Num of coords added:</p>
+                        <h2 id="miniCoords_num">0</h2>
+                    </div>
+                </div>
+
+                <div class="coordinate_subContainer directionCoords">
+                    <button>Add Directions Coords</button>
+                    <div class="coords_info">
+                        <p>Num of coords added:</p>
+                        <h2 id="direCoords_num">0</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="price-slider-container">
+                <div class="price-display">Selected Price:R<span id="selectedPrice">0</span></div>
+                <input type="range" min="0" max="1000" value="0" class="slider" id="priceRange">
+                <div class="price-labels">
+                    <span>R0</span>
+                    <span>R1000</span>
+                </div>
+            </div>
+
+            <!-- checkbox -->
+            <div class="checkboxConatiner">
+              <p class="question">What type of route is this ? </p>
+              <div class="options">
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Straight">
+                      <span></span> Straight
+                  </label>
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Loop">
+                      <span></span> Loop
+                  </label>
+                  <label class="custom-option">
+                      <input type="radio" name="type" value="Reverse">
+                      <span></span> Reverse
+                  </label>
+              </div>
+          </div>
+      
+
+            <div class="input_line startDest">
+                <span class="inputConatiner num2" >
+                    <label id="dest_label">Destination: </label>
+                    <input class="routeInput dest_input">
+                    <ul id="suggestions"></ul>
+                </span>
+              </div> 
+            <button id="update_button">Save</button>
+
+            <!-- Coordinates TextArea-->
+             <div class="coords_container">
+                <textarea></textarea>
+                <div>
+                    <button id="coordsCancelBtn">Cancel</button>
+                    <button id ="coordsSaveBtn">Save</button>
+                </div>
+             </div>
+        </div>
+
+    
+    </div>
+
+    
+    <div class="information">
+        <div class="route_info">
+
+            <span class="route_chosen">Route choosen:<span id="routeChosenLabel"></span></span>
+
+            <div class="direction_container">
+                <p>Directions :</p>
+                <!-- <button class="direction_button">D1</button> -->
+            </div>
+            <hr>
+
+            <div class="Editing_container">
+                <button class="button direction_route"> Add <br>direction <br>Route</button>
+                <button class="button mini_route"> Add mini<br>Route</button>
+            </div>
+
+            <div class="direction1">
+                <!--First circle-->
+                <div class="circle-container start">
+                    <div class="circle start"></div>
+                    <div id="fromContainerLabel">Nkowankowa Taxi Rank</div>
+                </div>
+
+                <!--The  left arrow -->
+                <div class="arrow left">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <!--The  right arrow -->
+                <div class="arrow right">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                
+                <!--second circle-->
+                <div class="circle-container dest">
+                    <div class="circle dest"></div>
+                    <div id="toContainerLabel">Tzaneen Taxi Rank</div>
+                </div>
+            </div>
+            
+            </div>
+        <div id="map">
+    </div>
+   
+  
+</div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+  <script type="module" src="../../js/authentication/logout.js"></script>
+  <script type="module" src="../../js/admin/adminCommon.js"></script>
+  <script type="module">
+    import { requireAuth } from '../../js/authentication/logout.js';
+    import { toggleAdminMobileMenu, logout } from '../../js/admin/adminCommon.js';
+    
+    // Make functions globally available
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+    window.logout = logout;
+    
+    // Check authentication
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+    });
+  </script>
+  <script  type="module" src="../../js/admin/route.js" defer></script>
+</body>
+</html>

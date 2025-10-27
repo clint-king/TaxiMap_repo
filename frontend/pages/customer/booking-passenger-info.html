@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passenger Information - TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/booking-passenger-info.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+      
+      @media (max-width: 768px) {
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                    <a href="booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                    <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                    <!-- Login/Signup buttons for non-logged in users -->
+                    <div id="authButtons" class="auth-buttons">
+                        <a href="../authentication/login.html" class="btn-login">Login</a>
+                        <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                    </div>
+                    <!-- Full navigation for logged in users -->
+                    <div id="fullNav" class="full-navigation" style="display: none;">
+                        <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                        <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                        <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <div class="passenger-info-container">
+                <!-- Progress Indicator -->
+                <div class="progress-indicator">
+                    <div class="step completed">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Trip Info</div>
+                    </div>
+                    <div class="progress-line completed"></div>
+                    <div class="step completed">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Select Vehicle</div>
+                    </div>
+                    <div class="progress-line completed"></div>
+                    <div class="step active">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Passenger Info</div>
+                    </div>
+                    <div class="progress-line"></div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Payment</div>
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div class="passenger-header">
+                    <h1 class="passenger-title">Passenger Information</h1>
+                    <p class="passenger-subtitle">Provide details for all passengers (Optional)</p>
+                </div>
+
+                <!-- Skip Option -->
+                <div class="skip-info">
+                    <h3><i class="fas fa-info-circle"></i> You can skip this step</h3>
+                    <p>Passenger information is optional and can be added later. You can proceed to payment without filling these details.</p>
+                </div>
+
+                <!-- Passenger Form -->
+                <div class="passenger-form">
+                    <div class="form-section">
+                        <h2>Passenger Details</h2>
+                        <p class="section-description">You can optionally provide passenger details for better service. This information helps us ensure proper vehicle capacity and contact information.</p>
+                        
+                        <div id="passengerForms">
+                            <!-- Passenger forms will be generated here -->
+                        </div>
+                        
+                        <!-- Add Passenger Button -->
+                        <div id="addPassengerSection" style="display: none;">
+                            <button type="button" class="btn btn-primary" onclick="addPassenger()" style="width: 100%; margin-bottom: 1rem;">
+                                <i class="fas fa-plus"></i> Add Another Passenger
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="goBack()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" class="btn btn-skip" onclick="skipPassengerInfo()">
+                                <i class="fas fa-forward"></i> Skip for Now
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="continueToPayment()">
+                                <i class="fas fa-credit-card"></i> Continue to Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../js/tonav.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    
+    <script>
+        // Navigation functions
+        function toggleMobileMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('show');
+        }
+
+        function topNavZIndexDecrease() {
+            const topnav = document.querySelector('.topnav');
+            if (topnav) {
+                topnav.style.zIndex = '999';
+            }
+        }
+
+        // Global variables for passenger management
+        let currentPassengerCount = 1;
+        let maxPassengers = 1;
+        let selectedVehicle = {};
+        let passengerData = {}; // Store passenger data by unique ID
+
+        // Passenger Information Management
+        function loadPassengerForms() {
+            const tripInfo = JSON.parse(sessionStorage.getItem('tripInfo') || '{}');
+            selectedVehicle = JSON.parse(sessionStorage.getItem('selectedVehicle') || '{}');
+            
+            // Use vehicle capacity as the maximum passenger count
+            maxPassengers = selectedVehicle.capacity || tripInfo.passengerCount || 1;
+            currentPassengerCount = Math.min(tripInfo.passengerCount || 1, maxPassengers);
+            
+            // Initialize passenger data if not exists
+            if (!passengerData || Object.keys(passengerData).length === 0) {
+                initializePassengerData();
+            }
+            
+            // Update the header to show capacity information
+            updatePassengerHeader(selectedVehicle, maxPassengers);
+            
+            generatePassengerForms();
+            updateAddPassengerButton();
+        }
+
+        function initializePassengerData() {
+            passengerData = {};
+            for (let i = 1; i <= currentPassengerCount; i++) {
+                passengerData[i] = {
+                    firstName: '',
+                    lastName: '',
+                    idNumber: '',
+                    phone: ''
+                };
+            }
+        }
+
+        function generatePassengerForms() {
+            const passengerForms = document.getElementById('passengerForms');
+            passengerForms.innerHTML = '';
+            
+            for (let i = 1; i <= currentPassengerCount; i++) {
+                // Ensure passenger data exists for this index
+                if (!passengerData[i]) {
+                    passengerData[i] = {
+                        firstName: '',
+                        lastName: '',
+                        idNumber: '',
+                        phone: ''
+                    };
+                }
+                
+                const passengerCard = document.createElement('div');
+                passengerCard.className = 'passenger-card';
+                
+                passengerCard.innerHTML = `
+                    <div class="passenger-card-header">
+                        <div class="passenger-title-card">Passenger ${i}</div>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="passenger-number">#${i}</div>
+                            ${currentPassengerCount > 1 ? `<button type="button" class="btn btn-secondary" onclick="removePassenger(${i})" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">
+                                <i class="fas fa-times"></i> Remove
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <div class="passenger-fields">
+                        <div class="input-group">
+                            <label for="passenger${i}_firstName">First Name</label>
+                            <input type="text" id="passenger${i}_firstName" name="passenger${i}_firstName" placeholder="Enter first name (optional)" value="${passengerData[i].firstName}" onchange="updatePassengerData(${i}, 'firstName', this.value)">
+                        </div>
+                        <div class="input-group">
+                            <label for="passenger${i}_lastName">Last Name</label>
+                            <input type="text" id="passenger${i}_lastName" name="passenger${i}_lastName" placeholder="Enter last name (optional)" value="${passengerData[i].lastName}" onchange="updatePassengerData(${i}, 'lastName', this.value)">
+                        </div>
+                        <div class="input-group">
+                            <label for="passenger${i}_idNumber">ID Number</label>
+                            <input type="text" id="passenger${i}_idNumber" name="passenger${i}_idNumber" placeholder="Enter ID number (optional)" value="${passengerData[i].idNumber}" onchange="updatePassengerData(${i}, 'idNumber', this.value)">
+                        </div>
+                        <div class="input-group">
+                            <label for="passenger${i}_phone">Phone Number</label>
+                            <input type="tel" id="passenger${i}_phone" name="passenger${i}_phone" placeholder="Enter phone number (optional)" value="${passengerData[i].phone}" onchange="updatePassengerData(${i}, 'phone', this.value)">
+                        </div>
+                    </div>
+                `;
+                passengerForms.appendChild(passengerCard);
+            }
+        }
+
+        function updatePassengerData(passengerIndex, field, value) {
+            if (!passengerData[passengerIndex]) {
+                passengerData[passengerIndex] = {
+                    firstName: '',
+                    lastName: '',
+                    idNumber: '',
+                    phone: ''
+                };
+            }
+            passengerData[passengerIndex][field] = value;
+        }
+
+        function updatePassengerHeader(selectedVehicle, maxPassengers) {
+            const header = document.querySelector('.passenger-header');
+            const title = document.querySelector('.passenger-title');
+            const subtitle = document.querySelector('.passenger-subtitle');
+            
+            if (selectedVehicle.name) {
+                title.textContent = `Passenger Information - ${selectedVehicle.name}`;
+                subtitle.textContent = `Vehicle capacity: ${maxPassengers} passengers. You can add up to ${maxPassengers} passengers.`;
+            }
+        }
+
+        function addPassenger() {
+            if (currentPassengerCount < maxPassengers) {
+                currentPassengerCount++;
+                // Initialize data for the new passenger
+                passengerData[currentPassengerCount] = {
+                    firstName: '',
+                    lastName: '',
+                    idNumber: '',
+                    phone: ''
+                };
+                generatePassengerForms();
+                updateAddPassengerButton();
+            }
+        }
+
+        function removePassenger(passengerNumber) {
+            if (currentPassengerCount > 1) {
+                // Remove the passenger data
+                delete passengerData[passengerNumber];
+                
+                // Shift remaining passenger data down
+                const newPassengerData = {};
+                let newIndex = 1;
+                for (let i = 1; i <= currentPassengerCount; i++) {
+                    if (passengerData[i] && i !== passengerNumber) {
+                        newPassengerData[newIndex] = passengerData[i];
+                        newIndex++;
+                    }
+                }
+                passengerData = newPassengerData;
+                
+                currentPassengerCount--;
+                generatePassengerForms();
+                updateAddPassengerButton();
+            }
+        }
+
+        function updateAddPassengerButton() {
+            const addPassengerSection = document.getElementById('addPassengerSection');
+            if (currentPassengerCount < maxPassengers) {
+                addPassengerSection.style.display = 'block';
+            } else {
+                addPassengerSection.style.display = 'none';
+            }
+        }
+
+        function collectPassengerData() {
+            const passengers = [];
+            
+            for (let i = 1; i <= currentPassengerCount; i++) {
+                if (passengerData[i]) {
+                    const { firstName, lastName, idNumber, phone } = passengerData[i];
+                    if (firstName || lastName || idNumber || phone) {
+                        passengers.push({
+                            firstName: firstName,
+                            lastName: lastName,
+                            idNumber: idNumber,
+                            phone: phone
+                        });
+                    }
+                }
+            }
+            
+            return passengers;
+        }
+
+        function goBack() {
+            window.location.href = 'booking-select-transport.html';
+        }
+
+        function skipPassengerInfo() {
+            // Cannot skip if there are parcels
+            if (currentParcelCount > 0) {
+                alert('You have parcels to deliver. Please provide parcel information before proceeding.');
+                return;
+            }
+            
+            // Store empty passenger and parcel data
+            const tripInfo = JSON.parse(sessionStorage.getItem('tripInfo') || '{}');
+            tripInfo.passengers = [];
+            tripInfo.parcels = [];
+            tripInfo.passengerCount = currentPassengerCount;
+            tripInfo.parcelCount = currentParcelCount;
+            sessionStorage.setItem('tripInfo', JSON.stringify(tripInfo));
+            
+            // Redirect to payment
+            window.location.href = 'booking-payment.html';
+        }
+
+        function continueToPayment() {
+            // Validate parcel information if parcels are added
+            if (currentParcelCount > 0) {
+                const parcelValidation = validateParcelInformationPassenger();
+                if (!parcelValidation.valid) {
+                    alert(parcelValidation.message);
+                    return;
+                }
+            }
+            
+            // Collect passenger and parcel data
+            const passengers = collectPassengerData();
+            const parcels = collectParcelData();
+            
+            // Update trip info with passenger and parcel data
+            const tripInfo = JSON.parse(sessionStorage.getItem('tripInfo') || '{}');
+            tripInfo.passengers = passengers;
+            tripInfo.parcels = parcels;
+            tripInfo.passengerCount = currentPassengerCount;
+            tripInfo.parcelCount = currentParcelCount;
+            sessionStorage.setItem('tripInfo', JSON.stringify(tripInfo));
+            
+            // Redirect to payment
+            window.location.href = 'booking-payment.html';
+        }
+        
+        // Validate South African phone number
+        function validateSAPhoneNumber(phoneNumber) {
+            // Remove spaces, dashes, and other formatting characters
+            const cleanedNumber = phoneNumber.replace(/[\s\-()]/g, '');
+            
+            // South African phone number patterns:
+            // Mobile: 0XX XXX XXXX (10 digits starting with 0)
+            // International: +27XX XXX XXXX or 27XX XXX XXXX
+            // Landline: 0XX XXX XXXX
+            
+            const patterns = [
+                /^0[1-8]\d{8}$/,           // Local format: 0XX XXX XXXX (10 digits)
+                /^\+27[1-8]\d{8}$/,        // International: +27XX XXX XXXX
+                /^27[1-8]\d{8}$/,          // International without +: 27XX XXX XXXX
+                /^0[6-8]\d{8}$/            // Mobile: 06X, 07X, 08X
+            ];
+            
+            return patterns.some(pattern => pattern.test(cleanedNumber));
+        }
+        
+        // Real-time phone number validation with visual feedback
+        function validatePhoneInput(input) {
+            const phoneNumber = input.value;
+            
+            // Only validate if user has entered something
+            if (phoneNumber.trim() === '') {
+                input.style.borderColor = '#e9ecef';
+                return;
+            }
+            
+            if (validateSAPhoneNumber(phoneNumber)) {
+                input.style.borderColor = '#28a745'; // Green for valid
+            } else {
+                input.style.borderColor = '#dc3545'; // Red for invalid
+            }
+        }
+        
+        // Validate parcel information for booking-passenger-info page
+        function validateParcelInformationPassenger() {
+            for (let i = 1; i <= currentParcelCount; i++) {
+                const parcel = parcelData[i];
+                
+                if (!parcel) {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Missing parcel information. Please provide details for all parcels.`
+                    };
+                }
+                
+                // Validate sender name
+                if (!parcel.senderName || parcel.senderName.trim() === '') {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Please enter the sender's name.`
+                    };
+                }
+                
+                // Validate sender phone
+                if (!parcel.senderPhone || parcel.senderPhone.trim() === '') {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Please enter the sender's phone number.`
+                    };
+                }
+                
+                if (!validateSAPhoneNumber(parcel.senderPhone)) {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Sender's phone number is invalid. Please enter a valid South African phone number (e.g., 071 234 5678 or +27 71 234 5678).`
+                    };
+                }
+                
+                // Validate receiver name
+                if (!parcel.receiverName || parcel.receiverName.trim() === '') {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Please enter the receiver's name.`
+                    };
+                }
+                
+                // Validate receiver phone
+                if (!parcel.receiverPhone || parcel.receiverPhone.trim() === '') {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Please enter the receiver's phone number.`
+                    };
+                }
+                
+                if (!validateSAPhoneNumber(parcel.receiverPhone)) {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Receiver's phone number is invalid. Please enter a valid South African phone number (e.g., 071 234 5678 or +27 71 234 5678).`
+                    };
+                }
+                
+                // Validate parcel images (at least one image required)
+                if (!parcel.images || parcel.images.length === 0) {
+                    return {
+                        valid: false,
+                        message: `Parcel ${i}: Please upload at least one image of the parcel.`
+                    };
+                }
+            }
+            
+            return { valid: true };
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPassengerForms();
+        });
+    </script>
+
+</body>
+</html>

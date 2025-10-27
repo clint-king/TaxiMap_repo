@@ -6,11 +6,11 @@
     <title>TeksiMap - South African Minibus Taxi Navigator</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="icon" type="image/svg+xml" href="favicon-16x16.svg" sizes="16x16" />
-    <link rel="icon" type="image/svg+xml" href="favicon-32x32.svg" sizes="32x32" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.svg" />
-    <link rel="manifest" href="site.webmanifest" />
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico" />
+    <link rel="icon" type="image/png" href="assets/icons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="assets/icons/favicon-32x32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.svg" />
+    <link rel="manifest" href="assets/icons/site.webmanifest" />
     
     <link rel="stylesheet" href="css/Home.css" />
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
@@ -24,6 +24,7 @@
         },
       };
     </script>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
       rel="stylesheet"
@@ -44,7 +45,7 @@
         class="container mx-auto px-4 py-3 flex justify-between items-center"
       >
         <a href="#" class="flex items-center">
-          <img src="logo-advanced.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+          <img src="assets/icons/logo-advanced.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
         </a>
         <div class="hidden md:flex items-center space-x-8">
           <a href="#home" class="hover:text-primary">Home</a>
@@ -53,13 +54,13 @@
           <a href="#contact" class="hover:text-primary">Contact</a>
           <button
             class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
-              onclick="window.location.href='login.html'"
+              onclick="window.location.href='pages/authentication/login.html'"
           >
             Sign In
           </button>
           <button
             class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
-            onclick="window.location.href='signup.html'"
+            onclick="window.location.href='pages/authentication/signup.html'"
           >
             Sign Up
           </button>
@@ -101,14 +102,14 @@
           <div class="py-3 flex flex-col gap-2">
              <button
             class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
-             onclick="window.location.href='login.html'"
+             onclick="window.location.href='pages/authentication/login.html'"
           >
             Sign In
           </button>
 
             <button
               class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
-               onclick="window.location.href='signup.html'"
+               onclick="window.location.href='pages/authentication/signup.html'"
             >
               Sign Up
             </button>
@@ -131,7 +132,7 @@
           <div class="flex gap-4 flex-col sm:flex-row">
             <button
               class="bg-primary text-black py-3 px-8 rounded-button hover:bg-opacity-90 transition-all"
-              onclick="window.location.href='signup.html'"
+              onclick="window.location.href='pages/authentication/signup.html'"
             >
               Get Started
             </button>
@@ -148,7 +149,7 @@
             <p class="text-white text-sm mb-4 opacity-90">Try our services without signing up:</p>
             <div class="flex gap-4 flex-col sm:flex-row">
               <a
-                href="client.html"
+                href="./pages/customer/client.html"
                 class="inline-flex items-center gap-2 bg-white bg-opacity-10 text-white py-2 px-6 rounded-button hover:bg-opacity-20 transition-all border border-white border-opacity-30"
               >
                 <i class="ri-route-line"></i>
@@ -156,7 +157,7 @@
                 <i class="ri-external-link-line text-xs"></i>
               </a>
               <a
-                href="help.html"
+                href="./pages/customer/help.html"
                 class="inline-flex items-center gap-2 bg-white bg-opacity-10 text-white py-2 px-6 rounded-button hover:bg-opacity-20 transition-all border border-white border-opacity-30"
               >
                 <i class="ri-question-line"></i>
@@ -637,8 +638,8 @@
       </div>
     </footer>
 
-    <script type="module" src="./js/contributors.js"></script>
-    <script type="module" src="./js/contact.js"></script>
+    <script type="module" src="./js/home/contributors.js"></script>
+    <script type="module" src="./js/home/contact.js"></script>
     <script>
       document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         anchor.addEventListener("click", function (e) {

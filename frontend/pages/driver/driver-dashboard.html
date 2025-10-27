@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+    <link rel="manifest" href="../../assets/icons/site.webmanifest" />
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css" />
+    <link rel="stylesheet" href="../../css/topnav.css" />
+    <link rel="stylesheet" href="../../css/driver.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    <style>
+        /* Driver specific styles */
+        html, body {
+            height: auto !important;
+            overflow-x: hidden;
+            overflow-y: auto !important;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        .main-content {
+            min-height: 100vh;
+            overflow-y: auto;
+            padding: 1rem;
+            padding-bottom: 2rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .driver-header {
+            background: linear-gradient(135deg, #01386A, #001f3f);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .date-time-display {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .current-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #FFD700;
+        }
+        
+        .current-time {
+            font-size: 2.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .driver-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #01386A;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #01386A;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .action-btn {
+            background: #01386A;
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .action-btn:hover {
+            background: #001f3f;
+            transform: translateY(-2px);
+        }
+        
+        .action-btn.secondary {
+            background: #FFD700;
+            color: #333;
+        }
+        
+        .action-btn.secondary:hover {
+            background: #FFC107;
+        }
+        
+        .current-trip {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .trip-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .trip-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .trip-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .trip-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .trip-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+        
+        .trip-detail i {
+            color: #01386A;
+        }
+        
+        .trip-actions-container {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 1rem;
+        }
+        
+        .trip-actions-container .action-btn {
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 0.5rem;
+            }
+            
+            .driver-header {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .driver-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .trip-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .current-trip {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .driver-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card {
+                padding: 0.75rem;
+            }
+            
+            .driver-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .driver-header p {
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .main-content {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Force scrolling to work */
+        body {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        .wrapper {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                
+                <!-- Driver specific navigation -->
+                <div id="driverNav" class="full-navigation" style="display: none;">
+                    <a href="driver-dashboard.html" class="active" onclick="topNavZIndexDecrease()">Dashboard</a>
+                    <a href="driver-trips.html" onclick="topNavZIndexDecrease()">My Trips</a>
+                    <a href="driver-navigation.html" onclick="topNavZIndexDecrease()">Navigation</a>
+                    <a href="driver-verification.html" onclick="topNavZIndexDecrease()">Verification</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+                
+                <!-- Logout button -->
+                <div id="logoutBtn" style="display: none;">
+                    <a href="#" class="nav-logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Driver Header -->
+        <div class="driver-header">
+            <h1>Welcome back, <span id="driverName">Driver Name</span></h1>
+            <p>Ready to start your next trip?</p>
+            <div class="date-time-display">
+                <div class="current-date" id="currentDate">Loading...</div>
+                <div class="current-time" id="currentTimeLarge">--:--</div>
+            </div>
+        </div>
+
+        <!-- Driver Stats -->
+        <div class="driver-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="stat-number" id="totalTrips">0</div>
+                <div class="stat-label">Total Trips</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number" id="hoursWorked">0h</div>
+                <div class="stat-label">Hours Worked</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-number" id="rating">4.8</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number" id="currentTime">--:--</div>
+                <div class="stat-label">Current Time</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="driver-navigation.html" class="action-btn">
+                <i class="fas fa-map-marked-alt"></i>
+                Start Navigation
+            </a>
+            
+            <a href="driver-trips.html" class="action-btn">
+                <i class="fas fa-list"></i>
+                View Trips
+            </a>
+            
+            <a href="driver-verification.html" class="action-btn secondary">
+                <i class="fas fa-qrcode"></i>
+                Verify Passenger
+            </a>
+            
+            <a href="#" class="action-btn secondary" onclick="toggleOnlineStatus()" title="Click to toggle online/offline status">
+                <i class="fas fa-toggle-on" id="statusIcon"></i>
+                <span id="statusText">Go Online</span>
+            </a>
+        </div>
+
+        <!-- Current Trip -->
+        <div class="current-trip" id="currentTripCard" style="display: none;">
+            <div class="trip-header">
+                <h3>Current Trip</h3>
+                <span class="trip-status active" id="tripStatus">In Progress</span>
+            </div>
+            
+            <div class="trip-details">
+                <div class="trip-detail">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="pickupLocation">Pickup Location</span>
+                </div>
+                
+                <div class="trip-detail">
+                    <i class="fas fa-flag-checkered"></i>
+                    <span id="dropoffLocation">Dropoff Location</span>
+                </div>
+                
+                <div class="trip-detail">
+                    <i class="fas fa-clock"></i>
+                    <span id="estimatedTime">ETA: 15 min</span>
+                </div>
+                
+                <div class="trip-detail">
+                    <i class="fas fa-users"></i>
+                    <span id="passengerCount">2 Passengers</span>
+                </div>
+            </div>
+            
+            <div class="trip-actions-container">
+                <a href="driver-navigation.html" class="action-btn">
+                    <i class="fas fa-directions"></i>
+                    Continue Navigation
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Trips -->
+        <div class="current-trip">
+            <h3>Recent Trips</h3>
+            <div id="recentTrips">
+                <p>No recent trips</p>
+            </div>
+        </div>
+
+        <!-- Online/Offline Status Explanation -->
+        <div class="current-trip">
+            <h3>Driver Status</h3>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="color: #01386A; margin-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Online/Offline Status
+                </h4>
+                <p style="margin-bottom: 1rem; color: #666;">
+                    <strong>Online Status:</strong> When you're online, you'll receive trip requests and notifications. 
+                    The system will consider you available for new bookings.
+                </p>
+                <p style="margin-bottom: 1rem; color: #666;">
+                    <strong>Offline Status:</strong> When offline, you won't receive new trip requests. 
+                    This is useful when you're on a break, not available, or have finished your shift.
+                </p>
+                <p style="color: #666; font-size: 0.9rem;">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Toggle your status using the "Go Online/Offline" button above to control when you receive trip assignments.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../js/tonav.js"></script>
+    <script type="module" src="../../js/driver/driver-dashboard.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+        
+        function topNavZIndexDecrease() {
+            // Function for navigation link clicks
+        }
+        
+        // Toggle online status
+        function toggleOnlineStatus() {
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const isOnline = statusIcon.classList.contains('fa-toggle-on');
+            
+            if (isOnline) {
+                statusIcon.classList.remove('fa-toggle-on');
+                statusIcon.classList.add('fa-toggle-off');
+                statusText.textContent = 'Go Online';
+                statusIcon.style.color = '#dc3545';
+            } else {
+                statusIcon.classList.remove('fa-toggle-off');
+                statusIcon.classList.add('fa-toggle-on');
+                statusText.textContent = 'Go Offline';
+                statusIcon.style.color = '#28a745';
+            }
+        }
+    </script>
+</body>
+</html>

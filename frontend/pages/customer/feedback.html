@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feedback - TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+    <link rel="stylesheet" href="../../css/feedback.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      /* Navigation spacing to match help page */
+      .nav-links {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        align-items: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      
+      .nav-links a.active {
+        background-color: #FFD52F !important;
+        color: #01386A !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      
+      .nav-links a.active:hover {
+        background-color: #FFC107 !important;
+        text-decoration: none;
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body class="has-map-layout">
+    <div class="wrapper">
+      <!-- Top navigation bar -->
+      <nav class="topnav">
+        <div class="nav-container">
+          <div class="logo">
+            <a href="index.html">
+              <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+            </a>
+          </div>
+
+          <!-- Burger button for mobile -->
+          <div class="burger" onclick="toggleMobileMenu()">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="./client.html" onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="./booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="./help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <a href="./route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+            <a href="./feedback.html" class="active" onclick="topNavZIndexDecrease()">Feedback</a>
+            <a href="../authentication/profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
+        </div>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="feedback-container">
+          <!-- Header Section -->
+          <div class="feedback-header">
+            <h1><i class="fas fa-comment-dots"></i> Send Us Your Feedback</h1>
+            <p>Help us improve TeksiMap by sharing your thoughts, suggestions, or reporting any issues you've encountered.</p>
+          </div>
+
+          <!-- Feedback Form -->
+          <div class="feedback-form-container">
+            <form class="feedback-form" id="feedbackForm">
+
+              <!-- Feedback Type -->
+              <div class="form-section">
+                <h3><i class="fas fa-tag"></i> Feedback Type</h3>
+                <div class="feedback-type-grid">
+                  <label class="feedback-type-option">
+                    <input type="radio" name="feedback_type" value="bug" required>
+                    <div class="option-card">
+                      <i class="fas fa-bug"></i>
+                      <span>Bug Report</span>
+                      <small>Report a technical issue</small>
+                    </div>
+                  </label>
+                  <label class="feedback-type-option">
+                    <input type="radio" name="feedback_type" value="feature" required>
+                    <div class="option-card">
+                      <i class="fas fa-lightbulb"></i>
+                      <span>Feature Request</span>
+                      <small>Suggest a new feature</small>
+                    </div>
+                  </label>
+                  <label class="feedback-type-option">
+                    <input type="radio" name="feedback_type" value="improvement" required>
+                    <div class="option-card">
+                      <i class="fas fa-arrow-up"></i>
+                      <span>Improvement</span>
+                      <small>Suggest an improvement</small>
+                    </div>
+                  </label>
+                  <label class="feedback-type-option">
+                    <input type="radio" name="feedback_type" value="general" required>
+                    <div class="option-card">
+                      <i class="fas fa-comment"></i>
+                      <span>General Feedback</span>
+                      <small>Share your thoughts</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Subject -->
+              <div class="form-section">
+                <h3><i class="fas fa-heading"></i> Subject</h3>
+                <div class="form-group">
+                  <input type="text" id="subject" name="subject" required placeholder="Brief description of your feedback">
+                </div>
+              </div>
+
+              <!-- Message -->
+              <div class="form-section">
+                <h3><i class="fas fa-message"></i> Message</h3>
+                <div class="form-group">
+                  <textarea id="message" name="message" required placeholder="Please provide detailed information about your feedback..." rows="6"></textarea>
+                </div>
+              </div>
+
+              <!-- Rating (Optional) -->
+              <div class="form-section">
+                <h3><i class="fas fa-star"></i> Overall Experience (Optional)</h3>
+                <div class="rating-container">
+                  <div class="rating-stars">
+                    <input type="radio" id="star5" name="rating" value="5">
+                    <label for="star5"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star4" name="rating" value="4">
+                    <label for="star4"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star3" name="rating" value="3">
+                    <label for="star3"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star2" name="rating" value="2">
+                    <label for="star2"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star1" name="rating" value="1">
+                    <label for="star1"><i class="fas fa-star"></i></label>
+                  </div>
+                  <span class="rating-text">Rate your experience with TeksiMap</span>
+                </div>
+              </div>
+
+              <!-- Image Upload (Optional) -->
+              <div class="form-section">
+                <h3><i class="fas fa-images"></i> Attach Images (Optional)</h3>
+                <div class="image-upload-container">
+                  <div class="image-upload-area" id="imageUploadArea">
+                    <input type="file" id="imageInput" name="images" multiple accept="image/*" style="display: none;">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt"></i>
+                      <p>Click to upload images or drag and drop</p>
+                      <small>Maximum 5 images, 5MB each (JPG, PNG, GIF)</small>
+                    </div>
+                  </div>
+                  <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                    <div class="image-preview-grid" id="imagePreviewGrid"></div>
+                  </div>
+                  <div class="image-error" id="imageError" style="display: none;"></div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="form-actions">
+                <button type="submit" class="submit-btn">
+                  <i class="fas fa-paper-plane"></i> Send Feedback
+                </button>
+                <button type="button" class="clear-btn" onclick="clearForm()">
+                  <i class="fas fa-eraser"></i> Clear Form
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Success Message -->
+          <div class="success-message" id="successMessage" style="display: none;">
+            <div class="success-content">
+              <i class="fas fa-check-circle"></i>
+              <h3>Thank You!</h3>
+              <p>Your feedback has been submitted successfully. We appreciate your input and will review it carefully.</p>
+              <button class="new-feedback-btn" onclick="showForm()">
+                <i class="fas fa-plus"></i> Submit Another Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    <script type="module" src="../../js/customer/feedback.js"></script>
+    <script type="module">
+      import { requireAuth } from '../../js/authentication/logout.js';
+      
+      // Check authentication on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        requireAuth();
+      });
+    </script>
+  </body>
+</html>

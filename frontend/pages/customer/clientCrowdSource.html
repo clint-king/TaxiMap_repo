@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content="
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://api.mapbox.com https://cdn.jsdelivr.net;
+    frame-src 'self';
+    connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:* https://api.teksimap.co.za https://api.mapbox.com https://events.mapbox.com;
+    style-src 'self' 'unsafe-inline' https://api.mapbox.com https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+    img-src 'self' data: blob: https://api.mapbox.com;
+">
+    <title>Multi-Taxi Path with Mapbox</title>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-..."
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/clientCrowdSource.css" />
+    <link rel="stylesheet" href="./css/popup.css" />
+  </head>
+  <body class="has-map-layout">
+    <div class="wrapper">
+      <!-- Top navigation bar -->
+      <div class="topnav">
+        <div class="logo">
+          <a href="../../index.html">
+            <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+          </a>
+        </div>
+        
+        <!-- Burger button for mobile -->
+        <div class="burger" onclick="toggleMobileMenu()">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        
+        <div class="nav_group" id="mobileMenu">
+          <a href="client.html">Find route</a>
+          <a href="clientCrowdSource.html">Suggest route (Advanced)</a>
+          <a href="route-suggestion.html">Suggest route</a>
+          <a href="../authentication/profile.html">Profile</a>
+          <a href="help.html">Help</a>
+        </div>
+      </div>
+
+      <!-- Popup -->
+      <div id="popup-container"></div>
+
+      <!-- Mobile sidebar toggle button -->
+      <button id="sidebarToggle" class="sidebar-toggle-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <div class="page-content">
+        <!--Ui section-->
+        <div id="ui_container">
+          <!-- Mobile close button -->
+          <button class="sidebar-close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+          
+          <!-- Route Section-->
+          <div class="labelContainer sessionSectionLabels">
+            <h3>Session :</h3>
+          </div>
+
+          <div class="sessionInfoContainer">
+            <!-- Transparent container -->
+            <div class="TransparentCover sessionInfoContainerCover">
+              <i
+                class="fa-solid fa-lock"
+                style="color: #919191; font-size: 24px"
+              ></i>
+            </div>
+            <!-- Taxi rank info section  -->
+            <div class="taxiRInfo_container">
+              <div class="routeTypeSelection_container">
+                <p>Route Type :</p>
+                <select name="routeType" id="routeType">
+                  <option value="Straight">Straight</option>
+                  <option value="Loop">Loop</option>
+                </select>
+              </div>
+
+              <div class="taxiRInput_container">
+                <div class="inputTR group1">
+                  <div class="inputcontainer startingInput">
+                    <input
+                      title="Search for an existing taxi rank where the taxi will start."
+                      placeholder="Search existing starting taxiRank..."
+                    />
+                    <ul></ul>
+                  </div>
+                  <button
+                    title="Create a new taxi rank location as the starting point if it does not already exist."
+                  >
+                    Create new TaxiRank
+                  </button>
+                </div>
+
+                <div class="inputTR group2">
+                  <div class="inputcontainer destInput">
+                    <input
+                      title="Search for an existing taxi rank where the taxi will End."
+                      placeholder="Search existing destination taxiRank..."
+                    />
+                    <ul></ul>
+                  </div>
+                  <button
+                    title="Create a new taxi rank location as the ending point if it does not already exist."
+                  >
+                    Create new TaxiRank
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price slidder  -->
+
+            <div class="price-slider-container">
+              <div class="price-display">
+                Selected Price:R<span id="selectedPrice">0</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1000"
+                value="0"
+                class="slider"
+                id="priceRange"
+              />
+              <div class="price-labels">
+                <span>R0</span>
+                <span>R1000</span>
+              </div>
+            </div>
+
+            <button class="saveSession">Save</button>
+          </div>
+
+          <!-- Route Section-->
+          <div class="labelContainer routeSectionLabels">
+            <h3>Route :</h3>
+          </div>
+
+          <!--Route list -->
+
+          <div class="addRoute_container">
+            <div class="addRoute">
+              <div class="route_div" data-name="1" style="background-color: #eba9b7">
+                Route 1<button
+                  class="routeButton"
+                  style="background-color: #eba9b7"
+                >
+                  <i
+                    class="fa fa-times"
+                    style="font-size: 14px; color: black"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+              <!-- <div class="route_div" style="background-color: #BCF9F9;"> Route 2<button class="routeButton" style="background-color: #BCF9F9;"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #F9E1BC"> Route 3<button class="routeButton" style="background-color: #F9E1BC"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #C1F9BC"> Route 4<button class="routeButton" style="background-color: #C1F9BC"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div>
+           <div class="route_div" style="background-color: #A9C6EB;"> Route 5<button class="routeButton" style="background-color: #A9C6EB;"> <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i></button></div> -->
+            </div>
+          </div>
+
+          <div class="routeInfoContainer">
+            <div class="TransparentCover routeInfoContainerCover">
+              <i
+                class="fa-solid fa-lock"
+                style="color: #919191; font-size: 24px"
+              ></i>
+            </div>
+            <!-- Route ID -->
+            <h2 class="routelb">Route #<span id="routeId">1</span></h2>
+
+            <!-- TextArea -->
+            <textarea placeholder="message..."></textarea>
+
+            <button class="add_button">Draw Another route</button>
+          </div>
+
+          <button class="sendBtn">Send Route</button>
+        </div>
+
+        <!--Context menu-->
+        <div class="menu_wrapper">
+          <button id="close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: red"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="input_line name">
+            <label>Name:</label>
+            <input placeholder="e.g Nkowankowa Taxi Rank" />
+          </div>
+          <div class="input_line prov">
+            <label>Province:</label>
+            <input placeholder="e.g Limpopo" />
+          </div>
+          <div class="input_line address">
+            <label>Address:</label>
+            <textarea></textarea>
+            <ul id="suggestions"></ul>
+          </div>
+
+          <button id="update_button">Update</button>
+        </div>
+
+        <!-- final marker  Context menu -->
+        <div class="menu finalMarker">
+          <p id="title">Confirm final Marker</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Do you want to end the route ?</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- Confirm editted marker -->
+        <div class="menu editMarker">
+          <p id="title">Confirm location selected</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Do you want to edit the waypoint to this location ?</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- New Session Confirmation Menu -->
+        <div class="menu newSession">
+          <p id="title">Create a new Session</p>
+          <button class="close_button" id="newSession_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Are you sure you want to create a new Session?</p>
+            <p style="color: #ff6b6b; font-weight: bold; margin-top: 10px;">Warning: This would cancel everything and you will start from the beginning.</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- Clear Route Confirmation Menu -->
+        <div class="menu clearRoute">
+          <p id="title">Clear Current Route</p>
+          <button class="close_button" id="clearRoute_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p>Are you sure you want to clear the current route?</p>
+            <p style="color: #ff6b6b; font-weight: bold; margin-top: 10px;">This will remove the route line and waypoints, but keep your starting and destination markers.</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- Remove Route Confirmation Menu -->
+        <div class="menu removeRoute">
+          <p id="title">Remove route</p>
+          <button class="close_button" id="removeRoute_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="Information">
+            <p id="removeRouteMessage">Do you want to remove the route Route 1?</p>
+          </div>
+          <div class="btnContainer">
+            <button class="btn no">No</button>
+            <button class="btn yes">Yes</button>
+          </div>
+        </div>
+
+        <!-- Choosing Marker -->
+        <div class="listmenu">
+          <p id="title">Modify Marker</p>
+          <button class="close_button" id="del_close_button">
+            <i
+              class="fa fa-times"
+              style="font-size: 20px; color: rblackd"
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="btnListContainer">
+            <button class="btnMenu Edit">Edit Marker</button>
+            <button class="btnMenu Remove">Remove Marker</button>
+          </div>
+        </div>
+
+        <!--Map-->
+        <div class="map_container">
+          <div class="draw_flag">
+            <p>Draw:<span>OFF</span></p>
+          </div>
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load popup -->
+    <script>
+      fetch("popup.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("popup-container").innerHTML = html;
+        });
+
+      // Mobile menu toggle functionality
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const isShown = menu.classList.toggle("show");
+        
+        // Adjust z-index to ensure menu appears above other elements
+        const topnav = document.querySelector(".topnav");
+        if (isShown) {
+          topnav.style.zIndex = "3001";
+        } else {
+          topnav.style.zIndex = "1000";
+        }
+      }
+
+      // Sidebar toggle functionality for all screen sizes
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const uiContainer = document.getElementById('ui_container');
+        const sidebarCloseBtn = document.querySelector('.sidebar-close-btn');
+        
+        if (sidebarToggle && uiContainer) {
+          // Initialize sidebar state
+          let isSidebarVisible = true;
+          
+          // Toggle sidebar function
+          function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+              // Mobile behavior
+              if (uiContainer.classList.contains('sidebar-open')) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.add('sidebar-open');
+                sidebarToggle.classList.add('hidden');
+              }
+            } else {
+              // Desktop/Laptop behavior
+              if (isSidebarVisible) {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+                isSidebarVisible = false;
+              } else {
+                uiContainer.classList.remove('sidebar-hidden');
+                uiContainer.classList.add('sidebar-visible');
+                sidebarToggle.classList.add('hidden');
+                isSidebarVisible = true;
+              }
+            }
+          }
+
+          // Toggle button click
+          sidebarToggle.addEventListener('click', toggleSidebar);
+
+          // Close button click (mobile only)
+          if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', function() {
+              if (window.innerWidth <= 768) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+                isSidebarVisible = false;
+              }
+            });
+          }
+
+          // Close sidebar when clicking outside (mobile only)
+          document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+              if (!uiContainer.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                uiContainer.classList.remove('sidebar-open');
+                sidebarToggle.classList.remove('hidden');
+              }
+            }
+          });
+
+          // Handle window resize
+          window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+              // Reset mobile classes when switching to desktop
+              uiContainer.classList.remove('sidebar-open');
+              if (!isSidebarVisible) {
+                uiContainer.classList.add('sidebar-hidden');
+                uiContainer.classList.remove('sidebar-visible');
+                sidebarToggle.classList.remove('hidden');
+              } else {
+                uiContainer.classList.remove('sidebar-hidden');
+                uiContainer.classList.add('sidebar-visible');
+                sidebarToggle.classList.add('hidden');
+              }
+            } else {
+              // Reset desktop classes when switching to mobile
+              uiContainer.classList.remove('sidebar-hidden', 'sidebar-visible');
+              sidebarToggle.classList.remove('hidden');
+            }
+          });
+        }
+      });
+    </script>
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    <script type="module">
+      import { requireAuth } from '../../js/authentication/logout.js';
+      
+      // Check authentication before loading the page
+      document.addEventListener('DOMContentLoaded', () => {
+        requireAuth();
+      });
+    </script>
+    <script type="module" src="../../js/customer/clientCrowdSource.js"></script>
+  </body>
+</html>

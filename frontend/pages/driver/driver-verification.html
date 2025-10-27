@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification - TeksiMap Driver</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+    <link rel="manifest" href="../../assets/icons/site.webmanifest" />
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css" />
+    <link rel="stylesheet" href="../../css/topnav.css" />
+    <link rel="stylesheet" href="../../css/driver.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    
+    <style>
+        .verification-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        /* Ensure page is scrollable */
+        html, body {
+            height: auto !important;
+            overflow-x: hidden;
+            overflow-y: auto !important;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        .main-content {
+            min-height: 100vh;
+            overflow-y: auto;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Force scrolling to work */
+        body {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        .wrapper {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        .verification-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .trip-info-section {
+            margin: 1.5rem 0;
+            padding: 0;
+            background: transparent;
+        }
+        
+        .trip-info-card {
+            background: linear-gradient(135deg, #01386A 0%, #0056b3 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(1, 56, 106, 0.2);
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .trip-info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+        }
+        
+        .trip-info-card h4 {
+            color: #FFD700;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .trip-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .trip-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .trip-info-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .trip-info-value {
+            font-size: 1rem;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .trip-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .no-trip-message, .no-code-message {
+            color: #dc3545;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .trip-info-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .trip-info-card {
+                padding: 1rem;
+                margin: 0 1rem;
+            }
+            
+            .trip-info-card h4 {
+                font-size: 1.2rem;
+            }
+            
+            .verification-container {
+                padding: 1rem;
+                justify-content: flex-start;
+                min-height: auto;
+            }
+            
+            .main-content {
+                min-height: auto;
+                padding-bottom: 2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .verification-container {
+                padding: 0.5rem;
+            }
+            
+            .trip-info-card {
+                margin: 0 0.5rem;
+                padding: 0.75rem;
+            }
+            
+            .verification-tabs {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .verification-tab {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        .verification-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .verification-tab {
+            padding: 1rem 2rem;
+            border: 2px solid #01386A;
+            background: white;
+            color: #01386A;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .verification-tab.active,
+        .verification-tab:hover {
+            background: #01386A;
+            color: white;
+        }
+        
+        .verification-content {
+            display: none;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+        
+        .verification-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .verification-content {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .verification-content {
+                max-height: 50vh;
+                overflow-y: auto;
+            }
+        }
+        
+        .verification-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .verification-code {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #01386A;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            letter-spacing: 0.2em;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .qr-section {
+            text-align: center;
+        }
+        
+        .qr-display {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem auto;
+            position: relative;
+        }
+        
+        .qr-scanner {
+            width: 300px;
+            height: 300px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem auto;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .qr-scanner.active {
+            border-color: #01386A;
+            background: #f0f8ff;
+        }
+        
+        .qr-scanner video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .qr-scanner canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid #01386A;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid #01386A;
+            border-radius: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .verification-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #01386A;
+        }
+        
+        .verification-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .verification-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .verification-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .package-photos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .package-photo {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .package-photo:hover {
+            transform: scale(1.05);
+        }
+        
+        .photo-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .photo-modal.active {
+            display: flex;
+        }
+        
+        .photo-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+        
+        .photo-modal .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .verification-container {
+                padding: 1rem;
+                justify-content: flex-start;
+                min-height: auto;
+            }
+            
+            .verification-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .qr-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .qr-display,
+            .qr-scanner {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                
+                <!-- Driver specific navigation -->
+                <div id="driverNav" class="full-navigation" style="display: none;">
+                    <a href="driver-dashboard.html" onclick="topNavZIndexDecrease()">Dashboard</a>
+                    <a href="driver-trips.html" onclick="topNavZIndexDecrease()">My Trips</a>
+                    <a href="driver-navigation.html" onclick="topNavZIndexDecrease()">Navigation</a>
+                    <a href="driver-verification.html" class="active" onclick="topNavZIndexDecrease()">Verification</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+                
+                <!-- Logout button -->
+                <div id="logoutBtn" style="display: none;">
+                    <a href="#" class="nav-logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="verification-container">
+            <!-- Header -->
+            <div class="verification-header">
+                <h1>Passenger & Package Verification</h1>
+                <p>Verify passengers and packages using codes or QR scanning</p>
+                
+                <!-- Trip Information -->
+                <div id="tripInfo" class="trip-info-section">
+                    <!-- Trip info will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Verification Tabs -->
+            <div class="verification-tabs">
+                <div class="verification-tab active" data-tab="passenger" onclick="switchTab('passenger')">
+                    <i class="fas fa-user"></i>
+                    Passenger Verification
+                </div>
+                <div class="verification-tab" data-tab="package" onclick="switchTab('package')">
+                    <i class="fas fa-box"></i>
+                    Package Verification
+                </div>
+                <div class="verification-tab" data-tab="tripCode" onclick="switchTab('tripCode')">
+                    <i class="fas fa-route"></i>
+                    Trip Code
+                </div>
+                <div class="verification-tab" data-tab="driverCode" onclick="switchTab('driverCode')">
+                    <i class="fas fa-id-card"></i>
+                    Driver Code
+                </div>
+            </div>
+            
+            <!-- Passenger Verification -->
+            <div id="passengerVerification" class="verification-content active">
+                <div class="verification-card">
+                    <h3>Verify Passenger</h3>
+                    <p>Scan the passenger's QR code or enter their verification code</p>
+                    
+                    <div class="qr-container">
+                        <div class="qr-section">
+                            <h4>Scan QR Code</h4>
+                            <div class="qr-scanner" id="passengerScanner">
+                                <div class="scanner-overlay"></div>
+                                <video id="passengerVideo" style="display: none;"></video>
+                                <canvas id="passengerCanvas" style="display: none;"></canvas>
+                                <div id="scannerPlaceholder">
+                                    <i class="fas fa-qrcode" style="font-size: 3rem; color: #ddd;"></i>
+                                    <p>Click to start scanning</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="startPassengerScan()">
+                                <i class="fas fa-camera"></i>
+                                Start Scanning
+                            </button>
+                        </div>
+                        
+                        <div class="qr-section">
+                            <h4>Or Enter Code Manually</h4>
+                            <div class="verification-form">
+                                <div class="form-group">
+                                    <label for="passengerCode">Passenger Code:</label>
+                                    <input type="text" id="passengerCode" placeholder="Enter passenger code" />
+                                </div>
+                                <button class="btn btn-primary" onclick="verifyPassengerCode()">
+                                    <i class="fas fa-check"></i>
+                                    Verify Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="passengerResult" class="verification-result" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- Package Verification -->
+            <div id="packageVerification" class="verification-content">
+                <div class="verification-card">
+                    <h3>Verify Package</h3>
+                    <p>View package photos and verify with the receiver</p>
+                    
+                    <div id="packagePhotos" class="package-photos">
+                        <!-- Package photos will be loaded here -->
+                    </div>
+                    
+                    <div class="qr-container">
+                        <div class="qr-section">
+                            <h4>Scan Receiver QR Code</h4>
+                            <div class="qr-scanner" id="packageScanner">
+                                <div class="scanner-overlay"></div>
+                                <video id="packageVideo" style="display: none;"></video>
+                                <canvas id="packageCanvas" style="display: none;"></canvas>
+                                <div id="packageScannerPlaceholder">
+                                    <i class="fas fa-qrcode" style="font-size: 3rem; color: #ddd;"></i>
+                                    <p>Click to start scanning</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="startPackageScan()">
+                                <i class="fas fa-camera"></i>
+                                Start Scanning
+                            </button>
+                        </div>
+                        
+                        <div class="qr-section">
+                            <h4>Or Enter Receiver Code</h4>
+                            <div class="verification-form">
+                                <div class="form-group">
+                                    <label for="receiverCode">Receiver Code:</label>
+                                    <input type="text" id="receiverCode" placeholder="Enter receiver code" />
+                                </div>
+                                <button class="btn btn-primary" onclick="verifyReceiverCode()">
+                                    <i class="fas fa-check"></i>
+                                    Verify Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="packageResult" class="verification-result" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- Trip Code -->
+            <div id="tripCode" class="verification-content">
+                <div class="verification-card">
+                    <h3>Trip Verification Code</h3>
+                    <p>Passengers can scan this code to verify the trip</p>
+                    
+                    <div class="verification-code" id="tripVerificationCode">
+                        No Active Trip
+                    </div>
+                    
+                    <div class="qr-display" id="tripQRCode">
+                        <!-- QR code will be generated here -->
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateTripQR()">
+                        <i class="fas fa-qrcode"></i>
+                        Generate QR Code
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Driver Code -->
+            <div id="driverCode" class="verification-content">
+                <div class="verification-card">
+                    <h3>Your Driver Verification Code</h3>
+                    <p>Show this code to passengers for verification</p>
+                    
+                    <div class="verification-code" id="driverVerificationCode">
+                        No Active Trip
+                    </div>
+                    
+                    <div class="qr-display" id="driverQRCode">
+                        <!-- QR code will be generated here -->
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateDriverQR()">
+                        <i class="fas fa-qrcode"></i>
+                        Generate QR Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Photo Modal -->
+    <div id="photoModal" class="photo-modal">
+        <span class="close" onclick="closePhotoModal()">&times;</span>
+        <img id="modalImage" src="" alt="Package Photo" />
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../js/tonav.js"></script>
+    <script type="module" src="../../js/driver/driver-verification.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+        
+        function topNavZIndexDecrease() {
+            // Function for navigation link clicks
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.verification-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update active content
+            document.querySelectorAll('.verification-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Handle different tab content IDs
+            let contentId;
+            if (tabName === 'passenger') {
+                contentId = 'passengerVerification';
+            } else if (tabName === 'package') {
+                contentId = 'packageVerification';
+            } else if (tabName === 'tripCode') {
+                contentId = 'tripCode';
+            } else if (tabName === 'driverCode') {
+                contentId = 'driverCode';
+            }
+            
+            if (contentId) {
+                document.getElementById(contentId).classList.add('active');
+            }
+            
+            // Stop any active scanning
+            if (window.stopScanning) {
+                window.stopScanning();
+            }
+        }
+        
+        // Scanner functions
+        function startPassengerScan() {
+            if (window.startQRScan) {
+                window.startQRScan('passenger');
+            }
+        }
+        
+        function startPackageScan() {
+            if (window.startQRScan) {
+                window.startQRScan('package');
+            }
+        }
+        
+        function verifyPassengerCode() {
+            if (window.verifyCode) {
+                const code = document.getElementById('passengerCode').value;
+                window.verifyCode('passenger', code);
+            }
+        }
+        
+        function verifyReceiverCode() {
+            if (window.verifyCode) {
+                const code = document.getElementById('receiverCode').value;
+                window.verifyCode('package', code);
+            }
+        }
+        
+        function generateDriverQR() {
+            if (window.generateQRCode) {
+                window.generateQRCode();
+            }
+        }
+        
+        // Photo modal
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.remove('active');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('photoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePhotoModal();
+            }
+        });
+    </script>
+</body>
+</html>

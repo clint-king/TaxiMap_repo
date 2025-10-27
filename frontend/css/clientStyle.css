@@ -11,15 +11,15 @@ body {
    /* == NAVIGATION BAR == */
 
     /* Wrapper to hold topbar + page content in column layout */
-    .wrapper {
+    /* .wrapper {
       display: flex;
       flex-direction: column;
       height: 100%;
       width:100%;
-    }
+    } */
 
     /* Top navigation bar */
-.topnav {
+/* .topnav {
   background-color: #01386A;
   color: white;
   position: fixed;
@@ -55,10 +55,10 @@ body {
 
 .nav-links a:hover {
   text-decoration: underline;
-}
+} */
 
 /* Active/Current page link highlighting */
-.nav-links a.active {
+/* .nav-links a.active {
   background-color: #FFD52F !important;
   color: #01386A !important;
   padding: 8px 16px;
@@ -70,10 +70,10 @@ body {
 .nav-links a.active:hover {
   background-color: #FFC107 !important;
   text-decoration: none;
-}
+} */
 
 /* Logout Button in Navigation */
-.nav-logout-btn {
+/* .nav-logout-btn {
   background: #dc3545;
   color: white !important;
   padding: 8px 16px;
@@ -96,10 +96,10 @@ body {
 
 .nav-logout-btn i {
   font-size: 14px;
-}
+} */
 
 /* Burger styles */
-.burger {
+/* .burger {
   display: none;
   flex-direction: column;
   cursor: pointer;
@@ -114,14 +114,14 @@ body {
 }
 
 .topnav img {
-  height: 35px; /* smaller height */
+  height: 35px; 
   width: auto;
   border-radius: 8px;
   display: block;
-}
+} */
 
 /* Mobile styles */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .burger {
     display: flex;
   }
@@ -136,6 +136,7 @@ body {
     width: 100%;
     padding: 10px 0;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    gap:0 !important;
   }
 
   .nav-links.show {
@@ -145,10 +146,10 @@ body {
   .nav-links a {
     padding: 10px 15px;
     border-top: 1px solid rgba(255,255,255,0.1);
-  }
+  } */
 
   /* Mobile active link highlighting */
-  .nav-links a.active {
+  /* .nav-links a.active {
     background-color: #FFD52F !important;
     color: #01386A !important;
     font-weight: 600;
@@ -158,19 +159,19 @@ body {
   .nav-links a.active:hover {
     background-color: #FFC107 !important;
     text-decoration: none;
-  }
+  } */
 
   /* Mobile styles for logout button */
-  .nav-logout-btn {
+  /* .nav-logout-btn {
     margin-left: 0 !important;
     margin-top: 10px;
     justify-content: center;
     width: calc(100% - 30px);
     padding: 12px 16px;
-  }
+  } */
 
   /* Handle nav_group for clientCrowdSource page */
-  .nav_group a {
+  /* .nav_group a {
     padding: 10px 15px;
     border-top: 1px solid rgba(255,255,255,0.1);
   }
@@ -181,10 +182,39 @@ body {
     justify-content: center;
     width: calc(100% - 30px);
     padding: 12px 16px;
+  } */
+
+
+  /* just checking*/
+  /* .nav-links a {
+    padding: 10px 15px !important;
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    text-align: center;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    gap:0 !important;
+  }
+  
+  .nav-links a:first-child {
+    border-top: none !important;
+  }
+  
+
+  .full-navigation a {
+    display: block;
+    padding: 10px 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .full-navigation a:first-child {
+    border-top: none;
   }
 
-
-}
+} */
 
 
     /*Popp*/

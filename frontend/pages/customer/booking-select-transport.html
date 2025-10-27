@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Taxi - Select Transport | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/booking-select-transport.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                    <a href="booking-type-selection.html"  class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                    <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                    <!-- Login/Signup buttons for non-logged in users -->
+                    <div id="authButtons" class="auth-buttons">
+                      <a href="../authentication/login.html" class="btn-login">Login</a>
+                      <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                    </div>
+                    <!-- Full navigation for logged in users -->
+                    <div id="fullNav" class="full-navigation" style="display: none;">
+                      <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                      <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                      <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                      <a href="../Owner/owner-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
+                    </div>
+                  </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <div class="vehicle-selection-container">
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Trip Info</div>
+                </div>
+                <div class="progress-line completed"></div>
+                <div class="progress-step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Select Transport</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Passenger Info</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Payment</div>
+                </div>
+            </div>
+
+        <!-- Header -->
+        <div class="selection-header">
+            <h1 class="selection-title">
+                <i class="fas fa-car"></i>
+                Choose Your Transport
+            </h1>
+            <p class="selection-subtitle">Select from available taxis and buses in your area</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Vehicle Type</label>
+                    <select class="filter-select" id="vehicleTypeFilter">
+                        <option value="">All Vehicles</option>
+                        <option value="minibus">Minibus Taxi</option>
+                        <option value="bus">22-Seater Bus</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Price Range</label>
+                    <select class="filter-select" id="priceFilter">
+                        <option value="">Any Price</option>
+                        <option value="low">Under R15/km</option>
+                        <option value="medium">R15-20/km</option>
+                        <option value="high">Over R20/km</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Rating</label>
+                    <select class="filter-select" id="ratingFilter">
+                        <option value="">Any Rating</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="3">3+ Stars</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Amenities</label>
+                    <select class="filter-select" id="amenitiesFilter">
+                        <option value="">All Amenities</option>
+                        <option value="ac">Air Conditioning</option>
+                        <option value="wifi">WiFi</option>
+                        <option value="music">Music System</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicles Grid -->
+        <div class="vehicles-grid" id="vehiclesGrid">
+            <!-- Vehicles will be loaded here -->
+        </div>
+            </div>
+
+    <!-- Vehicle Details Modal -->
+    <div id="vehicleModal" class="vehicle-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Vehicle Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+            </div>
+        </div>
+                        </div>
+
+    <!-- Scripts -->
+    <script  type="module" src="../../js/tonav.js"></script>
+    <script  type="module" src="../../js/customer/booking-select-transport.js"></script>
+    <script  type="module">
+        // Sample vehicle data (in real app, this would come from backend)
+        const vehicles = [
+            {
+                id: 1,
+                name: "Golden Arrow Minibus",
+                type: "minibus",
+                registration: "CA 123-456",
+                capacity: 16,
+                rate: 15.50,
+                rating: 4.8,
+                reviews: 127,
+                images: [
+                    { url: "./images/Gemini_Generated_Image_7zi2po7zi2po7zi2.png", description: "Front view of the minibus" },
+                    { url: "./images/toyota-quantum.jpg", description: "Side view showing seating" },
+                    { url: "./images/Coach Rentals 27.jpeg", description: "Interior with comfortable seats" },
+                    { url: "./images/tol00005_u27946_3.jpg", description: "Back view with luggage space" }
+                ],
+                amenities: ["AC", "Music", "WiFi", "Charging Ports"],
+                owner: {
+                    name: "John Mthembu",
+                    experience: "5 years experience",
+                    rating: 4.9,
+                    phone: "+27 82 123 4567",
+                    avatar: "JM"
+                },
+                description: "Well-maintained minibus with comfortable seating and modern amenities. Perfect for group trips.",
+                features: {
+                    seating: "16 comfortable seats",
+                    luggage: "Large luggage compartment",
+                    safety: "First aid kit, fire extinguisher",
+                    comfort: "Air conditioning, music system"
+                }
+            },
+            {
+                id: 2,
+                name: "City Express Bus",
+                type: "bus",
+                registration: "GP 789-012",
+                capacity: 22,
+                rate: 12.00,
+                rating: 4.6,
+                reviews: 89,
+                images: [
+                    { url: "./images/White Van with Black and Yellow Stripes.png", description: "Front view of the 22-seater bus" },
+                    { url: "./images/Coach Rentals 27.jpeg", description: "Side view showing all windows" },
+                    { url: "./images/toyota-quantum.jpg", description: "Interior with spacious seating" }
+                ],
+                amenities: ["AC", "Music", "WiFi", "Luggage Space"],
+                owner: {
+                    name: "Sarah Dlamini",
+                    experience: "8 years experience",
+                    rating: 4.7,
+                    phone: "+27 83 456 7890",
+                    avatar: "SD"
+                },
+                description: "Spacious 22-seater bus ideal for large groups. Features modern amenities and comfortable seating.",
+                features: {
+                    seating: "22 spacious seats",
+                    luggage: "Extra luggage space",
+                    safety: "Safety belts, emergency exits",
+                    comfort: "Air conditioning, music system"
+                }
+            },
+            {
+                id: 3,
+                name: "Metro Transport",
+                type: "minibus",
+                registration: "KZN 345-678",
+                capacity: 18,
+                rate: 18.00,
+                rating: 4.9,
+                reviews: 156,
+                images: [
+                    { url: "./images/toyota-quantum.jpg", description: "Front view of the minibus" },
+                    { url: "./images/Coach Rentals 27.jpeg", description: "Side view showing design" },
+                    { url: "./images/tol00005_u27946_3.jpg", description: "Interior with premium seats" }
+                ],
+                amenities: ["AC", "Music", "WiFi", "Charging Ports", "Luggage Space"],
+                owner: {
+                    name: "Mike Johnson",
+                    experience: "10 years experience",
+                    rating: 4.9,
+                    phone: "+27 84 789 0123",
+                    avatar: "MJ"
+                },
+                description: "Premium minibus with luxury amenities. Perfect for business trips and special occasions.",
+                features: {
+                    seating: "18 premium seats",
+                    luggage: "Spacious luggage area",
+                    safety: "Advanced safety features",
+                    comfort: "Luxury amenities, WiFi"
+                }
+            }
+        ];
+
+        let currentVehicle = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+
+                    //check topnav buttons
+        const authButtons = document.getElementById('authButtons');
+        const fullNav = document.getElementById('fullNav');
+        
+        // Check if user is logged in
+        const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+        
+        if (isLoggedIn) {
+          // User is logged in - show full navigation
+          authButtons.style.display = 'none';
+          fullNav.style.display = 'block';
+        } else {
+          // User is not logged in - show auth buttons
+          authButtons.style.display = 'block';
+          fullNav.style.display = 'none';
+        }
+
+        
+            loadVehicles();
+            setupFilters();
+        });
+
+        // Load vehicles
+        function loadVehicles() {
+            const vehiclesGrid = document.getElementById('vehiclesGrid');
+            vehiclesGrid.innerHTML = '';
+
+            vehicles.forEach(vehicle => {
+                const vehicleCard = createVehicleCard(vehicle);
+                vehiclesGrid.appendChild(vehicleCard);
+            });
+        }
+
+        // Create vehicle card
+        function createVehicleCard(vehicle) {
+            const card = document.createElement('div');
+            card.className = 'vehicle-card';
+            card.onclick = () => showVehicleDetails(vehicle.id);
+
+            card.innerHTML = `
+                <div class="vehicle-image-container">
+                    <img src="${vehicle.images[0].url}" alt="${vehicle.name}" class="vehicle-main-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNTAiIGZpbGw9IiMwMTM4NkEiLz48dGV4dCB4PSIyMDAiIHk9IjEyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE4IiBmaWxsPSIjRkZENTJGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5WZWhpY2xlIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">
+                    <div class="image-overlay">
+                        <div class="image-info">
+                            <div class="image-count">
+                                <i class="fas fa-images"></i> ${vehicle.images.length} photos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="vehicle-info">
+                    <div class="vehicle-header">
+                        <div>
+                            <h3 class="vehicle-name">${vehicle.name}</h3>
+                            <p class="vehicle-type">${vehicle.type === 'minibus' ? 'Minibus Taxi' : '22-Seater Bus'}</p>
+                        </div>
+                        <div class="vehicle-rating">
+                            <span class="stars">${'★'.repeat(Math.floor(vehicle.rating))}${'☆'.repeat(5-Math.floor(vehicle.rating))}</span>
+                            <span class="rating-text">${vehicle.rating}/5 (${vehicle.reviews})</span>
+                        </div>
+                    </div>
+                    <div class="vehicle-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Capacity</span>
+                            <span class="detail-value">${vehicle.capacity} seats</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Rate</span>
+                            <span class="detail-value">R ${vehicle.rate}/km</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Registration</span>
+                            <span class="detail-value">${vehicle.registration}</span>
+                            </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Owner</span>
+                            <span class="detail-value">${vehicle.owner.name}</span>
+                        </div>
+                    </div>
+                    <div class="vehicle-amenities">
+                        ${vehicle.amenities.map(amenity => `<span class="amenity-tag">${amenity}</span>`).join('')}
+                    </div>
+                    <div class="owner-info">
+                        <div class="owner-name">${vehicle.owner.name}</div>
+                        <div class="owner-experience">${vehicle.owner.experience}</div>
+                    </div>
+                    <div class="vehicle-actions">
+                        <button class="btn-view-details" onclick="event.stopPropagation(); showVehicleDetails(${vehicle.id})">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="btn-select" onclick="event.stopPropagation(); selectVehicle(${vehicle.id})">
+                            <i class="fas fa-check"></i> Select
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Show vehicle details modal
+        function showVehicleDetails(vehicleId) {
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle) return;
+
+            currentVehicle = vehicle;
+            
+            document.getElementById('modalTitle').textContent = vehicle.name;
+            document.getElementById('modalBody').innerHTML = createVehicleDetailsHTML(vehicle);
+            document.getElementById('vehicleModal').style.display = 'block';
+        }
+
+        // Create vehicle details HTML
+        function createVehicleDetailsHTML(vehicle) {
+            return `
+                <div class="vehicle-gallery">
+                    <div class="main-image">
+                        <img src="${vehicle.images[0].url}" alt="${vehicle.name}" id="mainImage" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiMwMTM4NkEiLz48dGV4dCB4PSIyMDAiIHk9IjE1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE4IiBmaWxsPSIjRkZENTJGIiB0ZXh0LWFuY2hlcj0ibWlkZGxlIj5WZWhpY2xlIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">
+                    </div>
+                    <div class="thumbnail-grid">
+                        ${vehicle.images.slice(0, 4).map((image, index) => `
+                            <div class="thumbnail" onclick="changeMainImage('${image.url}')">
+                                <img src="${image.url}" alt="${image.description}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE0MCIgdmlld0JveD0iMCAwIDIwMCAxNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIxNDAiIGZpbGw9IiMwMTM4NkEiLz48dGV4dCB4PSIxMDAiIHk9IjcwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiNGRkQ1MkYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkltYWdlPC90ZXh0Pjwvc3ZnPg=='">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="vehicle-details-full">
+                    <div class="details-section">
+                        <h3 class="section-title">Vehicle Information</h3>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Type:</span>
+                            <span class="detail-value-full">${vehicle.type === 'minibus' ? 'Minibus Taxi' : '22-Seater Bus'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Registration:</span>
+                            <span class="detail-value-full">${vehicle.registration}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Capacity:</span>
+                            <span class="detail-value-full">${vehicle.capacity} seats</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Rate per km:</span>
+                            <span class="detail-value-full">R ${vehicle.rate}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Rating:</span>
+                            <span class="detail-value-full">${vehicle.rating}/5 (${vehicle.reviews} reviews)</span>
+                </div>
+            </div>
+
+                    <div class="details-section">
+                        <h3 class="section-title">Features & Amenities</h3>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Seating:</span>
+                            <span class="detail-value-full">${vehicle.features.seating}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Luggage:</span>
+                            <span class="detail-value-full">${vehicle.features.luggage}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Safety:</span>
+                            <span class="detail-value-full">${vehicle.features.safety}</span>
+                    </div>
+                        <div class="detail-row">
+                            <span class="detail-label-full">Comfort:</span>
+                            <span class="detail-value-full">${vehicle.features.comfort}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="owner-section">
+                    <h3 class="section-title">Owner Information</h3>
+                    <div class="owner-header">
+                        <div class="owner-avatar">${vehicle.owner.avatar}</div>
+                        <div class="owner-details">
+                            <h3>${vehicle.owner.name}</h3>
+                            <div class="owner-rating">
+                                <span class="stars">${'★'.repeat(Math.floor(vehicle.owner.rating))}${'☆'.repeat(5-Math.floor(vehicle.owner.rating))}</span>
+                                <span class="rating-text">${vehicle.owner.rating}/5</span>
+                </div>
+                            <p>${vehicle.owner.experience}</p>
+                            <p><i class="fas fa-phone"></i> ${vehicle.owner.phone}</p>
+        </div>
+        </div>
+    </div>
+
+                <div class="modal-actions">
+                    <button class="btn-modal btn-secondary-modal" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="btn-modal btn-primary-modal" onclick="selectVehicle(${vehicle.id}); closeModal();">
+                        <i class="fas fa-check"></i> Select This Vehicle
+                    </button>
+            </div>
+            `;
+        }
+
+        // Change main image
+        function changeMainImage(imageUrl) {
+            document.getElementById('mainImage').src = imageUrl;
+        }
+
+        // Select vehicle
+        function selectVehicle(vehicleId) {
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle) return;
+
+            // Store selected vehicle in sessionStorage
+            sessionStorage.setItem('selectedVehicle', JSON.stringify(vehicle));
+            
+            // Redirect to payment page
+            window.location.href = 'booking-passenger-info.html';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('vehicleModal').style.display = 'none';
+        }
+
+        // Setup filters
+        function setupFilters() {
+            const filters = ['vehicleTypeFilter', 'priceFilter', 'ratingFilter', 'amenitiesFilter'];
+            
+            filters.forEach(filterId => {
+                document.getElementById(filterId).addEventListener('change', filterVehicles);
+            });
+        }
+
+        // Filter vehicles
+        function filterVehicles() {
+            const typeFilter = document.getElementById('vehicleTypeFilter').value;
+            const priceFilter = document.getElementById('priceFilter').value;
+            const ratingFilter = document.getElementById('ratingFilter').value;
+            
+            let filteredVehicles = vehicles.filter(vehicle => {
+                let matches = true;
+                
+                if (typeFilter && vehicle.type !== typeFilter) matches = false;
+                if (ratingFilter && vehicle.rating < parseFloat(ratingFilter)) matches = false;
+                if (priceFilter) {
+                    if (priceFilter === 'low' && vehicle.rate >= 15) matches = false;
+                    if (priceFilter === 'medium' && (vehicle.rate < 15 || vehicle.rate > 20)) matches = false;
+                    if (priceFilter === 'high' && vehicle.rate <= 20) matches = false;
+                }
+                
+                return matches;
+            });
+            
+            displayFilteredVehicles(filteredVehicles);
+        }
+
+        // Display filtered vehicles
+        function displayFilteredVehicles(filteredVehicles) {
+            const vehiclesGrid = document.getElementById('vehiclesGrid');
+            vehiclesGrid.innerHTML = '';
+
+            if (filteredVehicles.length === 0) {
+                vehiclesGrid.innerHTML = '<p style="text-align: center; color: #6c757d; font-size: 1.2rem; grid-column: 1/-1;">No vehicles found matching your criteria.</p>';
+                return;
+            }
+
+            filteredVehicles.forEach(vehicle => {
+                const vehicleCard = createVehicleCard(vehicle);
+                vehiclesGrid.appendChild(vehicleCard);
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('vehicleModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

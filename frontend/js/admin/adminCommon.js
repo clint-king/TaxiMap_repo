@@ -11,7 +11,7 @@ export function toggleAdminMobileMenu() {
 export function logout() {
   if (confirm('Are you sure you want to logout?')) {
     localStorage.removeItem('token');
-    window.location.href = 'login.html';
+    window.location.href = '/pages/authentication/login.html';
   }
 }
 

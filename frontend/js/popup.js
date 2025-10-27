@@ -2,6 +2,10 @@
 
   //insert message
   const popup = document.getElementById('informPopup');
+  if (!popup) {
+    console.error('Popup element not found. Make sure popup.html is loaded.');
+    return;
+  }
   popup.textContent = message;
 
   // Remove both states just in case

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Pickup & Destination - TeksiMap</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/booking-view-locations.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <style>
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+      
+      @media (max-width: 768px) {
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="location-view-container">
+            <div class="location-header">
+                <h1><i class="fas fa-map-marker-alt"></i> View Pickup & Destination</h1>
+                <p>View the pickup and destination locations for this booking</p>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="booking-summary">
+                <h3><i class="fas fa-info-circle"></i> Booking Summary</h3>
+                <div class="booking-details" id="bookingDetails">
+                    <!-- Booking details will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Location Display -->
+            <div class="location-display">
+                <h3><i class="fas fa-map"></i> Location Details</h3>
+                
+                <div class="location-info">
+                    <div class="location-card pickup">
+                        <div class="location-title">
+                            <i class="fas fa-map-marker-alt" style="color: #28a745;"></i>
+                            Pickup Location
+                        </div>
+                        <div class="location-address" id="pickupAddress">
+                            <!-- Pickup address will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="location-card destination">
+                        <div class="location-title">
+                            <i class="fas fa-flag-checkered" style="color: #dc3545;"></i>
+                            Destination Location
+                        </div>
+                        <div class="location-address" id="destinationAddress">
+                            <!-- Destination address will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="route-info">
+                    <h4><i class="fas fa-route"></i> Route Information</h4>
+                    <div class="route-details" id="routeDetails">
+                        <!-- Route details will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="map-container" id="map"></div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> Back to Bookings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../js/tonav.js"></script>
+    <script>
+        // Global variables
+        let currentBooking = null;
+        let map = null;
+        let pickupMarker = null;
+        let destinationMarker = null;
+
+        // Initialize Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBookingInfo();
+            initializeMap();
+        });
+
+        function loadBookingInfo() {
+            currentBooking = JSON.parse(sessionStorage.getItem('currentBooking') || '{}');
+            if (!currentBooking.id) {
+                alert('No booking found. Redirecting to bookings page.');
+                window.location.href = 'booking-trip-info.html';
+                return;
+            }
+            
+            // Display booking information
+            const bookingDetails = document.getElementById('bookingDetails');
+            bookingDetails.innerHTML = `
+                <div class="detail-item">
+                    <span class="detail-label">Vehicle</span>
+                    <span class="detail-value">${currentBooking.vehicle.name}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">${currentBooking.trip.date}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value">${currentBooking.trip.time}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">${currentBooking.status}</span>
+                </div>
+            `;
+            
+            // Display location addresses
+            document.getElementById('pickupAddress').textContent = currentBooking.trip.pickup || 'Not specified';
+            document.getElementById('destinationAddress').textContent = currentBooking.trip.destination || 'Not specified';
+            
+            // Display route information
+            const routeDetails = document.getElementById('routeDetails');
+            routeDetails.innerHTML = `
+                <div class="route-item">
+                    <div class="route-value">${currentBooking.trip.distance || 'N/A'}</div>
+                    <div class="route-label">Distance (km)</div>
+                </div>
+                <div class="route-item">
+                    <div class="route-value">${currentBooking.trip.duration || 'N/A'}</div>
+                    <div class="route-label">Duration</div>
+                </div>
+                <div class="route-item">
+                    <div class="route-value">${currentBooking.totalAmount || 'N/A'}</div>
+                    <div class="route-label">Total Cost</div>
+                </div>
+            `;
+        }
+
+        function initializeMap() {
+            // Initialize map centered on South Africa
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [26.2041, -29.0475], // South Africa center
+                zoom: 6
+            });
+
+            // Add navigation controls
+            map.addControl(new mapboxgl.NavigationControl());
+
+            // Load existing markers
+            if (currentBooking && currentBooking.trip) {
+                loadExistingMarkers();
+            }
+        }
+
+        function loadExistingMarkers() {
+            // This would typically geocode the addresses to get coordinates
+            // For demo purposes, we'll use approximate coordinates
+            const pickupCoords = [-26.2041, 28.0475]; // Johannesburg area
+            const destCoords = [-33.9249, 18.4241]; // Cape Town area
+
+            if (currentBooking.trip.pickup) {
+                // Add pickup marker
+                pickupMarker = new mapboxgl.Marker({ color: '#28a745' })
+                    .setLngLat([pickupCoords[0], pickupCoords[1]])
+                    .setPopup(new mapboxgl.Popup().setHTML(`
+                        <b>Pickup Location</b><br>
+                        ${currentBooking.trip.pickup}
+                    `))
+                    .addTo(map);
+            }
+
+            if (currentBooking.trip.destination) {
+                // Add destination marker
+                destinationMarker = new mapboxgl.Marker({ color: '#dc3545' })
+                    .setLngLat([destCoords[0], destCoords[1]])
+                    .setPopup(new mapboxgl.Popup().setHTML(`
+                        <b>Destination Location</b><br>
+                        ${currentBooking.trip.destination}
+                    `))
+                    .addTo(map);
+            }
+
+            // Fit map to show both markers
+            if (pickupMarker && destinationMarker) {
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend([pickupCoords[0], pickupCoords[1]]);
+                bounds.extend([destCoords[0], destCoords[1]]);
+                map.fitBounds(bounds, { padding: 50 });
+            } else if (pickupMarker) {
+                map.setCenter([pickupCoords[0], pickupCoords[1]]);
+                map.setZoom(10);
+            } else if (destinationMarker) {
+                map.setCenter([destCoords[0], destCoords[1]]);
+                map.setZoom(10);
+            }
+        }
+
+        function goBack() {
+            window.location.href = 'booking-trip-info.html';
+        }
+
+        // Navigation functions
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('nav-menu');
+            const navToggle = document.getElementById('nav-toggle');
+            
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        }
+
+        function topNavZIndexDecrease() {
+            const topnav = document.querySelector('.topnav');
+            topnav.style.zIndex = '1000';
+        }
+    </script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+</body>
+</html>
+
