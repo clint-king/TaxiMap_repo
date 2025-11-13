@@ -6,18 +6,410 @@
     <title>Passenger Information - TeksiMap</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="./favicon.ico">
-    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
-    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
-    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="../../assets/icons/site.webmanifest">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../../css/booking.css">
     <link rel="stylesheet" href="../../css/clientStyle.css">
     <link rel="stylesheet" href="../../css/booking-passenger-info.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+      /* Match booking-trip-info.html styling */
+      /* Override external CSS to allow whole page scrolling */
+      html, body {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        max-height: none !important;
+      }
+
+      body {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      .page-content {
+        flex: 1;
+        padding: 2.5rem 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      @media (min-width: 1024px) {
+        .page-content {
+          padding: 3rem 2rem;
+        }
+      }
+
+      .passenger-info-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 3rem 4rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.5s ease;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      @media (min-width: 1024px) and (max-width: 1399px) {
+        .passenger-info-container {
+          max-width: 1400px;
+          padding: 2.5rem 3rem;
+        }
+      }
+
+      @media (min-width: 1400px) and (max-width: 1599px) {
+        .passenger-info-container {
+          max-width: 1600px;
+          padding: 3rem 4rem;
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .passenger-info-container {
+          max-width: 1800px;
+          padding: 3.5rem 5rem;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Passenger Header Styling - Override external CSS */
+      .passenger-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding: 2.5rem 2rem !important;
+        padding-bottom: 2.5rem !important;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+        background: white !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .passenger-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+        z-index: 1;
+      }
+
+      .passenger-title {
+        color: #01386A !important;
+        font-size: 2.8rem !important;
+        margin-bottom: 0.75rem !important;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .passenger-title i {
+        color: #FFD52F !important;
+        font-size: 3rem !important;
+      }
+
+      .passenger-subtitle {
+        color: #666 !important;
+        font-size: 1.2rem !important;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+        position: relative;
+        z-index: 2;
+        opacity: 1 !important;
+      }
+
+      /* Progress Indicator */
+      .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5rem;
+        margin-bottom: 4rem;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3.5rem 2.5rem;
+        border-radius: 15px;
+      }
+
+      .progress-indicator .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-indicator .step .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: #999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.4s ease;
+        border: 4px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-indicator .step.active .step-number,
+      .progress-indicator .step.completed .step-number {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        transform: scale(1.15);
+        box-shadow: 0 8px 25px rgba(255, 213, 47, 0.4);
+      }
+
+      .progress-indicator .step .step-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .progress-indicator .step.active .step-label,
+      .progress-indicator .step.completed .step-label {
+        color: #01386A;
+        font-weight: 700;
+      }
+
+      .progress-indicator .progress-line {
+        flex: 1;
+        height: 4px;
+        background: #e0e0e0;
+        margin: 0 1rem;
+        position: relative;
+        top: -30px;
+      }
+
+      .progress-indicator .progress-line.completed {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+      }
+
+      /* Section Headers */
+      .form-section h2 {
+        color: #01386A;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        margin-top: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .form-section h2::before {
+        content: '';
+        width: 5px;
+        height: 40px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 3px;
+      }
+
+      /* Input Styling */
+      .input-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .input-group label {
+        color: #01386A;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 1rem;
+      }
+
+      .input-group input,
+      .input-group select,
+      .input-group textarea {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .input-group input:focus,
+      .input-group select:focus,
+      .input-group textarea:focus {
+        border-color: #01386A;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+      }
+
+      /* Buttons Styling */
+      .btn-new-booking,
+      .btn-primary,
+      button[type="submit"].btn-primary,
+      .btn {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        color: white;
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(1, 56, 106, 0.3);
+      }
+
+      .btn-new-booking:hover,
+      .btn-primary:hover,
+      button[type="submit"].btn-primary:hover,
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(1, 56, 106, 0.4);
+        background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+      }
+
+      .btn-back,
+      .btn-secondary {
+        background: #f8f9fa;
+        color: #01386A;
+        border: 2px solid #e9ecef;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+
+      .btn-back:hover,
+      .btn-secondary:hover {
+        background: #e9ecef;
+        border-color: #01386A;
+        transform: translateY(-2px);
+        text-decoration: none;
+      }
+
+      .btn-skip {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-skip:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+      }
+
+      /* Form Actions */
+      .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      /* Passenger Card Styling */
+      .passenger-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+
+      .passenger-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Skip Info Styling */
+      .skip-info {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border-left: 4px solid #ffc107;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+      }
+
+      .skip-info h3 {
+        color: #856404;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .skip-info p {
+        color: #856404;
+        margin: 0;
+      }
+
       /* Auth buttons styling */
       .auth-buttons {
         display: flex;
@@ -82,6 +474,13 @@
         background-color: rgba(255, 255, 255, 0.1);
         text-decoration: none;
       }
+
+      /* Navigation links spacing */
+      @media (min-width: 769px) {
+        .nav-links {
+          gap: 30px;
+        }
+      }
       
       /* Logout Button Styling */
       .nav-logout-btn {
@@ -113,8 +512,55 @@
       .nav-container {
         position: relative;
       }
+
+      /* Topnav styling to ensure it stands out on gradient background */
+      .topnav {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        position: relative;
+      }
+
+      /* Link styling */
+      a {
+        color: #01386A;
+        transition: color 0.3s ease;
+      }
+
+      a:hover {
+        color: #025aa5;
+      }
       
+      /* Responsive Design */
       @media (max-width: 768px) {
+        .page-content {
+          padding: 1rem 0.5rem;
+          overflow: visible !important;
+          height: auto !important;
+        }
+
+        .passenger-info-container {
+          padding: 1.5rem;
+          border-radius: 15px;
+          overflow: visible !important;
+          height: auto !important;
+        }
+
+        .passenger-title {
+          font-size: 2rem;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .progress-indicator {
+          gap: 2rem;
+          padding: 2rem 1rem;
+        }
+
+        .form-actions {
+          flex-direction: column;
+        }
+
         .auth-buttons {
           position: static;
           transform: none;
@@ -125,16 +571,50 @@
           padding: 1rem 2rem;
         }
         
+        .nav-links {
+          gap: 0;
+        }
+
+        .nav-links a {
+          padding: 10px 15px !important;
+          border-top: 1px solid rgba(255,255,255,0.1) !important;
+          text-align: center;
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .nav-links a:first-child {
+          border-top: none !important;
+        }
+        
         .full-navigation {
           flex-direction: column;
           gap: 0.5rem;
           width: 100%;
-          padding: 1rem 2rem;
+          margin-left: 0;
+          align-items: stretch;
+        }
+        
+        .full-navigation a {
+          display: block;
+          padding: 10px 15px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .full-navigation a:first-child {
+          border-top: none;
         }
         
         .btn-login, .btn-signup {
           width: 100%;
           text-align: center;
+        }
+        
+        .nav-logout-btn {
           padding: 0.75rem 1rem;
           font-size: 1rem;
         }
@@ -159,30 +639,37 @@
                     <div class="bar"></div>
                 </div>
 
-                <!-- Navigation links -->
-                <div class="nav-links" id="mobileMenu">
-                    <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                    <a href="booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
-                    <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
-                    <!-- Login/Signup buttons for non-logged in users -->
-                    <div id="authButtons" class="auth-buttons">
-                        <a href="../authentication/login.html" class="btn-login">Login</a>
-                        <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
-                    </div>
-                    <!-- Full navigation for logged in users -->
-                    <div id="fullNav" class="full-navigation" style="display: none;">
-                        <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
-                        <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
-                        <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-                    </div>
-                </div>
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html"   onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="booking-type-selection.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <!-- Login/Signup buttons for non-logged in users -->
+            <div id="authButtons" class="auth-buttons">
+              <a href="../authentication/login.html" class="btn-login">Login</a>
+              <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+            </div>
+            <!-- Full navigation for logged in users -->
+            <div id="fullNav" class="full-navigation" style="display: none;">
+              <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+              <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+              <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+          </div>
             </div>
         </nav>
 
         <!-- Main Content -->
         <div class="page-content">
             <div class="passenger-info-container">
-                <!-- Progress Indicator -->
+            <!-- Back Button -->
+            <div class="form-header">
+                <button class="btn-back" onclick="window.location.href='booking-select-transport.html'">
+                    <i class="fas fa-arrow-left"></i> Back to Select Transport
+                </button>
+            </div>
+            
+            <!-- Progress Indicator -->
                 <div class="progress-indicator">
                     <div class="step completed">
                         <div class="step-number">1</div>
@@ -261,22 +748,49 @@
     <script>
         // Navigation functions
         function toggleMobileMenu() {
-            const navLinks = document.querySelector('.nav-links');
-            navLinks.classList.toggle('show');
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexIncrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3001";
         }
 
         function topNavZIndexDecrease() {
-            const topnav = document.querySelector('.topnav');
-            if (topnav) {
-                topnav.style.zIndex = '999';
-            }
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3";
         }
+        
+        // Check authentication status and update navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+            
+            if (isLoggedIn) {
+                // User is logged in - show full navigation
+                if (authButtons) authButtons.style.display = 'none';
+                if (fullNav) fullNav.style.display = 'block';
+            } else {
+                // User is not logged in - show auth buttons
+                if (authButtons) authButtons.style.display = 'block';
+                if (fullNav) fullNav.style.display = 'none';
+            }
+        });
 
         // Global variables for passenger management
         let currentPassengerCount = 1;
         let maxPassengers = 1;
         let selectedVehicle = {};
         let passengerData = {}; // Store passenger data by unique ID
+        
+        // Global variables for parcel management (if needed)
+        /* Parcel feature temporarily disabled
+        let parcelData = {}; // Store parcel data by unique ID
+        */
 
         // Passenger Information Management
         function loadPassengerForms() {
@@ -456,47 +970,21 @@
         }
 
         function skipPassengerInfo() {
-            // Cannot skip if there are parcels
-            if (currentParcelCount > 0) {
-                alert('You have parcels to deliver. Please provide parcel information before proceeding.');
-                return;
-            }
-            
-            // Store empty passenger and parcel data
             const tripInfo = JSON.parse(sessionStorage.getItem('tripInfo') || '{}');
             tripInfo.passengers = [];
-            tripInfo.parcels = [];
             tripInfo.passengerCount = currentPassengerCount;
-            tripInfo.parcelCount = currentParcelCount;
             sessionStorage.setItem('tripInfo', JSON.stringify(tripInfo));
             
-            // Redirect to payment
             window.location.href = 'booking-payment.html';
         }
 
         function continueToPayment() {
-            // Validate parcel information if parcels are added
-            if (currentParcelCount > 0) {
-                const parcelValidation = validateParcelInformationPassenger();
-                if (!parcelValidation.valid) {
-                    alert(parcelValidation.message);
-                    return;
-                }
-            }
-            
-            // Collect passenger and parcel data
             const passengers = collectPassengerData();
-            const parcels = collectParcelData();
-            
-            // Update trip info with passenger and parcel data
             const tripInfo = JSON.parse(sessionStorage.getItem('tripInfo') || '{}');
             tripInfo.passengers = passengers;
-            tripInfo.parcels = parcels;
             tripInfo.passengerCount = currentPassengerCount;
-            tripInfo.parcelCount = currentParcelCount;
             sessionStorage.setItem('tripInfo', JSON.stringify(tripInfo));
             
-            // Redirect to payment
             window.location.href = 'booking-payment.html';
         }
         
@@ -535,6 +1023,20 @@
             } else {
                 input.style.borderColor = '#dc3545'; // Red for invalid
             }
+        }
+        
+        // Collect parcel data
+        /* Parcel helpers temporarily disabled
+        function collectParcelData() {
+            const parcels = [];
+            
+            for (let i = 1; i <= currentParcelCount; i++) {
+                if (parcelData[i]) {
+                    parcels.push(parcelData[i]);
+                }
+            }
+            
+            return parcels;
         }
         
         // Validate parcel information for booking-passenger-info page
@@ -591,7 +1093,7 @@
                 if (!validateSAPhoneNumber(parcel.receiverPhone)) {
                     return {
                         valid: false,
-                        message: `Parcel ${i}: Receiver's phone number is invalid. Please enter a valid South African phone number (e.g., 071 234 5678 or +27 71 234 5678).`
+                        message: `Parcel ${i}: Receiver's phone number is invalid. Please enter a valid South African phone number (e.g., 082 123 4567 or +27 82 123 4567).`
                     };
                 }
                 
@@ -606,6 +1108,7 @@
             
             return { valid: true };
         }
+        */
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {

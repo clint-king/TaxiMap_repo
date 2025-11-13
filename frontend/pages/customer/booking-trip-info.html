@@ -19,8 +19,447 @@
     <link rel="stylesheet" href="../../css/booking.css">
     <link rel="stylesheet" href="../../css/clientStyle.css">
     <link rel="stylesheet" href="../../css/booking-trip-info.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+      /* Match booking-public.html styling */
+      body {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-content {
+        flex: 1;
+        padding: 2.5rem 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      @media (min-width: 1024px) {
+        .page-content {
+          padding: 3rem 2rem;
+        }
+      }
+
+      .booking-dashboard,
+      .booking-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 3rem 4rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.5s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      @media (min-width: 1024px) and (max-width: 1399px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1400px;
+          padding: 2.5rem 3rem;
+        }
+      }
+
+      @media (min-width: 1400px) and (max-width: 1599px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1600px;
+          padding: 3rem 4rem;
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1800px;
+          padding: 3.5rem 5rem;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Dashboard Header Styling */
+      .dashboard-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+      }
+
+      .dashboard-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+      }
+
+      .dashboard-header h1 {
+        color: #01386A;
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .dashboard-header h1 i {
+        color: #FFD52F;
+        font-size: 3rem;
+      }
+
+      .dashboard-header p {
+        color: #666;
+        font-size: 1.2rem;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* Page Header Styling */
+      .page-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+      }
+
+      .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+      }
+
+      .page-header h1 {
+        color: #01386A;
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .page-header h1 i {
+        color: #FFD52F;
+        font-size: 3rem;
+      }
+
+      .page-header p {
+        color: #666;
+        font-size: 1.2rem;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* Buttons Styling */
+      .btn-new-booking,
+      .btn-primary,
+      button[type="submit"].btn-primary {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        color: white;
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(1, 56, 106, 0.3);
+      }
+
+      .btn-new-booking:hover,
+      .btn-primary:hover,
+      button[type="submit"].btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(1, 56, 106, 0.4);
+        background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+      }
+
+      .btn-back,
+      .btn-secondary {
+        background: #f8f9fa;
+        color: #01386A;
+        border: 2px solid #e9ecef;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-back:hover,
+      .btn-secondary:hover {
+        background: #e9ecef;
+        border-color: #01386A;
+        transform: translateY(-2px);
+      }
+
+      /* Tabs Styling */
+      .booking-tabs {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: 1.25rem 2rem;
+        background: white;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        font-size: 1rem;
+      }
+
+      .tab-btn:hover {
+        border-color: #01386A;
+        color: #01386A;
+        transform: translateY(-2px);
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        box-shadow: 0 4px 15px rgba(255, 213, 47, 0.3);
+      }
+
+      /* Section Headers */
+      .form-section h2,
+      h2 {
+        color: #01386A;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        margin-top: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .form-section h2::before {
+        content: '';
+        width: 5px;
+        height: 40px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 3px;
+      }
+
+      /* Progress Indicator */
+      .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5rem;
+        margin-bottom: 4rem;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3.5rem 2.5rem;
+        border-radius: 15px;
+      }
+
+      .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-step .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: #999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.4s ease;
+        border: 4px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-step.active .step-number {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        transform: scale(1.15);
+        box-shadow: 0 8px 25px rgba(255, 213, 47, 0.4);
+      }
+
+      .progress-step .step-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .progress-step.active .step-label {
+        color: #01386A;
+        font-weight: 700;
+      }
+
+      /* Cards and Forms */
+      .booking-card,
+      .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+
+      .booking-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Booking Grid */
+      .bookings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 2rem;
+      }
+
+      @media (min-width: 1400px) {
+        .bookings-grid {
+          grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .bookings-grid {
+          grid-template-columns: repeat(auto-fill, minmax(550px, 1fr));
+        }
+      }
+
+      /* Header Content */
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 2rem;
+        padding: 0 1rem;
+      }
+
+      .header-text h1 {
+        color: #01386A;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .header-text h1 i {
+        color: #FFD52F;
+        font-size: 2.5rem;
+      }
+
+      .header-text p {
+        color: #666;
+        font-size: 1.1rem;
+        margin: 0;
+      }
+
+      /* Map Container Styling */
+      .map-container,
+      .location-map-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 2px solid #e9ecef;
+      }
+
+      /* Input Styling */
+      .input-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .input-group label {
+        color: #01386A;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 1rem;
+      }
+
+      .input-group input,
+      .input-group select,
+      .input-group textarea {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .input-group input:focus,
+      .input-group select:focus,
+      .input-group textarea:focus {
+        border-color: #01386A;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+      }
+
       /* Auth buttons styling */
       .auth-buttons {
         display: flex;
@@ -85,6 +524,13 @@
         background-color: rgba(255, 255, 255, 0.1);
         text-decoration: none;
       }
+
+      /* Navigation links spacing */
+      @media (min-width: 769px) {
+        .nav-links {
+          gap: 30px;
+        }
+      }
       
       /* Logout Button Styling */
       .nav-logout-btn {
@@ -116,8 +562,214 @@
       .nav-container {
         position: relative;
       }
+
+      /* Topnav styling to ensure it stands out on gradient background */
+      .topnav {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        position: relative;
+      }
+
+      /* Status badges and counts */
+      .tab-count,
+      .status-badge {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+
+      /* Form headers and labels */
+      .form-header {
+        margin-bottom: 2.5rem;
+      }
+
+      /* Additional spacing improvements */
+      .location-map-container,
+      .location-inputs {
+        margin-bottom: 2rem;
+      }
+
+      .pickup-points,
+      .dropoff-points {
+        margin-top: 2rem;
+      }
+
+      .trip-form {
+        max-width: 100%;
+      }
+
+      /* Ensure proper spacing in grid layouts */
+      .bookings-grid > * {
+        min-width: 0;
+      }
+
+      /* Booking Actions Styling */
+      .booking-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        width: 100%;
+        box-sizing: border-box;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .btn-action {
+        flex: 1 1 auto;
+        min-width: 120px;
+        padding: 1rem 1.25rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        box-sizing: border-box;
+        text-align: center;
+      }
+
+      .btn-action i {
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      /* Button color variants */
+      .btn-pay {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+      }
+
+      .btn-pay:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+      }
+
+      .btn-view {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-view:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+      }
+
+      .btn-passengers {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-passengers:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+      }
+
+      .btn-cancel {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-cancel:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+      }
+
+      .btn-locations {
+        background: #17a2b8;
+        color: white;
+      }
+
+      .btn-locations:hover {
+        background: #138496;
+        transform: translateY(-2px);
+      }
+
+      .btn-share {
+        background: #ffc107;
+        color: #333;
+      }
+
+      .btn-share:hover {
+        background: #e0a800;
+        transform: translateY(-2px);
+      }
+
+      .btn-contact {
+        background: #6610f2;
+        color: white;
+      }
+
+      .btn-contact:hover {
+        background: #520dc2;
+        transform: translateY(-2px);
+      }
+
+      /* Link styling */
+      a {
+        color: #01386A;
+        transition: color 0.3s ease;
+      }
+
+      a:hover {
+        color: #025aa5;
+      }
       
+      /* Responsive Design */
       @media (max-width: 768px) {
+        .page-content {
+          padding: 1rem 0.5rem;
+        }
+
+        .booking-dashboard,
+        .booking-container {
+          padding: 1.5rem;
+          border-radius: 15px;
+        }
+
+        .dashboard-header h1,
+        .page-header h1 {
+          font-size: 2rem;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .header-text h1 {
+          font-size: 2rem;
+        }
+
+        .progress-indicator {
+          gap: 2rem;
+          padding: 2rem 1rem;
+        }
+
+        .booking-tabs {
+          flex-direction: column;
+        }
+
+        .bookings-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .booking-actions {
+          flex-direction: column;
+        }
+
+        .btn-action {
+          width: 100%;
+          min-width: 100%;
+        }
+
         .auth-buttons {
           position: static;
           transform: none;
@@ -128,11 +780,47 @@
           padding: 1rem 2rem;
         }
         
+        .nav-links {
+          gap: 0;
+        }
+
+        .nav-links a {
+          padding: 10px 15px !important;
+          border-top: 1px solid rgba(255,255,255,0.1) !important;
+          text-align: center;
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .nav-links a:first-child {
+          border-top: none !important;
+        }
+        
         .full-navigation {
           flex-direction: column;
           gap: 0.5rem;
           width: 100%;
-          padding: 1rem 2rem;
+          margin-left: 0;
+          align-items: stretch;
+        }
+        
+        .full-navigation a {
+          display: block;
+          padding: 10px 15px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .full-navigation a:first-child {
+          border-top: none;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
         }
         
         .nav-logout-btn {
@@ -160,24 +848,23 @@
                     <div class="bar"></div>
                 </div>
 
-                <!-- Navigation links -->
-                <div class="nav-links" id="mobileMenu">
-                    <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                    <a href="booking-trip-info.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
-                    <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
-                    <!-- Login/Signup buttons for non-logged in users -->
-                    <div id="authButtons" class="auth-buttons">
-                        <a href="../authentication/login.html" class="btn-login">Login</a>
-                        <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
-                    </div>
-                    <!-- Full navigation for logged in users -->
-                    <div id="fullNav" class="full-navigation" style="display: none;">
-                        <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
-                        <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
-                        <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-                        <a href="../Owner/owner-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
-                    </div>
-                </div>
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html"   onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="booking-trip-info.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <!-- Login/Signup buttons for non-logged in users -->
+            <div id="authButtons" class="auth-buttons">
+              <a href="../authentication/login.html" class="btn-login">Login</a>
+              <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+            </div>
+            <!-- Full navigation for logged in users -->
+            <div id="fullNav" class="full-navigation" style="display: none;">
+              <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+              <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+              <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+          </div>
             </div>
         </nav>
 
@@ -411,8 +1098,14 @@
             mobileMenu.classList.toggle('show');
         }
 
+        function topNavZIndexIncrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3001";
+        }
+
         function topNavZIndexDecrease() {
-            // Function for navigation link clicks
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3";
         }
     </script>
     

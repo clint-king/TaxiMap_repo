@@ -81,7 +81,7 @@ function loadCurrentTrip() {
         currentTrip = {
             id: 'TRP-0001',
             status: 'active',
-            vehicleType: 'Taxi (14 seats)',
+            vehicleType: 'Taxi (15 seats)',
             totalDistance: '45.2 km',
             estimatedDuration: '2h 15min',
             stops: [
@@ -190,7 +190,7 @@ function displayTrip(trip) {
     // Calculate capacity usage
     const humanPassengers = trip.stops.filter(stop => stop.type === 'pickup' && stop.category === 'human').length;
     const packages = trip.stops.filter(stop => stop.type === 'pickup' && stop.category === 'package').length;
-    const totalCapacity = 14;
+    const totalCapacity = 15;
     const availableSeats = totalCapacity - humanPassengers;
     
     // Generate route steps

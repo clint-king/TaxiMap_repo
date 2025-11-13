@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coverage Areas | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            padding-top: 70px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            z-index: -1;
+        }
+
+        .page-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        @media (min-width: 1400px) {
+            .page-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .page-container {
+                max-width: 1600px;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .page-container {
+                max-width: 1800px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title i {
+            color: #FFD52F;
+        }
+
+        .coverage-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .coverage-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .coverage-stat {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .coverage-stat .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .coverage-stat .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .coverage-stat .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .coverage-settings {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .settings-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .settings-section h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .settings-section h4 i {
+            color: #FFD52F;
+        }
+
+        .provinces-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .province-tag {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .base-location-info,
+        .distance-info,
+        .multi-day-info,
+        .coverage-summary-info {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .base-location-info p,
+        .distance-info p,
+        .multi-day-info p,
+        .coverage-summary-info p {
+            margin: 0.5rem 0;
+            color: #333;
+        }
+
+        .base-location-info strong,
+        .distance-info strong,
+        .multi-day-info strong {
+            color: #01386A;
+        }
+
+        .status-enabled {
+            background: #d4edda;
+            color: #155724;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .coverage-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            color: white;
+        }
+
+        /* Navigation links spacing */
+        @media (min-width: 769px) {
+            .nav-links {
+                gap: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            .nav-logout-btn {
+                margin-left: 0 !important;
+                margin-top: 10px;
+                justify-content: center;
+                width: calc(100% - 30px);
+                padding: 12px 16px;
+            }
+
+            .coverage-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Logout Button Styling */
+        .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-logout-btn i {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" class="active" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
+                    <a href="../driver/driver-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #01386A; color: #fff; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Driver Portal</a>
+                    <a href="#" class="nav-logout-btn" id="logoutBtn" onclick="topNavZIndexDecrease()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-map-marked-alt"></i>
+                Coverage Areas
+            </h1>
+        </div>
+
+        <div class="coverage-container">
+            <div class="coverage-summary">
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: #01386A; margin-bottom: 1.5rem;">
+                    Current Coverage Settings
+                </h3>
+                
+                <!-- Coverage Overview -->
+                <div class="coverage-overview">
+                    <div class="coverage-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">1</div>
+                            <div class="stat-label">Provinces Covered</div>
+                        </div>
+                    </div>
+                    
+                    <div class="coverage-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">150 km</div>
+                            <div class="stat-label">Max Distance</div>
+                        </div>
+                    </div>
+                    
+                    <div class="coverage-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value">Gauteng</div>
+                            <div class="stat-label">Primary Province</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Settings -->
+                <div class="coverage-settings">
+                    <div class="settings-section">
+                        <h4><i class="fas fa-map"></i> Provinces You Cover</h4>
+                        <div class="provinces-list">
+                            <span class="province-tag">Gauteng</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4><i class="fas fa-map-marker-alt"></i> Base Location</h4>
+                        <div class="base-location-info">
+                            <p><strong>Address:</strong> Johannesburg CBD, Gauteng, South Africa</p>
+                            <p><strong>Coordinates:</strong> -26.2041, 28.0475</p>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4><i class="fas fa-route"></i> Distance Limits</h4>
+                        <div class="distance-info">
+                            <p><strong>Maximum Distance:</strong> 150 km from base location</p>
+                            <p><strong>Coverage Radius:</strong> 150 km radius from Johannesburg CBD</p>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4><i class="fas fa-calendar-alt"></i> Multi-Day Trip Options</h4>
+                        <div class="multi-day-info">
+                            <p><strong>Multi-Day Trips:</strong> <span class="status-enabled">Enabled</span></p>
+                            <p><strong>Maximum Stay:</strong> 3 days at destination</p>
+                            <p><strong>Return Trip Rate:</strong> R500 per day</p>
+                            <p><strong>Conditions:</strong> Return booking required, flexible dates allowed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4><i class="fas fa-info-circle"></i> Coverage Summary</h4>
+                        <div class="coverage-summary-info">
+                            <p>You currently cover <strong>1 province</strong> (Gauteng) with a maximum travel distance of <strong>150 km</strong> from your base in Johannesburg.</p>
+                            <p>Multi-day trips are enabled, allowing your taxi to stay at destinations for up to 3 days with a daily rate of R500.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="coverage-actions">
+                    <button class="btn btn-primary" onclick="editCoverageAreas()">
+                        <i class="fas fa-edit"></i> Edit Coverage Settings
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewCoverageMap()">
+                        <i class="fas fa-map"></i> View Coverage Map
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Script -->
+    <script src="../../js/authentication/logout.js"></script>
+
+    <script>
+        // Navigation functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexDecrease() {
+            // Function for navigation link clicks
+        }
+
+        // Check authentication status
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile') || 
+                              localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            
+            if (isLoggedIn) {
+                if (authButtons) authButtons.style.display = 'none';
+                if (fullNav) fullNav.style.display = 'flex';
+            } else {
+                if (authButtons) authButtons.style.display = 'flex';
+                if (fullNav) fullNav.style.display = 'none';
+            }
+        });
+
+        function editCoverageAreas() {
+            alert('Coverage area editing functionality will be implemented here.');
+        }
+
+        function viewCoverageMap() {
+            alert('Coverage map view will be implemented here.');
+        }
+
+        // Make functions globally accessible
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.topNavZIndexDecrease = topNavZIndexDecrease;
+    </script>
+</body>
+</html>
+

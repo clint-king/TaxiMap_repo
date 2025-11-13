@@ -244,6 +244,92 @@
             }
         }
 
+        .booking-type-toggle {
+            margin-bottom: 2.5rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 18px;
+            padding: 2rem;
+            border: 2px solid #dee2e6;
+        }
+
+        .booking-type-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .booking-type-option {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.25s ease;
+        }
+
+        .booking-type-option input[type="radio"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .booking-type-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 18px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(1, 56, 106, 0.08);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+        }
+
+        .booking-type-card i {
+            font-size: 3rem;
+            color: #01386A;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+
+        .booking-type-card h4 {
+            color: #01386A;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .booking-type-card p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .booking-type-option input[type="radio"]:checked + .booking-type-card {
+            border-color: #FFD52F;
+            box-shadow: 0 15px 35px rgba(255, 213, 47, 0.25);
+            transform: translateY(-6px);
+            background: linear-gradient(135deg, rgba(255, 213, 47, 0.12) 0%, rgba(255, 193, 7, 0.08) 100%);
+        }
+
+        .booking-type-option input[type="radio"]:checked + .booking-type-card i {
+            color: #FFD52F;
+            transform: scale(1.05);
+        }
+
+        .booking-type-card:hover {
+            border-color: #01386A;
+            box-shadow: 0 12px 28px rgba(1, 56, 106, 0.18);
+        }
+
+        @media (max-width: 768px) {
+            .booking-type-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .route-selection h2 {
             color: #01386A;
             font-size: 2rem;
@@ -841,6 +927,20 @@
         }
 
         .passenger-form-header h5 i {
+            color: #FFD52F;
+        }
+
+        .passenger-form-title {
+            color: #01386A;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .passenger-form-title i {
             color: #FFD52F;
         }
 
@@ -3073,19 +3173,11 @@
             </div>
             <div class="step" id="step2">
                 <div class="step-number">2</div>
-                <div class="step-label">Passengers</div>
+                <div class="step-label">Booking Details</div>
             </div>
             <div class="step" id="step3">
                 <div class="step-number">3</div>
-                <div class="step-label">Trip Selection</div>
-            </div>
-            <div class="step" id="step4">
-                <div class="step-number">4</div>
-                <div class="step-label">Payment</div>
-            </div>
-            <div class="step" id="step5">
-                <div class="step-number">5</div>
-                <div class="step-label">Confirmation</div>
+                <div class="step-label">Booking Summary</div>
             </div>
         </div>
 
@@ -3210,237 +3302,120 @@
 
                 <!-- Step 2: Passenger & Parcel Selection -->
                 <div class="booking-content" id="passenger-selection">
-                    <h2><i class="ri-user-line"></i> Booking Capacity</h2>
+                    <h2><i class="ri-user-line"></i> Booking Details</h2>
                     <div class="passenger-selection">
-                        <!-- Dual Counter -->
-                        <div class="capacity-counters" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-                            <!-- Passenger Counter -->
-                            <div class="counter-card-public">
+                        <!-- Booking Type Toggle -->
+                        <div class="booking-type-toggle" style="margin-bottom: 2.5rem;">
+                            <div class="booking-type-options">
+                                <label class="booking-type-option" for="booking-type-passengers">
+                                    <input type="radio" id="booking-type-passengers" name="bookingType" value="passengers" checked>
+                                    <div class="booking-type-card">
+                                        <i class="ri-user-line"></i>
+                                        <h4>Passenger Seat</h4>
+                                        <p>Reserve a seat for yourself. Additional passengers can join via the trip link.</p>
+                                    </div>
+                                </label>
+
+                                <label class="booking-type-option" for="booking-type-parcels">
+                                    <input type="radio" id="booking-type-parcels" name="bookingType" value="parcels">
+                                    <div class="booking-type-card">
+                                        <i class="ri-box-3-line"></i>
+                                        <h4>Send a Parcel</h4>
+                                        <p>Book space for your parcel on a long-distance taxi ride.</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Booking Section -->
+                        <div id="passenger-booking-section">
+                            <div class="counter-card-public" style="max-width: 320px; margin: 0 auto 2rem;">
                                 <div class="counter-header-public">
                                     <i class="ri-user-line" style="font-size: 2.5rem; color: #01386A;"></i>
-                                    <h3 style="margin: 1rem 0 0.5rem 0; color: #01386A; font-size: 1.3rem;">Passengers</h3>
+                                    <h3 style="margin: 1rem 0 0.5rem 0; color: #01386A; font-size: 1.3rem;">Passenger</h3>
                                 </div>
                                 <div class="counter-controls-public" style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 1rem;">
-                                    <button type="button" class="btn-counter-public" onclick="decrementPassengersPublic()">
-                                        <i class="ri-subtract-line"></i>
-                                    </button>
                                     <span id="passenger-count-display-public" style="font-size: 2.5rem; font-weight: 700; color: #01386A; min-width: 70px; text-align: center;">1</span>
-                                    <button type="button" class="btn-counter-public" onclick="incrementPassengersPublic()">
-                                        <i class="ri-add-line"></i>
-                                    </button>
                                 </div>
+                                <small style="display:block; text-align:center; color:#666; margin-top:1rem;">Passenger count is fixed at one seat for this booking.</small>
                             </div>
-                            
-                            <!-- Parcel Counter -->
-                            <div class="counter-card-public">
-                                <div class="counter-header-public">
-                                    <i class="ri-box-3-line" style="font-size: 2.5rem; color: #01386A;"></i>
-                                    <h3 style="margin: 1rem 0 0.5rem 0; color: #01386A; font-size: 1.3rem;">Parcels</h3>
-                                </div>
-                                <div class="counter-controls-public" style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 1rem;">
-                                    <button type="button" class="btn-counter-public" onclick="decrementParcelsPublic()">
-                                        <i class="ri-subtract-line"></i>
-                                    </button>
-                                    <span id="parcel-count-display-public" style="font-size: 2.5rem; font-weight: 700; color: #01386A; min-width: 70px; text-align: center;">0</span>
-                                    <button type="button" class="btn-counter-public" onclick="incrementParcelsPublic()">
-                                        <i class="ri-add-line"></i>
-                                    </button>
+
+                            <div id="passenger-details" style="margin-top: 2rem;">
+                                <h4><i class="ri-user-settings-line"></i>Passenger Details</h4>
+                                <p class="passenger-optional-note" style="margin-bottom: 1rem;">
+                                    <i class="ri-information-line"></i>
+                                    Your name, email, or phone number are used for trip updates. Next-of-kin details help in case of emergencies.
+                                </p>
+                                <div id="passenger-forms"></div>
+                                <div id="passenger-validation-message" style="display:none; background:#f8d7da; color:#721c24; padding:1rem; border-radius:8px; margin-top:1rem; border:1px solid #dc3545;">
+                                    <i class="ri-error-warning-line"></i> <strong>Cannot proceed:</strong> <span id="passenger-validation-message-text"></span>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="capacity-warning-public" style="display: none; background: #fff3cd; color: #856404; padding: 1rem; border-radius: 12px; margin-bottom: 2rem; text-align: center; border: 2px solid #ffc107;">
-                            <i class="ri-error-warning-line"></i> <strong>Capacity limit reached!</strong> Total passengers + parcels cannot exceed 14.
-                        </div>
-
-                        <div class="capacity-info">
-                            <h4><i class="ri-bar-chart-horizontal-line"></i>Total Capacity Used</h4>
-                            <div class="capacity-bar">
-                                <div class="capacity-fill" id="capacity-fill" style="width: 7.14%"></div>
+                        <!-- Parcel Booking Section -->
+                        <div id="parcel-booking-section" style="display: none;">
+                            <div class="capacity-counters" style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                                <div class="counter-card-public" style="max-width: 400px;">
+                                    <div class="counter-header-public">
+                                        <i class="ri-box-3-line" style="font-size: 2.5rem; color: #01386A;"></i>
+                                        <h3 style="margin: 1rem 0 0.5rem 0; color: #01386A; font-size: 1.3rem;">Parcels</h3>
+                                    </div>
+                                    <div class="counter-controls-public" style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 1rem;">
+                                        <button type="button" class="btn-counter-public" onclick="decrementParcelsPublic()">
+                                            <i class="ri-subtract-line"></i>
+                                        </button>
+                                        <span id="parcel-count-display-public" style="font-size: 2.5rem; font-weight: 700; color: #01386A; min-width: 70px; text-align: center;">1</span>
+                                        <button type="button" class="btn-counter-public" onclick="incrementParcelsPublic()">
+                                            <i class="ri-add-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="capacity-text" id="capacity-text"><i class="ri-team-line"></i><span id="total-capacity-display">1</span> / 14 (Passengers: <span id="passengers-only">1</span>, Parcels: <span id="parcels-only">0</span>)</div>
-                        </div>
 
-                        <div class="matching-status pending" id="matching-status">
-                            <div class="matching-timer" id="matching-timer">
-                                <i class="ri-information-line"></i> You can add up to <span id="remaining-capacity">13</span> more passengers/parcels.
+                            <div id="capacity-info-section" class="capacity-info" style="display: none;">
+                                <h4><i class="ri-bar-chart-horizontal-line"></i>Parcel Capacity Information</h4>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill" id="capacity-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="capacity-text" id="capacity-text"><i class="ri-box-3-line"></i><span id="total-capacity-display">0</span> parcels selected</div>
                             </div>
-                            <p>Maximum combined capacity is 14 (passengers + parcels).</p>
-                        </div>
 
-                        <div id="passenger-details" style="margin-top: 2rem;">
-                            <h4><i class="ri-user-settings-line"></i>Passenger Details (Optional)</h4>
-                            <div class="passenger-optional-note">
-                                <i class="ri-information-line"></i>
-                                <p>You can optionally provide passenger names below. This helps with trip organization but is not required to complete your booking.</p>
+                            <div class="matching-status pending" id="matching-status" style="display: none;">
+                                <div class="matching-timer" id="matching-timer">
+                                    <i class="ri-information-line"></i> Parcel capacity updates will appear here.
+                                </div>
                             </div>
-                            <div id="passenger-forms"></div>
-                        </div>
 
-                        <div id="parcel-details" style="margin-top: 2rem; display: none;">
-                            <h4><i class="ri-box-3-line"></i>Parcel Details (Required)</h4>
-                            <div class="passenger-optional-note" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 2px solid #ffc107;">
-                                <i class="ri-alert-line"></i>
-                                <p><strong>Important:</strong> All parcel information must be provided including images, sender and receiver details to proceed with booking.</p>
+                            <div class="delivery-window-selection" style="margin-top: 1.5rem; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 12px; padding: 1.5rem;">
+                                <h4 style="color: #01386A; font-size: 1.2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+                                    <i class="ri-calendar-todo-line" style="color: #FFD52F;"></i>
+                                    Choose Delivery Window
+                                </h4>
                             </div>
-                            <div id="parcel-forms"></div>
+
+                            <div id="parcel-details" style="margin-top: 2rem;">
+                                <h4><i class="ri-box-3-line"></i>Parcel Details</h4>
+                                <div class="passenger-optional-note" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 2px solid #ffc107;">
+                                    <i class="ri-alert-line"></i>
+                                    <p><strong>Size guide:</strong> Small (&lt; 5kg), Medium (&lt; 15kg), Large (&lt; 30kg). Provide sender/receiver info and at least one photo per parcel.</p>
+                                </div>
+                                <div id="parcel-forms"></div>
+                            </div>
+
+                            <div id="parcel-validation-message" style="display: none; background: #dc3545; color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: center;">
+                                <i class="ri-error-warning-line"></i> <strong>Cannot proceed:</strong> <span id="validation-message-text"></span>
+                            </div>
                         </div>
 
                         <div class="booking-actions" style="margin-top: 2rem;">
-                            <button class="btn btn-primary" id="continue-passenger-btn" onclick="validateAndProceed()"><i class="ri-arrow-right-line"></i>Continue to Trip Selection</button>
+                            <button class="btn btn-primary" id="continue-passenger-btn" onclick="validateAndProceed()"><i class="ri-arrow-right-line"></i>Continue</button>
                             <button class="btn btn-secondary" onclick="goBack()"><i class="ri-arrow-left-line"></i>Back to Routes</button>
                         </div>
-                        
-                        <div id="parcel-validation-message" style="display: none; background: #dc3545; color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: center;">
-                            <i class="ri-error-warning-line"></i> <strong>Cannot proceed:</strong> <span id="validation-message-text"></span>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Step 3: Trip Selection -->
-                <div class="booking-content" id="trip-selection">
-                    <h2><i class="ri-route-line"></i> Choose Your Trip Option</h2>
-                    
-                    <div class="trip-options-container">
-                        <div class="trip-option-cards">
-                            <!-- Create New Trip -->
-                            <div class="trip-option-card" id="create-trip-option" onclick="selectTripOption('create')">
-                                <div class="trip-option-icon">
-                                    <i class="ri-add-circle-line"></i>
-                                </div>
-                                <h3>Create New Trip</h3>
-                                <p>Start your own trip and wait for other passengers to join. You'll be the trip organizer.</p>
-                                <ul class="trip-option-features">
-                                    <li><i class="ri-user-star-line"></i>You organize the trip</li>
-                                    <li><i class="ri-calendar-event-line"></i>Set your own departure time</li>
-                                    <li><i class="ri-group-line"></i>Others can join your trip</li>
-                                    <li><i class="ri-time-line"></i>Wait for trip to fill up</li>
-                                </ul>
-                                <div class="trip-option-badge">Recommended for groups</div>
-                            </div>
-
-                            <!-- Join Existing Trip -->
-                            <div class="trip-option-card" id="join-trip-option" onclick="selectTripOption('join')">
-                                <div class="trip-option-icon">
-                                    <i class="ri-team-line"></i>
-                                </div>
-                                <h3>Join Existing Trip</h3>
-                                <p>Join trips created by other passengers on the same route with available seats.</p>
-                                <ul class="trip-option-features">
-                                    <li><i class="ri-search-line"></i>Browse available trips</li>
-                                    <li><i class="ri-map-pin-line"></i>Same route as yours</li>
-                                    <li><i class="ri-user-add-line"></i>Instant booking</li>
-                                    <li><i class="ri-timer-flash-line"></i>Faster departure</li>
-                                </ul>
-                                <div class="trip-option-badge">Recommended for quick travel</div>
-                                <div class="trip-disabled-overlay" id="join-trip-disabled" style="display: none;">
-                                    <div class="disabled-message">
-                                        <i class="ri-error-warning-line"></i>
-                                        <p>Not available - You have 14 passengers (full trip)</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Available Trips List (Hidden by default) -->
-                        <div class="available-trips-section" id="available-trips-section" style="display: none;">
-                            <h3><i class="ri-list-check"></i> Available Trips Matching Your Criteria</h3>
-                            <div class="filter-info">
-                                <span><strong>Route:</strong> <span id="filter-route">-</span></span>
-                                <span><strong>Passengers:</strong> <span id="filter-passengers">-</span></span>
-                                <span><strong>Seats Needed:</strong> <span id="filter-seats-needed">-</span></span>
-                            </div>
-                            <div id="available-trips-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Create Trip Details Section (Hidden by default) -->
-                    <div class="create-trip-section" id="create-trip-section" style="display: none;">
-                        <h3><i class="ri-map-pin-add-line"></i> Set Your Pickup & Drop-off Locations</h3>
-                        
-                        <div class="location-restriction-info">
-                            <i class="ri-information-line"></i>
-                            <p><strong>Important:</strong> All pickup points must be in <span id="origin-city">-</span> and all drop-off points must be in <span id="destination-city">-</span></p>
-                        </div>
-
-                        <div class="locations-map-grid">
-                            <!-- Locations Section -->
-                            <div class="locations-section">
-                                <!-- Pickup Points -->
-                                <div class="location-group">
-                                    <h4><i class="ri-map-pin-user-fill"></i> Pickup Points (<span id="origin-city-pickup">Origin City</span>)</h4>
-                                    <div id="pickup-points-list">
-                                        <div class="location-input-item" data-index="0">
-                                            <div class="location-input-container">
-                                                <div class="location-input-wrapper">
-                                                    <i class="ri-map-pin-fill location-input-icon"></i>
-                                                    <input type="text" class="location-input pickup-input" placeholder="Enter pickup address in origin city..." data-index="0" autocomplete="off">
-                                                    <button class="remove-location-btn" onclick="removeLocation('pickup', 0)" style="display: none;">
-                                                        <i class="ri-close-circle-line"></i>
-                                                    </button>
-                                                </div>
-                                                <div class="suggestions-list" id="suggestions-pickup-0"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="add-location-btn" onclick="addPickupPoint()">
-                                        <i class="ri-add-line"></i> Add Another Pickup Point
-                                    </button>
-                                </div>
-
-                                <!-- Drop-off Points -->
-                                <div class="location-group">
-                                    <h4><i class="ri-map-pin-3-fill"></i> Drop-off Points (<span id="destination-city-dropoff">Destination City</span>)</h4>
-                                    <div id="dropoff-points-list">
-                                        <div class="location-input-item" data-index="0">
-                                            <div class="location-input-container">
-                                                <div class="location-input-wrapper">
-                                                    <i class="ri-map-pin-fill location-input-icon"></i>
-                                                    <input type="text" class="location-input dropoff-input" placeholder="Enter drop-off address in destination city..." data-index="0" autocomplete="off">
-                                                    <button class="remove-location-btn" onclick="removeLocation('dropoff', 0)" style="display: none;">
-                                                        <i class="ri-close-circle-line"></i>
-                                                    </button>
-                                                </div>
-                                                <div class="suggestions-list" id="suggestions-dropoff-0"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button class="add-location-btn" onclick="addDropoffPoint()">
-                                        <i class="ri-add-line"></i> Add Another Drop-off Point
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Map Section -->
-                            <div class="locations-map-section">
-                                <div class="map-header-info">
-                                    <h4><i class="ri-map-2-fill"></i> Trip Locations Map</h4>
-                                    <p>Your pickup and drop-off points will appear on the map below</p>
-                                </div>
-                                <div class="trip-locations-map-container">
-                                    <div id="trip-locations-map"></div>
-                                </div>
-                                <div class="map-legend">
-                                    <div class="legend-item">
-                                        <span class="legend-marker pickup-marker-legend"></span>
-                                        <span>Pickup Points</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-marker dropoff-marker-legend"></span>
-                                        <span>Drop-off Points</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="booking-actions" style="margin-top: 2rem;">
-                        <button class="btn btn-primary" id="continue-trip-btn" onclick="continueTripSelection()" style="display: none;"><i class="ri-arrow-right-line"></i>Continue to Summary</button>
-                        <button class="btn btn-secondary" onclick="goBack()"><i class="ri-arrow-left-line"></i>Back to Passengers</button>
-                    </div>
-                </div>
-
-                <!-- Step 4: Confirmation -->
+                <!-- Step 3: Booking Summary -->
                 <div class="booking-content" id="booking-confirmation">
                     <h2><i class="ri-file-list-3-line"></i> Booking Summary</h2>
                     <div class="booking-summary" id="booking-summary">

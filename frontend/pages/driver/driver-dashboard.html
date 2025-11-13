@@ -402,11 +402,6 @@
                 <i class="fas fa-qrcode"></i>
                 Verify Passenger
             </a>
-            
-            <a href="#" class="action-btn secondary" onclick="toggleOnlineStatus()" title="Click to toggle online/offline status">
-                <i class="fas fa-toggle-on" id="statusIcon"></i>
-                <span id="statusText">Go Online</span>
-            </a>
         </div>
 
         <!-- Current Trip -->
@@ -454,28 +449,6 @@
             </div>
         </div>
 
-        <!-- Online/Offline Status Explanation -->
-        <div class="current-trip">
-            <h3>Driver Status</h3>
-            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                <h4 style="color: #01386A; margin-bottom: 0.5rem;">
-                    <i class="fas fa-info-circle"></i>
-                    Online/Offline Status
-                </h4>
-                <p style="margin-bottom: 1rem; color: #666;">
-                    <strong>Online Status:</strong> When you're online, you'll receive trip requests and notifications. 
-                    The system will consider you available for new bookings.
-                </p>
-                <p style="margin-bottom: 1rem; color: #666;">
-                    <strong>Offline Status:</strong> When offline, you won't receive new trip requests. 
-                    This is useful when you're on a break, not available, or have finished your shift.
-                </p>
-                <p style="color: #666; font-size: 0.9rem;">
-                    <i class="fas fa-lightbulb"></i>
-                    <strong>Tip:</strong> Toggle your status using the "Go Online/Offline" button above to control when you receive trip assignments.
-                </p>
-            </div>
-        </div>
     </div>
 
     <!-- Scripts -->
@@ -494,24 +467,6 @@
             // Function for navigation link clicks
         }
         
-        // Toggle online status
-        function toggleOnlineStatus() {
-            const statusIcon = document.getElementById('statusIcon');
-            const statusText = document.getElementById('statusText');
-            const isOnline = statusIcon.classList.contains('fa-toggle-on');
-            
-            if (isOnline) {
-                statusIcon.classList.remove('fa-toggle-on');
-                statusIcon.classList.add('fa-toggle-off');
-                statusText.textContent = 'Go Online';
-                statusIcon.style.color = '#dc3545';
-            } else {
-                statusIcon.classList.remove('fa-toggle-off');
-                statusIcon.classList.add('fa-toggle-on');
-                statusText.textContent = 'Go Offline';
-                statusIcon.style.color = '#28a745';
-            }
-        }
     </script>
 </body>
 </html>

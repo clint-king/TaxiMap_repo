@@ -6,153 +6,359 @@
     <title>Taxi Owner Dashboard | TeksiMap</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="./favicon.ico">
-    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
-    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
-    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
     <link rel="manifest" href="../../assets/icons/site.webmanifest">
     
     <!-- CSS -->
-    <link rel="stylesheet" href="./css/clientStyle.css">
-    <link rel="stylesheet" href="./css/booking.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/booking.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css">
     
     <style>
-        /* Owner Dashboard Specific Styles */
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        /* Owner Dashboard Specific Styles - Matching Driver Dashboard Design */
+        html, body {
+            height: auto !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Add padding to body to account for fixed topnav */
+        body {
+            padding-top: 70px !important; /* Adjust based on your topnav height */
+        }
+        
+        /* Ensure owner-dashboard container starts below topnav */
+        .owner-dashboard {
+            padding-top: 0 !important;
+        }
+        
+        .main-content {
+            min-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 1rem;
+            padding-bottom: 2rem;
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+        
         .owner-dashboard {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             min-height: 100vh;
-            padding: 15px;
+            padding: 0;
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
         }
         
         .dashboard-content {
-            max-width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 0 1rem;
+            width: 100%;
+            box-sizing: border-box;
         }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+        /* Wider dashboard for larger screens */
+        @media (min-width: 1400px) {
+            .dashboard-content {
+                max-width: 1400px;
+                padding: 0 2rem;
+            }
         }
-        
-        html {
-            height: 100%;
+
+        @media (min-width: 1600px) {
+            .dashboard-content {
+                max-width: 1600px;
+                padding: 0 2.5rem;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .dashboard-content {
+                max-width: 1800px;
+                padding: 0 3rem;
+            }
         }
         
         .dashboard-header {
-            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            background: linear-gradient(135deg, #01386A, #001f3f);
             color: white;
-            padding: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
             border-radius: 12px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 16px rgba(1, 56, 106, 0.3);
+            box-shadow: 0 4px 15px rgba(1, 56, 106, 0.2);
         }
         
         .dashboard-title {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            justify-content: center;
+            gap: 1rem;
         }
         
         .dashboard-subtitle {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-        
-        /* Navigation Bar Styles */
-        .dashboard-nav {
-            background: white;
-            border-radius: 8px;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e9ecef;
-        }
-        
-        .nav-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            justify-content: center;
-        }
-        
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            color: #333;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-        
-        .nav-link:hover {
-            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
-            border-color: #01386A;
-        }
-        
-        .nav-link i {
             font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+        
+        .date-time-display {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        
+        .trip-info-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .current-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #FFD700;
+        }
+        
+        .current-time {
+            font-size: 2.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         @media (max-width: 768px) {
-            .nav-links {
-                flex-direction: column;
-                gap: 0.4rem;
+            .dashboard-content {
+                padding: 0 0.5rem;
+                max-width: 100%;
             }
             
-            .nav-link {
-                justify-content: center;
-                padding: 0.6rem 1rem;
-                font-size: 0.85rem;
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+            
+            .dashboard-title {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .actions-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .action-btn {
+                padding: 0.875rem 1.25rem;
+                font-size: 0.9rem;
+            }
+            
+            .vehicle-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-content {
+                padding: 0 0.25rem;
+                max-width: 100%;
+            }
+            
+            .dashboard-header {
+                padding: 1rem;
+            }
+            
+            .dashboard-title {
+                font-size: 1.75rem;
+            }
+            
+            .current-time {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .vehicle-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
             }
         }
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Wider stats grid for larger screens */
+        @media (min-width: 1400px) {
+            .stats-grid {
+                gap: 2rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .stats-grid {
+                gap: 2.5rem;
+            }
         }
         
         .stat-card {
             background: white;
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-left: 3px solid #01386A;
-            transition: transform 0.3s ease;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #01386A, #0056b3);
         }
         
         .stat-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
         
         .stat-number {
-            font-size: 1.5rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: #01386A;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-icon {
+            font-size: 1.5rem;
+            color: #01386A;
         }
         
         .stat-label {
             color: #6c757d;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        /* Quick Actions Section */
+        .quick-actions {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .quick-actions h3 {
+            color: #01386A;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #01386A, #0056b3);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(1, 56, 106, 0.2);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(1, 56, 106, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .action-btn.secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+        
+        .action-btn i {
+            font-size: 1.2rem;
         }
         
         /* Analytics Styles */
@@ -408,63 +614,338 @@
             }
         }
         
-        .dashboard-tabs {
-            display: flex;
-            background: white;
-            border-radius: 10px;
-            padding: 0.3rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow-x: auto;
+        .dashboard-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
         
-        .tab-button {
-            flex: 1;
-            padding: 0.8rem 1rem;
-            border: none;
-            background: transparent;
-            border-radius: 6px;
-            cursor: pointer;
+        .dashboard-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #01386A;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+        }
+        
+        .dashboard-nav-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-color: #01386A;
+            color: #01386A;
+            text-decoration: none;
+        }
+        
+        .dashboard-nav-btn i {
+            font-size: 2.5rem;
+            color: #01386A;
+        }
+        
+        .dashboard-nav-btn span {
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #6c757d;
-            white-space: nowrap;
+        }
+        
+        .recent-bookings-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .recent-bookings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .recent-bookings-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .recent-bookings-title i {
+            color: #FFD52F;
+        }
+        
+        .view-all-bookings-btn {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .view-all-bookings-btn:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .recent-bookings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .recent-booking-card {
+            background: #f8f9fa;
+            border: 3px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* Route-Based Bookings - Local (Green/Teal Theme) */
+        .recent-booking-card.route-based {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-color: #17a2b8;
+        }
+
+        .recent-booking-card.route-based.local {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #22c55e;
+            border-left: 6px solid #22c55e;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+        }
+
+        .recent-booking-card.route-based.local:hover {
+            border-color: #16a34a;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+            background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+        }
+
+        /* Route-Based Bookings - Long Distance (Orange/Amber Theme) */
+        .recent-booking-card.route-based.long-distance {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border-color: #f97316;
+            border-left: 6px solid #f97316;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.15);
+        }
+
+        .recent-booking-card.route-based.long-distance:hover {
+            border-color: #ea580c;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+            background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+        }
+
+        /* Custom Trip Bookings - Purple Theme */
+        .recent-booking-card.custom-trip {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-color: #6f42c1;
+            border-left: 5px solid #6f42c1;
+        }
+        
+        .recent-booking-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(4px);
+        }
+
+        .recent-booking-card.route-based.local:hover {
+            border-color: #16a34a;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+        }
+
+        .recent-booking-card.route-based.long-distance:hover {
+            border-color: #ea580c;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+        }
+
+        .recent-booking-card.custom-trip:hover {
+            border-color: #5a32a3;
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.2);
+        }
+        
+        .recent-booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .recent-booking-id {
+            font-weight: 700;
+            color: #01386A;
+        }
+        
+        .recent-booking-status {
+            padding: 0.3rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .recent-booking-route {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .recent-booking-route-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             font-size: 0.9rem;
         }
         
-        .tab-button.active {
-            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        .recent-booking-route-item i {
+            color: #01386A;
+            width: 16px;
         }
         
-        .tab-content {
-            display: none;
-            height: 80vh;
-            overflow-y: auto;
-            padding: 1rem 0;
+        .recent-booking-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            font-size: 0.85rem;
         }
         
-        .tab-content.active {
+        .recent-booking-info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .recent-booking-info-item strong {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .no-recent-bookings {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #6c757d;
+        }
+        
+        .no-recent-bookings i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
             display: block;
-            height: 40vh;
-            overflow-y: auto;
-            padding: 1rem 0;
+        }
+
+        .booking-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .booking-type-route {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .booking-type-custom {
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            color: white;
+        }
+
+        .booking-type-badge i {
+            font-size: 0.7rem;
+        }
+
+        .collection-delivery-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge-collection {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-delivery {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .return-trip-info {
+            background: #fff3cd;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 4px solid #ffc107;
+            font-size: 0.9rem;
+        }
+
+        .one-way-info {
+            background: #d1ecf1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 4px solid #17a2b8;
+            font-size: 0.9rem;
         }
         
         .vehicle-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
+            width: 100%;
         }
-        
+
+        /* Wider vehicle grid for larger screens */
+        @media (min-width: 1400px) {
+            .vehicle-grid {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 2rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .vehicle-grid {
+                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+                gap: 2.5rem;
+            }
+        }
+
         .vehicles-container {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
             padding-bottom: 8rem;
             height: 100%;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .vehicle-card {
@@ -476,7 +957,10 @@
             border: 1px solid #e9ecef;
             min-height: 350px;
             width: 100%;
-            max-width: 400px;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
         
         .vehicle-card:hover {
@@ -499,7 +983,8 @@
             padding: 0.8rem;
             display: flex;
             flex-direction: column;
-            height: calc(100% - 100px);
+            flex: 1;
+            min-height: 0;
         }
         
         .vehicle-name {
@@ -515,7 +1000,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 0.5rem;
             margin-bottom: 0.6rem;
-            flex: 1;
+            flex-shrink: 0;
         }
         
         .detail-item {
@@ -558,26 +1043,46 @@
             background: #f8d7da;
             color: #721c24;
         }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
         
         .vehicle-actions {
             display: flex;
-            gap: 0.2rem;
+            gap: 0.5rem;
             margin-top: auto;
+            padding-top: 0.5rem;
+            flex-shrink: 0;
         }
         
         .btn-action {
             flex: 1;
-            padding: 0.3rem 0.4rem;
+            padding: 0.6rem 0.8rem;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.2rem;
+            gap: 0.4rem;
+            min-height: 36px;
+        }
+        
+        @media (max-width: 768px) {
+            .vehicle-actions {
+                gap: 0.3rem;
+            }
+            
+            .btn-action {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.7rem;
+                min-height: 32px;
+            }
         }
         
         .btn-edit {
@@ -1480,560 +1985,482 @@
             align-items: center;
         }
         
+        /* Logout Button Styling */
+        .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-logout-btn i {
+            font-size: 14px;
+        }
+
+        /* Navigation links spacing */
+        @media (min-width: 769px) {
+            .nav-links {
+                gap: 30px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .full-navigation {
                 flex-direction: column;
                 gap: 0.5rem;
                 width: 100%;
             }
+
+            .nav-logout-btn {
+                margin-left: 0 !important;
+                margin-top: 10px;
+                justify-content: center;
+                width: calc(100% - 30px);
+                padding: 12px 16px;
+            }
+        }
+
+        /* Driver Management Styles */
+        .drivers-container {
+            padding: 1.5rem 0;
+        }
+
+        .drivers-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .drivers-header .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .drivers-header .section-title i {
+            color: #FFD52F;
+        }
+
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 0.5rem 0;
+        }
+
+        /* Wider drivers grid for larger screens */
+        @media (min-width: 1400px) {
+            .drivers-grid {
+                grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+                gap: 2rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .drivers-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .drivers-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .drivers-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .drivers-header .btn-action {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .driver-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .driver-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #01386A 0%, #025aa5 100%);
+        }
+
+        .driver-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .driver-photo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .driver-photo,
+        .driver-photo-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e9ecef;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .driver-card:hover .driver-photo,
+        .driver-card:hover .driver-photo-placeholder {
+            border-color: #01386A;
+            transform: scale(1.05);
+        }
+
+        .driver-photo-placeholder i {
+            font-size: 3.5rem;
+            color: #6c757d;
+        }
+
+        .driver-info {
+            text-align: center;
+        }
+
+        .driver-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .driver-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .driver-detail-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .driver-detail-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+
+        .driver-detail-item i {
+            color: #01386A;
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .driver-detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            min-width: 100px;
+        }
+
+        .driver-detail-value {
+            color: #333;
+            flex: 1;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .driver-status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-self: center;
+            margin-top: 0.5rem;
+        }
+
+        .driver-status-active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .driver-status-inactive {
+            background: #6c757d;
+            color: white;
+        }
+
+        .driver-status-on_leave {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+        }
+
+        .driver-status-suspended {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .driver-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .driver-actions .btn-action {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            justify-content: center;
+        }
+
+        .driver-actions .btn-edit {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .driver-actions .btn-edit:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+        }
+
+        .driver-actions .btn-delete {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .driver-actions .btn-delete:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         }
     </style>
 </head>
 <body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" class="active" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
+                    <a href="../driver/driver-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #01386A; color: #fff; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Driver Portal</a>
+                    <a href="#" class="nav-logout-btn" id="logoutBtn" onclick="topNavZIndexDecrease()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <div class="owner-dashboard">
         <div class="dashboard-content">
             <!-- Dashboard Header -->
             <div class="dashboard-header">
-                <div>
-                    <h1 class="dashboard-title">
-                        <i class="fas fa-taxi"></i>
-                        Taxi Owner Dashboard
-                    </h1>
-                    <p class="dashboard-subtitle">Manage your fleet and monitor your business performance</p>
+                <h1 class="dashboard-title">
+                    <i class="fas fa-taxi"></i>
+                    Taxi Owner Dashboard
+                </h1>
+                <p class="dashboard-subtitle">Manage your fleet and monitor your business performance</p>
+                
+                <div class="date-time-display">
+                    <div class="trip-info-label">Next Trip Scheduled</div>
+                    <div class="current-date" id="currentDate">Loading...</div>
+                    <div class="current-time" id="currentTimeLarge">--:--</div>
                 </div>
             </div>
 
-            <!-- Navigation Bar -->
-            <nav class="dashboard-nav">
-                <div class="nav-links">
-                    <a href="../customer/client.html" class="nav-link">
-                        <i class="fas fa-route"></i> Find Route
-                    </a>
-                    <a href="../customer/booking-trip-info.html" class="nav-link">
-                        <i class="fas fa-calendar-alt"></i> Book Taxi
-                    </a>
-                    <a href="../customer/help.html" class="nav-link">
-                        <i class="fas fa-question-circle"></i> Help
-                    </a>
-                    <!-- Full navigation for logged in users -->
-                    <div id="fullNav" class="full-navigation" style="display: none;">
-                        <a href="../customer/route-suggestion.html" class="nav-link">
-                            <i class="fas fa-lightbulb"></i> Suggest Route
-                        </a>
-                        <a href="../customer/feedback.html" class="nav-link">
-                            <i class="fas fa-comments"></i> Feedback
-                        </a>
-                        <a href="../authentication/profile.html" class="nav-link">
-                            <i class="fas fa-user"></i> Profile
-                        </a>
-                    </div>
-                </div>
-            </nav>
 
         <!-- Stats Overview -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">5</div>
+                <div class="stat-number">
+                    <i class="fas fa-car stat-icon"></i>
+                    5
+                </div>
                 <div class="stat-label">Active Vehicles</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">127</div>
+                <div class="stat-number">
+                    <i class="fas fa-list stat-icon"></i>
+                    127
+                </div>
                 <div class="stat-label">Total Bookings</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">R 15,420</div>
+                <div class="stat-number">
+                    <i class="fas fa-dollar-sign stat-icon"></i>
+                    R 15,420
+                </div>
                 <div class="stat-label">Monthly Revenue</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">4.8</div>
+                <div class="stat-number">
+                    <i class="fas fa-star stat-icon"></i>
+                    4.8
+                </div>
                 <div class="stat-label">Average Rating</div>
             </div>
         </div>
 
-        <!-- Dashboard Tabs -->
-        <div class="dashboard-tabs">
-            <button class="tab-button active" onclick="showTab('vehicles')">
-                <i class="fas fa-car"></i> My Vehicles
-            </button>
-            <button class="tab-button" onclick="showTab('coverage')">
-                <i class="fas fa-map-marked-alt"></i> Coverage Areas
-            </button>
-            <button class="tab-button" onclick="showTab('analytics')">
-                <i class="fas fa-chart-line"></i> Analytics
-            </button>
-            <button class="tab-button" onclick="showTab('bookings')">
-                <i class="fas fa-calendar-check"></i> Bookings
-            </button>
-        </div>
-
-        <!-- Vehicles Tab -->
-        <div id="vehicles-tab" class="tab-content active">
-            <div class="vehicles-container">
-                <div class="vehicle-grid">
-                <!-- Existing Vehicles -->
-                <div class="vehicle-card">
-                    <div class="vehicle-image">
-                        <i class="fas fa-bus"></i>
-                    </div>
-                    <div class="vehicle-info">
-                        <h3 class="vehicle-name">Golden Arrow Minibus</h3>
-                        <div class="vehicle-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Type</span>
-                                <span class="detail-value">Minibus (16 seats)</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Registration</span>
-                                <span class="detail-value">CA 123-456</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Rate</span>
-                                <span class="detail-value">R 15.50/km</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Rating</span>
-                                <span class="detail-value">4.8/5</span>
-                            </div>
-                        </div>
-                        <span class="vehicle-status status-active">Active</span>
-                        <div class="vehicle-actions">
-                            <button class="btn-action btn-edit" onclick="editVehicle(1)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn-action btn-toggle" onclick="toggleVehicle(1)">
-                                <i class="fas fa-pause"></i> Pause
-                            </button>
-                            <button class="btn-action btn-delete" onclick="deleteVehicle(1)">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="vehicle-card">
-                    <div class="vehicle-image">
-                        <i class="fas fa-bus"></i>
-                    </div>
-                    <div class="vehicle-info">
-                        <h3 class="vehicle-name">City Express Bus</h3>
-                        <div class="vehicle-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Type</span>
-                                <span class="detail-value">22-Seater Bus</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Registration</span>
-                                <span class="detail-value">GP 789-012</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Rate</span>
-                                <span class="detail-value">R 12.00/km</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Rating</span>
-                                <span class="detail-value">4.6/5</span>
-                            </div>
-                        </div>
-                        <span class="vehicle-status status-active">Active</span>
-                        <div class="vehicle-actions">
-                            <button class="btn-action btn-edit" onclick="editVehicle(2)">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn-action btn-toggle" onclick="toggleVehicle(2)">
-                                <i class="fas fa-pause"></i> Pause
-                            </button>
-                            <button class="btn-action btn-delete" onclick="deleteVehicle(2)">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Add New Vehicle Card -->
-                <div class="vehicle-card add-vehicle-card" onclick="openAddVehicleModal()">
-                    <div class="add-vehicle-icon">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div class="add-vehicle-text">Add New Vehicle</div>
-                </div>
-            </div>
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="actions-grid">
+                <a href="owner-vehicle-post.html" class="action-btn">
+                    <i class="fas fa-plus"></i>
+                    Add Vehicle
+                </a>
+                <a href="owner-booking-notification.html" class="action-btn">
+                    <i class="fas fa-bell"></i>
+                    View Bookings
+                </a>
+                <a href="owner-analytics.html" class="action-btn">
+                    <i class="fas fa-chart-line"></i>
+                    Analytics
+                </a>
+                <a href="owner-portal.html" class="action-btn secondary">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
             </div>
         </div>
 
-        <!-- Coverage Areas Tab -->
-        <div id="coverage-tab" class="tab-content">
-            <div class="coverage-container">
-                <div class="coverage-summary">
-                    <h3 class="chart-title">Current Coverage Settings</h3>
-                    
-                    <!-- Coverage Overview -->
-                    <div class="coverage-overview">
-                        <div class="coverage-stat">
-                            <div class="stat-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="stat-info">
-                                <div class="stat-value">1</div>
-                                <div class="stat-label">Provinces Covered</div>
-                            </div>
-                        </div>
-                        
-                        <div class="coverage-stat">
-                            <div class="stat-icon">
-                                <i class="fas fa-route"></i>
-                            </div>
-                            <div class="stat-info">
-                                <div class="stat-value">150 km</div>
-                                <div class="stat-label">Max Distance</div>
-                            </div>
-                        </div>
-                        
-                        <div class="coverage-stat">
-                            <div class="stat-icon">
-                                <i class="fas fa-map"></i>
-                            </div>
-                            <div class="stat-info">
-                                <div class="stat-value">Gauteng</div>
-                                <div class="stat-label">Primary Province</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Current Settings -->
-                    <div class="coverage-settings">
-                        <div class="settings-section">
-                            <h4><i class="fas fa-map"></i> Provinces You Cover</h4>
-                            <div class="provinces-list">
-                                <span class="province-tag">Gauteng</span>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4><i class="fas fa-map-marker-alt"></i> Base Location</h4>
-                            <div class="base-location-info">
-                                <p><strong>Address:</strong> Johannesburg CBD, Gauteng, South Africa</p>
-                                <p><strong>Coordinates:</strong> -26.2041, 28.0475</p>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4><i class="fas fa-route"></i> Distance Limits</h4>
-                            <div class="distance-info">
-                                <p><strong>Maximum Distance:</strong> 150 km from base location</p>
-                                <p><strong>Coverage Radius:</strong> 150 km radius from Johannesburg CBD</p>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4><i class="fas fa-calendar-alt"></i> Multi-Day Trip Options</h4>
-                            <div class="multi-day-info">
-                                <p><strong>Multi-Day Trips:</strong> <span class="status-enabled">Enabled</span></p>
-                                <p><strong>Maximum Stay:</strong> 3 days at destination</p>
-                                <p><strong>Return Trip Rate:</strong> R500 per day</p>
-                                <p><strong>Conditions:</strong> Return booking required, flexible dates allowed</p>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4><i class="fas fa-info-circle"></i> Coverage Summary</h4>
-                            <div class="coverage-summary-info">
-                                <p>You currently cover <strong>1 province</strong> (Gauteng) with a maximum travel distance of <strong>150 km</strong> from your base in Johannesburg.</p>
-                                <p>Multi-day trips are enabled, allowing your taxi to stay at destinations for up to 3 days with a daily rate of R500.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="coverage-actions">
-                        <button class="btn btn-primary" onclick="editCoverageAreas()">
-                            <i class="fas fa-edit"></i> Edit Coverage Settings
-                        </button>
-                        <button class="btn btn-secondary" onclick="viewCoverageMap()">
-                            <i class="fas fa-map"></i> View Coverage Map
-                        </button>
-                    </div>
-                </div>
+        <!-- Dashboard Navigation Buttons -->
+        <div class="dashboard-buttons">
+            <a href="owner-vehicles.html" class="dashboard-nav-btn">
+                <i class="fas fa-car"></i>
+                <span>My Vehicles</span>
+            </a>
+            <a href="owner-coverage.html" class="dashboard-nav-btn">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Coverage Areas</span>
+            </a>
+            <a href="owner-analytics.html" class="dashboard-nav-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="owner-bookings.html" class="dashboard-nav-btn">
+                <i class="fas fa-calendar-check"></i>
+                <span>Bookings</span>
+            </a>
+            <a href="owner-drivers.html" class="dashboard-nav-btn">
+                <i class="fas fa-user-tie"></i>
+                <span>My Drivers</span>
+            </a>
+        </div>
+
+        <!-- Recent Bookings Section -->
+        <div class="recent-bookings-section">
+            <div class="recent-bookings-header">
+                <h2 class="recent-bookings-title">
+                    <i class="fas fa-clock"></i>
+                    Recent Bookings
+                </h2>
+                <a href="owner-bookings.html" class="view-all-bookings-btn">
+                    <i class="fas fa-eye"></i>
+                    View All Bookings
+                </a>
+            </div>
+            <div class="recent-bookings-list" id="recentBookingsList">
+                <!-- Recent bookings will be loaded here -->
             </div>
         </div>
 
-        <!-- Analytics Tab -->
-        <div id="analytics-tab" class="tab-content">
-            <div class="analytics-container">
-                <!-- Analytics Section -->
-                <div class="analytics-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-chart-line"></i>
-                        Business Analytics
-                    </h2>
-                    
-                    <!-- Analytics Grid -->
-                    <div class="analytics-grid">
-                        <!-- Revenue Chart -->
-                        <div class="analytics-card">
-                            <div class="analytics-header">
-                                <h3><i class="fas fa-money-bill-wave"></i> Revenue Trends</h3>
-                                <div class="analytics-period">Last 7 Days</div>
-                            </div>
-                            <div class="chart-container">
-                                <div class="chart-bars">
-                                    <div class="chart-bar" style="height: 60%;" data-value="R 2,400">
-                                        <span class="bar-label">Mon</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 80%;" data-value="R 3,200">
-                                        <span class="bar-label">Tue</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 45%;" data-value="R 1,800">
-                                        <span class="bar-label">Wed</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 90%;" data-value="R 3,600">
-                                        <span class="bar-label">Thu</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 100%;" data-value="R 4,000">
-                                        <span class="bar-label">Fri</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 75%;" data-value="R 3,000">
-                                        <span class="bar-label">Sat</span>
-                                    </div>
-                                    <div class="chart-bar" style="height: 55%;" data-value="R 2,200">
-                                        <span class="bar-label">Sun</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Booking Analytics -->
-                        <div class="analytics-card">
-                            <div class="analytics-header">
-                                <h3><i class="fas fa-calendar-check"></i> Booking Analytics</h3>
-                                <div class="analytics-period">This Month</div>
-                            </div>
-                            <div class="booking-stats">
-                                <div class="booking-stat">
-                                    <div class="stat-icon completed">
-                                        <i class="fas fa-check-circle"></i>
-                                    </div>
-                                    <div class="stat-info">
-                                        <div class="stat-value">89</div>
-                                        <div class="stat-label">Completed</div>
-                                    </div>
-                                </div>
-                                <div class="booking-stat">
-                                    <div class="stat-icon pending">
-                                        <i class="fas fa-clock"></i>
-                                    </div>
-                                    <div class="stat-info">
-                                        <div class="stat-value">12</div>
-                                        <div class="stat-label">Pending</div>
-                                    </div>
-                                </div>
-                                <div class="booking-stat">
-                                    <div class="stat-icon cancelled">
-                                        <i class="fas fa-times-circle"></i>
-                                    </div>
-                                    <div class="stat-info">
-                                        <div class="stat-value">3</div>
-                                        <div class="stat-label">Cancelled</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Popular Routes -->
-                        <div class="analytics-card">
-                            <div class="analytics-header">
-                                <h3><i class="fas fa-route"></i> Popular Routes</h3>
-                                <div class="analytics-period">Top 5</div>
-                            </div>
-                            <div class="routes-list">
-                                <div class="route-item">
-                                    <div class="route-info">
-                                        <div class="route-name">Johannesburg → Pretoria</div>
-                                        <div class="route-count">24 bookings</div>
-                                    </div>
-                                    <div class="route-percentage">19%</div>
-                                </div>
-                                <div class="route-item">
-                                    <div class="route-info">
-                                        <div class="route-name">Cape Town → Airport</div>
-                                        <div class="route-count">18 bookings</div>
-                                    </div>
-                                    <div class="route-percentage">14%</div>
-                                </div>
-                                <div class="route-item">
-                                    <div class="route-info">
-                                        <div class="route-name">Durban → Umhlanga</div>
-                                        <div class="route-count">15 bookings</div>
-                                    </div>
-                                    <div class="route-percentage">12%</div>
-                                </div>
-                                <div class="route-item">
-                                    <div class="route-info">
-                                        <div class="route-name">Johannesburg → Airport</div>
-                                        <div class="route-count">12 bookings</div>
-                                    </div>
-                                    <div class="route-percentage">9%</div>
-                                </div>
-                                <div class="route-item">
-                                    <div class="route-info">
-                                        <div class="route-name">Cape Town → Stellenbosch</div>
-                                        <div class="route-count">9 bookings</div>
-                                    </div>
-                                    <div class="route-percentage">7%</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Performance Metrics -->
-                        <div class="analytics-card">
-                            <div class="analytics-header">
-                                <h3><i class="fas fa-tachometer-alt"></i> Performance Metrics</h3>
-                                <div class="analytics-period">Current Status</div>
-                            </div>
-                            <div class="metrics-grid">
-                                <div class="metric-item">
-                                    <div class="metric-label">On-Time Rate</div>
-                                    <div class="metric-value">94%</div>
-                                    <div class="metric-bar">
-                                        <div class="metric-fill" style="width: 94%; background: #28a745;"></div>
-                                    </div>
-                                </div>
-                                <div class="metric-item">
-                                    <div class="metric-label">Customer Satisfaction</div>
-                                    <div class="metric-value">4.8/5</div>
-                                    <div class="metric-bar">
-                                        <div class="metric-fill" style="width: 96%; background: #17a2b8;"></div>
-                                    </div>
-                                </div>
-                                <div class="metric-item">
-                                    <div class="metric-label">Vehicle Utilization</div>
-                                    <div class="metric-value">87%</div>
-                                    <div class="metric-bar">
-                                        <div class="metric-fill" style="width: 87%; background: #ffc107;"></div>
-                                    </div>
-                                </div>
-                                <div class="metric-item">
-                                    <div class="metric-label">Fuel Efficiency</div>
-                                    <div class="metric-value">8.2 L/100km</div>
-                                    <div class="metric-bar">
-                                        <div class="metric-fill" style="width: 82%; background: #6c757d;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bookings Tab -->
-        <div id="bookings-tab" class="tab-content">
-            <div class="bookings-container">
-                <!-- Booking 1 -->
-                <div class="booking-card">
-                    <div class="booking-header">
-                        <div class="booking-id">#BK-2025-001</div>
-                        <div class="booking-status status-pending">Pending</div>
-                        <div class="booking-time">2 hours ago</div>
-                    </div>
-                    <div class="booking-details">
-                        <div class="route-info">
-                            <div class="route-from">
-                                <strong>From:</strong> Sandton City, Johannesburg
-                            </div>
-                            <div class="route-to">
-                                <strong>To:</strong> OR Tambo Airport, Kempton Park
-                            </div>
-                        </div>
-                        <div class="booking-info">
-                            <div class="info-item">
-                                <span class="label">Customer:</span>
-                                <span class="value">Sarah Mthembu</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Date & Time:</span>
-                                <span class="value">Today, 2:30 PM</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Passengers:</span>
-                                <span class="value">3 adults, 2 children</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Distance:</span>
-                                <span class="value">28.5 km</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Total Amount:</span>
-                                <span class="value amount">R 516.75</span>
-                            </div>
-                        </div>
-                        <div class="booking-actions">
-                            <button class="btn-action btn-accept" onclick="acceptBooking('BK-2025-001')">
-                                <i class="fas fa-check"></i> Accept
-                            </button>
-                            <button class="btn-action btn-contact" onclick="contactCustomer('Sarah Mthembu')">
-                                <i class="fas fa-phone"></i> Contact
-                            </button>
-                            <button class="btn-action btn-decline" onclick="declineBooking('BK-2025-001')">
-                                <i class="fas fa-times"></i> Decline
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Booking 2 -->
-                <div class="booking-card">
-                    <div class="booking-header">
-                        <div class="booking-id">#BK-2025-002</div>
-                        <div class="booking-status status-confirmed">Confirmed</div>
-                        <div class="booking-time">1 day ago</div>
-                    </div>
-                    <div class="booking-details">
-                        <div class="route-info">
-                            <div class="route-from">
-                                <strong>From:</strong> Rosebank Mall, Johannesburg
-                            </div>
-                            <div class="route-to">
-                                <strong>To:</strong> Pretoria CBD, Pretoria
-                            </div>
-                        </div>
-                        <div class="booking-info">
-                            <div class="info-item">
-                                <span class="label">Customer:</span>
-                                <span class="value">John Dlamini</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Date & Time:</span>
-                                <span class="value">Tomorrow, 8:00 AM</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Passengers:</span>
-                                <span class="value">2 adults</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Distance:</span>
-                                <span class="value">45.2 km</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Total Amount:</span>
-                                <span class="value amount">R 750.60</span>
-                            </div>
-                        </div>
-                        <div class="booking-actions">
-                            <button class="btn-action btn-view" onclick="viewBookingDetails('BK-2025-002')">
-                                <i class="fas fa-eye"></i> View Details
-                            </button>
-                            <button class="btn-action btn-contact" onclick="contactCustomer('John Dlamini')">
-                                <i class="fas fa-phone"></i> Contact
-                            </button>
-                            <button class="btn-action btn-cancel" onclick="cancelBooking('BK-2025-002')">
-                                <i class="fas fa-ban"></i> Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        </div>
-    </div>
+        <!-- Old tab content removed - now using separate pages -->
 
     <!-- Add/Edit Vehicle Modal -->
     <div id="vehicleModal" class="modal">
@@ -2279,24 +2706,308 @@
         });
 
         // Tab switching
+        // Load recent bookings
+        function loadRecentBookings() {
+            // Create sample bookings for demo
+            const now = new Date();
+            const bookings = [
+                {
+                    id: 'BK-2025-001',
+                    status: 'pending',
+                    type: 'route-based',
+                    customer: 'Sarah Mthembu',
+                    from: 'Sandton City, Johannesburg',
+                    to: 'OR Tambo Airport, Kempton Park',
+                    date: 'Today, 2:30 PM',
+                    passengers: '3 adults, 2 children',
+                    distance: '28.5 km',
+                    amount: 'R 516.75',
+                    time: '2 hours ago'
+                },
+                {
+                    id: 'BK-2025-002',
+                    status: 'confirmed',
+                    type: 'custom-trip',
+                    customer: 'John Dlamini',
+                    from: 'Rosebank Mall, Johannesburg',
+                    to: 'Pretoria CBD, Pretoria',
+                    date: 'Tomorrow, 8:00 AM',
+                    passengers: '2 adults',
+                    distance: '45.2 km',
+                    amount: 'R 750.60',
+                    time: '1 day ago'
+                },
+                {
+                    id: 'BK-2025-003',
+                    status: 'confirmed',
+                    type: 'route-based',
+                    customer: 'Mary Khumalo',
+                    from: 'Soweto, Johannesburg',
+                    to: 'Sandton, Johannesburg',
+                    date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 10:00 AM',
+                    passengers: '4 adults',
+                    distance: '35.8 km',
+                    amount: 'R 642.30',
+                    time: '3 days ago'
+                },
+                {
+                    id: 'BK-2025-004',
+                    status: 'pending',
+                    type: 'custom-trip',
+                    customer: 'David Nkomo',
+                    from: 'Midrand, Johannesburg',
+                    to: 'Lanseria Airport, Johannesburg',
+                    date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 6:00 AM',
+                    passengers: '1 adult',
+                    distance: '42.3 km',
+                    amount: 'R 689.50',
+                    time: '5 hours ago'
+                },
+                {
+                    id: 'BK-2025-005',
+                    status: 'confirmed',
+                    type: 'route-based',
+                    customer: 'Grace Mokoena',
+                    from: 'Pretoria Central, Pretoria',
+                    to: 'Johannesburg CBD, Johannesburg',
+                    date: new Date(now.getTime() + 3 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 3:00 PM',
+                    passengers: '5 adults',
+                    distance: '58.7 km',
+                    amount: 'R 987.20',
+                    time: '2 days ago'
+                },
+                {
+                    id: 'BK-2025-006',
+                    status: 'confirmed',
+                    type: 'custom-trip',
+                    customer: 'Thabo Sithole',
+                    from: 'Randburg, Johannesburg',
+                    to: 'Sandton City, Johannesburg',
+                    date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 11:30 AM',
+                    passengers: '2 adults, 1 child',
+                    distance: '18.9 km',
+                    amount: 'R 342.80',
+                    time: '1 day ago'
+                },
+                {
+                    id: 'BK-2025-007',
+                    status: 'pending',
+                    type: 'route-based',
+                    customer: 'Nomsa Dlamini',
+                    from: 'Fourways, Johannesburg',
+                    to: 'OR Tambo Airport, Kempton Park',
+                    date: 'Tomorrow, 12:00 PM',
+                    passengers: '3 adults',
+                    distance: '31.4 km',
+                    amount: 'R 568.90',
+                    time: '3 hours ago'
+                },
+                {
+                    id: 'BK-2025-008',
+                    status: 'confirmed',
+                    type: 'custom-trip',
+                    customer: 'Peter Ngubane',
+                    from: 'Benoni, Gauteng',
+                    to: 'Johannesburg CBD, Johannesburg',
+                    date: new Date(now.getTime() + 4 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 9:00 AM',
+                    passengers: '4 adults',
+                    distance: '52.1 km',
+                    amount: 'R 892.40',
+                    time: '4 days ago'
+                },
+                {
+                    id: 'BK-2025-009',
+                    status: 'pending',
+                    type: 'route-based',
+                    customer: 'Lindiwe Khumalo',
+                    from: 'Kempton Park, Gauteng',
+                    to: 'Sandton, Johannesburg',
+                    date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 4:30 PM',
+                    passengers: '2 adults',
+                    distance: '24.6 km',
+                    amount: 'R 445.20',
+                    time: '6 hours ago'
+                },
+                {
+                    id: 'BK-2025-010',
+                    status: 'confirmed',
+                    type: 'custom-trip',
+                    customer: 'Sipho Mthembu',
+                    from: 'Soweto, Johannesburg',
+                    to: 'Rosebank, Johannesburg',
+                    date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 1:00 PM',
+                    passengers: '6 adults',
+                    distance: '22.8 km',
+                    amount: 'R 412.50',
+                    time: '3 days ago'
+                },
+                {
+                    id: 'BK-2025-011',
+                    status: 'pending',
+                    type: 'route-based',
+                    customer: 'Zanele Ndlovu',
+                    from: 'Johannesburg CBD',
+                    to: 'OR Tambo Airport, Kempton Park',
+                    date: 'Today, 5:00 PM',
+                    passengers: '1 adult',
+                    distance: '23.5 km',
+                    amount: 'R 425.80',
+                    time: '1 hour ago'
+                },
+                {
+                    id: 'BK-2025-012',
+                    status: 'confirmed',
+                    type: 'custom-trip',
+                    customer: 'Mpho Molefe',
+                    from: 'Pretoria East, Pretoria',
+                    to: 'Johannesburg, Gauteng',
+                    date: new Date(now.getTime() + 5 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 7:30 AM',
+                    passengers: '3 adults, 1 child',
+                    distance: '61.3 km',
+                    amount: 'R 1023.60',
+                    time: '5 days ago'
+                }
+            ];
+
+            const recentBookingsList = document.getElementById('recentBookingsList');
+            if (!recentBookingsList) return;
+
+            if (bookings.length === 0) {
+                recentBookingsList.innerHTML = `
+                    <div class="no-recent-bookings">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>No recent bookings found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            recentBookingsList.innerHTML = bookings.slice(0, 5).map(booking => createRecentBookingCard(booking)).join('');
+        }
+
+        function createRecentBookingCard(booking) {
+            const statusClass = `status-${booking.status}`;
+            const statusText = booking.status === 'pending' ? 'Pending' :
+                             booking.status === 'confirmed' ? 'Confirmed' :
+                             booking.status === 'completed' ? 'Completed' : 'Cancelled';
+            
+            const bookingType = booking.type || 'route-based';
+            const typeClass = bookingType === 'route-based' ? 'booking-type-route' : 'booking-type-custom';
+            const typeText = bookingType === 'route-based' ? 'Route-Based' : 'Custom Trip';
+            const typeIcon = bookingType === 'route-based' ? 'fa-route' : 'fa-map-marked-alt';
+
+            // Determine card CSS classes for visual differentiation
+            let cardClass = bookingType === 'route-based' ? 'route-based' : 'custom-trip';
+            if (bookingType === 'route-based' && booking.routeType) {
+                if (booking.routeType === 'local') {
+                    cardClass += ' local';
+                } else if (booking.routeType === 'long-distance') {
+                    cardClass += ' long-distance';
+                }
+            }
+
+            let routeInfoHTML = '';
+            if (booking.type === 'route-based') {
+                // Route-Based: Show trip name and collection/delivery
+                const collectionDeliveryBadge = booking.collectionDelivery === 'collection' 
+                    ? '<span class="collection-delivery-badge badge-collection" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">Collection</span>'
+                    : '<span class="collection-delivery-badge badge-delivery" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">Delivery</span>';
+                
+                routeInfoHTML = `
+                    <div class="recent-booking-route-item">
+                        <i class="fas fa-route"></i>
+                        <strong>Trip:</strong> ${escapeHtml(booking.tripName || booking.from + ' - ' + booking.to)} ${collectionDeliveryBadge}
+                    </div>
+                    <div class="recent-booking-route-item">
+                        <i class="fas fa-calendar"></i>
+                        <strong>Date & Time:</strong> ${escapeHtml(booking.date)}
+                    </div>
+                `;
+            } else {
+                // Custom Trip: Show from/to
+                routeInfoHTML = `
+                    <div class="recent-booking-route-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <strong>From:</strong> ${escapeHtml(booking.from)}
+                    </div>
+                    <div class="recent-booking-route-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <strong>To:</strong> ${escapeHtml(booking.to)}
+                    </div>
+                    ${booking.returnTrip ? `
+                    <div class="recent-booking-route-item">
+                        <i class="fas fa-undo"></i>
+                        <strong>Return Trip:</strong> ${booking.stayDays || 0} days stay
+                    </div>
+                    ` : ''}
+                `;
+            }
+
+            return `
+                <div class="recent-booking-card ${cardClass}">
+                    <div class="recent-booking-header">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="recent-booking-id">#${booking.id}</div>
+                            <span class="booking-type-badge ${typeClass}">
+                                <i class="fas ${typeIcon}"></i> ${typeText}
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                            <div class="recent-booking-status ${statusClass}">${statusText}</div>
+                            <span style="color: #6c757d; font-size: 0.85rem;">${escapeHtml(booking.time || booking.timeAgo || '')}</span>
+                        </div>
+                    </div>
+                    <div class="recent-booking-route">
+                        ${routeInfoHTML}
+                    </div>
+                    <div class="recent-booking-info">
+                        <div class="recent-booking-info-item">
+                            <strong>Customer:</strong> ${escapeHtml(typeof booking.customer === 'string' ? booking.customer : (booking.customer?.name || 'N/A'))}
+                        </div>
+                        ${booking.type === 'route-based' ? `
+                        <div class="recent-booking-info-item">
+                            <strong>Distance:</strong> ${escapeHtml(booking.distance || 'N/A')}
+                        </div>
+                        <div class="recent-booking-info-item">
+                            <strong>Passengers:</strong> ${booking.passengers || 0}
+                        </div>
+                        <div class="recent-booking-info-item">
+                            <strong>Parcels:</strong> ${booking.parcels || 0}
+                        </div>
+                        ` : `
+                        <div class="recent-booking-info-item">
+                            <strong>Date:</strong> ${escapeHtml(booking.departureDate || booking.date || 'N/A')}
+                        </div>
+                        <div class="recent-booking-info-item">
+                            <strong>Passengers:</strong> ${booking.passengers || 0}
+                        </div>
+                        <div class="recent-booking-info-item">
+                            <strong>Distance:</strong> ${escapeHtml(booking.distance || 'N/A')}
+                        </div>
+                        `}
+                        <div class="recent-booking-info-item">
+                            <strong>Amount:</strong> <span style="color: #28a745; font-weight: 700;">${escapeHtml(booking.amount)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Old showTab function - kept for backward compatibility but does nothing
         function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+            // Tab functionality removed - now using separate pages
             
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            
-            // Add active class to clicked button
-            event.target.classList.add('active');
-            
-            currentTab = tabName;
+            // Load drivers if drivers tab is selected
+            if (tabName === 'drivers') {
+                loadDrivers();
+            }
             
             // Initialize map if coverage tab is selected
             if (tabName === 'coverage') {
@@ -2654,6 +3365,7 @@
             console.log('Loading dashboard data...');
         }
 
+
         // Booking action functions
         function acceptBooking(bookingId) {
             alert(`Booking ${bookingId} accepted! Customer will be notified.`);
@@ -2684,6 +3396,327 @@
             }
         }
 
+        // Date/Time Display Functionality
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            const formattedDate = now.toLocaleDateString('en-ZA', dateOptions);
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const formattedTime = now.toLocaleTimeString('en-ZA', timeOptions);
+            
+            const dateElement = document.getElementById('currentDate');
+            const timeElement = document.getElementById('currentTimeLarge');
+            
+            if (dateElement) dateElement.textContent = formattedDate;
+            if (timeElement) timeElement.textContent = formattedTime;
+        }
+
+        // Driver Management Functions
+
+        function loadDrivers() {
+            let drivers = JSON.parse(localStorage.getItem('ownerDrivers') || '[]');
+            const driversGrid = document.getElementById('driversGrid');
+            
+            if (!driversGrid) return;
+            
+            // Create sample drivers if none exist (for demo purposes)
+            if (drivers.length === 0) {
+                drivers = createSampleDrivers();
+                localStorage.setItem('ownerDrivers', JSON.stringify(drivers));
+            }
+            
+            driversGrid.innerHTML = drivers.map(driver => createDriverCard(driver)).join('');
+        }
+
+        function createSampleDrivers() {
+            const now = new Date();
+            const sampleDrivers = [
+                {
+                    id: 'DRIVER_' + (Date.now() - 86400000 * 30), // 30 days ago
+                    photo: null, // No photo for sample
+                    firstName: 'Thabo',
+                    surname: 'Molefe',
+                    idNumber: '8501015801087',
+                    dateOfBirth: '1985-01-01',
+                    phone: '071 234 5678',
+                    email: 'thabo.molefe@email.com',
+                    address: '123 Main Street, Johannesburg, Gauteng',
+                    licenseNumber: 'DL123456789',
+                    licenseExpiry: new Date(now.getFullYear() + 2, 5, 15).toISOString().split('T')[0],
+                    licenseClass: 'PDP',
+                    experienceYears: 12,
+                    notes: 'Experienced driver, excellent customer service record.',
+                    status: 'active',
+                    password: 'driver123', // Default password for login
+                    createdAt: new Date(now.getTime() - 86400000 * 30).toISOString(),
+                    updatedAt: new Date(now.getTime() - 86400000 * 30).toISOString()
+                },
+                {
+                    id: 'DRIVER_' + (Date.now() - 86400000 * 20), // 20 days ago
+                    photo: null,
+                    firstName: 'Nomsa',
+                    surname: 'Dlamini',
+                    idNumber: '9203155902088',
+                    dateOfBirth: '1992-03-15',
+                    phone: '082 345 6789',
+                    email: 'nomsa.dlamini@email.com',
+                    address: '456 Oak Avenue, Pretoria, Gauteng',
+                    licenseNumber: 'DL987654321',
+                    licenseExpiry: new Date(now.getFullYear() + 1, 8, 20).toISOString().split('T')[0],
+                    licenseClass: 'C',
+                    experienceYears: 8,
+                    notes: 'Very reliable, prefers long-distance routes.',
+                    status: 'active',
+                    password: 'driver123', // Default password for login
+                    createdAt: new Date(now.getTime() - 86400000 * 20).toISOString(),
+                    updatedAt: new Date(now.getTime() - 86400000 * 20).toISOString()
+                },
+                {
+                    id: 'DRIVER_' + (Date.now() - 86400000 * 10), // 10 days ago
+                    photo: null,
+                    firstName: 'Sipho',
+                    surname: 'Ngubane',
+                    idNumber: '8805205803089',
+                    dateOfBirth: '1988-05-20',
+                    phone: '073 456 7890',
+                    email: 'sipho.ngubane@email.com',
+                    address: '789 Pine Road, Cape Town, Western Cape',
+                    licenseNumber: 'DL555666777',
+                    licenseExpiry: new Date(now.getFullYear() + 3, 2, 10).toISOString().split('T')[0],
+                    licenseClass: 'EC',
+                    experienceYears: 15,
+                    notes: 'Senior driver, handles heavy vehicles and trailers.',
+                    status: 'active',
+                    password: 'driver123', // Default password for login
+                    createdAt: new Date(now.getTime() - 86400000 * 10).toISOString(),
+                    updatedAt: new Date(now.getTime() - 86400000 * 10).toISOString()
+                },
+                {
+                    id: 'DRIVER_' + (Date.now() - 86400000 * 5), // 5 days ago
+                    photo: null,
+                    firstName: 'Lindiwe',
+                    surname: 'Khumalo',
+                    idNumber: '9508105904090',
+                    dateOfBirth: '1995-08-10',
+                    phone: '084 567 8901',
+                    email: 'lindiwe.khumalo@email.com',
+                    address: '321 Elm Street, Durban, KwaZulu-Natal',
+                    licenseNumber: 'DL111222333',
+                    licenseExpiry: new Date(now.getFullYear() + 1, 11, 5).toISOString().split('T')[0],
+                    licenseClass: 'C1',
+                    experienceYears: 5,
+                    notes: 'New driver, very enthusiastic and punctual.',
+                    status: 'active',
+                    password: 'driver123', // Default password for login
+                    createdAt: new Date(now.getTime() - 86400000 * 5).toISOString(),
+                    updatedAt: new Date(now.getTime() - 86400000 * 5).toISOString()
+                }
+            ];
+            
+            return sampleDrivers;
+        }
+
+        function createDriverCard(driver) {
+            const statusClass = `driver-status-${driver.status}`;
+            const statusText = driver.status === 'active' ? 'Active' : 
+                             driver.status === 'inactive' ? 'Inactive' :
+                             driver.status === 'on_leave' ? 'On Leave' : 'Suspended';
+            
+            const photoHtml = driver.photo ? 
+                `<img src="${driver.photo}" alt="${driver.firstName} ${driver.surname}" class="driver-photo">` :
+                `<div class="driver-photo-placeholder"><i class="fas fa-user"></i></div>`;
+            
+            return `
+                <div class="driver-card" data-driver-id="${driver.id}">
+                    <div class="driver-photo-container">
+                        ${photoHtml}
+                    </div>
+                    <div class="driver-info">
+                        <h3 class="driver-name">${escapeHtml(driver.firstName)} ${escapeHtml(driver.surname)}</h3>
+                        <div class="driver-details">
+                            <div class="driver-detail-item">
+                                <i class="fas fa-phone"></i>
+                                <span class="driver-detail-label">Phone:</span>
+                                <span class="driver-detail-value">${escapeHtml(driver.phone)}</span>
+                            </div>
+                            <div class="driver-detail-item">
+                                <i class="fas fa-envelope"></i>
+                                <span class="driver-detail-label">Email:</span>
+                                <span class="driver-detail-value">${escapeHtml(driver.email)}</span>
+                            </div>
+                            <div class="driver-detail-item">
+                                <i class="fas fa-id-badge"></i>
+                                <span class="driver-detail-label">License:</span>
+                                <span class="driver-detail-value">${escapeHtml(driver.licenseNumber)} (${escapeHtml(driver.licenseClass)})</span>
+                            </div>
+                            <div class="driver-detail-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="driver-detail-label">License Expiry:</span>
+                                <span class="driver-detail-value">${new Date(driver.licenseExpiry).toLocaleDateString('en-ZA')}</span>
+                            </div>
+                            <div class="driver-detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span class="driver-detail-label">Experience:</span>
+                                <span class="driver-detail-value">${driver.experienceYears} years</span>
+                            </div>
+                        </div>
+                        <span class="driver-status-badge ${statusClass}">${statusText}</span>
+                        <div class="driver-actions">
+                            <a href="owner-driver-post.html?id=${driver.id}" class="btn-action btn-edit">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <button class="btn-action btn-delete" onclick="deleteDriver('${driver.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function deleteDriver(driverId) {
+            if (!confirm('Are you sure you want to delete this driver? This action cannot be undone.')) {
+                return;
+            }
+            
+            let drivers = JSON.parse(localStorage.getItem('ownerDrivers') || '[]');
+            drivers = drivers.filter(d => d.id !== driverId);
+            localStorage.setItem('ownerDrivers', JSON.stringify(drivers));
+            
+            alert('Driver deleted successfully!');
+            loadDrivers();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load vehicles from localStorage
+        function loadVehicles() {
+            const vehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
+            const vehicleGrid = document.getElementById('vehicleGridContainer');
+            
+            if (!vehicleGrid) return;
+
+            // Clear existing dynamic vehicles (keep the static ones and "Add New Vehicle" card)
+            const staticVehicles = vehicleGrid.querySelectorAll('.vehicle-card:not([data-dynamic])');
+            const addVehicleCard = vehicleGrid.querySelector('.add-vehicle-card');
+            
+            // Remove dynamic vehicles
+            vehicleGrid.querySelectorAll('.vehicle-card[data-dynamic]').forEach(card => card.remove());
+
+            // Add pending vehicles
+            vehicles.forEach(vehicle => {
+                if (vehicle.status === 'pending') {
+                    const vehicleCard = createVehicleCard(vehicle);
+                    vehicleGrid.insertBefore(vehicleCard, addVehicleCard);
+                }
+            });
+        }
+
+        // Create vehicle card HTML
+        function createVehicleCard(vehicle) {
+            const card = document.createElement('div');
+            card.className = 'vehicle-card';
+            card.setAttribute('data-dynamic', 'true');
+            card.setAttribute('data-vehicle-id', vehicle.id);
+
+            const vehicleTypeDisplay = vehicle.vehicleType === 'minibus' ? 'Minibus (16-18 seats)' : 
+                                      vehicle.vehicleType === 'bus' ? '22-Seater Bus' : vehicle.vehicleType;
+            
+            const statusClass = vehicle.status === 'pending' ? 'status-pending' : 
+                               vehicle.status === 'active' ? 'status-active' : 'status-inactive';
+            
+            const statusText = vehicle.status === 'pending' ? 'Pending Approval' : 
+                             vehicle.status === 'active' ? 'Active' : 'Inactive';
+
+            card.innerHTML = `
+                <div class="vehicle-image">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="vehicle-info">
+                    <h3 class="vehicle-name">${escapeHtml(vehicle.vehicleName)}</h3>
+                    <div class="vehicle-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value">${escapeHtml(vehicleTypeDisplay)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Registration</span>
+                            <span class="detail-value">${escapeHtml(vehicle.registration)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Capacity</span>
+                            <span class="detail-value">${escapeHtml(vehicle.capacity)} seats</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Submitted</span>
+                            <span class="detail-value">${vehicle.submittedDate || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <span class="vehicle-status ${statusClass}">${statusText}</span>
+                    ${vehicle.status === 'pending' ? `
+                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fff3cd; border-radius: 8px; font-size: 0.75rem; color: #856404;">
+                        <i class="fas fa-clock"></i> Awaiting admin approval
+                    </div>
+                    ` : ''}
+                    <div class="vehicle-actions">
+                        ${vehicle.status === 'pending' ? `
+                        <button class="btn-action btn-secondary" onclick="viewVehicleDetails('${vehicle.id}')" style="flex: 1;">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        ` : `
+                        <button class="btn-action btn-edit" onclick="editVehicle('${vehicle.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn-action btn-toggle" onclick="toggleVehicle('${vehicle.id}')">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button class="btn-action btn-delete" onclick="deleteVehicle('${vehicle.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // View vehicle details
+        function viewVehicleDetails(vehicleId) {
+            const vehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            
+            if (vehicle) {
+                alert(`Vehicle: ${vehicle.vehicleName}\nStatus: Pending Approval\nSubmitted: ${vehicle.submittedDate || 'N/A'}\n\nAn admin will review and approve this vehicle within 24-48 hours.`);
+            }
+        }
+
+        // Initialize date/time display
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000); // Update every second
+            loadVehicles(); // Load vehicles from localStorage
+            loadRecentBookings(); // Load recent bookings
+        });
+
         // Close modals when clicking outside
         window.onclick = function(event) {
             const vehicleModal = document.getElementById('vehicleModal');
@@ -2696,6 +3729,55 @@
                 closeCoverageModal();
             }
         }
+
+        // Mobile menu toggle function
+        function toggleMobileMenu() {
+            const menu = document.getElementById("mobileMenu");
+            const isShown = menu.classList.toggle("show");
+
+            if (isShown) {
+                topNavZIndexIncrease();
+            } else {
+                topNavZIndexDecrease();
+            }
+        }
+
+        function topNavZIndexIncrease() {
+            const navbar = document.querySelector(".topnav");
+            if (navbar) {
+                navbar.style.zIndex = "3001";
+            }
+        }
+
+        function topNavZIndexDecrease() {
+            const navbar = document.querySelector(".topnav");
+            if (navbar) {
+                navbar.style.zIndex = "3";
+            }
+        }
     </script>
+
+    <script type="module">
+        // Check authentication status and update navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+            
+            if (isLoggedIn) {
+                // User is logged in - show full navigation
+                if (authButtons) authButtons.style.display = 'none';
+                if (fullNav) fullNav.style.display = 'flex';
+            } else {
+                // User is not logged in - show auth buttons
+                if (authButtons) authButtons.style.display = 'flex';
+                if (fullNav) fullNav.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <script type="module" src="../../js/authentication/logout.js"></script>
 </body>
 </html>

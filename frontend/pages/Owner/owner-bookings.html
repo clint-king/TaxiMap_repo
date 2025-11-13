@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookings | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            padding-top: 70px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            z-index: -1;
+        }
+
+        .page-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        @media (min-width: 1400px) {
+            .page-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .page-container {
+                max-width: 1600px;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .page-container {
+                max-width: 1800px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title i {
+            color: #FFD52F;
+        }
+
+        .bookings-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .booking-tab-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .booking-tab-btn:hover {
+            border-color: #01386A;
+            color: #01386A;
+        }
+
+        .booking-tab-btn.active {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            border-color: #01386A;
+        }
+
+        .bookings-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .tab-content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .booking-card {
+            background: white;
+            border: 3px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        /* Route-Based Bookings - Local (Green/Teal Theme) */
+        .booking-card.route-based {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-color: #17a2b8;
+        }
+
+        .booking-card.route-based.local {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #22c55e;
+            border-left: 6px solid #22c55e;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+        }
+
+        .booking-card.route-based.local:hover {
+            border-color: #16a34a;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25);
+            background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+        }
+
+        /* Route-Based Bookings - Long Distance (Orange/Amber Theme) */
+        .booking-card.route-based.long-distance {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border-color: #f97316;
+            border-left: 6px solid #f97316;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.15);
+        }
+
+        .booking-card.route-based.long-distance:hover {
+            border-color: #ea580c;
+            box-shadow: 0 4px 16px rgba(249, 115, 22, 0.25);
+            background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+        }
+
+        /* Custom Trip Bookings - Purple Theme */
+        .booking-card.custom-trip {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-color: #6f42c1;
+            border-left: 5px solid #6f42c1;
+        }
+
+        .booking-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .booking-card.route-based.local:hover {
+            border-color: #16a34a;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25);
+        }
+
+        .booking-card.route-based.long-distance:hover {
+            border-color: #ea580c;
+            box-shadow: 0 4px 16px rgba(249, 115, 22, 0.25);
+        }
+
+        .booking-card.custom-trip:hover {
+            border-color: #5a32a3;
+            box-shadow: 0 4px 16px rgba(111, 66, 193, 0.2);
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .booking-id {
+            font-weight: 700;
+            color: #01386A;
+            font-size: 1.1rem;
+        }
+
+        .booking-status {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .booking-time {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .booking-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .booking-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .route-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .route-from,
+        .route-to {
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .route-from strong,
+        .route-to strong {
+            color: #01386A;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .booking-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-item .label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .info-item .value {
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .info-item .value.amount {
+            color: #28a745;
+            font-size: 1.1rem;
+        }
+
+        .booking-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-decline,
+        .btn-cancel {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-decline:hover,
+        .btn-cancel:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+
+        .btn-contact {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .btn-contact:hover {
+            background: linear-gradient(135deg, #138496 0%, #17a2b8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .no-bookings {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+        }
+
+        .no-bookings i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .no-bookings p {
+            font-size: 1.2rem;
+        }
+
+        .tab-content-section {
+            display: none;
+        }
+
+        .tab-content-section.active {
+            display: block;
+        }
+
+        /* Navigation links spacing */
+        @media (min-width: 769px) {
+            .nav-links {
+                gap: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            .nav-logout-btn {
+                margin-left: 0 !important;
+                margin-top: 10px;
+                justify-content: center;
+                width: calc(100% - 30px);
+                padding: 12px 16px;
+            }
+
+            .booking-tab-btn {
+                min-width: 100%;
+            }
+        }
+
+        /* Logout Button Styling */
+        .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-logout-btn i {
+            font-size: 14px;
+        }
+
+        .booking-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .booking-type-route {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .booking-type-custom {
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            color: white;
+        }
+
+        .booking-type-badge i {
+            font-size: 0.7rem;
+        }
+
+        .auto-settings-container {
+            padding: 1rem 0;
+        }
+
+        .settings-section-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .setting-label:hover {
+            border-color: #01386A;
+            background: #f0f8ff;
+        }
+
+        .setting-radio {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #01386A;
+        }
+
+        .setting-label span {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .setting-label input[type="radio"]:checked + span {
+            color: #01386A;
+            font-weight: 600;
+        }
+
+        /* Booking Detail Modal */
+        .booking-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .booking-modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .booking-modal-header {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .booking-modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .booking-modal-body {
+            padding: 2rem;
+        }
+
+        .detail-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+        .detail-section h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .passenger-list,
+        .parcel-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .passenger-card,
+        .parcel-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .passenger-card h4,
+        .parcel-card h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 0.75rem;
+        }
+
+        .passenger-detail-item,
+        .parcel-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+
+        .passenger-detail-item:last-child,
+        .parcel-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .detail-value {
+            color: #333;
+            text-align: right;
+        }
+
+        .parcel-image {
+            width: 100%;
+            max-width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 0.75rem;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 1rem;
+            border: 2px solid #e9ecef;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+
+        .route-info-display {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .route-info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+        }
+
+        .route-info-item i {
+            color: #01386A;
+            width: 20px;
+        }
+
+        .trip-info-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .trip-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .trip-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trip-info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .trip-info-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #01386A;
+        }
+
+        .collection-delivery-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge-collection {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-delivery {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .return-trip-info {
+            background: #fff3cd;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 4px solid #ffc107;
+        }
+
+        .one-way-info {
+            background: #d1ecf1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .location-point {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #01386A;
+        }
+
+        .location-point.waiting {
+            border-left-color: #17a2b8;
+        }
+
+        .location-point.pickup {
+            border-left-color: #28a745;
+        }
+
+        .location-point.dropoff {
+            border-left-color: #ffc107;
+        }
+
+        @media (max-width: 768px) {
+            .booking-modal-content {
+                width: 95%;
+                margin: 5% auto;
+            }
+
+            .passenger-list,
+            .parcel-list {
+                grid-template-columns: 1fr;
+            }
+
+            .trip-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" class="active" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
+                    <a href="../driver/driver-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #01386A; color: #fff; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Driver Portal</a>
+                    <a href="#" class="nav-logout-btn" id="logoutBtn" onclick="topNavZIndexDecrease()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-calendar-check"></i>
+                Bookings
+            </h1>
+        </div>
+
+        <div class="bookings-tabs">
+            <button class="booking-tab-btn active" onclick="showBookingTab('pending')">
+                <i class="fas fa-clock"></i>
+                Pending
+            </button>
+            <button class="booking-tab-btn" onclick="showBookingTab('upcoming')">
+                <i class="fas fa-calendar-alt"></i>
+                Upcoming
+            </button>
+            <button class="booking-tab-btn" onclick="showBookingTab('historical')">
+                <i class="fas fa-history"></i>
+                Historical
+            </button>
+            <button class="booking-tab-btn" onclick="showBookingTab('settings')">
+                <i class="fas fa-cog"></i>
+                Auto-Settings
+            </button>
+        </div>
+
+        <div class="bookings-container">
+            <!-- Pending Bookings -->
+            <div id="pending-bookings" class="tab-content-section active">
+                <div id="pendingBookingsList">
+                    <!-- Pending bookings will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Upcoming Bookings -->
+            <div id="upcoming-bookings" class="tab-content-section">
+                <div id="upcomingBookingsList">
+                    <!-- Upcoming bookings will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Historical Bookings -->
+            <div id="historical-bookings" class="tab-content-section">
+                <div id="historicalBookingsList">
+                    <!-- Historical bookings will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Auto-Settings -->
+            <div id="settings-bookings" class="tab-content-section">
+                <div class="auto-settings-container">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; color: #01386A; margin-bottom: 1.5rem;">
+                        <i class="fas fa-cog"></i> Automatic Booking Acceptance Settings
+                    </h2>
+                    <p style="color: #6c757d; margin-bottom: 2rem;">
+                        Configure automatic acceptance or rejection rules for different booking types
+                    </p>
+
+                    <div class="settings-section-card">
+                        <h3 style="font-size: 1.2rem; font-weight: 700; color: #01386A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-route" style="color: #17a2b8;"></i>
+                            Route-Based Bookings - Local
+                        </h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="radio" name="routeLocalAuto" value="auto-accept" class="setting-radio" id="routeLocalAccept">
+                                <span>Automatically Accept</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="routeLocalAuto" value="auto-reject" class="setting-radio" id="routeLocalReject">
+                                <span>Automatically Reject</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="routeLocalAuto" value="manual" class="setting-radio" id="routeLocalManual" checked>
+                                <span>Manual Review (Require Approval)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section-card">
+                        <h3 style="font-size: 1.2rem; font-weight: 700; color: #01386A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-map-marked-alt" style="color: #17a2b8;"></i>
+                            Route-Based Bookings - Long Distance
+                        </h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="radio" name="routeLongAuto" value="auto-accept" class="setting-radio" id="routeLongAccept">
+                                <span>Automatically Accept</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="routeLongAuto" value="auto-reject" class="setting-radio" id="routeLongReject">
+                                <span>Automatically Reject</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="routeLongAuto" value="manual" class="setting-radio" id="routeLongManual" checked>
+                                <span>Manual Review (Require Approval)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section-card">
+                        <h3 style="font-size: 1.2rem; font-weight: 700; color: #01386A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-map-marked-alt" style="color: #6f42c1;"></i>
+                            Custom Trip Bookings
+                        </h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="radio" name="customAuto" value="auto-accept" class="setting-radio" id="customAccept">
+                                <span>Automatically Accept</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="customAuto" value="auto-reject" class="setting-radio" id="customReject">
+                                <span>Automatically Reject</span>
+                            </label>
+                            <label class="setting-label">
+                                <input type="radio" name="customAuto" value="manual" class="setting-radio" id="customManual" checked>
+                                <span>Manual Review (Require Approval)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button class="btn-action btn-primary" onclick="saveAutoSettings()" style="padding: 0.75rem 2rem;">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Detail Modal -->
+    <div id="bookingModal" class="booking-modal">
+        <div class="booking-modal-content">
+            <div class="booking-modal-header">
+                <h2 id="modalTitle">
+                    <i class="fas fa-calendar-check"></i>
+                    Booking Details
+                </h2>
+                <span class="close-modal" onclick="closeBookingModal()">&times;</span>
+            </div>
+            <div class="booking-modal-body" id="modalBody">
+                <!-- Content will be dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Script -->
+    <script src="../../js/authentication/logout.js"></script>
+    <script src="owner-bookings-data.js"></script>
+    <script src="owner-bookings-functions.js"></script>
+
+    <script>
+        // Store bookings globally
+        let allBookings = [];
+        let autoSettings = {
+            routeLocal: 'manual',
+            routeLong: 'manual',
+            custom: 'manual'
+        };
+
+        // Load auto settings from localStorage
+        function loadAutoSettings() {
+            const saved = localStorage.getItem('ownerAutoSettings');
+            if (saved) {
+                autoSettings = JSON.parse(saved);
+                // Update radio buttons
+                document.getElementById('routeLocalAccept').checked = autoSettings.routeLocal === 'auto-accept';
+                document.getElementById('routeLocalReject').checked = autoSettings.routeLocal === 'auto-reject';
+                document.getElementById('routeLocalManual').checked = autoSettings.routeLocal === 'manual';
+                document.getElementById('routeLongAccept').checked = autoSettings.routeLong === 'auto-accept';
+                document.getElementById('routeLongReject').checked = autoSettings.routeLong === 'auto-reject';
+                document.getElementById('routeLongManual').checked = autoSettings.routeLong === 'manual';
+                document.getElementById('customAccept').checked = autoSettings.custom === 'auto-accept';
+                document.getElementById('customReject').checked = autoSettings.custom === 'auto-reject';
+                document.getElementById('customManual').checked = autoSettings.custom === 'manual';
+            }
+        }
+
+        // Save auto settings
+        function saveAutoSettings() {
+            autoSettings.routeLocal = document.querySelector('input[name="routeLocalAuto"]:checked').value;
+            autoSettings.routeLong = document.querySelector('input[name="routeLongAuto"]:checked').value;
+            autoSettings.custom = document.querySelector('input[name="customAuto"]:checked').value;
+            localStorage.setItem('ownerAutoSettings', JSON.stringify(autoSettings));
+            alert('Auto-settings saved successfully!');
+        }
+        // Navigation functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexDecrease() {
+            // Function for navigation link clicks
+        }
+
+        // Check authentication status
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile') || 
+                              localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            
+            if (isLoggedIn) {
+                if (authButtons) authButtons.style.display = 'none';
+                if (fullNav) fullNav.style.display = 'flex';
+            } else {
+                if (authButtons) authButtons.style.display = 'flex';
+                if (fullNav) fullNav.style.display = 'none';
+            }
+
+            loadBookings();
+        });
+
+        function showBookingTab(tabName) {
+            // Hide all tab content sections
+            document.querySelectorAll('.tab-content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.booking-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(`${tabName}-bookings`).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        function loadBookings() {
+            // Load comprehensive bookings
+            allBookings = createComprehensiveBookings();
+            
+            // Apply auto-settings
+            allBookings.forEach(booking => {
+                if (booking.status === 'pending') {
+                    let autoAction = null;
+                    if (booking.type === 'route-based') {
+                        if (booking.routeType === 'local') {
+                            autoAction = autoSettings.routeLocal;
+                        } else if (booking.routeType === 'long-distance') {
+                            autoAction = autoSettings.routeLong;
+                        }
+                    } else if (booking.type === 'custom-trip') {
+                        autoAction = autoSettings.custom;
+                    }
+                    
+                    if (autoAction === 'auto-accept') {
+                        booking.status = 'confirmed';
+                    } else if (autoAction === 'auto-reject') {
+                        booking.status = 'cancelled';
+                    }
+                }
+            });
+
+            displayBookings(allBookings);
+        }
+
+        function displayBookings(bookings) {
+            const pending = bookings.filter(b => b.status === 'pending');
+            const upcoming = bookings.filter(b => b.status === 'confirmed');
+            const historical = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+
+            displayBookingList('pendingBookingsList', pending);
+            displayBookingList('upcomingBookingsList', upcoming);
+            displayBookingList('historicalBookingsList', historical);
+        }
+
+        function displayBookingList(containerId, bookings) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (bookings.length === 0) {
+                container.innerHTML = `
+                    <div class="no-bookings">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>No bookings found in this category.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bookings.map(booking => createBookingCard(booking)).join('');
+        }
+
+        // Make functions globally accessible
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.topNavZIndexDecrease = topNavZIndexDecrease;
+        window.showBookingTab = showBookingTab;
+        window.saveAutoSettings = saveAutoSettings;
+        window.acceptBooking = acceptBooking;
+        window.declineBooking = declineBooking;
+        window.cancelBooking = cancelBooking;
+        window.viewBookingDetails = viewBookingDetails;
+        window.contactCustomer = contactCustomer;
+        window.closeBookingModal = closeBookingModal;
+    </script>
+</body>
+</html>
+
