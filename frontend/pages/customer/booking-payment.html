@@ -7,6 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="stylesheet" href="../../css/topnav.css" />
     <link rel="stylesheet" href="../../css/feedback.css">
     <link rel="stylesheet" href="../../css/booking.css">
     <link rel="stylesheet" href="../../css/booking-payment.css">
@@ -244,6 +245,86 @@
           font-size: 1rem;
         }
       }
+
+      /* Progress Indicator Styling */
+      .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5rem;
+        margin-bottom: 4rem;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3.5rem 2.5rem;
+        border-radius: 15px;
+      }
+
+      .progress-indicator .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-indicator .step .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: #999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.4s ease;
+        border: 4px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-indicator .step.active .step-number,
+      .progress-indicator .step.completed .step-number {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        transform: scale(1.15);
+        box-shadow: 0 8px 25px rgba(255, 213, 47, 0.4);
+      }
+
+      .progress-indicator .step .step-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .progress-indicator .step.active .step-label,
+      .progress-indicator .step.completed .step-label {
+        color: #01386A;
+        font-weight: 700;
+      }
+
+      .progress-indicator .progress-line {
+        flex: 1;
+        height: 4px;
+        background: #e0e0e0;
+        margin: 0 1rem;
+        position: relative;
+        max-width: 100px;
+      }
+
+      .progress-indicator .progress-line.completed {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+      }
+
+      @media (max-width: 768px) {
+        .progress-indicator {
+          gap: 2rem;
+          padding: 2rem 1rem;
+        }
+      }
     </style>
 </head>
 <body class="has-map-layout">
@@ -317,6 +398,29 @@
         <!-- Main Content -->
         <div class="main-content">
             <div class="payment-container">
+                <!-- Progress Indicator -->
+                <div class="progress-indicator">
+                    <div class="step completed">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Trip Info</div>
+                    </div>
+                    <div class="progress-line completed"></div>
+                    <div class="step completed">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Select Vehicle</div>
+                    </div>
+                    <div class="progress-line completed"></div>
+                    <div class="step completed">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Passenger Info</div>
+                    </div>
+                    <div class="progress-line completed"></div>
+                    <div class="step active">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Payment</div>
+                    </div>
+                </div>
+
                 <!-- Payment Header -->
                 <div class="payment-header">
                     <h1><i class="ri-bank-card-line"></i> Complete Your Payment</h1>
@@ -504,8 +608,8 @@
                         <button class="btn btn-payment" id="pay-button" onclick="processPayment()" disabled>
                             <i class="ri-bank-card-line"></i> Pay Now
                         </button>
-                        <button class="btn btn-secondary" onclick="window.history.back()">
-                            <i class="ri-arrow-left-line"></i> Go Back
+                        <button class="btn btn-secondary" onclick="goBackToPassengerInfo()">
+                            <i class="ri-arrow-left-line"></i> Back to Passenger Info
                         </button>
                     </div>
                 </div>
@@ -531,5 +635,16 @@
     <script type="module" src="../../js/customer/booking-payment.js"></script>
     <script type="module" src="../../js/authentication/logout.js"></script>
     
+    <script>
+        // Function to go back to passenger info page
+        function goBackToPassengerInfo() {
+            // Navigate to passenger info page
+            // The page will automatically restore data from sessionStorage/localStorage
+            window.location.href = 'booking-passenger-info.html';
+        }
+        
+        // Make function globally available
+        window.goBackToPassengerInfo = goBackToPassengerInfo;
+    </script>
 </body>
 </html>

@@ -179,7 +179,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     existing_route_id INT NULL, -- Set when booking_mode = 'route'
     booking_mode ENUM('route', 'custom') NOT NULL DEFAULT 'route',
     booking_status ENUM('pending', 'confirmed', 'paid', 'cancelled', 'completed', 'refunded') DEFAULT 'pending',
-    passenger_count INT DEFAULT 1,
+    passenger_count INT DEFAULT 0,
+    parcel_count INT DEFAULT 0,
+    total_seats_available INT NOT NULL DEFAULT 15,
     payment_transaction_id VARCHAR(255),
     total_amount_needed DECIMAL(10,2) NOT NULL,
     total_amount_paid DECIMAL(10,2) NOT NULL,

@@ -189,7 +189,7 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             border: 1px solid #e9ecef;
-            min-height: 350px;
+            min-height: 470px;
             width: 100%;
             max-width: 100%;
             display: flex;
@@ -204,13 +204,30 @@
         }
 
         .vehicle-image {
-            height: 100px;
+            height: 220px;
             background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1.8rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .vehicle-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .vehicle-image .image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .vehicle-info {
@@ -346,7 +363,7 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-height: 350px;
+            min-height: 470px;
         }
 
         .add-vehicle-card:hover {
@@ -449,29 +466,14 @@
                 <div class="bar"></div>
             </div>
 
-            <!-- Navigation links -->
-            <div class="nav-links" id="mobileMenu">
-                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
-                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
-                <!-- Login/Signup buttons for non-logged in users -->
-                <div id="authButtons" class="auth-buttons">
-                    <a href="../authentication/login.html" class="btn-login">Login</a>
-                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
-                </div>
-                <!-- Full navigation for logged in users -->
-                <div id="fullNav" class="full-navigation" style="display: none;">
-                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
-                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
-                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" class="active" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
-                    <a href="../driver/driver-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #01386A; color: #fff; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Driver Portal</a>
-                    <a href="#" class="nav-logout-btn" id="logoutBtn" onclick="topNavZIndexDecrease()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Logout
-                    </a>
-                </div>
-            </div>
+        <!-- Navigation links -->
+        <div class="nav-links" id="mobileMenu">
+            <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+            <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+            <a href="../authentication/profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
+        </div>
         </div>
     </nav>
 
@@ -495,7 +497,7 @@
     </div>
 
     <!-- Logout Script -->
-    <script src="../../js/authentication/logout.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
 
     <script>
         // Navigation functions
@@ -527,8 +529,61 @@
             loadVehicles();
         });
 
+        // Initialize sample vehicles if none exist
+        function initializeSampleVehicles() {
+            const existingVehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
+            if (existingVehicles.length === 0) {
+                const sampleVehicles = [
+                    {
+                        id: 'sample-1',
+                        vehicleName: 'Toyota Quantum 16-Seater',
+                        vehicleType: 'Minibus',
+                        registration: 'ABC 123 GP',
+                        capacity: 16,
+                        status: 'active'
+                    },
+                    {
+                        id: 'sample-2',
+                        vehicleName: 'Mercedes Sprinter 22-Seater',
+                        vehicleType: 'Bus',
+                        registration: 'XYZ 789 GP',
+                        capacity: 22,
+                        status: 'active'
+                    },
+                    {
+                        id: 'sample-3',
+                        vehicleName: 'Toyota Hiace 14-Seater',
+                        vehicleType: 'Minibus',
+                        registration: 'DEF 456 GP',
+                        capacity: 14,
+                        status: 'pending'
+                    },
+                    {
+                        id: 'sample-4',
+                        vehicleName: 'Ford Transit 12-Seater',
+                        vehicleType: 'Minibus',
+                        registration: 'GHI 321 GP',
+                        capacity: 12,
+                        status: 'inactive'
+                    },
+                    {
+                        id: 'sample-5',
+                        vehicleName: 'Isuzu NPR 18-Seater',
+                        vehicleType: 'Minibus',
+                        registration: 'JKL 654 GP',
+                        capacity: 18,
+                        status: 'active'
+                    }
+                ];
+                localStorage.setItem('ownerVehicles', JSON.stringify(sampleVehicles));
+            }
+        }
+
         // Load vehicles from localStorage
         function loadVehicles() {
+            // Initialize sample vehicles if none exist
+            initializeSampleVehicles();
+            
             const vehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
             const vehicleGrid = document.getElementById('vehicleGridContainer');
             
@@ -572,10 +627,21 @@
             const statusText = vehicle.status === 'pending' ? 'Pending Approval' : 
                              vehicle.status === 'active' ? 'Active' : 'Inactive';
             
+            // Get the main vehicle image (first image or main image)
+            const vehicleImage = vehicle.images && vehicle.images.length > 0 
+                ? (vehicle.mainImageIndex !== undefined && vehicle.images[vehicle.mainImageIndex]
+                    ? vehicle.images[vehicle.mainImageIndex]
+                    : vehicle.images[0])
+                : null;
+            
+            const imageDisplay = vehicleImage 
+                ? `<img src="${escapeHtml(vehicleImage.url || vehicleImage)}" alt="${escapeHtml(vehicle.vehicleName || 'Vehicle')}" onerror="this.parentElement.innerHTML='<div class=\\'image-placeholder\\'><i class=\\'fas fa-bus\\'></i></div>'">`
+                : `<div class="image-placeholder"><i class="fas fa-bus"></i></div>`;
+            
             return `
                 <div class="vehicle-card">
                     <div class="vehicle-image">
-                        <i class="fas fa-bus"></i>
+                        ${imageDisplay}
                     </div>
                     <div class="vehicle-info">
                         <h3 class="vehicle-name">${escapeHtml(vehicle.vehicleName || 'Unnamed Vehicle')}</h3>

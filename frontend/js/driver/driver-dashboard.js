@@ -54,10 +54,14 @@ function loadDriverData() {
         rating: localStorage.getItem('driverRating') || '4.8'
     };
     
-    // Update stat elements
-    document.getElementById('totalTrips').textContent = stats.totalTrips;
-    document.getElementById('hoursWorked').textContent = stats.hoursWorked;
-    document.getElementById('rating').textContent = stats.rating;
+    // Update stat elements (only if they exist)
+    const totalTripsEl = document.getElementById('totalTrips');
+    const hoursWorkedEl = document.getElementById('hoursWorked');
+    const ratingEl = document.getElementById('rating');
+    
+    if (totalTripsEl) totalTripsEl.textContent = stats.totalTrips;
+    if (hoursWorkedEl) hoursWorkedEl.textContent = stats.hoursWorked;
+    if (ratingEl) ratingEl.textContent = stats.rating;
     
     // Initialize date/time display
     updateDateTime();

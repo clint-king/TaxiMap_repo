@@ -19,6 +19,7 @@
     top: 0;
     left: 0;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: sans-serif;
   }
   
   .nav-container {
@@ -37,14 +38,18 @@
     margin-right: auto;
   }
   
-  .nav-links a {
+  .nav-links a{
     color: white;
     text-decoration: none;
     font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
   }
   
   .nav-links a:hover {
-    text-decoration: underline;
+    background-color: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
   }
   
   /* Active/Current page link highlighting */

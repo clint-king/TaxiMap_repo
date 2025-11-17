@@ -878,27 +878,13 @@
             </div>
 
             <!-- Navigation links -->
-            <div class="nav-links" id="mobileMenu">
+               <!-- Navigation links -->
+               <div class="nav-links" id="mobileMenu">
                 <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
                 <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
-                <!-- Login/Signup buttons for non-logged in users -->
-                <div id="authButtons" class="auth-buttons">
-                    <a href="../authentication/login.html" class="btn-login">Login</a>
-                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
-                </div>
-                <!-- Full navigation for logged in users -->
-                <div id="fullNav" class="full-navigation" style="display: none;">
-                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
-                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
-                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-                    <a href="owner-dashboard.html" onclick="topNavZIndexDecrease()" class="active" style="background: #ffc107; color: #000; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Owner Dashboard</a>
-                    <a href="../driver/driver-dashboard.html" onclick="topNavZIndexDecrease()" style="background: #01386A; color: #fff; font-weight: 600; border-radius: 5px; padding: 5px 10px;">Driver Portal</a>
-                    <a href="#" class="nav-logout-btn" id="logoutBtn" onclick="topNavZIndexDecrease()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Logout
-                    </a>
-                </div>
+                <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                <a href="profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
             </div>
         </div>
     </nav>
@@ -1052,7 +1038,7 @@
     </div>
 
     <!-- Logout Script -->
-    <script src="../../js/authentication/logout.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
     <script src="owner-bookings-data.js"></script>
     <script src="owner-bookings-functions.js"></script>
 

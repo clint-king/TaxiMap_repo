@@ -161,6 +161,10 @@ if (loginSubmit) {
       if (response.data.user) {
         localStorage.setItem('userProfile', JSON.stringify(response.data.user));
       }
+      // Persist user type for role-based navigation
+      if (userType) {
+        localStorage.setItem('userType', userType);
+      }
 
       // Update logout button visibility
       checkAuthStatus();
@@ -188,6 +192,10 @@ if (loginSubmit) {
           console.log('No pending booking data found, redirecting to client page');
           window.location.href = '/pages/customer/client.html';
         }
+      } else if (userType === 'driver') {
+        window.location.href = '/pages/driver/driver-dashboard.html';
+      } else if (userType === 'owner') {
+        window.location.href = '/pages/Owner/owner-dashboard.html';
       } else {
         if (errorEl) errorEl.textContent = 'Unknown user type.';
       }

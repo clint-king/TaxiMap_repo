@@ -46,7 +46,6 @@ export default defineConfig({
         'owner-vehicle-post': resolve(__dirname, 'pages/Owner/owner-vehicle-post.html'),
         'owner-portal': resolve(__dirname, 'pages/Owner/owner-portal.html'),
         'owner-booking-notification': resolve(__dirname, 'pages/Owner/owner-booking-notification.html'),
-        'owner-analytics': resolve(__dirname, 'pages/Owner/owner-analytics.html'),
         
         // Other pages
         popup: resolve(__dirname, 'popup.html'),

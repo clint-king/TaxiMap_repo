@@ -12,8 +12,8 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
     <link rel="manifest" href="../../assets/icons/site.webmanifest">
     
-    <!-- Mapbox CSS -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <!-- Google Maps API -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASSRp8maLZsB0W6FGYlDPck8AO5riY_vg&libraries=places,geometry"></script>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../../css/booking.css">
@@ -645,16 +645,6 @@
       }
 
       /* Button color variants */
-      .btn-pay {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-      }
-
-      .btn-pay:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-      }
-
       .btn-view {
         background: #007bff;
         color: white;
@@ -682,26 +672,6 @@
 
       .btn-cancel:hover {
         background: #c82333;
-        transform: translateY(-2px);
-      }
-
-      .btn-locations {
-        background: #17a2b8;
-        color: white;
-      }
-
-      .btn-locations:hover {
-        background: #138496;
-        transform: translateY(-2px);
-      }
-
-      .btn-share {
-        background: #ffc107;
-        color: #333;
-      }
-
-      .btn-share:hover {
-        background: #e0a800;
         transform: translateY(-2px);
       }
 
@@ -1087,7 +1057,6 @@
 
     <!-- Scripts -->
     <script  type="module" src="../../js/tonav.js"></script>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script type="module" src="../../js/customer/booking-trip-info.js"></script>
     <script type="module" src="../../js/authentication/logout.js"></script>
     
@@ -1223,17 +1192,8 @@
             let actionsHTML = '';
             if (status === 'pending') {
                 actionsHTML = `
-                    <button class="btn-action btn-pay" onclick="continuePayment('${booking.id}')">
-                        <i class="fas fa-credit-card"></i> Pay Now
-                    </button>
                     <button class="btn-action btn-passengers" onclick="managePassengers('${booking.id}', 'pending')">
                         <i class="fas fa-users"></i> Manage Passengers
-                    </button>
-                    <button class="btn-action btn-locations" onclick="editPickupDestination('${booking.id}', 'pending')">
-                        <i class="fas fa-map-marker-alt"></i> Edit Locations
-                    </button>
-                    <button class="btn-action btn-share" onclick="sharePaymentLink('${booking.id}', 'pending')">
-                        <i class="fas fa-share-alt"></i> Share Payment
                     </button>
                     <button class="btn-action btn-cancel" onclick="cancelBooking('${booking.id}')">
                         <i class="fas fa-times"></i> Cancel
@@ -1244,8 +1204,8 @@
                     <button class="btn-action btn-view" onclick="viewBookingDetails('${booking.id}')">
                         <i class="fas fa-eye"></i> View Details
                     </button>
-                    <button class="btn-action btn-passengers" onclick="managePassengers('${booking.id}', 'confirmed')">
-                        <i class="fas fa-users"></i> Manage Passengers
+                    <button class="btn-action btn-passengers" onclick="viewPassengers('${booking.id}', 'confirmed')">
+                        <i class="fas fa-users"></i> View Passengers
                     </button>
                     <button class="btn-action btn-locations" onclick="viewPickupDestination('${booking.id}', 'confirmed')">
                         <i class="fas fa-map-marker-alt"></i> View Locations
@@ -1264,9 +1224,6 @@
                     </button>
                     <button class="btn-action btn-locations" onclick="viewPickupDestination('${booking.id}', 'completed')">
                         <i class="fas fa-map-marker-alt"></i> View Locations
-                    </button>
-                    <button class="btn-action btn-contact" onclick="rateTrip('${booking.id}')">
-                        <i class="fas fa-star"></i> Rate Trip
                     </button>
                 `;
             }
@@ -1385,11 +1342,6 @@
         }
         
         // Booking Actions
-        function continuePayment(bookingId) {
-            sessionStorage.setItem('continuePaymentId', bookingId);
-            window.location.href = 'booking-payment.html';
-        }
-        
         function cancelBooking(bookingId) {
             if (confirm('Are you sure you want to cancel this booking?')) {
                 const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
@@ -1409,11 +1361,6 @@
             alert('Contacting driver for booking: ' + bookingId);
         }
         
-        function rateTrip(bookingId) {
-            // In a real app, this would open a rating modal
-            alert('Rating trip for booking: ' + bookingId);
-        }
-
         // Passenger Management Functions
         function managePassengers(bookingId, status) {
             // Find the booking
@@ -1445,17 +1392,25 @@
             window.location.href = 'booking-passenger-management.html';
         }
 
-        function viewPassengers(bookingId) {
-            // Find the booking in history
+        function viewPassengers(bookingId, status) {
+            // Find the booking in confirmed or history bookings
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
             const historyBookings = JSON.parse(localStorage.getItem('historyBookings') || '[]');
-            const booking = historyBookings.find(b => b.id === bookingId);
+            
+            let booking = null;
+            if (status === 'confirmed') {
+                booking = confirmedBookings.find(b => b.id === bookingId);
+            } else {
+                // Default to history bookings if status is not provided or is 'completed'
+                booking = historyBookings.find(b => b.id === bookingId);
+            }
             
             if (!booking) {
                 alert('Booking not found');
                 return;
             }
             
-            // Show passenger list in a modal
+            // Show passenger list in a modal (read-only)
             showPassengerListModal(booking);
         }
 
@@ -1514,27 +1469,6 @@
         }
 
         // Location Management Functions
-        function editPickupDestination(bookingId, status) {
-            // Find the booking
-            const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
-            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-            
-            let booking = null;
-            if (status === 'pending') {
-                booking = pendingBookings.find(b => b.id === bookingId);
-            } else if (status === 'confirmed') {
-                booking = confirmedBookings.find(b => b.id === bookingId);
-            }
-            
-            if (!booking) {
-                alert('Booking not found');
-                return;
-            }
-            
-            // Show location editing modal
-            showLocationEditModal(booking, bookingId, status);
-        }
-
         function viewPickupDestination(bookingId, status) {
             // Find the booking
             const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
@@ -1554,182 +1488,6 @@
             
             // Show location viewing modal
             showLocationViewModal(booking, bookingId, status);
-        }
-
-        function showLocationEditModal(booking, bookingId, status) {
-            const modalHTML = `
-                <div class="modal-overlay" id="locationEditModal">
-                    <div class="modal-content location-edit-modal">
-                        <div class="modal-header">
-                            <h2><i class="fas fa-map-marker-alt"></i> Edit Pickup & Destination</h2>
-                            <button class="close-btn" onclick="closeLocationEditModal()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="modal-body">
-                            <div class="booking-summary">
-                                <h3><i class="fas fa-info-circle"></i> Booking Summary</h3>
-                                <div class="booking-details">
-                                    <div class="detail-item">
-                                        <span class="detail-label">Vehicle</span>
-                                        <span class="detail-value">${booking.vehicle.name}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Date</span>
-                                        <span class="detail-value">${booking.trip.date}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Time</span>
-                                        <span class="detail-value">${booking.trip.time}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-section">
-                                <h3 class="section-title">
-                                    <i class="fas fa-map"></i> Enter Your Locations
-                                </h3>
-                                
-                                <div class="input-group">
-                                    <label for="editPickupLocation">Pickup Location</label>
-                                    <input type="text" id="editPickupLocation" name="pickupLocation" 
-                                           value="${booking.trip.pickup || ''}" placeholder="Enter pickup address">
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="editDestinationLocation">Destination Location</label>
-                                    <input type="text" id="editDestinationLocation" name="destinationLocation" 
-                                           value="${booking.trip.destination || ''}" placeholder="Enter destination address">
-                                </div>
-
-                                <div class="map-container" id="editMap" style="height: 300px; border-radius: 8px; overflow: hidden; margin: 1rem 0;"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" onclick="closeLocationEditModal()">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="saveLocationChanges('${bookingId}', '${status}')">
-                                <i class="fas fa-save"></i> Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
-            // Initialize map after modal is added
-            setTimeout(() => {
-                initializeLocationEditMap();
-            }, 100);
-        }
-
-        function closeLocationEditModal() {
-            const modal = document.getElementById('locationEditModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        function initializeLocationEditMap() {
-            // Initialize map centered on South Africa
-            const map = new mapboxgl.Map({
-                container: 'editMap',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [28.0475, -26.2041], // Johannesburg, South Africa
-                zoom: 10
-            });
-
-            // Add navigation controls
-            map.addControl(new mapboxgl.NavigationControl());
-
-            // Add click event to map
-            map.on('click', function(e) {
-                const coordinates = e.lngLat;
-                
-                // Determine which location to update based on which input is focused
-                const activeInput = document.activeElement;
-                if (activeInput.id === 'editPickupLocation') {
-                    updateEditPickupMarker(coordinates, map);
-                } else if (activeInput.id === 'editDestinationLocation') {
-                    updateEditDestinationMarker(coordinates, map);
-                }
-            });
-
-            // Store map reference for marker updates
-            window.editMap = map;
-            window.editPickupMarker = null;
-            window.editDestinationMarker = null;
-        }
-
-        function updateEditPickupMarker(coordinates, map) {
-            // Remove existing pickup marker
-            if (window.editPickupMarker) {
-                window.editPickupMarker.remove();
-            }
-
-            // Add new pickup marker
-            window.editPickupMarker = new mapboxgl.Marker({ color: '#28a745' })
-                .setLngLat([coordinates.lng, coordinates.lat])
-                .setPopup(new mapboxgl.Popup().setHTML('<b>Pickup Location</b>'))
-                .addTo(map);
-
-            // Update input field
-            document.getElementById('editPickupLocation').value = `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`;
-        }
-
-        function updateEditDestinationMarker(coordinates, map) {
-            // Remove existing destination marker
-            if (window.editDestinationMarker) {
-                window.editDestinationMarker.remove();
-            }
-
-            // Add new destination marker
-            window.editDestinationMarker = new mapboxgl.Marker({ color: '#dc3545' })
-                .setLngLat([coordinates.lng, coordinates.lat])
-                .setPopup(new mapboxgl.Popup().setHTML('<b>Destination Location</b>'))
-                .addTo(map);
-
-            // Update input field
-            document.getElementById('editDestinationLocation').value = `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`;
-        }
-
-        function saveLocationChanges(bookingId, status) {
-            const pickupLocation = document.getElementById('editPickupLocation').value;
-            const destinationLocation = document.getElementById('editDestinationLocation').value;
-
-            if (!pickupLocation || !destinationLocation) {
-                alert('Please enter both pickup and destination locations.');
-                return;
-            }
-
-            // Update the booking with new locations
-            if (status === 'pending') {
-                const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
-                const bookingIndex = pendingBookings.findIndex(b => b.id === bookingId);
-                if (bookingIndex !== -1) {
-                    pendingBookings[bookingIndex].trip.pickup = pickupLocation;
-                    pendingBookings[bookingIndex].trip.destination = destinationLocation;
-                    localStorage.setItem('pendingBookings', JSON.stringify(pendingBookings));
-                }
-            } else if (status === 'confirmed') {
-                const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
-                const bookingIndex = confirmedBookings.findIndex(b => b.id === bookingId);
-                if (bookingIndex !== -1) {
-                    confirmedBookings[bookingIndex].trip.pickup = pickupLocation;
-                    confirmedBookings[bookingIndex].trip.destination = destinationLocation;
-                    localStorage.setItem('confirmedBookings', JSON.stringify(confirmedBookings));
-                }
-            }
-
-            alert('Locations updated successfully!');
-            closeLocationEditModal();
-            
-            // Refresh the bookings display
-            loadBookings();
         }
 
         function showLocationViewModal(booking, bookingId, status) {
@@ -1834,204 +1592,79 @@
         }
 
         function initializeLocationViewMap(booking) {
-            // Initialize map centered on South Africa
-            const map = new mapboxgl.Map({
-                container: 'viewMap',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [28.0475, -26.2041], // Johannesburg, South Africa
-                zoom: 10
+            // Initialize Google Maps centered on South Africa
+            const map = new google.maps.Map(document.getElementById('viewMap'), {
+                center: { lat: -26.2041, lng: 28.0475 }, // Johannesburg, South Africa
+                zoom: 10,
+                mapTypeId: 'roadmap'
             });
 
-            // Add navigation controls
-            map.addControl(new mapboxgl.NavigationControl());
+            const bounds = new google.maps.LatLngBounds();
+            let hasMarkers = false;
 
             // Add markers for pickup and destination
             if (booking.trip.pickup) {
                 // This would typically geocode the address to get coordinates
                 // For demo purposes, we'll use approximate coordinates
-                const pickupCoords = [28.0475, -26.2041]; // Johannesburg area
+                const pickupCoords = { lat: -26.2041, lng: 28.0475 }; // Johannesburg area
                 
-                const pickupMarker = new mapboxgl.Marker({ color: '#28a745' })
-                    .setLngLat([pickupCoords[0], pickupCoords[1]])
-                    .setPopup(new mapboxgl.Popup().setHTML(`
-                        <b>Pickup Location</b><br>
-                        ${booking.trip.pickup}
-                    `))
-                    .addTo(map);
+                const pickupMarker = new google.maps.Marker({
+                    position: pickupCoords,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#28a745',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 3
+                    },
+                    title: 'Pickup Location'
+                });
+
+                const pickupInfoWindow = new google.maps.InfoWindow({
+                    content: `<b>Pickup Location</b><br>${booking.trip.pickup}`
+                });
+                pickupMarker.addListener('click', () => pickupInfoWindow.open(map, pickupMarker));
+                
+                bounds.extend(pickupCoords);
+                hasMarkers = true;
             }
 
             if (booking.trip.destination) {
                 // This would typically geocode the address to get coordinates
                 // For demo purposes, we'll use approximate coordinates
-                const destCoords = [18.4241, -33.9249]; // Cape Town area
+                const destCoords = { lat: -33.9249, lng: 18.4241 }; // Cape Town area
                 
-                const destinationMarker = new mapboxgl.Marker({ color: '#dc3545' })
-                    .setLngLat([destCoords[0], destCoords[1]])
-                    .setPopup(new mapboxgl.Popup().setHTML(`
-                        <b>Destination Location</b><br>
-                        ${booking.trip.destination}
-                    `))
-                    .addTo(map);
+                const destinationMarker = new google.maps.Marker({
+                    position: destCoords,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#dc3545',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 3
+                    },
+                    title: 'Destination Location'
+                });
+
+                const destInfoWindow = new google.maps.InfoWindow({
+                    content: `<b>Destination Location</b><br>${booking.trip.destination}`
+                });
+                destinationMarker.addListener('click', () => destInfoWindow.open(map, destinationMarker));
+                
+                bounds.extend(destCoords);
+                hasMarkers = true;
             }
 
             // Fit map to show both markers if both exist
-            if (booking.trip.pickup && booking.trip.destination) {
-                const bounds = new mapboxgl.LngLatBounds();
-                bounds.extend([28.0475, -26.2041]); // Pickup coordinates
-                bounds.extend([18.4241, -33.9249]); // Destination coordinates
-                map.fitBounds(bounds, { padding: 50 });
+            if (hasMarkers) {
+                map.fitBounds(bounds);
             }
         }
 
-        // Share Payment Link Functions
-        function sharePaymentLink(bookingId, status) {
-            // Find the booking
-            const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
-            const booking = pendingBookings.find(b => b.id === bookingId);
-            
-            if (!booking) {
-                alert('Booking not found');
-                return;
-            }
-            
-            // Generate payment link
-            const paymentLink = generatePaymentLink(bookingId);
-            
-            // Show share modal
-            showShareModal(booking, paymentLink);
-        }
-
-        function generatePaymentLink(bookingId) {
-            // Generate a unique payment link
-            const baseUrl = window.location.origin + window.location.pathname.replace('booking-trip-info.html', '');
-            const paymentToken = btoa(bookingId + '_' + Date.now()); // Simple encoding
-            return `${baseUrl}payment-link.html?token=${paymentToken}&booking=${bookingId}`;
-        }
-
-        function showShareModal(booking, paymentLink) {
-            const modalHTML = `
-                <div class="modal-overlay" id="shareModal">
-                    <div class="modal-content share-modal">
-                        <div class="modal-header">
-                            <h2><i class="fas fa-share-alt"></i> Share Payment Link</h2>
-                            <button class="close-btn" onclick="closeShareModal()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="modal-body">
-                            <div class="booking-summary">
-                                <h3><i class="fas fa-info-circle"></i> Booking Details</h3>
-                                <div class="booking-details">
-                                    <div class="detail-item">
-                                        <span class="detail-label">Vehicle</span>
-                                        <span class="detail-value">${booking.vehicle.name}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Date</span>
-                                        <span class="detail-value">${booking.trip.date}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Time</span>
-                                        <span class="detail-value">${booking.trip.time}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Amount</span>
-                                        <span class="detail-value">${booking.totalAmount}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="share-section">
-                                <h3><i class="fas fa-link"></i> Payment Link</h3>
-                                <p class="share-description">
-                                    Share this link with passengers or sponsors to allow them to pay for this trip.
-                                </p>
-                                
-                                <div class="link-container">
-                                    <input type="text" id="paymentLinkInput" value="${paymentLink}" readonly class="link-input">
-                                    <button class="btn btn-copy" onclick="copyPaymentLink()">
-                                        <i class="fas fa-copy"></i> Copy
-                                    </button>
-                                </div>
-                                
-                                <div class="share-options">
-                                    <h4>Share via:</h4>
-                                    <div class="share-buttons">
-                                        <button class="btn btn-whatsapp" onclick="shareViaWhatsApp('${paymentLink}')">
-                                            <i class="fab fa-whatsapp"></i> WhatsApp
-                                        </button>
-                                        <button class="btn btn-email" onclick="shareViaEmail('${paymentLink}')">
-                                            <i class="fas fa-envelope"></i> Email
-                                        </button>
-                                        <button class="btn btn-sms" onclick="shareViaSMS('${paymentLink}')">
-                                            <i class="fas fa-sms"></i> SMS
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" onclick="closeShareModal()">
-                                <i class="fas fa-times"></i> Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-        }
-
-        function closeShareModal() {
-            const modal = document.getElementById('shareModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        function copyPaymentLink() {
-            const linkInput = document.getElementById('paymentLinkInput');
-            linkInput.select();
-            linkInput.setSelectionRange(0, 99999); // For mobile devices
-            
-            try {
-                document.execCommand('copy');
-                // Show success message
-                const copyBtn = document.querySelector('.btn-copy');
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                copyBtn.style.background = '#28a745';
-                
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                    copyBtn.style.background = '';
-                }, 2000);
-            } catch (err) {
-                alert('Failed to copy link. Please copy manually.');
-            }
-        }
-
-        function shareViaWhatsApp(link) {
-            const message = `Please help pay for my taxi booking: ${link}`;
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        function shareViaEmail(link) {
-            const subject = 'Payment Request - Taxi Booking';
-            const body = `Please help pay for my taxi booking by clicking this link: ${link}`;
-            const emailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.location.href = emailUrl;
-        }
-
-        function shareViaSMS(link) {
-            const message = `Please help pay for my taxi booking: ${link}`;
-            const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-            window.location.href = smsUrl;
-        }
-        
         // Create sample bookings for demo
         function createSampleBookings() {
             console.log('Creating sample bookings with realistic passenger counts...');

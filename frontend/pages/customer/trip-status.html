@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Status | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../css/topnav.css" />
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: auto;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem 1rem;
+            overflow: visible;
+            min-height: auto;
+        }
+
+        .trip-status-page-container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: visible;
+            min-height: auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .page-header h1 {
+            color: #01386A;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .page-header h1 i {
+            color: #FFD52F;
+            font-size: 2.5rem;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .trip-status-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .trip-full-alert,
+        .trip-waiting-alert {
+            background: linear-gradient(135deg, #e6f3ff 0%, #d4edff 100%);
+            border: 3px solid #01386A;
+            border-radius: 18px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            animation: slideIn 0.5s ease;
+        }
+
+        .trip-waiting-alert {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border-color: #FFD52F;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(1, 56, 106, 0.3);
+        }
+
+        .alert-icon.waiting {
+            background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+            color: #01386A;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content h3 {
+            color: #01386A;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-content p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .trip-details-card {
+            background: white;
+            border-radius: 18px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 3px solid #e9ecef;
+        }
+
+        .trip-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .trip-card-header h3 {
+            color: #01386A;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trip-card-header h3 i {
+            color: #FFD52F;
+        }
+
+        .trip-status-badge {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .trip-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .trip-info-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .trip-info-item i {
+            color: #FFD52F;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .trip-info-item strong {
+            color: #01386A;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .trip-info-item p {
+            color: #666;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .trip-capacity-progress {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .capacity-progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            color: #01386A;
+            font-size: 1.1rem;
+        }
+
+        .capacity-progress-bar {
+            width: 100%;
+            height: 35px;
+            background: #dee2e6;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid #01386A;
+            position: relative;
+        }
+
+        .capacity-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD52F 0%, #FFC107 100%);
+            transition: width 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #01386A;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .trip-locations-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .locations-summary-section h4 {
+            color: #01386A;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .locations-summary-section h4 i {
+            color: #FFD52F;
+        }
+
+        .locations-summary-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .locations-summary-section li {
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .locations-summary-section li::before {
+            content: '\eb6a';
+            font-family: 'remixicon';
+            position: absolute;
+            left: 0.5rem;
+            color: #FFD52F;
+            font-size: 1.2rem;
+        }
+
+        .share-trip-card {
+            background: white;
+            border-radius: 18px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 3px solid #e9ecef;
+        }
+
+        .share-trip-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .share-trip-header h3 {
+            color: #01386A;
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .share-trip-header h3 i {
+            color: #FFD52F;
+        }
+
+        .share-trip-header p {
+            color: #666;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .share-link-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .share-link-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .share-link-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #f8f9fa;
+        }
+
+        .btn-copy-link {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-copy-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(1, 56, 106, 0.3);
+        }
+
+        .copy-feedback {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #28a745;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .share-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .share-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .share-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-color: #01386A;
+        }
+
+        .share-btn i {
+            font-size: 1.5rem;
+        }
+
+        .share-btn.whatsapp:hover {
+            background: #25D366;
+            color: white;
+            border-color: #25D366;
+        }
+
+        .share-btn.email:hover {
+            background: #01386A;
+            color: white;
+            border-color: #01386A;
+        }
+
+        .share-btn.sms:hover {
+            background: #FFD52F;
+            color: #01386A;
+            border-color: #FFD52F;
+        }
+
+        .share-btn.qr:hover {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+
+        .qr-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .qr-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-close-btn:hover {
+            background: #c82333;
+        }
+
+        .joined-passengers-card {
+            background: white;
+            border-radius: 18px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 3px solid #e9ecef;
+        }
+
+        .joined-passengers-card h3 {
+            color: #01386A;
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .joined-passengers-card h3 i {
+            color: #FFD52F;
+        }
+
+        .passenger-joined-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #FFD52F;
+        }
+
+        .passenger-joined-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .passenger-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .passenger-joined-details strong {
+            color: #01386A;
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .passenger-joined-details span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .passenger-count-badge {
+            background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+            color: #01386A;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .trip-map-section {
+            margin-bottom: 2rem;
+        }
+
+        .booking-type-seat {
+            background: linear-gradient(135deg, #e6f3ff 0%, #d4edff 100%);
+            border: 3px solid #01386A;
+            border-radius: 18px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .booking-type-seat i {
+            font-size: 4rem;
+            color: #01386A;
+            margin-bottom: 1rem;
+        }
+
+        .booking-type-seat h4 {
+            color: #01386A;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .booking-type-seat p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .parcel-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .parcel-card-status {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .parcel-header-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .parcel-header-status h4 {
+            color: #01386A;
+            font-size: 1.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .parcel-size-badge {
+            background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+            color: #01386A;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: capitalize;
+        }
+
+        .parcel-images-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .parcel-image-status {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .parcel-code-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .parcel-code-section h5 {
+            color: #01386A;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .parcel-secret-code {
+            background: white;
+            border: 3px solid #01386A;
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            letter-spacing: 0.2em;
+            margin: 0.75rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .parcel-qr-code {
+            margin-top: 1rem;
+        }
+
+        .parcel-qr-code img {
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .parcel-info-item {
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .parcel-info-item strong {
+            color: #01386A;
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .parcel-info-item span {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .active-trip-banner {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            border-radius: 18px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 3px solid #FFD52F;
+        }
+
+        .active-trip-content {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            color: white;
+        }
+
+        .active-trip-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .active-trip-info {
+            flex: 1;
+        }
+
+        .active-trip-info h3 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .active-trip-info h3 i {
+            color: #FFD52F;
+        }
+
+        .active-trip-info p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .active-trip-info p strong {
+            color: #FFD52F;
+        }
+
+        .active-trip-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .active-trip-stats span {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .active-trip-stats span i {
+            color: #FFD52F;
+            font-size: 1.2rem;
+        }
+
+        .active-trip-stats span strong {
+            color: #FFD52F;
+            font-weight: 700;
+        }
+
+        .active-trip-actions {
+            flex-shrink: 0;
+        }
+
+        .btn-view-trip {
+            background: #FFD52F;
+            color: #01386A;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-view-trip:hover {
+            background: #FFC107;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 213, 47, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .active-trip-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .active-trip-stats {
+                justify-content: center;
+            }
+
+            .btn-view-trip {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #01386A, #025aa5);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(1, 56, 106, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow-y: auto !important;
+            }
+
+            .wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                overflow: visible !important;
+            }
+
+            .main-content {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                overflow: visible !important;
+            }
+
+            .trip-status-page-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
+                padding: 1rem;
+                border-radius: 0;
+                margin: 0 !important;
+                box-shadow: none;
+                box-sizing: border-box;
+            }
+
+            /* Typography scaling for mobile */
+            h1 {
+                font-size: 1.75rem !important;
+                line-height: 1.3;
+            }
+
+            h2 {
+                font-size: 1.5rem !important;
+                line-height: 1.3;
+            }
+
+            h3 {
+                font-size: 1.25rem !important;
+            }
+
+            .page-header h1 {
+                font-size: 1.75rem;
+            }
+
+            .page-header p {
+                font-size: 0.95rem;
+            }
+
+            .trip-full-alert,
+            .trip-waiting-alert {
+                flex-direction: column;
+                text-align: center;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .alert-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+
+            .alert-content h3 {
+                font-size: 1.4rem;
+            }
+
+            .alert-content p {
+                font-size: 1rem;
+            }
+
+            .trip-details-card {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .trip-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .trip-card-header h3 {
+                font-size: 1.4rem;
+            }
+
+            .trip-status-badge {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .trip-info-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem;
+            }
+
+            .trip-info-item {
+                gap: 0.75rem;
+            }
+
+            .trip-info-item i {
+                font-size: 1.5rem;
+            }
+
+            .trip-info-item strong {
+                font-size: 0.85rem;
+            }
+
+            .trip-info-item p {
+                font-size: 1.1rem;
+            }
+
+            .trip-capacity-progress {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .capacity-progress-header {
+                font-size: 1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .capacity-progress-bar {
+                height: 30px;
+            }
+
+            .capacity-progress-fill {
+                font-size: 0.85rem;
+            }
+
+            .trip-locations-summary {
+                grid-template-columns: 1fr !important;
+                gap: 1.5rem;
+            }
+
+            .locations-summary-section h4 {
+                font-size: 1rem;
+            }
+
+            .share-trip-card {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .share-trip-header h3 {
+                font-size: 1.4rem;
+            }
+
+            .share-trip-header p {
+                font-size: 0.9rem;
+            }
+
+            .share-link-input {
+                padding: 0.875rem;
+                font-size: 0.95rem;
+            }
+
+            .btn-copy-link {
+                padding: 0.875rem 1rem;
+                font-size: 1rem;
+            }
+
+            .share-options {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem;
+            }
+
+            .share-btn {
+                padding: 0.875rem;
+                font-size: 0.85rem;
+                min-height: 48px;
+            }
+
+            .share-btn i {
+                font-size: 1.2rem;
+            }
+
+            .joined-passengers-card {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .joined-passengers-card h3 {
+                font-size: 1.4rem;
+                margin-bottom: 1rem;
+            }
+
+            .passenger-joined-item {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .passenger-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .qr-modal-content {
+                max-width: 90%;
+                padding: 1.5rem;
+            }
+
+            #qr-code-container img {
+                width: 200px;
+                height: 200px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 1rem;
+                font-size: 1rem;
+                margin-bottom: 0.75rem;
+                min-height: 48px;
+            }
+
+            #trip-route-map {
+                height: 300px !important;
+            }
+
+            .parcel-details-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .booking-type-seat {
+                padding: 1.5rem;
+            }
+
+            .booking-type-seat i {
+                font-size: 3rem;
+            }
+
+            .parcel-card-status {
+                padding: 1rem;
+            }
+
+            .parcel-code-section {
+                padding: 1rem;
+            }
+
+            .parcel-secret-code {
+                font-size: 1.2rem;
+                padding: 0.75rem;
+            }
+
+            .parcel-qr-code img {
+                width: 120px;
+                height: 120px;
+            }
+        }
+
+        /* Small phones */
+        @media (max-width: 480px) {
+            .trip-status-page-container {
+                padding: 0.75rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .page-header {
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+            }
+
+            .trip-full-alert,
+            .trip-waiting-alert {
+                padding: 1rem;
+            }
+
+            .alert-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .trip-details-card {
+                padding: 1rem;
+            }
+
+            .share-trip-card {
+                padding: 1rem;
+            }
+
+            .share-options {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Auth buttons styling */
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-left: auto;
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .btn-login {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            background: white;
+            color: #333;
+        }
+
+        .btn-signup {
+            background: #FFD700;
+            color: #333;
+            border: 2px solid #FFD700;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-signup:hover {
+            background: transparent;
+            color: white;
+            border-color: white;
+        }
+
+        .full-navigation {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .full-navigation a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .full-navigation a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .auth-buttons {
+                position: static;
+                transform: none;
+                margin-left: 0;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 1rem 2rem;
+            }
+
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 1rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        <div class="main-content">
+            <div class="trip-status-page-container">
+                <div class="page-header">
+                    <h1><i class="ri-time-line"></i> Your Trip Status</h1>
+                    <p>Track the progress of your trip and see who has joined</p>
+                </div>
+
+                <!-- Active Passenger Trip Banner -->
+                <div class="active-trip-banner" id="active-passenger-trip-banner" style="display: none;">
+                    <div class="active-trip-content">
+                        <div class="active-trip-icon">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="active-trip-info">
+                            <h3><i class="ri-information-line"></i> You Have an Active Trip</h3>
+                            <p>Your trip from <strong id="active-passenger-trip-route">-</strong> is waiting for passengers.</p>
+                            <div class="active-trip-stats">
+                                <span><i class="ri-user-line"></i> <strong id="active-passenger-trip-passengers">0</strong> passengers</span>
+                                <span><i class="ri-user-add-line"></i> <strong id="active-passenger-trip-seats">0</strong> seats available</span>
+                            </div>
+                        </div>
+                        <div class="active-trip-actions">
+                            <button class="btn-view-trip" onclick="window.location.href='trip-status.html'">
+                                <i class="ri-eye-line"></i> View Trip Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Parcel Booking Banner -->
+                <div class="active-trip-banner" id="active-parcel-trip-banner" style="display: none;">
+                    <div class="active-trip-content">
+                        <div class="active-trip-icon">
+                            <i class="ri-box-3-line"></i>
+                        </div>
+                        <div class="active-trip-info">
+                            <h3><i class="ri-information-line"></i> You Have an Active Parcel Booking</h3>
+                            <p>Your parcel booking from <strong id="active-parcel-trip-route">-</strong> is being processed.</p>
+                            <div class="active-trip-stats">
+                                <span><i class="ri-box-3-line"></i> <strong id="active-parcel-trip-count">0</strong> parcel(s)</span>
+                                <span><i class="ri-map-pin-range-line"></i> Route: <strong id="active-parcel-trip-route-name">-</strong></span>
+                            </div>
+                        </div>
+                        <div class="active-trip-actions">
+                            <button class="btn-view-trip" onclick="window.location.href='trip-status.html'">
+                                <i class="ri-eye-line"></i> View Booking Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trip-status-container">
+                    <!-- Trip is Full Alert -->
+                    <div class="trip-full-alert" id="trip-full-alert" style="display: none;">
+                        <div class="alert-icon">
+                            <i class="ri-checkbox-circle-fill"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h3>Your Trip is Full!</h3>
+                            <p>All 14 seats have been filled. Your trip is ready to proceed.</p>
+                        </div>
+                    </div>
+
+                    <!-- Trip Waiting Alert -->
+                    <div class="trip-waiting-alert" id="trip-waiting-alert">
+                        <div class="alert-icon waiting">
+                            <i class="ri-time-line"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h3>Waiting for More Passengers</h3>
+                            <p>Your trip has been published and is now available for other passengers to join.</p>
+                        </div>
+                    </div>
+
+                    <!-- Trip Details Card -->
+                    <div class="trip-details-card">
+                        <div class="trip-card-header">
+                            <h3><i class="ri-route-line"></i> Trip Details</h3>
+                            <span class="trip-status-badge" id="trip-status-badge">Published</span>
+                        </div>
+
+                        <div class="trip-info-grid">
+                            <div class="trip-info-item">
+                                <i class="ri-map-pin-range-line"></i>
+                                <div>
+                                    <strong>Route</strong>
+                                    <p id="trip-route-display">-</p>
+                                </div>
+                            </div>
+                            <div class="trip-info-item">
+                                <i class="ri-team-line"></i>
+                                <div>
+                                    <strong>Current Passengers</strong>
+                                    <p id="trip-current-passengers">-</p>
+                                </div>
+                            </div>
+                            <div class="trip-info-item">
+                                <i class="ri-user-add-line"></i>
+                                <div>
+                                    <strong>Seats Available</strong>
+                                    <p id="trip-seats-available">-</p>
+                                </div>
+                            </div>
+                            <div class="trip-info-item">
+                                <i class="ri-calendar-line"></i>
+                                <div>
+                                    <strong>Departure Time</strong>
+                                    <p id="trip-departure-time">Flexible</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Capacity Progress -->
+                        <div class="trip-capacity-progress">
+                            <div class="capacity-progress-header">
+                                <span>Trip Capacity</span>
+                                <span id="trip-capacity-text">0 / 15</span>
+                            </div>
+                            <div class="capacity-progress-bar">
+                                <div class="capacity-progress-fill" id="trip-capacity-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Pickup/Dropoff Map -->
+                        <div class="trip-map-section" style="margin-bottom: 2rem;">
+                            <h4 style="color: #01386A; font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="ri-map-2-line" style="color: #FFD52F;"></i> Pickup and Dropoff Locations
+                            </h4>
+                            <div id="trip-route-map" style="width: 100%; height: 400px; border-radius: 12px; overflow: hidden; border: 2px solid #e0e0e0;"></div>
+                        </div>
+
+                        <!-- Pickup/Dropoff Locations -->
+                        <div class="trip-locations-summary">
+                            <div class="locations-summary-section">
+                                <h4><i class="ri-map-pin-user-fill"></i> Pickup Points</h4>
+                                <ul id="trip-pickup-list"></ul>
+                            </div>
+                            <div class="locations-summary-section">
+                                <h4><i class="ri-map-pin-3-fill"></i> Drop-off Points</h4>
+                                <ul id="trip-dropoff-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Details Section -->
+                    <div class="trip-details-card" id="booking-details-card">
+                        <div class="trip-card-header">
+                            <h3><i class="ri-shopping-bag-line"></i> Your Booking</h3>
+                        </div>
+                        <div id="booking-details-content">
+                            <!-- Content will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Share Trip Link Section -->
+                    <div class="share-trip-card">
+                        <div class="share-trip-header">
+                            <h3><i class="ri-share-line"></i> Share Your Trip</h3>
+                            <p>Share this link with others so they can join your trip directly. Only logged-in users can join.</p>
+                        </div>
+                        
+                        <div class="share-link-container">
+                            <div class="share-link-input-wrapper">
+                                <input type="text" id="trip-share-link" readonly class="share-link-input" value="">
+                                <button class="btn-copy-link" onclick="copyTripLink()" title="Copy link">
+                                    <i class="ri-file-copy-line"></i>
+                                </button>
+                            </div>
+                            <div class="copy-feedback" id="copy-feedback" style="display: none;">
+                                <i class="ri-check-line"></i> Link copied to clipboard!
+                            </div>
+                        </div>
+                        
+                        <div class="share-options">
+                            <button class="share-btn whatsapp" onclick="shareViaWhatsApp()">
+                                <i class="ri-whatsapp-line"></i> WhatsApp
+                            </button>
+                            <button class="share-btn email" onclick="shareViaEmail()">
+                                <i class="ri-mail-line"></i> Email
+                            </button>
+                            <button class="share-btn sms" onclick="shareViaSMS()">
+                                <i class="ri-message-3-line"></i> SMS
+                            </button>
+                            <button class="share-btn qr" onclick="showQRCode()">
+                                <i class="ri-qr-code-line"></i> QR Code
+                            </button>
+                        </div>
+                        
+                        <!-- QR Code Modal -->
+                        <div class="qr-modal" id="qr-modal" style="display: none;">
+                            <div class="qr-modal-content">
+                                <button class="qr-close-btn" onclick="closeQRModal()">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                                <h3>Scan to Join Trip</h3>
+                                <div id="qr-code-container"></div>
+                                <p>Scan this QR code to join the trip</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passengers Who Joined -->
+                    <div class="joined-passengers-card" id="joined-passengers-card" style="display: none;">
+                        <h3><i class="ri-group-line"></i> Passengers Who Joined Your Trip</h3>
+                        <div id="joined-passengers-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASSRp8maLZsB0W6FGYlDPck8AO5riY_vg&libraries=places"></script>
+    <script type="module" src="../../js/tonav.js"></script>
+    <script type="module" src="../../js/customer/trip-status.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+</body>
+</html>
+

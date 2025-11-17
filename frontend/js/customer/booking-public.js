@@ -10,6 +10,9 @@ let parcelCount = 0;
 const MAX_TOTAL_CAPACITY = 15;
 let currentStep = 1;
 let map = null;
+let routeStartMarker = null;
+let routeEndMarker = null;
+let routePolylineMain = null;
 let tripOption = 'create'; // default to creating a new trip flow
 let selectedTrip = null;
 let selectedTripInfo = null;
@@ -123,101 +126,564 @@ function calculateRemainingExtraSpace(usedLarge = 0, usedMedium = 0, usedSmall =
 
 // Sample route data
 const routes = {
-    'jhb-ct': {
-        name: 'Johannesburg → Cape Town',
-        distance: 1400,
-        duration: 14,
+    'pta-tzn': {
+        name: 'Pretoria → Tzaneen',
+        distance: 450,
+        duration: 5.5,
         price: 450,
         capacity: 20,
-        occupied: 4,
-        departure: 'Flexible timing',
+        occupied: 6,
+        departure: '2025/11/14 Friday 10:00 am',
+        // Extra space: Initial 1 large, 3 medium, 10 small = 20 small equivalents total
+        // When nothing is bought: 4 large (or 8 medium or 20 small)
+        extraSpace: {
+            large: 1,   // Initial: 1 large
+            medium: 3,  // Initial: 3 medium
+            small: 10,  // Initial: 10 small
+            // Total capacity in small equivalents: 1*4 + 3*2 + 10 = 20
+            totalCapacity: 20,
+            usedLarge: 0,
+            usedMedium: 0,
+            usedSmall: 0
+        },
         coordinates: {
-            start: [28.0475, -26.2041],
-            end: [18.4241, -33.9249]
+            start: [28.2294, -25.7479], // Pretoria
+            end: [30.1403, -23.8336]    // Tzaneen
         }
     },
-    'jhb-dbn': {
-        name: 'Johannesburg → Durban',
-        distance: 560,
-        duration: 6,
-        price: 280,
-        capacity: 16,
-        occupied: 8,
-        departure: 'Flexible timing',
-        coordinates: {
-            start: [28.0475, -26.2041],
-            end: [31.0292, -29.8587]
-        }
-    },
-    'ct-dbn': {
-        name: 'Cape Town → Durban',
-        distance: 1650,
-        duration: 16,
-        price: 520,
+    'tzn-pta': {
+        name: 'Tzaneen → Pretoria',
+        distance: 450,
+        duration: 5.5,
+        price: 450,
         capacity: 20,
-        occupied: 8,
-        departure: 'Flexible timing',
+        occupied: 6,
+        departure: '2025/11/14 Friday 10:00 am',
+        // Extra space: Initial 1 large, 3 medium, 10 small = 20 small equivalents total
+        // When nothing is bought: 4 large (or 8 medium or 20 small)
+        extraSpace: {
+            large: 1,   // Initial: 1 large
+            medium: 3,  // Initial: 3 medium
+            small: 10,  // Initial: 10 small
+            // Total capacity in small equivalents: 1*4 + 3*2 + 10 = 20
+            totalCapacity: 20,
+            usedLarge: 0,
+            usedMedium: 0,
+            usedSmall: 0
+        },
         coordinates: {
-            start: [18.4241, -33.9249],
-            end: [31.0292, -29.8587]
-        }
-    },
-    'jhb-pe': {
-        name: 'Johannesburg → Port Elizabeth',
-        distance: 1050,
-        duration: 11,
-        price: 380,
-        capacity: 16,
-        occupied: 10,
-        departure: 'Flexible timing',
-        coordinates: {
-            start: [28.0475, -26.2041],
-            end: [25.6173, -33.9608]
+            start: [30.1403, -23.8336],  // Tzaneen
+            end: [28.2294, -25.7479]     // Pretoria
         }
     }
 };
 
+// Function to calculate available extra space
+function getAvailableExtraSpace(route) {
+    if (!route || !route.extraSpace) {
+        return { large: 4, medium: 8, small: 20, totalSmall: 20 };
+    }
+    
+    // Total capacity in small equivalents (1 large = 4, 1 medium = 2, 1 small = 1)
+    const totalCapacity = route.extraSpace.totalCapacity || 
+                          (route.extraSpace.large * 4 + route.extraSpace.medium * 2 + route.extraSpace.small);
+    
+    // Calculate used space in small equivalents
+    const usedSmall = (route.extraSpace.usedLarge * 4) + (route.extraSpace.usedMedium * 2) + route.extraSpace.usedSmall;
+    
+    // Remaining space in small equivalents
+    const remainingSmall = totalCapacity - usedSmall;
+    
+    // Convert remaining smalls to large, medium, small
+    const large = Math.floor(remainingSmall / 4);
+    const remainingAfterLarge = remainingSmall % 4;
+    const medium = Math.floor(remainingAfterLarge / 2);
+    const small = remainingAfterLarge % 2;
+    
+    return { large, medium, small, totalSmall: remainingSmall };
+}
+
+// Function to format extra space display
+function formatExtraSpaceDisplay(available) {
+    if (available.totalSmall === 0) {
+        return 'No extra space available';
+    }
+    
+    // Show in the most readable format: large, medium, small
+    const parts = [];
+    if (available.large > 0) {
+        parts.push(`${available.large} large`);
+    }
+    if (available.medium > 0) {
+        parts.push(`${available.medium} medium`);
+    }
+    if (available.small > 0) {
+        parts.push(`${available.small} small`);
+    }
+    
+    // Also show equivalent formats in parentheses
+    const equivalent = [];
+    const totalLarge = Math.floor(available.totalSmall / 4);
+    const totalMedium = Math.floor(available.totalSmall / 2);
+    
+    if (totalLarge > 0) {
+        equivalent.push(`${totalLarge} large`);
+    }
+    if (totalMedium > 0) {
+        equivalent.push(`${totalMedium} medium`);
+    }
+    equivalent.push(`${available.totalSmall} small`);
+    
+    if (parts.length > 0) {
+        return `${parts.join(', ')} (or ${equivalent.join(' or ')})`;
+    } else {
+        return `${equivalent.join(' or ')}`;
+    }
+}
+
+// Function to update extra space display on route cards
+function updateExtraSpaceDisplay() {
+    // Update Pretoria → Tzaneen
+    const route1 = routes['pta-tzn'];
+    if (route1) {
+        const available1 = getAvailableExtraSpace(route1);
+        const display1 = document.getElementById('extra-space-display-pta-tzn');
+        if (display1) {
+            display1.textContent = formatExtraSpaceDisplay(available1);
+        }
+    }
+    
+    // Update Tzaneen → Pretoria
+    const route2 = routes['tzn-pta'];
+    if (route2) {
+        const available2 = getAvailableExtraSpace(route2);
+        const display2 = document.getElementById('extra-space-display-tzn-pta');
+        if (display2) {
+            display2.textContent = formatExtraSpaceDisplay(available2);
+        }
+    }
+}
+
 // Initialize map
 function initializeMap() {
-    mapboxgl.accessToken = accessToken;
+    // Wait for Google Maps API to load
+    if (typeof google === 'undefined' || !google.maps) {
+        setTimeout(initializeMap, 100);
+        return;
+    }
     
-    map = new mapboxgl.Map({
-        container: 'route-map',
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [28.0475, -26.2041],
-        zoom: 6
-    });
+    const mapContainer = document.getElementById('route-map');
+    if (!mapContainer) return;
+    
+    // Use setTimeout to ensure container is visible
+    setTimeout(() => {
+        // Ensure container has explicit width
+        mapContainer.style.width = '100%';
+        mapContainer.style.height = '100%';
+        mapContainer.style.display = 'block';
+        
+        map = new google.maps.Map(mapContainer, {
+            center: { lat: -24.791, lng: 29.185 }, // Center between Pretoria and Tzaneen
+            zoom: 7,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true
+        });
+        
+        // Trigger resize to ensure map uses full container width
+        setTimeout(() => {
+            if (map) {
+                google.maps.event.trigger(map, 'resize');
+                // Add default markers
+                addRouteMarkers();
+            }
+        }, 300);
+    }, 100);
+}
 
-    map.on('load', () => {
-        // Add default markers
-        addRouteMarkers();
-    });
+// City boundaries for Google Maps restrictions
+const cityBoundaries = {
+    'Pretoria': {
+        bounds: {
+            north: -25.6,
+            south: -25.9,
+            east: 28.4,
+            west: 28.0
+        },
+        center: { lat: -25.7479, lng: 28.2294 },
+        name: 'Pretoria'
+    },
+    'Tzaneen': {
+        bounds: {
+            north: -23.7,
+            south: -24.0,
+            east: 30.4,
+            west: 29.9
+        },
+        center: { lat: -23.8336, lng: 30.1403 },
+        name: 'Tzaneen'
+    }
+};
+
+let locationSelectionMap = null;
+let pickupAutocomplete = null;
+let dropoffAutocomplete = null;
+let pickupMarker = null;
+let dropoffMarker = null;
+let routePolyline = null;
+
+// Initialize location selection map and autocomplete
+function initializeLocationSelection() {
+    if (!selectedRoute) return;
+    
+    const route = routes[selectedRoute];
+    if (!route) return;
+    
+    // Get origin and destination cities
+    const cities = route.name.split(' → ');
+    const originCity = cities[0].trim();
+    const destinationCity = cities[1].trim();
+    
+    // Update hints
+    const pickupHint = document.getElementById('pickup-location-hint');
+    const dropoffHint = document.getElementById('dropoff-location-hint');
+    if (pickupHint) {
+        pickupHint.textContent = `Please select a location within ${originCity}`;
+    }
+    if (dropoffHint) {
+        dropoffHint.textContent = `Please select a location within ${destinationCity}`;
+    }
+    
+    // Wait for Google Maps API to load
+    if (typeof google === 'undefined' || !google.maps) {
+        setTimeout(initializeLocationSelection, 100);
+        return;
+    }
+    
+    // Initialize Google Maps
+    const mapContainer = document.getElementById('location-selection-map');
+    if (mapContainer && !locationSelectionMap) {
+        // Use setTimeout to ensure container is visible
+        setTimeout(() => {
+            // Get the parent container to calculate actual available width
+            const parentContainer = mapContainer.parentElement;
+            if (parentContainer) {
+                // Get computed styles
+                const computedStyle = window.getComputedStyle(parentContainer);
+                const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+                const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+                const parentWidth = parentContainer.offsetWidth;
+                const availableWidth = parentWidth - paddingLeft - paddingRight;
+                
+                // Set explicit width on map container
+                mapContainer.style.width = availableWidth + 'px';
+                mapContainer.style.minWidth = availableWidth + 'px';
+                mapContainer.style.maxWidth = availableWidth + 'px';
+                mapContainer.style.display = 'block';
+                mapContainer.style.boxSizing = 'border-box';
+            } else {
+                // Fallback to 100% if parent not found
+                mapContainer.style.width = '100%';
+                mapContainer.style.minWidth = '100%';
+                mapContainer.style.maxWidth = '100%';
+                mapContainer.style.display = 'block';
+            }
+            
+            locationSelectionMap = new google.maps.Map(mapContainer, {
+                center: { lat: -24.791, lng: 29.185 }, // Center between Pretoria and Tzaneen
+                zoom: 8,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+            
+            // Trigger resize multiple times to ensure map uses full container width
+            setTimeout(() => {
+                if (locationSelectionMap) {
+                    google.maps.event.trigger(locationSelectionMap, 'resize');
+                }
+            }, 300);
+            
+            // Additional resize after a longer delay to catch any layout changes
+            setTimeout(() => {
+                if (locationSelectionMap) {
+                    google.maps.event.trigger(locationSelectionMap, 'resize');
+                }
+            }, 600);
+            
+            // Final resize after window load to ensure everything is settled
+            window.addEventListener('load', () => {
+                if (locationSelectionMap) {
+                    google.maps.event.trigger(locationSelectionMap, 'resize');
+                }
+            });
+            
+            // Add route line if coordinates exist
+            if (route.coordinates) {
+                const routePath = [
+                    { lat: route.coordinates.start[1], lng: route.coordinates.start[0] },
+                    { lat: route.coordinates.end[1], lng: route.coordinates.end[0] }
+                ];
+                
+                routePolyline = new google.maps.Polyline({
+                    path: routePath,
+                    geodesic: true,
+                    strokeColor: '#01386A',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 3
+                });
+                routePolyline.setMap(locationSelectionMap);
+            }
+            
+            // Initialize autocomplete inputs
+            initializeAutocomplete();
+        }, 100);
+    } else if (locationSelectionMap) {
+        // Map already exists, just initialize autocomplete
+        initializeAutocomplete();
+    }
+    
+    function initializeAutocomplete() {
+        // Get city boundaries
+        const originBoundary = cityBoundaries[originCity] || cityBoundaries['Pretoria'];
+        const destBoundary = cityBoundaries[destinationCity] || cityBoundaries['Tzaneen'];
+        
+        // Create input elements for autocomplete
+        const pickupContainer = document.getElementById('pickup-geocoder-container');
+        const dropoffContainer = document.getElementById('dropoff-geocoder-container');
+        
+        if (pickupContainer) {
+            // Clear container
+            pickupContainer.innerHTML = '';
+            
+            // Create input element
+            const pickupInput = document.createElement('input');
+            pickupInput.type = 'text';
+            pickupInput.id = 'pickup-location-input';
+            pickupInput.placeholder = `Search for pickup location in ${originCity}...`;
+            pickupInput.style.width = '100%';
+            pickupInput.style.padding = '0.75rem';
+            pickupInput.style.border = '2px solid #e0e0e0';
+            pickupInput.style.borderRadius = '8px';
+            pickupInput.style.fontSize = '1rem';
+            pickupContainer.appendChild(pickupInput);
+            
+            // Initialize Google Places Autocomplete
+            pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput, {
+                bounds: new google.maps.LatLngBounds(
+                    new google.maps.LatLng(originBoundary.bounds.south, originBoundary.bounds.west),
+                    new google.maps.LatLng(originBoundary.bounds.north, originBoundary.bounds.east)
+                ),
+                componentRestrictions: { country: 'za' },
+                fields: ['geometry', 'formatted_address', 'name']
+            });
+            
+            // Add listener for place selection
+            pickupAutocomplete.addListener('place_changed', () => {
+                const place = pickupAutocomplete.getPlace();
+                if (!place.geometry) {
+                    return;
+                }
+                
+                const location = place.geometry.location;
+                
+                // Remove existing marker
+                if (pickupMarker) {
+                    pickupMarker.setMap(null);
+                }
+                
+                // Add new marker
+                pickupMarker = new google.maps.Marker({
+                    map: locationSelectionMap,
+                    position: location,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#28a745',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    },
+                    title: place.formatted_address || place.name
+                });
+                
+                // Store pickup location
+                pickupPoints = [{
+                    address: place.formatted_address || place.name,
+                    lat: location.lat(),
+                    lng: location.lng(),
+                    index: 1
+                }];
+                
+                // Fit map to show both markers
+                fitLocationSelectionMap();
+            });
+        }
+        
+        if (dropoffContainer) {
+            // Clear container
+            dropoffContainer.innerHTML = '';
+            
+            // Create input element
+            const dropoffInput = document.createElement('input');
+            dropoffInput.type = 'text';
+            dropoffInput.id = 'dropoff-location-input';
+            dropoffInput.placeholder = `Search for dropoff location in ${destinationCity}...`;
+            dropoffInput.style.width = '100%';
+            dropoffInput.style.padding = '0.75rem';
+            dropoffInput.style.border = '2px solid #e0e0e0';
+            dropoffInput.style.borderRadius = '8px';
+            dropoffInput.style.fontSize = '1rem';
+            dropoffContainer.appendChild(dropoffInput);
+            
+            // Initialize Google Places Autocomplete
+            dropoffAutocomplete = new google.maps.places.Autocomplete(dropoffInput, {
+                bounds: new google.maps.LatLngBounds(
+                    new google.maps.LatLng(destBoundary.bounds.south, destBoundary.bounds.west),
+                    new google.maps.LatLng(destBoundary.bounds.north, destBoundary.bounds.east)
+                ),
+                componentRestrictions: { country: 'za' },
+                fields: ['geometry', 'formatted_address', 'name']
+            });
+            
+            // Add listener for place selection
+            dropoffAutocomplete.addListener('place_changed', () => {
+                const place = dropoffAutocomplete.getPlace();
+                if (!place.geometry) {
+                    return;
+                }
+                
+                const location = place.geometry.location;
+                
+                // Remove existing marker
+                if (dropoffMarker) {
+                    dropoffMarker.setMap(null);
+                }
+                
+                // Add new marker
+                dropoffMarker = new google.maps.Marker({
+                    map: locationSelectionMap,
+                    position: location,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#dc3545',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    },
+                    title: place.formatted_address || place.name
+                });
+                
+                // Store dropoff location
+                dropoffPoints = [{
+                    address: place.formatted_address || place.name,
+                    lat: location.lat(),
+                    lng: location.lng(),
+                    index: 1
+                }];
+                
+                // Fit map to show both markers
+                fitLocationSelectionMap();
+            });
+        }
+    }
+}
+
+// Fit map to show both pickup and dropoff markers
+function fitLocationSelectionMap() {
+    if (!locationSelectionMap) return;
+    
+    const bounds = new google.maps.LatLngBounds();
+    
+    if (pickupMarker) {
+        bounds.extend(pickupMarker.getPosition());
+    }
+    if (dropoffMarker) {
+        bounds.extend(dropoffMarker.getPosition());
+    }
+    
+    // If we have both markers, fit to them; otherwise show route
+    if (pickupMarker && dropoffMarker) {
+        locationSelectionMap.fitBounds(bounds);
+    } else if (selectedRoute && routes[selectedRoute]) {
+        const route = routes[selectedRoute];
+        if (route.coordinates) {
+            bounds.extend(new google.maps.LatLng(route.coordinates.start[1], route.coordinates.start[0]));
+            bounds.extend(new google.maps.LatLng(route.coordinates.end[1], route.coordinates.end[0]));
+            locationSelectionMap.fitBounds(bounds);
+        }
+    }
 }
 
 function addRouteMarkers() {
     if (!map) return;
 
     // Clear existing markers
-    document.querySelectorAll('.mapboxgl-marker').forEach(marker => marker.remove());
+    if (routeStartMarker) {
+        routeStartMarker.setMap(null);
+        routeStartMarker = null;
+    }
+    if (routeEndMarker) {
+        routeEndMarker.setMap(null);
+        routeEndMarker = null;
+    }
+    if (routePolylineMain) {
+        routePolylineMain.setMap(null);
+        routePolylineMain = null;
+    }
 
     if (selectedRoute && routes[selectedRoute]) {
         const route = routes[selectedRoute];
         
-        // Add start marker
-        new mapboxgl.Marker({ color: '#FFD52F' })
-            .setLngLat(route.coordinates.start)
-            .addTo(map);
+        // Add start marker (Pretoria)
+        routeStartMarker = new google.maps.Marker({
+            map: map,
+            position: { lat: route.coordinates.start[1], lng: route.coordinates.start[0] },
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#FFD52F',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2
+            },
+            title: 'Start: ' + route.name.split(' → ')[0]
+        });
 
-        // Add end marker
-        new mapboxgl.Marker({ color: '#01386A' })
-            .setLngLat(route.coordinates.end)
-            .addTo(map);
+        // Add end marker (Tzaneen)
+        routeEndMarker = new google.maps.Marker({
+            map: map,
+            position: { lat: route.coordinates.end[1], lng: route.coordinates.end[0] },
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: '#01386A',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2
+            },
+            title: 'End: ' + route.name.split(' → ')[1]
+        });
+
+        // Add route line
+        routePolylineMain = new google.maps.Polyline({
+            path: [
+                { lat: route.coordinates.start[1], lng: route.coordinates.start[0] },
+                { lat: route.coordinates.end[1], lng: route.coordinates.end[0] }
+            ],
+            geodesic: true,
+            strokeColor: '#01386A',
+            strokeOpacity: 1.0,
+            strokeWeight: 3
+        });
+        routePolylineMain.setMap(map);
 
         // Fit map to show both points
-        const bounds = new mapboxgl.LngLatBounds();
-        bounds.extend(route.coordinates.start);
-        bounds.extend(route.coordinates.end);
-        map.fitBounds(bounds, { padding: 50 });
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(new google.maps.LatLng(route.coordinates.start[1], route.coordinates.start[0]));
+        bounds.extend(new google.maps.LatLng(route.coordinates.end[1], route.coordinates.end[0]));
+        map.fitBounds(bounds);
     }
 }
 
@@ -422,7 +888,7 @@ window.acceptEarlyDelivery = acceptEarlyDelivery;
 window.declineEarlyDelivery = declineEarlyDelivery;
 
 function nextStep() {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
         const activeStepEl = document.querySelector(`#step${currentStep}`);
         if (activeStepEl) {
             activeStepEl.classList.remove('active');
@@ -448,6 +914,16 @@ function nextStep() {
             }
 
             updatePassengerInfo();
+            
+            // Initialize location selection map and geocoders
+            initializeLocationSelection();
+            
+            // Resize map when step becomes active
+            setTimeout(() => {
+                if (locationSelectionMap) {
+                    google.maps.event.trigger(locationSelectionMap, 'resize');
+                }
+            }, 500);
 
             const dateInput = document.getElementById('desired-trip-date');
             if (dateInput && !dateInput.dataset.bound) {
@@ -462,12 +938,15 @@ function nextStep() {
             if (!bookingType) {
                 bookingType = 'passengers';
             }
-                } else if (currentStep === 3) {
+        } else if (currentStep === 3) {
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
                 confirmationContent.classList.add('active');
             }
             updateBookingSummary();
+        } else if (currentStep === 4) {
+            // Payment step will be shown by showPaymentStep()
+            showPaymentStep();
         }
     }
 }
@@ -505,7 +984,12 @@ function goBack() {
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
                 confirmationContent.classList.add('active');
-            updateBookingSummary();
+                updateBookingSummary();
+            }
+        } else if (currentStep === 4) {
+            const paymentStep = document.getElementById('payment-step');
+            if (paymentStep) {
+                paymentStep.classList.add('active');
             }
         }
     }
@@ -1328,11 +1812,10 @@ function validateParcelInformation() {
         }
     }
     
+    // Delivery window is no longer required
+    // Set default if not set
     if (!deliveryWindow) {
-        return {
-            valid: false,
-            message: 'Please select a delivery window (Tuesday or Friday).'
-        };
+        deliveryWindow = 'standard';
     }
     
     return { valid: true };
@@ -1614,6 +2097,10 @@ function validateAndProceed() {
     // Save booking type and preferences to sessionStorage
     sessionStorage.setItem('bookingType', bookingType);
     if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
+        // Set default delivery window if not set
+        if (!deliveryWindow) {
+            deliveryWindow = 'standard';
+        }
         sessionStorage.setItem('deliveryWindow', deliveryWindow);
         sessionStorage.setItem('notifyEarlyDelivery', notifyEarlyDelivery);
         sessionStorage.setItem('parcelCount', parcelCount);
@@ -1868,14 +2355,10 @@ function updatePassengerInfo() {
     updateCapacityDisplay();
     updateCounterDisplays();
     
-    // Bind delivery window change handler
-    const deliveryWindowRadios = document.querySelectorAll('input[name="deliveryWindow"]');
-    deliveryWindowRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            deliveryWindow = this.value;
-            updateContinueButtonState(); // Re-validate when delivery window changes
-        });
-    });
+    // Delivery window selection removed - set default
+    if (!deliveryWindow) {
+        deliveryWindow = 'standard';
+    }
     
     // Bind early delivery notification checkbox
     const notifyCheckbox = document.getElementById('notify-early-delivery');
@@ -2185,18 +2668,6 @@ function generateParcelForms() {
                         <small style="color: #6c757d; font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 071 234 5678 or +27 71 234 5678</small>
                     </div>
                 </div>
-                
-                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 1.2rem; border-radius: 12px; border: 2px solid #01386A;">
-                    <p style="color: #01386A; font-weight: 700; margin-bottom: 0.5rem; font-size: 1rem;">
-                        <i class="ri-lock-line"></i> Delivery Confirmation Code
-                    </p>
-                    <p style="color: #6c757d; font-size: 0.9rem; margin-bottom: 0.8rem;">
-                        Share this code with the receiver. The driver will ask for this code upon delivery.
-                    </p>
-                    <div class="secret-code-display-public" id="secretCode${i}Public">
-                        ${parcelData[i].secretCode}
-                    </div>
-                </div>
             </div>
         `;
         
@@ -2288,10 +2759,7 @@ function updateBookingSummary() {
                 <span>Route:</span>
                 <span>${route.name}</span>
             </div>
-            <div class="summary-row">
-                <span>Delivery Window:</span>
-                <span><strong>${deliveryWindowText}</strong></span>
-            </div>
+            <!-- Delivery Window selection removed -->
             <div class="summary-row">
                 <span>Number of Parcels:</span>
                 <span>${savedParcelCount} parcel(s)</span>
@@ -2456,32 +2924,9 @@ function updateBookingSummary() {
 function confirmBooking() {
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
     
-    // Handle parcel bookings - go directly to payment
-    if (bookingTypeFromStorage === 'parcels') {
-        if (selectedRoute) {
-            alert('Parcel booking confirmed! Redirecting to payment...');
-            proceedToPayment();
-        }
-        return;
-    }
-    
-    // Handle passenger bookings
-    if (selectedRoute && passengerCount > 0) {
-        if (tripOption === 'create') {
-            // Check if trip is full (15 passengers)
-            if (passengerCount >= 15) {
-                // Trip is full, go directly to payment
-                alert('Your trip is full! Redirecting to payment...');
-                proceedToPayment();
-            } else {
-                // Trip needs more passengers, show trip monitoring page
-                showTripMonitoring();
-            }
-        } else if (tripOption === 'join') {
-            // For joining existing trip, proceed to payment
-            alert('Booking confirmed! Proceeding to payment...');
-            proceedToPayment();
-        }
+    // Always go to payment step first, regardless of booking type or trip status
+    if (selectedRoute) {
+        showPaymentStep();
     }
 }
 
@@ -2708,24 +3153,254 @@ function checkUserAuthentication() {
 }
 
 function proceedToPayment() {
-    // Save payment data to localStorage (will be removed after payment)
-    const route = routes[selectedRoute];
-    const totalAmount = route.price * passengerCount;
+    // Show payment step instead of redirecting
+    showPaymentStep();
+}
+
+function showPaymentStep() {
+    // Mark step 3 as completed and step 4 as active
+    const step3 = document.getElementById('step3');
+    const step4 = document.getElementById('step4');
+    if (step3) {
+        step3.classList.remove('active');
+        step3.classList.add('completed');
+    }
+    if (step4) {
+        step4.classList.add('active');
+    }
     
-    // Create booking with unpaid status
+    // Update current step
+    currentStep = 4;
+    
+    // Hide booking confirmation
+    const confirmationContent = document.getElementById('booking-confirmation');
+    if (confirmationContent) {
+        confirmationContent.classList.remove('active');
+    }
+    
+    // Show payment step
+    const paymentStep = document.getElementById('payment-step');
+    if (paymentStep) {
+        paymentStep.classList.add('active');
+    }
+    
+    // Update payment booking summary
+    updatePaymentBookingSummary();
+    
+    // Setup card input formatting
+    setupCardInputFormatting();
+}
+
+function setupCardInputFormatting() {
+    // Format card number input
+    const cardNumberInput = document.getElementById('card-number');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
+    }
+    
+    // Format card expiry input
+    const cardExpiryInput = document.getElementById('card-expiry');
+    if (cardExpiryInput) {
+        cardExpiryInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2, 4);
+            }
+            e.target.value = value;
+        });
+    }
+}
+
+let selectedPaymentMethodInBooking = null;
+
+function selectPaymentMethodInBooking(method) {
+    selectedPaymentMethodInBooking = method;
+    
+    // Remove selection from all cards
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Hide all forms
+    document.querySelectorAll('.payment-form').forEach(form => {
+        form.classList.remove('show');
+    });
+    
+    // Select the chosen method
+    const selectedCard = document.querySelector('.payment-method-card[onclick*="' + method + '"]');
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
+    }
+    
+    // Show the corresponding form
+    const formId = method + '-form';
+    const form = document.getElementById(formId);
+    if (form) {
+        form.classList.add('show');
+    }
+    
+    // Enable pay button
+    const payButton = document.getElementById('pay-button');
+    if (payButton) {
+        payButton.disabled = false;
+    }
+}
+
+function updatePaymentBookingSummary() {
+    if (!selectedRoute) return;
+    
+    const route = routes[selectedRoute];
+    const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
+    const pricePerPerson = route.price || 450;
+    const passengers = bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : passengerCount;
+    const totalAmount = bookingTypeFromStorage === 'parcels' 
+        ? (parcelCount || 0) * route.price 
+        : route.price * passengerCount;
+    
+    // Update summary using the same structure as booking-payment.js
+    const summaryRoute = document.getElementById('summary-route');
+    const summaryPassengers = document.getElementById('summary-passengers');
+    const summaryPricePer = document.getElementById('summary-price-per');
+    const summaryTotal = document.getElementById('summary-total');
+    
+    if (summaryRoute) summaryRoute.textContent = route.name || '-';
+    if (summaryPassengers) {
+        if (bookingTypeFromStorage === 'parcels') {
+            summaryPassengers.textContent = parcelCount || 0;
+        } else {
+            summaryPassengers.textContent = passengerCount;
+        }
+    }
+    if (summaryPricePer) summaryPricePer.textContent = `R${pricePerPerson}`;
+    if (summaryTotal) summaryTotal.textContent = `R${totalAmount}`;
+    
+    // Generate payment reference for EFT
+    const reference = 'TKS' + Date.now().toString().slice(-8);
+    const referenceInput = document.getElementById('payment-reference');
+    if (referenceInput) {
+        referenceInput.value = reference;
+    }
+}
+
+function processPaymentInBooking() {
+    if (!selectedPaymentMethodInBooking) {
+        alert('Please select a payment method');
+        return;
+    }
+    
+    // Validate form inputs based on selected method
+    if (selectedPaymentMethodInBooking === 'card') {
+        const cardNumber = document.getElementById('card-number').value;
+        const cardName = document.getElementById('card-name').value;
+        const cardExpiry = document.getElementById('card-expiry').value;
+        const cardCVV = document.getElementById('card-cvv').value;
+        
+        if (!cardNumber || !cardName || !cardExpiry || !cardCVV) {
+            alert('Please fill in all card details');
+            return;
+        }
+        
+        // Basic validation
+        if (cardNumber.replace(/\s/g, '').length < 15) {
+            alert('Please enter a valid card number');
+            return;
+        }
+    } else if (selectedPaymentMethodInBooking === 'mobile') {
+        const mobileNumber = document.getElementById('mobile-number').value;
+        
+        if (!mobileNumber) {
+            alert('Please enter your mobile number');
+            return;
+        }
+    }
+    
+    // Show processing state
+    const payButton = document.getElementById('pay-button');
+    if (payButton) {
+        payButton.disabled = true;
+        payButton.innerHTML = '<i class="ri-loader-4-line"></i> Processing Payment...';
+    }
+    
+    // Simulate payment processing
+    setTimeout(() => {
+        completePaymentInBooking();
+    }, 2000);
+}
+
+function completePaymentInBooking() {
+    // Hide payment content
+    const paymentContent = document.getElementById('payment-content');
+    if (paymentContent) {
+        paymentContent.style.display = 'none';
+    }
+    
+    // Show success message
+    const paymentSuccess = document.getElementById('payment-success');
+    if (paymentSuccess) {
+        paymentSuccess.classList.add('show');
+    }
+    
+    // Reveal vehicle information
+    revealVehicleInfoInBooking();
+    
+    // Save payment data to localStorage
+    const route = routes[selectedRoute];
+    const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
+    const totalAmount = bookingTypeFromStorage === 'parcels' 
+        ? (parcelCount || 0) * route.price 
+        : route.price * passengerCount;
+    
+    // Save parcel data if parcels were booked
+    let savedParcelData = null;
+    if (bookingTypeFromStorage === 'parcels') {
+        const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
+        // Store parcel data with images as File objects (will be converted to base64 when needed)
+        savedParcelData = {};
+        Object.keys(parcelDataFromStorage).forEach(key => {
+            const parcel = parcelDataFromStorage[key];
+            savedParcelData[key] = {
+                senderName: parcel.senderName || '',
+                senderPhone: parcel.senderPhone || '',
+                receiverName: parcel.receiverName || '',
+                receiverPhone: parcel.receiverPhone || '',
+                secretCode: parcel.secretCode || generateSecretCode(),
+                size: parcel.size || 'small',
+                images: parcel.images || [] // Store File objects, will convert when displaying
+            };
+        });
+    }
+    
+    // Generate secret code for seat bookings
+    let seatSecretCode = null;
+    if (bookingTypeFromStorage === 'passengers') {
+        seatSecretCode = generateSecretCode();
+    }
+    
+    // Create booking
     const booking = {
         id: 'BK' + Date.now(),
         reference: 'TKS' + Date.now().toString().slice(-8),
+        routeId: selectedRoute,
         routeName: route.name,
-        passengers: passengerCount,
+        bookingType: bookingTypeFromStorage,
+        passengers: bookingTypeFromStorage === 'parcels' ? 0 : passengerCount,
+        parcels: bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : 0,
+        parcelData: savedParcelData,
+        seatSecretCode: seatSecretCode, // Secret code for seat bookings
         pricePerPerson: route.price,
         totalAmount: totalAmount,
         tripOption: tripOption,
         pickupPoints: pickupPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
         dropoffPoints: dropoffPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
-        tripDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to 1 week from now
+        tripDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         bookingDate: new Date().toISOString(),
-        status: 'unpaid'
+        status: 'paid',
+        paymentMethod: selectedPaymentMethodInBooking,
+        paymentDate: new Date().toISOString()
     };
     
     // Save to userBookings
@@ -2733,21 +3408,113 @@ function proceedToPayment() {
     userBookings.push(booking);
     localStorage.setItem('userBookings', JSON.stringify(userBookings));
     
-    // Store payment data for payment page
-    const paymentData = {
-        bookingId: booking.id,
-        routeName: route.name,
-        passengers: passengerCount,
-        pricePerPerson: route.price,
-        totalAmount: totalAmount,
-        pickupPoints: pickupPoints.map(p => ({ address: p.address })),
-        dropoffPoints: dropoffPoints.map(p => ({ address: p.address }))
-    };
+    // Store completed booking for confirmation page
+    localStorage.setItem('completedBooking', JSON.stringify(booking));
+    sessionStorage.setItem('currentBooking', JSON.stringify(booking));
     
-    localStorage.setItem('paymentData', JSON.stringify(paymentData));
+    // Always save trip data for trip status page (if it's a created trip)
+    if (tripOption === 'create' && bookingTypeFromStorage === 'passengers') {
+        // Save trip data with all booking information
+        const tripData = {
+            routeId: selectedRoute,
+            routeName: route.name,
+            passengers: passengerCount,
+            seatSecretCode: booking.seatSecretCode, // Include seat secret code
+            pickupPoints: pickupPoints.map(p => ({ 
+                address: p.address, 
+                lat: p.lat, 
+                lng: p.lng 
+            })),
+            dropoffPoints: dropoffPoints.map(p => ({ 
+                address: p.address, 
+                lat: p.lat, 
+                lng: p.lng 
+            })),
+            createdAt: new Date().toISOString(),
+            bookingId: booking.id,
+            bookingReference: booking.reference,
+            paymentMethod: booking.paymentMethod,
+            paymentDate: booking.paymentDate,
+            status: 'paid',
+            tripTime: desiredTripDate || route.departure?.time || '10:00 am'
+        };
+        
+        localStorage.setItem('activeTripData', JSON.stringify(tripData));
+    }
     
-    // Redirect to payment page
-    window.location.href = '/pages/customer/booking-payment.html';
+    // Also save booking data for trip status page to access
+    localStorage.setItem('completedBooking', JSON.stringify(booking));
+    
+    // Check if this is a trip that needs more passengers (create trip with less than 15 passengers)
+    const needsMorePassengers = (bookingTypeFromStorage === 'passengers' && 
+                                 tripOption === 'create' && 
+                                 passengerCount < 15);
+    
+    if (needsMorePassengers) {
+        // After showing success message, user can click button to go to trip status
+        // The button is already in the payment success message
+    } else {
+        // For full trips or joined trips, still show the trip status button
+        // but also allow redirect to confirmation page
+    }
+}
+
+function revealVehicleInfoInBooking() {
+    const imageContainer = document.getElementById('vehicle-image-container');
+    const blurOverlay = document.getElementById('blur-overlay');
+    const vehicleDetails = document.getElementById('vehicle-details');
+    
+    // Reveal image
+    if (imageContainer) imageContainer.classList.add('revealed');
+    if (blurOverlay) blurOverlay.classList.add('hidden');
+    
+    // Reveal details
+    if (vehicleDetails) vehicleDetails.classList.add('revealed');
+}
+
+function goBackFromPayment() {
+    // Update step navigation - go back to step 3
+    const step4 = document.getElementById('step4');
+    const step3 = document.getElementById('step3');
+    if (step4) {
+        step4.classList.remove('active');
+    }
+    if (step3) {
+        step3.classList.remove('completed');
+        step3.classList.add('active');
+    }
+    
+    // Update current step
+    currentStep = 3;
+    
+    // Hide payment step
+    const paymentStep = document.getElementById('payment-step');
+    if (paymentStep) {
+        paymentStep.classList.remove('active');
+    }
+    
+    // Show booking confirmation
+    const confirmationContent = document.getElementById('booking-confirmation');
+    if (confirmationContent) {
+        confirmationContent.classList.add('active');
+    }
+    
+    // Reset payment selection
+    selectedPaymentMethodInBooking = null;
+    const payButton = document.getElementById('pay-button');
+    if (payButton) {
+        payButton.disabled = true;
+    }
+    
+    // Hide all payment forms
+    document.querySelectorAll('.payment-form').forEach(form => {
+        form.classList.remove('show');
+    });
+    
+    // Remove selection from all cards
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.classList.remove('selected');
+    });
 }
 
 function cancelTrip() {
@@ -2783,6 +3550,9 @@ window.continueTripSelection = continueTripSelection;
 window.updatePassengerInfo = updatePassengerInfo;
 window.confirmBooking = confirmBooking;
 window.proceedToPayment = proceedToPayment;
+window.selectPaymentMethodInBooking = selectPaymentMethodInBooking;
+window.processPaymentInBooking = processPaymentInBooking;
+window.goBackFromPayment = goBackFromPayment;
 window.cancelTrip = cancelTrip;
 window.toggleMobileMenu = toggleMobileMenu;
 window.topNavZIndexDecrease = topNavZIndexDecrease;
@@ -2836,38 +3606,8 @@ function displayActiveTripBanner(tripData) {
 }
 
 function viewActiveTrip() {
-    const activeTrip = localStorage.getItem('activeTripData');
-    
-    if (activeTrip) {
-        try {
-            const tripData = JSON.parse(activeTrip);
-            
-            // Restore trip state
-            selectedRoute = tripData.routeId;
-            passengerCount = tripData.passengers;
-            tripOption = 'create';
-            
-            // Restore pickup and dropoff points (without markers for now)
-            pickupPoints = (tripData.pickupPoints || []).map(p => ({
-                ...p,
-                marker: null
-            }));
-            dropoffPoints = (tripData.dropoffPoints || []).map(p => ({
-                ...p,
-                marker: null
-            }));
-            
-            // Navigate directly to trip monitoring page
-            document.getElementById('route-selection').classList.remove('active');
-            document.getElementById('trip-monitoring').classList.add('active');
-            
-            // Display trip monitoring
-            showTripMonitoring();
-        } catch (error) {
-            console.error('Error loading active trip:', error);
-            alert('Unable to load your trip. Please try again.');
-        }
-    }
+    // Navigate to trip-status.html page
+    window.location.href = 'trip-status.html';
 }
 
 function saveActiveTripToStorage() {
@@ -2925,19 +3665,16 @@ function loadUserBookings() {
 
     const now = new Date();
     const upcoming = userBookings.filter(b => b.status === 'paid' && new Date(b.tripDate) > now);
-    const unpaid = userBookings.filter(b => b.status === 'unpaid' || b.status === 'confirmed');
     const history = userBookings.filter(b => 
         (b.status === 'paid' && new Date(b.tripDate) <= now) || b.status === 'completed'
     );
 
     // Update counts
     document.getElementById('upcoming-count').textContent = upcoming.length;
-    document.getElementById('unpaid-count').textContent = unpaid.length;
     document.getElementById('history-count').textContent = history.length;
 
     // Display bookings
     displayBookingsInTab('upcoming-bookings', upcoming, 'upcoming');
-    displayBookingsInTab('unpaid-bookings', unpaid, 'unpaid');
     displayBookingsInTab('history-bookings', history, 'history');
 
     // Show the bookings section
@@ -2964,11 +3701,6 @@ function getEmptyBookingsHTML(type) {
             title: 'No Upcoming Trips',
             text: 'You don\'t have any upcoming paid trips.'
         },
-        unpaid: {
-            icon: 'ri-alert-line',
-            title: 'No Unpaid Bookings',
-            text: 'All your bookings are paid!'
-        },
         history: {
             icon: 'ri-history-line',
             title: 'No Trip History',
@@ -2987,8 +3719,8 @@ function getEmptyBookingsHTML(type) {
 }
 
 function createBookingItemHTML(booking, type) {
-    const statusClass = booking.status === 'paid' ? 'paid' : booking.status === 'unpaid' || booking.status === 'confirmed' ? 'unpaid' : 'completed';
-    const statusText = booking.status === 'paid' ? 'PAID' : booking.status === 'unpaid' || booking.status === 'confirmed' ? 'UNPAID' : 'COMPLETED';
+    const statusClass = booking.status === 'paid' ? 'paid' : 'completed';
+    const statusText = booking.status === 'paid' ? 'PAID' : 'COMPLETED';
     
     const tripDate = new Date(booking.tripDate);
     const bookingDate = new Date(booking.bookingDate);
@@ -3004,7 +3736,6 @@ function createBookingItemHTML(booking, type) {
                     <h3><i class="ri-taxi-line"></i> ${booking.routeName || 'Taxi Booking'}</h3>
                     <div class="booking-reference">Ref: ${booking.reference}</div>
                 </div>
-                <div class="booking-status ${statusClass}">${statusText}</div>
             </div>
             
             <div class="booking-item-quick-info">
@@ -3117,22 +3848,11 @@ function createBookingLocationsHTML(booking) {
 function createBookingActionsHTML(booking, type) {
     let actions = '';
     
-    if (type === 'unpaid') {
-        actions += `
-            <button class="booking-action-btn primary" onclick="payForExistingBooking('${booking.id}')">
-                <i class="ri-bank-card-line"></i> Pay Now
-            </button>
-            <button class="booking-action-btn danger" onclick="cancelExistingBooking('${booking.id}')">
-                <i class="ri-close-line"></i> Cancel Booking
-            </button>
-        `;
-    } else {
-        actions += `
-            <button class="booking-action-btn secondary" onclick="viewBookingOnMap('${booking.id}')">
-                <i class="ri-map-pin-line"></i> View on Map
-            </button>
-        `;
-    }
+    actions += `
+        <button class="booking-action-btn secondary" onclick="viewBookingOnMap('${booking.id}')">
+            <i class="ri-map-pin-line"></i> View on Map
+        </button>
+    `;
     
     return actions;
 }
@@ -3492,7 +4212,9 @@ window.markNotificationAsRead = markNotificationAsRead;
 window.handleEarlyDeliveryFromNotification = handleEarlyDeliveryFromNotification;
 
 // Initialize the page
+// Update extra space display on page load
 document.addEventListener('DOMContentLoaded', function() {
+    updateExtraSpaceDisplay();
     initializeMap();
     checkActiveTrip();
     loadUserBookings();

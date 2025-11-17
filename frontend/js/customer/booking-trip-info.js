@@ -16,17 +16,15 @@ function topNavZIndexDecrease() {
     }
 }
 
-// === MAP IMPLEMENTATION (Following client.js pattern) ===
-
-// Mapbox setup (same as client.js)
-const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
-mapboxgl.accessToken = accessToken;
+// === MAP IMPLEMENTATION (Google Maps) ===
 
 // Global variables
 let map;
 let markers = [];
 let pickupPoints = [];
 let destinationMarker = null;
+let geocoder;
+let placesService;
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
@@ -42,23 +40,33 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeMap() {
     console.log('Initializing booking map...');
     
-    // Initialize map (same pattern as client.js)
-    map = new mapboxgl.Map({
-        container: "bookingMap",
-        style: "mapbox://styles/mapbox/streets-v11",
-        center: [28.5, -26.2], // approximate center of Gauteng
+    // Wait for Google Maps API to load
+    if (typeof google === 'undefined' || !google.maps) {
+        setTimeout(initializeMap, 100);
+        return;
+    }
+    
+    // Initialize Google Maps
+    map = new google.maps.Map(document.getElementById("bookingMap"), {
+        center: { lat: -26.2, lng: 28.5 }, // approximate center of Gauteng
         zoom: 8,
-        // Limit map bounds to South Africa
-        maxBounds: [
-            [16.0, -35.0], // Southwest coordinates (min longitude, min latitude)
-            [33.0, -22.0]  // Northeast coordinates (max longitude, max latitude)
-        ],
+        mapTypeId: 'roadmap',
+        restriction: {
+            latLngBounds: {
+                north: -22.0,
+                south: -35.0,
+                west: 16.0,
+                east: 33.0
+            },
+            strictBounds: false
+        }
     });
     
     console.log('Map initialized successfully');
     
-    // Add navigation controls
-    map.addControl(new mapboxgl.NavigationControl());
+    // Initialize geocoder and places service
+    geocoder = new google.maps.Geocoder();
+    placesService = new google.maps.places.PlacesService(map);
 }
 
 function setupEventListeners() {
@@ -114,77 +122,103 @@ async function fetchSuggestions(suggestions, query) {
         return;
     }
 
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-        query
-    )}.json?access_token=${mapboxgl.accessToken}&country=ZA&autocomplete=true&limit=10`;
-    
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
+    // Wait for Google Maps API to load
+    if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+        setTimeout(() => fetchSuggestions(suggestions, query), 100);
+        return;
+    }
 
-        console.log('Received suggestions:', data.features.length);
+    // Use Google Places Autocomplete Service
+    const service = new google.maps.places.AutocompleteService();
+    
+    service.getPlacePredictions({
+        input: query,
+        componentRestrictions: { country: 'za' },
+        types: ['geocode']
+    }, (predictions, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+            suggestions.innerHTML = "";
+            return;
+        }
+
+        console.log('Received suggestions:', predictions.length);
 
         // Populate the dropdown with suggestions
         suggestions.innerHTML = "";
-        if (data.features.length > 0) {
-            data.features.forEach((feature) => {
-                const li = document.createElement("li");
-                li.textContent = feature.place_name;
-                li.style.padding = "10px";
-                li.style.cursor = "pointer";
-                li.style.borderBottom = "1px solid #eee";
+        predictions.forEach((prediction) => {
+            const li = document.createElement("li");
+            li.textContent = prediction.description;
+            li.style.padding = "10px";
+            li.style.cursor = "pointer";
+            li.style.borderBottom = "1px solid #eee";
+            li.style.backgroundColor = "#fff";
+            li.style.transition = "background-color 0.2s";
+
+            li.addEventListener("mouseenter", () => {
+                li.style.backgroundColor = "#f0f0f0";
+            });
+
+            li.addEventListener("mouseleave", () => {
                 li.style.backgroundColor = "#fff";
-                li.style.transition = "background-color 0.2s";
+            });
 
-                li.addEventListener("mouseenter", () => {
-                    li.style.backgroundColor = "#f0f0f0";
-                });
+            li.addEventListener("click", () => {
+                // Get place details to get coordinates
+                const placesService = new google.maps.places.PlacesService(map);
+                placesService.getDetails({
+                    placeId: prediction.place_id
+                }, (place, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+                        const longitude = place.geometry.location.lng();
+                        const latitude = place.geometry.location.lat();
 
-                li.addEventListener("mouseleave", () => {
-                    li.style.backgroundColor = "#fff";
-                });
+                        console.log("Selected coordinates:", longitude, latitude);
 
-                li.addEventListener("click", () => {
-                    const longitude = feature.center[0];
-                    const latitude = feature.center[1];
-
-                    console.log("Selected coordinates:", longitude, latitude);
-
-                    if (suggestions.id === 'destinationSuggestions') {
-                        // Handle destination selection
-                        setDestination(feature.place_name, longitude, latitude);
-                        document.getElementById('destination').value = feature.place_name;
-                        suggestions.innerHTML = "";
-                    } else {
-                        // Handle pickup point selection
-                        const pickupIndex = parseInt(suggestions.id.replace('pickupSuggestions', '')) - 1;
-                        setPickupPoint(feature.place_name, longitude, latitude, pickupIndex);
-                        const pickupInput = document.querySelector(`input[name="pickup[]"]:nth-of-type(${pickupIndex + 1})`);
-                        if (pickupInput) pickupInput.value = feature.place_name;
-                        suggestions.innerHTML = "";
+                        if (suggestions.id === 'destinationSuggestions') {
+                            // Handle destination selection
+                            setDestination(prediction.description, longitude, latitude);
+                            document.getElementById('destination').value = prediction.description;
+                            suggestions.innerHTML = "";
+                        } else {
+                            // Handle pickup point selection
+                            const pickupIndex = parseInt(suggestions.id.replace('pickupSuggestions', '')) - 1;
+                            setPickupPoint(prediction.description, longitude, latitude, pickupIndex);
+                            const pickupInput = document.querySelector(`input[name="pickup[]"]:nth-of-type(${pickupIndex + 1})`);
+                            if (pickupInput) pickupInput.value = prediction.description;
+                            suggestions.innerHTML = "";
+                        }
                     }
                 });
-
-                suggestions.appendChild(li);
             });
-        }
-    } catch (error) {
-        console.error("Error fetching suggestions:", error);
-    }
+
+            suggestions.appendChild(li);
+        });
+    });
 }
 
 function setDestination(address, lng, lat) {
     if (destinationMarker) {
-        destinationMarker.remove();
+        destinationMarker.setMap(null);
     }
     
-    // Create destination marker (same pattern as client.js)
-    destinationMarker = new mapboxgl.Marker({ color: '#dc3545' })
-        .setLngLat([lng, lat])
-        .addTo(map);
+    // Create destination marker
+    destinationMarker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#dc3545',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3
+        },
+        title: 'Destination'
+    });
     
-    // Fly to the location
-    map.flyTo({ center: [lng, lat], zoom: 12 });
+    // Pan to the location
+    map.panTo({ lat: lat, lng: lng });
+    map.setZoom(12);
     
     updateTripSummary();
 }
@@ -192,19 +226,30 @@ function setDestination(address, lng, lat) {
 function setPickupPoint(address, lng, lat, index) {
     // Remove existing marker if it exists
     if (markers[index]) {
-        markers[index].remove();
+        markers[index].setMap(null);
     }
     
-    // Create pickup marker (same pattern as client.js)
-    markers[index] = new mapboxgl.Marker({ color: '#28a745' })
-        .setLngLat([lng, lat])
-        .addTo(map);
+    // Create pickup marker
+    markers[index] = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#28a745',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3
+        },
+        title: 'Pickup Point'
+    });
     
     // Update pickup point data
     pickupPoints[index] = { address, lng, lat, index };
     
-    // Fly to the location
-    map.flyTo({ center: [lng, lat], zoom: 12 });
+    // Pan to the location
+    map.panTo({ lat: lat, lng: lng });
+    map.setZoom(12);
     
     updateTripSummary();
 }
@@ -215,9 +260,19 @@ function addPickupPointFromMap(address, lng, lat) {
     pickupPoints.push(pickupPoint);
     
     // Add marker
-    const marker = new mapboxgl.Marker({ color: '#28a745' })
-        .setLngLat([lng, lat])
-        .addTo(map);
+    const marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#28a745',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3
+        },
+        title: 'Pickup Point'
+    });
     
     markers.push(marker);
     
@@ -278,7 +333,7 @@ function removePickupPoint(index) {
     
     // Remove marker
     if (markers[index]) {
-        markers[index].remove();
+        markers[index].setMap(null);
         markers.splice(index, 1);
     }
     
@@ -304,8 +359,8 @@ function updateRemoveButtons() {
 }
 
 function clearAllMarkers() {
-    markers.forEach(marker => marker.remove());
-    if (destinationMarker) destinationMarker.remove();
+    markers.forEach(marker => marker.setMap(null));
+    if (destinationMarker) destinationMarker.setMap(null);
     
     markers = [];
     destinationMarker = null;
@@ -320,18 +375,21 @@ function clearAllMarkers() {
 function centerMap() {
     if (destinationMarker && pickupPoints.length > 0) {
         // Fit bounds to all markers
-        const bounds = new mapboxgl.LngLatBounds();
+        const bounds = new google.maps.LatLngBounds();
         
-        bounds.extend([destinationMarker.getLngLat().lng, destinationMarker.getLngLat().lat]);
+        const destPos = destinationMarker.getPosition();
+        bounds.extend(destPos);
+        
         pickupPoints.forEach(pickup => {
             if (pickup.lng && pickup.lat) {
-                bounds.extend([pickup.lng, pickup.lat]);
+                bounds.extend({ lat: pickup.lat, lng: pickup.lng });
             }
         });
         
-        map.fitBounds(bounds, { padding: 50 });
+        map.fitBounds(bounds);
     } else {
-        map.flyTo({ center: [28.0473, -26.2041], zoom: 12 });
+        map.panTo({ lat: -26.2041, lng: 28.0473 });
+        map.setZoom(12);
     }
 }
 

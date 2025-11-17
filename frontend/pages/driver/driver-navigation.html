@@ -1,581 +1,646 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Navigation - TeksiMap Driver</title>
-    
+
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico" />
-    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16" />
-    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32" />
-    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="../../assets/icons/favicon.ico"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="../../assets/icons/favicon-16x16.png"
+      sizes="16x16"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="../../assets/icons/favicon-32x32.png"
+      sizes="32x32"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="../../assets/icons/apple-touch-icon.svg"
+    />
     <link rel="manifest" href="../../assets/icons/site.webmanifest" />
-    
+
     <!-- CSS -->
     <link rel="stylesheet" href="../../css/clientStyle.css" />
     <link rel="stylesheet" href="../../css/topnav.css" />
     <link rel="stylesheet" href="../../css/driver.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+
     <!-- Map API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-    
+
     <style>
-        .navigation-container {
-            position: relative;
-            height: 100vh;
-            width: 100%;
-        }
-        
-        .map-container {
-            height: 100%;
-            width: 100%;
-        }
-        
+      .navigation-container {
+        position: relative;
+        height: 100vh;
+        width: 100%;
+      }
+
+      .map-container {
+        height: 100%;
+        width: 100%;
+      }
+
+      .navigation-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .control-btn {
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+        color: #01386a;
+      }
+
+      .control-btn:hover {
+        background: #f8f9fa;
+        transform: scale(1.1);
+      }
+
+      .control-btn.active {
+        background: #01386a;
+        color: white;
+      }
+
+      .navigation-info {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-height: 36vh;
+        min-height: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #01386a #f1f1f1;
+      }
+
+      /* Ensure Google Maps error icon is visible above navigation info */
+      .gm-err-icon {
+        z-index: 2000 !important;
+        position: relative !important;
+      }
+
+      /* Ensure Google Maps error message is visible */
+      .gm-err-message {
+        z-index: 2000 !important;
+        position: relative !important;
+      }
+
+      .navigation-info::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .navigation-info::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      .navigation-info::-webkit-scrollbar-thumb {
+        background: #01386a;
+        border-radius: 4px;
+      }
+
+      .navigation-info::-webkit-scrollbar-thumb:hover {
+        background: #012a4a;
+      }
+
+      .trip-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      .trip-info {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .trip-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.5rem;
+      }
+
+      .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .detail-item i {
+        color: #01386a;
+        width: 16px;
+      }
+
+      .trip-id {
+        font-weight: bold;
+        color: #01386a;
+        font-size: 1.1rem;
+      }
+
+      .trip-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .route-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding-bottom: 1rem;
+      }
+
+      .route-step {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .route-step:hover {
+        background: #f8f9fa;
+      }
+
+      .route-step.current {
+        background: #e3f2fd;
+        border: 2px solid #01386a;
+      }
+
+      .route-step.completed {
+        opacity: 0.6;
+      }
+
+      .step-number {
+        background: #01386a;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+      }
+
+      .step-number.completed {
+        background: #28a745;
+      }
+
+      /* Different step number colors for pickup vs dropoff */
+      .route-step.pickup-human .step-number,
+      .route-step.pickup-package .step-number {
+        background: #28a745;
+      }
+
+      .route-step.dropoff-human .step-number,
+      .route-step.dropoff-package .step-number {
+        background: #17a2b8;
+      }
+
+      .route-step.pickup-package .step-number {
+        background: #ffc107;
+        color: #000;
+      }
+
+      .route-step.dropoff-package .step-number {
+        background: #dc3545;
+      }
+
+      .step-number.current {
+        background: #ffd700;
+        color: #333;
+      }
+
+      .step-info {
+        flex: 1;
+      }
+
+      .step-title {
+        font-weight: bold;
+        color: #01386a;
+        margin-bottom: 0.25rem;
+      }
+
+      .step-details {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .step-time {
+        color: #01386a;
+        font-weight: bold;
+        font-size: 0.9rem;
+      }
+
+      /* Differentiate pickup/dropoff types with enhanced visual differences */
+      .route-step.pickup-human {
+        border-left: 6px solid #28a745;
+        background: linear-gradient(
+          90deg,
+          rgba(40, 167, 69, 0.05) 0%,
+          transparent 100%
+        );
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+
+      .route-step.pickup-package {
+        border-left: 6px solid #ffc107;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 193, 7, 0.05) 0%,
+          transparent 100%
+        );
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+
+      .route-step.dropoff-human {
+        border-left: 6px solid #17a2b8;
+        background: linear-gradient(
+          90deg,
+          rgba(23, 162, 184, 0.05) 0%,
+          transparent 100%
+        );
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+
+      .route-step.dropoff-package {
+        border-left: 6px solid #dc3545;
+        background: linear-gradient(
+          90deg,
+          rgba(220, 53, 69, 0.05) 0%,
+          transparent 100%
+        );
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+
+      /* Add pickup/dropoff indicators */
+      .route-step.pickup-human::before,
+      .route-step.pickup-package::before {
+        content: "↑ PICKUP";
+        position: absolute;
+        top: -8px;
+        right: 10px;
+        background: #28a745;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        z-index: 1;
+      }
+
+      .route-step.pickup-package::before {
+        background: #ffc107;
+        color: #000;
+      }
+
+      .route-step.dropoff-human::before,
+      .route-step.dropoff-package::before {
+        content: "↓ DROPOFF";
+        position: absolute;
+        top: -8px;
+        right: 10px;
+        background: #17a2b8;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        z-index: 1;
+      }
+
+      .route-step.dropoff-package::before {
+        background: #dc3545;
+      }
+
+      .step-type-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 0.5rem;
+      }
+
+      .step-type-badge.human {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .step-type-badge.package {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .step-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+      }
+
+      .step-icon.human {
+        color: #28a745;
+      }
+
+      .step-icon.package {
+        color: #ffc107;
+      }
+
+      .step-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .action-btn {
+        padding: 0.5rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+      }
+
+      .action-btn.primary {
+        background: #01386a;
+        color: white;
+      }
+
+      .action-btn.primary:hover {
+        background: #001f3f;
+      }
+
+      .action-btn.secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .action-btn.secondary:hover {
+        background: #5a6268;
+      }
+
+      .action-btn.success {
+        background: #28a745;
+        color: white;
+      }
+
+      .action-btn.success:hover {
+        background: #218838;
+      }
+
+      .no-trip {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+      }
+
+      .no-trip i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #ddd;
+      }
+
+      @media (max-width: 768px) {
         .navigation-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+          top: 80px;
+          right: 10px;
         }
-        
-        .control-btn {
-            background: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.2rem;
-            color: #01386A;
-        }
-        
-        .control-btn:hover {
-            background: #f8f9fa;
-            transform: scale(1.1);
-        }
-        
-        .control-btn.active {
-            background: #01386A;
-            color: white;
-        }
-        
+
         .navigation-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: white;
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            max-height: 36vh;
-            min-height: 200px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: #01386A #f1f1f1;
+          bottom: 10px;
+          left: 10px;
+          right: 10px;
+          max-height: 60vh;
+          min-height: 150px;
         }
-        
-        /* Ensure Google Maps error icon is visible above navigation info */
-        .gm-err-icon {
-            z-index: 2000 !important;
-            position: relative !important;
-        }
-        
-        /* Ensure Google Maps error message is visible */
-        .gm-err-message {
-            z-index: 2000 !important;
-            position: relative !important;
-        }
-        
-        .navigation-info::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .navigation-info::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        
-        .navigation-info::-webkit-scrollbar-thumb {
-            background: #01386A;
-            border-radius: 4px;
-        }
-        
-        .navigation-info::-webkit-scrollbar-thumb:hover {
-            background: #012a4a;
-        }
-        
-        
+
         .trip-summary {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #eee;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
         }
-        
-        .trip-info {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
+
         .trip-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 0.5rem;
+          grid-template-columns: 1fr;
+          gap: 0.25rem;
         }
-        
+
         .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: #666;
+          font-size: 0.8rem;
         }
-        
-        .detail-item i {
-            color: #01386A;
-            width: 16px;
-        }
-        
-        .trip-id {
-            font-weight: bold;
-            color: #01386A;
-            font-size: 1.1rem;
-        }
-        
-        .trip-status {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .route-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            padding-bottom: 1rem;
-        }
-        
-        .route-step {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .route-step:hover {
-            background: #f8f9fa;
-        }
-        
-        .route-step.current {
-            background: #e3f2fd;
-            border: 2px solid #01386A;
-        }
-        
-        .route-step.completed {
-            opacity: 0.6;
-        }
-        
-        .step-number {
-            background: #01386A;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-        
-        .step-number.completed {
-            background: #28a745;
-        }
-        
-        /* Different step number colors for pickup vs dropoff */
-        .route-step.pickup-human .step-number,
-        .route-step.pickup-package .step-number {
-            background: #28a745;
-        }
-        
-        .route-step.dropoff-human .step-number,
-        .route-step.dropoff-package .step-number {
-            background: #17a2b8;
-        }
-        
-        .route-step.pickup-package .step-number {
-            background: #ffc107;
-            color: #000;
-        }
-        
-        .route-step.dropoff-package .step-number {
-            background: #dc3545;
-        }
-        
-        .step-number.current {
-            background: #FFD700;
-            color: #333;
-        }
-        
-        .step-info {
-            flex: 1;
-        }
-        
-        .step-title {
-            font-weight: bold;
-            color: #01386A;
-            margin-bottom: 0.25rem;
-        }
-        
-        .step-details {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .step-time {
-            color: #01386A;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        
-        /* Differentiate pickup/dropoff types with enhanced visual differences */
-        .route-step.pickup-human {
-            border-left: 6px solid #28a745;
-            background: linear-gradient(90deg, rgba(40, 167, 69, 0.05) 0%, transparent 100%);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .route-step.pickup-package {
-            border-left: 6px solid #ffc107;
-            background: linear-gradient(90deg, rgba(255, 193, 7, 0.05) 0%, transparent 100%);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .route-step.dropoff-human {
-            border-left: 6px solid #17a2b8;
-            background: linear-gradient(90deg, rgba(23, 162, 184, 0.05) 0%, transparent 100%);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-        
-        .route-step.dropoff-package {
-            border-left: 6px solid #dc3545;
-            background: linear-gradient(90deg, rgba(220, 53, 69, 0.05) 0%, transparent 100%);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-        
-        /* Add pickup/dropoff indicators */
-        .route-step.pickup-human::before,
-        .route-step.pickup-package::before {
-            content: "↑ PICKUP";
-            position: absolute;
-            top: -8px;
-            right: 10px;
-            background: #28a745;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            z-index: 1;
-        }
-        
-        .route-step.pickup-package::before {
-            background: #ffc107;
-            color: #000;
-        }
-        
-        .route-step.dropoff-human::before,
-        .route-step.dropoff-package::before {
-            content: "↓ DROPOFF";
-            position: absolute;
-            top: -8px;
-            right: 10px;
-            background: #17a2b8;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            z-index: 1;
-        }
-        
-        .route-step.dropoff-package::before {
-            background: #dc3545;
-        }
-        
-        .step-type-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-left: 0.5rem;
-        }
-        
-        .step-type-badge.human {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .step-type-badge.package {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .step-icon {
-            font-size: 1.2rem;
-            margin-right: 0.5rem;
-        }
-        
-        .step-icon.human {
-            color: #28a745;
-        }
-        
-        .step-icon.package {
-            color: #ffc107;
-        }
-        
-        .step-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .action-btn {
-            padding: 0.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn.primary {
-            background: #01386A;
-            color: white;
-        }
-        
-        .action-btn.primary:hover {
-            background: #001f3f;
-        }
-        
-        .action-btn.secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .action-btn.secondary:hover {
-            background: #5a6268;
-        }
-        
-        .action-btn.success {
-            background: #28a745;
-            color: white;
-        }
-        
-        .action-btn.success:hover {
-            background: #218838;
-        }
-        
-        .no-trip {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
-        }
-        
-        .no-trip i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: #ddd;
-        }
-        
-        @media (max-width: 768px) {
-            .navigation-controls {
-                top: 80px;
-                right: 10px;
-            }
-            
-            .navigation-info {
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                max-height: 60vh;
-                min-height: 150px;
-            }
-            
-            .trip-summary {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            
-            .trip-details {
-                grid-template-columns: 1fr;
-                gap: 0.25rem;
-            }
-            
-            .detail-item {
-                font-size: 0.8rem;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Top Navigation -->
     <nav class="topnav">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="../../index.html">
-                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
-                </a>
-            </div>
-
-            <!-- Burger button for mobile -->
-            <div class="burger" onclick="toggleMobileMenu()">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-
-            <!-- Navigation links -->
-            <div class="nav-links" id="mobileMenu">
-                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
-                <a href="../customer/booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
-                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
-                
-                <!-- Driver specific navigation -->
-                <div id="driverNav" class="full-navigation" style="display: none;">
-                    <a href="driver-dashboard.html" onclick="topNavZIndexDecrease()">Dashboard</a>
-                    <a href="driver-trips.html" onclick="topNavZIndexDecrease()">My Trips</a>
-                    <a href="driver-navigation.html" class="active" onclick="topNavZIndexDecrease()">Navigation</a>
-                    <a href="driver-verification.html" onclick="topNavZIndexDecrease()">Verification</a>
-                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
-                </div>
-                
-                <!-- Logout button -->
-                <div id="logoutBtn" style="display: none;">
-                    <a href="#" class="nav-logout-btn" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Logout
-                    </a>
-                </div>
-            </div>
+      <div class="nav-container">
+        <div class="logo">
+          <a href="../../index.html">
+            <img
+              src="../../assets/icons/logo-advanced-white.svg"
+              alt="TeksiMap Logo"
+              class="h-10 w-auto"
+            />
+          </a>
         </div>
+
+        <!-- Burger button for mobile -->
+        <div class="burger" onclick="toggleMobileMenu()">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+
+        <!-- Navigation links -->
+        <div class="nav-links" id="mobileMenu">
+          <a href="../customer/client.html" onclick="topNavZIndexDecrease()"
+            >Find route</a
+          >
+          <a href="../customer/help.html" onclick="topNavZIndexDecrease()"
+            >Help</a
+          >
+          <a
+            href="../customer/route-suggestion.html"
+            onclick="topNavZIndexDecrease()"
+            >Suggest route</a
+          >
+          <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()"
+            >Feedback</a
+          >
+          <a href="profile.html" onclick="topNavZIndexDecrease()"
+            >Profile</a
+          >
+        </div>
+      </div>
     </nav>
 
     <!-- Navigation Container -->
     <div class="navigation-container">
-        <!-- Map -->
-        <div id="map" class="map-container"></div>
-        
-        <!-- Navigation Controls -->
-        <div class="navigation-controls">
-            <button class="control-btn" onclick="centerMap()" title="Center Map">
-                <i class="fas fa-crosshairs"></i>
-            </button>
-            
-            <button class="control-btn" onclick="toggleTraffic()" title="Toggle Traffic" id="trafficBtn">
-                <i class="fas fa-car"></i>
-            </button>
-            
-            <button class="control-btn" onclick="toggleSatellite()" title="Toggle Satellite View" id="satelliteBtn">
-                <i class="fas fa-satellite"></i>
-            </button>
-            
-            <button class="control-btn" onclick="refreshRoute()" title="Refresh Route">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-        
-        <!-- Navigation Info -->
-        <div class="navigation-info" id="navigationInfo">
-            <!-- Content will be loaded here -->
-        </div>
+      <!-- Map -->
+      <div id="map" class="map-container"></div>
+
+      <!-- Navigation Controls -->
+      <div class="navigation-controls">
+        <button class="control-btn" onclick="centerMap()" title="Center Map">
+          <i class="fas fa-crosshairs"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          onclick="toggleTraffic()"
+          title="Toggle Traffic"
+          id="trafficBtn"
+        >
+          <i class="fas fa-car"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          onclick="toggleSatellite()"
+          title="Toggle Satellite View"
+          id="satelliteBtn"
+        >
+          <i class="fas fa-satellite"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          onclick="refreshRoute()"
+          title="Refresh Route"
+        >
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Info -->
+      <div class="navigation-info" id="navigationInfo">
+        <!-- Content will be loaded here -->
+      </div>
     </div>
 
     <!-- No Trip Overlay -->
-    <div id="noTripOverlay" class="no-trip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 3rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); z-index: 2000;">
-        <i class="fas fa-route"></i>
-        <h3>No Active Trip</h3>
-        <p>You don't have any active trips to navigate.</p>
-        <div style="margin-top: 1rem;">
-            <a href="driver-dashboard.html" class="action-btn primary">
-                <i class="fas fa-arrow-left"></i>
-                Back to Dashboard
-            </a>
-        </div>
+    <div
+      id="noTripOverlay"
+      class="no-trip"
+      style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 12px;
+        padding: 3rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 2000;
+      "
+    >
+      <i class="fas fa-route"></i>
+      <h3>No Active Trip</h3>
+      <p>You don't have any active trips to navigate.</p>
+      <div style="margin-top: 1rem">
+        <a href="driver-dashboard.html" class="action-btn primary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Dashboard
+        </a>
+      </div>
     </div>
 
     <!-- Scripts -->
     <script type="module" src="../../js/tonav.js"></script>
     <script type="module" src="../../js/driver/driver-navigation.js"></script>
     <script type="module" src="../../js/authentication/logout.js"></script>
-    
+
     <script>
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            const mobileMenu = document.getElementById('mobileMenu');
-            mobileMenu.classList.toggle('show');
+      // Mobile menu toggle
+      function toggleMobileMenu() {
+        const mobileMenu = document.getElementById("mobileMenu");
+        mobileMenu.classList.toggle("show");
+      }
+
+      function topNavZIndexDecrease() {
+        // Function for navigation link clicks
+      }
+
+      // Map control functions
+      function centerMap() {
+        if (window.centerMapOnLocation) {
+          window.centerMapOnLocation();
         }
-        
-        function topNavZIndexDecrease() {
-            // Function for navigation link clicks
+      }
+
+      function toggleTraffic() {
+        if (window.toggleTrafficLayer) {
+          window.toggleTrafficLayer();
         }
-        
-        // Map control functions
-        function centerMap() {
-            if (window.centerMapOnLocation) {
-                window.centerMapOnLocation();
-            }
+      }
+
+      function toggleSatellite() {
+        if (window.toggleSatelliteView) {
+          window.toggleSatelliteView();
         }
-        
-        function toggleTraffic() {
-            if (window.toggleTrafficLayer) {
-                window.toggleTrafficLayer();
-            }
+      }
+
+      function refreshRoute() {
+        if (window.refreshCurrentRoute) {
+          window.refreshCurrentRoute();
         }
-        
-        function toggleSatellite() {
-            if (window.toggleSatelliteView) {
-                window.toggleSatelliteView();
-            }
-        }
-        
-        function refreshRoute() {
-            if (window.refreshCurrentRoute) {
-                window.refreshCurrentRoute();
-            }
-        }
+      }
     </script>
-</body>
+  </body>
 </html>

@@ -2,7 +2,6 @@
 body {
     margin: 0;
     padding: 0;
-    padding-top: 60px; /* Account for fixed navbar */
 }
 
 .help-container {
@@ -31,7 +30,7 @@ body {
 }
 
 /* Navigation Styles */
-.topnav {
+/* .topnav {
     background-color: #01386A;
     color: white;
     position: fixed;
@@ -54,7 +53,7 @@ body {
   }
   
   .topnav img {
-    height: 35px; /* smaller height */
+    height: 35px; 
     width: auto;
     border-radius: 8px;
     display: block;
@@ -107,7 +106,7 @@ body {
   .nav-links a.active:hover {
     background-color: #FFC107 !important;
     text-decoration: none;
-  }
+  } */
 
 
 /* FAQ Section */
