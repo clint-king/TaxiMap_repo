@@ -1,35 +1,188 @@
-// Booking Public - Route-Based Booking JavaScript
+/**
+ * ============================================
+ * BOOKING PUBLIC - ROUTE-BASED BOOKING SYSTEM
+ * ============================================
+ * 
+ * This file handles the complete booking flow for route-based taxi/transport bookings.
+ * It supports both passenger bookings and parcel delivery bookings with the following features:
+ * 
+ * MAIN FUNCTIONALITIES:
+ * 1. Route Selection - Users select from predefined routes (e.g., Pretoria → Tzaneen)
+ * 3. Location Selection - Pickup and dropoff point selection with Google Maps integration
+ * 4. Passenger/Parcel Management - Add passengers or parcels to booking
+ * 5. Booking Confirmation - Review and confirm booking details
+ * 6. Payment Processing - Handle payment via multiple methods (Card, EFT, Mobile)
+ * 7. Trip Sharing - Generate shareable links for trips needing more passengers
+ * 9. Booking Management - View, cancel, and manage existing bookings
+ * 
+ * BOOKING FLOW:
+ * Step 1: Route Selection → Step 2: Location Selection → 
+ * Step 3: Passenger/Parcel Info → Step 4: Booking Summary → 
+ * Step 5: Payment → Step 6: Confirmation
+ * 
+ * API INTEGRATION:
+ * - Uses bookingApi for creating bookings, adding passengers/parcels
+ * - Uses vehicleApi for searching and selecting vehicles
+ * - Uses paymentApi for processing payments
+ * 
+ * DATA PERSISTENCE:
+ * - Uses sessionStorage for temporary booking data during flow
+ * - Uses localStorage for completed bookings and user preferences
+ * ============================================
+ */
 
-// Get Mapbox token from environment variable
-const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+import * as bookingApi from '../api/bookingApi.js';
+import * as vehicleApi from '../api/vehicleApi.js';
+import * as paymentApi from '../api/paymentApi.js';
 
-// State variables
-let selectedRoute = null;
-let passengerCount = 1;
-let parcelCount = 0;
+// ============================================
+// CONFIGURATION & CONSTANTS
+// ============================================
+
+
+/**
+ * Maximum total capacity for a vehicle (passengers + parcel space)
+ * This is the total number of seats available in a vehicle
+ */
 const MAX_TOTAL_CAPACITY = 15;
-let currentStep = 1;
-let map = null;
-let routeStartMarker = null;
-let routeEndMarker = null;
-let routePolylineMain = null;
-let tripOption = 'create'; // default to creating a new trip flow
-let selectedTrip = null;
-let selectedTripInfo = null;
-let tripLocationsMap = null;
-let pickupPoints = [];
-let dropoffPoints = [];
-let pickupCounter = 1;
-let dropoffCounter = 1;
-let parcelData = {}; // Store parcel data by unique ID
-let desiredTripDate = '';
-let lastLoadedTrips = [];
-let bookingType = 'passengers'; // 'passengers' or 'parcels'
-let deliveryWindow = null;
-let notifyEarlyDelivery = false; // Whether user wants to be notified of earlier delivery
 
+/**
+ * Feature flag to enable/disable parcel booking functionality
+ * When false, parcel-related features are hidden and disabled
+ */
 const PARCEL_FEATURE_ENABLED = true;
 
+// ============================================
+// STATE VARIABLES - Booking Flow State
+// ============================================
+
+/**
+ * Currently selected route ID (e.g., 'pta-tzn' for Pretoria → Tzaneen)
+ * Used to identify which route the user has selected for booking
+ */
+let selectedRoute = null;
+
+/**
+ * Number of passengers in the current booking
+ * Defaults to 1 (the booking user)
+ */
+let passengerCount = 1;
+
+/**
+ * Number of parcels in the current booking
+ * Only used when bookingType is 'parcels'
+ */
+let parcelCount = 0;
+
+/**
+ * Current step in the booking flow (1-7)
+ * 1: Route Selection
+ * 2: Location Selection
+ * 3: Passenger/Parcel Information
+ * 4: Booking Summary
+ * 5: Payment
+ * 6: Confirmation
+ */
+let currentStep = 1;
+
+/**
+ * Desired trip date/time selected by user
+ * Format: ISO string or formatted date string
+ */
+let desiredTripDate = '';
+
+/**
+ * Type of booking being made
+ * - 'passengers': Booking is for passenger transport
+ * - 'parcels': Booking is for parcel delivery
+ */
+let bookingType = 'passengers'; // 'passengers' or 'parcels'
+
+
+// ============================================
+// STATE VARIABLES - Map & Location State
+// ============================================
+
+/**
+ * Google Maps instance for main route display map
+ * Shows the selected route with start and end markers
+ */
+let map = null;
+
+/**
+ * Google Maps marker for route start location
+ * Displays the origin city on the map
+ */
+let routeStartMarker = null;
+
+/**
+ * Google Maps marker for route end location
+ * Displays the destination city on the map
+ */
+let routeEndMarker = null;
+
+/**
+ * Google Maps polyline showing the route path
+ * Draws a line connecting start and end points
+ */
+let routePolylineMain = null;
+
+/**
+ * Google Maps instance for trip locations selection map
+ * Used when user is selecting specific pickup/dropoff points
+ */
+let tripLocationsMap = null;
+
+/**
+ * Array of pickup points selected by user
+ * Each point contains: address, coordinates (lat/lng), index
+ * Users can add multiple pickup points
+ */
+let pickupPoints = [];
+
+/**
+ * Array of dropoff points selected by user
+ * Each point contains: address, coordinates (lat/lng), index
+ * Users can add multiple dropoff points
+ */
+let dropoffPoints = [];
+
+/**
+ * Counter for pickup points (for unique identification)
+ * Increments each time a new pickup point is added
+ */
+let pickupCounter = 1;
+
+/**
+ * Counter for dropoff points (for unique identification)
+ * Increments each time a new dropoff point is added
+ */
+let dropoffCounter = 1;
+
+// ============================================
+// STATE VARIABLES - Parcel Data
+// ============================================
+
+/**
+ * Object storing parcel data by unique parcel ID
+ * Structure: { parcelId: { size, senderName, receiverName, images, etc. } }
+ * Used to store all parcel information before booking submission
+ */
+let parcelData = {}; // Store parcel data by unique ID
+
+// ============================================
+// UTILITY FUNCTIONS - Data Sanitization
+// ============================================
+
+/**
+ * Sanitizes field values to prevent null/undefined issues
+ * Removes whitespace, converts null/undefined to empty strings
+ * 
+ * @param {*} value - The value to sanitize (can be any type)
+ * @returns {string} - Sanitized string value (empty string if invalid)
+ * 
+ * Usage: Used when processing form inputs to ensure clean data
+ */
 function sanitizeFieldValue(value) {
     if (value === null || value === undefined) {
         return '';
@@ -51,6 +204,15 @@ function sanitizeFieldValue(value) {
     return value;
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS attacks
+ * Converts &, ", <, > to their HTML entity equivalents
+ * 
+ * @param {*} value - The value to escape (will be converted to string)
+ * @returns {string} - HTML-escaped string
+ * 
+ * Usage: Used when inserting user input into HTML to prevent injection attacks
+ */
 function escapeAttribute(value) {
     if (value === null || value === undefined) {
         return '';
@@ -63,6 +225,15 @@ function escapeAttribute(value) {
         .replace(/>/g, '&gt;');
 }
 
+// ============================================
+// PARCEL FEATURE INITIALIZATION
+// ============================================
+
+/**
+ * Cleanup function: Removes parcel-related data if parcel feature is disabled
+ * This ensures no parcel data persists when feature is turned off
+ * Runs on page load to maintain data consistency
+ */
 if (!PARCEL_FEATURE_ENABLED) {
     try {
         if (sessionStorage.getItem('bookingType') === 'parcels') {
@@ -70,19 +241,43 @@ if (!PARCEL_FEATURE_ENABLED) {
         }
         sessionStorage.removeItem('parcelCount');
         sessionStorage.removeItem('parcelData');
-        sessionStorage.removeItem('notifyEarlyDelivery');
-        sessionStorage.removeItem('deliveryWindow');
-        localStorage.removeItem('pendingParcelBookings');
     } catch (error) {
         console.warn('Parcel state reset skipped:', error);
     }
 }
 
-// Extra-space policy (guaranteed parcel zone): total capacity equivalent to 4 Large + 1 Medium
-// Equivalences: 1 Large = 2 Medium = 4 Small => totals: 4L + 1M = 9M = 18S
+// ============================================
+// PARCEL SPACE CALCULATION SYSTEM
+// ============================================
+
+/**
+ * Base capacity for extra space (guaranteed parcel zone)
+ * Total capacity equivalent to 4 Large + 1 Medium parcels
+ * 
+ * Size Equivalences:
+ * - 1 Large = 2 Medium = 4 Small
+ * - Total: 4L + 1M = 9M = 18S (in small equivalents)
+ * 
+ * This represents the dedicated space available for parcels beyond passenger seats
+ */
 const EXTRA_SPACE_BASE = { large: 4, medium: 1, mediumEquivalent: 9, smallEquivalent: 18 };
 
-// Calculate remaining extra space after usage
+/**
+ * Calculates remaining extra space after some parcels have been booked
+ * Converts all sizes to medium equivalents for calculation, then converts back
+ * 
+ * @param {number} usedLarge - Number of large parcels already booked (default: 0)
+ * @param {number} usedMedium - Number of medium parcels already booked (default: 0)
+ * @param {number} usedSmall - Number of small parcels already booked (default: 0)
+ * @returns {Object} - Object containing remaining space in all size formats:
+ *   - large: Remaining large parcel slots
+ *   - medium: Remaining medium parcel slots
+ *   - small: Remaining small parcel slots
+ *   - mediumEquivalent: Total remaining in medium equivalents
+ *   - smallEquivalent: Total remaining in small equivalents
+ * 
+ * Usage: Called when user adds/removes parcels to update available space display
+ */
 function calculateRemainingExtraSpace(usedLarge = 0, usedMedium = 0, usedSmall = 0) {
     // Convert everything to medium equivalent for calculation
     // Total capacity: 4L + 1M = 8M + 1M = 9M
@@ -124,7 +319,25 @@ function calculateRemainingExtraSpace(usedLarge = 0, usedMedium = 0, usedSmall =
     };
 }
 
-// Sample route data
+// ============================================
+// ROUTE DATA - Predefined Routes
+// ============================================
+
+/**
+ * Sample route data containing predefined routes available for booking
+ * Each route contains:
+ * - name: Display name (e.g., "Pretoria → Tzaneen")
+ * - distance: Distance in kilometers
+ * - duration: Estimated travel time in hours
+ * - price: Base fare per person/parcel
+ * - capacity: Total vehicle capacity
+ * - occupied: Currently occupied seats
+ * - departure: Scheduled departure date and time
+ * - extraSpace: Available parcel space breakdown
+ * - coordinates: Start and end coordinates for map display
+ * 
+ * In production, this would be fetched from the backend API
+ */
 const routes = {
     'pta-tzn': {
         name: 'Pretoria → Tzaneen',
@@ -178,7 +391,144 @@ const routes = {
     }
 };
 
-// Function to calculate available extra space
+// ============================================
+// ROUTE CARD GENERATION
+// ============================================
+
+/**
+ * Extra space pricing constants (in ZAR)
+ * These prices are used for parcel delivery in extra space
+ */
+const EXTRA_SPACE_PRICING = {
+    large: 400,
+    medium: 150,
+    small: 60
+};
+
+/**
+ * Dynamically generates and populates route cards from the routes object
+ * Replaces hardcoded route cards in the HTML with dynamically generated ones
+ * 
+ * Process:
+ * 1. Finds the route-selection container
+ * 2. Clears any existing route cards
+ * 3. Iterates through routes object
+ * 4. Generates HTML for each route card with all details
+ * 5. Inserts cards into the DOM
+ * 6. Updates extra space display after generation
+ * 
+ * Features:
+ * - Calculates available seats (capacity - occupied)
+ * - Parses departure date/time from route data
+ * - Includes extra space pricing information
+ * - Sets up click handlers for route selection
+ * - Uses unique IDs for extra space display elements
+ * 
+ * Usage: Called on page load to populate route cards dynamically
+ */
+function populateRouteCards() {
+    const routeSelectionContainer = document.querySelector('.route-selection');
+    if (!routeSelectionContainer) {
+        console.warn('Route selection container not found');
+        return;
+    }
+
+    // Clear existing route cards
+    routeSelectionContainer.innerHTML = '';
+
+    // Generate route cards for each route in the routes object
+    Object.keys(routes).forEach(routeId => {
+        const route = routes[routeId];
+        if (!route) return;
+
+        // Calculate available seats
+        const availableSeats = route.capacity - (route.occupied || 0);
+
+        // Parse departure date and time from departure string
+        // Format: '2025/11/14 Friday 10:00 am'
+        let departureDate = '';
+        let departureTime = '';
+        
+        if (route.departure) {
+            const departureParts = route.departure.split(' ');
+            if (departureParts.length >= 3) {
+                departureDate = `${departureParts[0]} ${departureParts[1]}`;
+                departureTime = departureParts.slice(2).join(' ');
+            } else {
+                departureDate = route.departure;
+                departureTime = 'To be confirmed';
+            }
+        } else {
+            departureDate = 'To be confirmed';
+            departureTime = 'To be confirmed';
+        }
+
+        // Get available extra space for display
+        const availableSpace = getAvailableExtraSpace(route);
+        const extraSpaceText = formatExtraSpaceDisplay(availableSpace);
+
+        // Generate route card HTML
+        const routeCardHTML = `
+            <div class="route-card" data-route="${routeId}" onclick="selectRoute('${routeId}')">
+                <div class="route-info">
+                    <div class="route-details">
+                        <h3><i class="ri-taxi-line"></i>${escapeAttribute(route.name)}</h3>
+                        <p><i class="ri-map-pin-distance-line"></i><strong>Distance:</strong> ${route.distance} km</p>
+                        <p><i class="ri-time-line"></i><strong>Duration:</strong> ~${route.duration} hours</p>
+                        <p><i class="ri-calendar-line"></i><strong>Date:</strong> ${escapeAttribute(departureDate)}</p>
+                        <p><i class="ri-time-line"></i><strong>Time:</strong> ${escapeAttribute(departureTime)}</p>
+                        <p><i class="ri-user-line"></i><strong>Capacity:</strong> ${availableSeats} seat${availableSeats !== 1 ? 's' : ''} available</p>
+                        <p id="extra-space-${routeId}" style="background: #f3e5f5; padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                            <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
+                            <strong style="color: #7b1fa2;">Available Extra Space:</strong> 
+                            <span id="extra-space-display-${routeId}">${escapeAttribute(extraSpaceText)}</span>
+                        </p>
+                    </div>
+                    <div class="route-price">R${route.price}</div>
+                    <div class="extra-space-pricing" style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border: 2px solid #FFD52F; border-radius: 10px;">
+                        <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; font-weight: 600;">
+                            <i class="ri-price-tag-3-line" style="color: #FFD52F;"></i> Extra Space Pricing:
+                        </div> 
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span><strong>Large:</strong></span>
+                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.large}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span><strong>Medium:</strong></span>
+                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.medium}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span><strong>Small:</strong></span>
+                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.small}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insert route card into container
+        routeSelectionContainer.insertAdjacentHTML('beforeend', routeCardHTML);
+    });
+
+    // Update extra space display after generating cards
+    updateExtraSpaceDisplay();
+}
+
+/**
+ * Calculates available extra space for parcels on a given route
+ * Takes into account the route's initial extra space and any used space
+ * 
+ * @param {Object} route - Route object containing extraSpace property
+ * @returns {Object} - Available space breakdown:
+ *   - large: Available large parcel slots
+ *   - medium: Available medium parcel slots
+ *   - small: Available small parcel slots
+ *   - totalSmall: Total available in small equivalents
+ * 
+ * Usage: Called to display available parcel space on route cards
+ */
 function getAvailableExtraSpace(route) {
     if (!route || !route.extraSpace) {
         return { large: 4, medium: 8, small: 20, totalSmall: 20 };
@@ -203,7 +553,16 @@ function getAvailableExtraSpace(route) {
     return { large, medium, small, totalSmall: remainingSmall };
 }
 
-// Function to format extra space display
+/**
+ * Formats available extra space into a human-readable string
+ * Shows space in the most readable format (large, medium, small)
+ * Also shows equivalent formats in parentheses
+ * 
+ * @param {Object} available - Available space object from getAvailableExtraSpace()
+ * @returns {string} - Formatted string like "2 large, 3 medium (or 5 large or 11 medium or 22 small)"
+ * 
+ * Usage: Called to display available space text on route cards
+ */
 function formatExtraSpaceDisplay(available) {
     if (available.totalSmall === 0) {
         return 'No extra space available';
@@ -241,30 +600,47 @@ function formatExtraSpaceDisplay(available) {
     }
 }
 
-// Function to update extra space display on route cards
+/**
+ * Updates the extra space display on all dynamically generated route cards
+ * Reads current route data and updates the display elements for all routes
+ * 
+ * Process:
+ * 1. Iterates through all routes in the routes object
+ * 2. Calculates available extra space for each route
+ * 3. Updates the corresponding display element in the DOM
+ * 
+ * Usage: Called after route cards are generated or when parcel bookings change
+ */
 function updateExtraSpaceDisplay() {
-    // Update Pretoria → Tzaneen
-    const route1 = routes['pta-tzn'];
-    if (route1) {
-        const available1 = getAvailableExtraSpace(route1);
-        const display1 = document.getElementById('extra-space-display-pta-tzn');
-        if (display1) {
-            display1.textContent = formatExtraSpaceDisplay(available1);
+    // Update all route cards dynamically
+    Object.keys(routes).forEach(routeId => {
+        const route = routes[routeId];
+        if (route) {
+            const available = getAvailableExtraSpace(route);
+            const display = document.getElementById(`extra-space-display-${routeId}`);
+            if (display) {
+                display.textContent = formatExtraSpaceDisplay(available);
+            }
         }
-    }
-    
-    // Update Tzaneen → Pretoria
-    const route2 = routes['tzn-pta'];
-    if (route2) {
-        const available2 = getAvailableExtraSpace(route2);
-        const display2 = document.getElementById('extra-space-display-tzn-pta');
-        if (display2) {
-            display2.textContent = formatExtraSpaceDisplay(available2);
-        }
-    }
+    });
 }
 
-// Initialize map
+// ============================================
+// MAP INITIALIZATION & DISPLAY
+// ============================================
+
+/**
+ * Initializes the main Google Maps instance for route display
+ * Creates a map showing the selected route with start/end markers
+ * Waits for Google Maps API to load before initializing
+ * 
+ * Features:
+ * - Centers map between origin and destination
+ * - Adds route markers (start and end points)
+ * - Handles responsive sizing
+ * 
+ * Usage: Called on page load to display the route selection map
+ */
 function initializeMap() {
     // Wait for Google Maps API to load
     if (typeof google === 'undefined' || !google.maps) {
@@ -301,7 +677,15 @@ function initializeMap() {
     }, 100);
 }
 
-// City boundaries for Google Maps restrictions
+/**
+ * City boundaries for Google Maps autocomplete restrictions
+ * Defines geographic bounds for each city to restrict location selection
+ * Used to ensure users select locations within the correct city
+ * 
+ * Structure: { cityName: { bounds: {north, south, east, west}, center: {lat, lng}, name } }
+ * 
+ * Usage: Applied to Google Maps autocomplete to restrict suggestions to city boundaries
+ */
 const cityBoundaries = {
     'Pretoria': {
         bounds: {
@@ -325,14 +709,58 @@ const cityBoundaries = {
     }
 };
 
+// ============================================
+// LOCATION SELECTION STATE VARIABLES
+// ============================================
+
+/**
+ * Google Maps instance for location selection (pickup/dropoff points)
+ * Separate from main route map, used when user selects specific locations
+ */
 let locationSelectionMap = null;
+
+/**
+ * Google Maps Places Autocomplete instance for pickup location input
+ * Provides location suggestions as user types
+ */
 let pickupAutocomplete = null;
+
+/**
+ * Google Maps Places Autocomplete instance for dropoff location input
+ * Provides location suggestions as user types
+ */
 let dropoffAutocomplete = null;
+
+/**
+ * Google Maps marker for selected pickup location
+ * Displays the chosen pickup point on the map
+ */
 let pickupMarker = null;
+
+/**
+ * Google Maps marker for selected dropoff location
+ * Displays the chosen dropoff point on the map
+ */
 let dropoffMarker = null;
+
+/**
+ * Google Maps polyline connecting pickup and dropoff points
+ * Shows the route between selected locations
+ */
 let routePolyline = null;
 
-// Initialize location selection map and autocomplete
+/**
+ * Initializes the location selection map and autocomplete inputs
+ * Sets up Google Maps with city boundaries and autocomplete restrictions
+ * Configures pickup and dropoff location inputs with autocomplete
+ * 
+ * Features:
+ * - Restricts autocomplete to city boundaries
+ * - Updates map when locations are selected
+ * - Displays markers and route polyline
+ * 
+ * Usage: Called when user reaches location selection step (Step 3)
+ */
 function initializeLocationSelection() {
     if (!selectedRoute) return;
     
@@ -590,7 +1018,16 @@ function initializeLocationSelection() {
     }
 }
 
-// Fit map to show both pickup and dropoff markers
+// ============================================
+// MAP UTILITY FUNCTIONS
+// ============================================
+
+/**
+ * Fits the location selection map to show both pickup and dropoff markers
+ * If both markers exist, fits bounds to them; otherwise shows the full route
+ * 
+ * Usage: Called after adding/updating pickup or dropoff markers
+ */
 function fitLocationSelectionMap() {
     if (!locationSelectionMap) return;
     
@@ -616,6 +1053,19 @@ function fitLocationSelectionMap() {
     }
 }
 
+/**
+ * Adds start and end markers to the main route map
+ * Also draws a polyline connecting the two points
+ * Clears existing markers before adding new ones
+ * 
+ * Features:
+ * - Start marker (yellow) for origin city
+ * - End marker (blue) for destination city
+ * - Route polyline connecting the points
+ * - Auto-fits map bounds to show both points
+ * 
+ * Usage: Called when a route is selected or map is initialized
+ */
 function addRouteMarkers() {
     if (!map) return;
 
@@ -687,6 +1137,24 @@ function addRouteMarkers() {
     }
 }
 
+// ============================================
+// ROUTE SELECTION FUNCTIONS
+// ============================================
+
+/**
+ * Handles route selection by user
+ * Updates UI, stores selected route, and proceeds to next step
+ * 
+ * @param {string} routeId - The ID of the selected route (e.g., 'pta-tzn')
+ * 
+ * Process:
+ * 1. Removes previous route selection styling
+ * 2. Highlights selected route card
+ * 3. Updates map with route markers
+ * 4. Proceeds to next step after a delay
+ * 
+ * Usage: Called when user clicks on a route card
+ */
 function selectRoute(routeId) {
     // Remove previous selection
     document.querySelectorAll('.route-card').forEach(card => {
@@ -696,199 +1164,42 @@ function selectRoute(routeId) {
     // Select new route
     document.querySelector(`[data-route="${routeId}"]`).classList.add('selected');
     selectedRoute = routeId;
-    tripOption = 'create';
 
     // Update map
     addRouteMarkers();
 
-    // Check for early delivery notification BEFORE proceeding
-    // If notification needs to be shown, don't proceed yet
-    const shouldProceed = checkForEarlyDeliveryAndWait(routeId);
-    
-    if (shouldProceed) {
-        // Enable next step after a delay
-        setTimeout(() => {
-            nextStep();
-        }, 500);
-    }
-}
-
-// Check for early delivery and wait for user response
-function checkForEarlyDeliveryAndWait(routeId) {
-    const savedBookingType = sessionStorage.getItem('bookingType');
-    const savedNotifyEarly = sessionStorage.getItem('notifyEarlyDelivery') === 'true';
-    const savedDeliveryWindow = sessionStorage.getItem('deliveryWindow');
-    const savedParcelData = sessionStorage.getItem('parcelData');
-    const pendingParcelBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-    
-    let matchingBooking = null;
-    
-    if (savedBookingType === 'parcels' && savedNotifyEarly && savedDeliveryWindow && savedParcelData) {
-        matchingBooking = pendingParcelBookings.find(booking => 
-            booking.routeId === routeId && 
-            booking.deliveryWindow === savedDeliveryWindow &&
-            booking.status === 'pending_early_delivery'
-        );
-    }
-    
-    if (!matchingBooking) {
-        matchingBooking = pendingParcelBookings.find(booking => 
-            booking.routeId === routeId && 
-            booking.status === 'pending_early_delivery' &&
-            booking.earlierTrip
-        );
-    }
-    
-    if (matchingBooking && matchingBooking.earlierTrip) {
-        showEarlyDeliveryNotification(matchingBooking.earlierTrip, matchingBooking.deliveryWindow || savedDeliveryWindow, routeId);
-        return false;
-    }
-    
-    return true;
-}
-
-// Simulate background checking for earlier delivery trips
-function simulateBackgroundEarlyDeliveryCheck() {
-    const pendingParcelBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-    const now = new Date();
-    
-    const sampleEarlierTrip = {
-        id: 'TRIP_' + Date.now(),
-        date: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        time: '08:00',
-        parcelSpace: 'Available',
-        routeId: null,
-        availableSpace: {
-            large: 2,
-            medium: 5,
-            small: 12
-        }
-    };
-    
-    pendingParcelBookings.forEach((booking, index) => {
-        if (booking.status === 'pending_early_delivery' && !booking.earlierTrip) {
-            if (Math.random() < 0.3) {
-                booking.earlierTrip = {
-                    ...sampleEarlierTrip,
-                    routeId: booking.routeId,
-                    id: 'TRIP_' + Date.now() + '_' + index
-                };
-                booking.status = 'pending_early_delivery';
-            }
-        }
-    });
-    
-    localStorage.setItem('pendingParcelBookings', JSON.stringify(pendingParcelBookings));
-}
-
-// Show early delivery notification
-function showEarlyDeliveryNotification(earlierTrip, originalWindow, routeId) {
-    const notificationBanner = document.getElementById('early-delivery-notification');
-    if (!notificationBanner) return;
-    
-    let routeName = 'Selected Route';
-    if (typeof routes !== 'undefined' && routes[routeId]) {
-        routeName = routes[routeId].name;
-    } else {
-        const routeNames = {
-            'jhb-ct': 'Johannesburg → Cape Town',
-            'jhb-dbn': 'Johannesburg → Durban',
-            'ct-dbn': 'Cape Town → Durban',
-            'jhb-pe': 'Johannesburg → Port Elizabeth'
-        };
-        routeName = routeNames[routeId] || routeId || 'Selected Route';
-    }
-    
-    const windowText = originalWindow === 'tuesday' ? 'Tuesday' : originalWindow === 'friday' ? 'Friday' : originalWindow || 'Your chosen date';
-    
-    let parcelSpaceText = earlierTrip.parcelSpace || 'Sufficient';
-    if (earlierTrip.availableSpace) {
-        const space = earlierTrip.availableSpace;
-        parcelSpaceText = `Large: ${space.large || 0} | Medium: ${space.medium || 0} | Small: ${space.small || 0}`;
-    }
-    
-    document.getElementById('early-delivery-route').textContent = routeName;
-    document.getElementById('early-delivery-date').textContent = earlierTrip.date || 'Available Soon';
-    document.getElementById('early-delivery-time').textContent = earlierTrip.time || 'To be confirmed';
-    document.getElementById('early-delivery-space').textContent = parcelSpaceText;
-    document.getElementById('original-delivery-window').textContent = windowText;
-    
-    window.pendingEarlyDelivery = {
-        trip: earlierTrip,
-        routeId: routeId,
-        originalWindow: originalWindow
-    };
-    
-    notificationBanner.style.display = 'block';
-    
+    // Enable next step after a delay
     setTimeout(() => {
-        notificationBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+        nextStep();
+    }, 500);
 }
 
-// Accept early delivery
-function acceptEarlyDelivery() {
-    if (!window.pendingEarlyDelivery) {
-        alert('Error: Early delivery information not found.');
-        return;
-    }
-    
-    const { trip, routeId, originalWindow } = window.pendingEarlyDelivery;
-    
-    sessionStorage.setItem('selectedEarlyDeliveryTrip', JSON.stringify(trip));
-    sessionStorage.setItem('deliveryWindow', 'early');
-    sessionStorage.setItem('originalDeliveryWindow', originalWindow);
-    
-    const pendingParcelBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-    const bookingIndex = pendingParcelBookings.findIndex(booking => 
-        booking.routeId === routeId && 
-        booking.deliveryWindow === originalWindow &&
-        booking.status === 'pending_early_delivery'
-    );
-    
-    if (bookingIndex !== -1) {
-        pendingParcelBookings[bookingIndex].status = 'accepted_early_delivery';
-        pendingParcelBookings[bookingIndex].acceptedTrip = trip;
-        localStorage.setItem('pendingParcelBookings', JSON.stringify(pendingBookings));
-    }
-    
-    document.getElementById('early-delivery-notification').style.display = 'none';
-    window.pendingEarlyDelivery = null;
-    
-    alert('Early delivery accepted! Proceeding to payment...');
-    proceedToPayment();
-}
 
-// Decline early delivery
-function declineEarlyDelivery() {
-    if (!window.pendingEarlyDelivery) {
-        return;
-    }
-    
-    document.getElementById('early-delivery-notification').style.display = 'none';
-    
-    const { routeId, originalWindow } = window.pendingEarlyDelivery;
-    const pendingParcelBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-    const bookingIndex = pendingParcelBookings.findIndex(booking => 
-        booking.routeId === routeId && 
-        booking.deliveryWindow === originalWindow &&
-        booking.status === 'pending_early_delivery'
-    );
-    
-    if (bookingIndex !== -1) {
-        pendingParcelBookings[bookingIndex].status = 'declined_early_delivery';
-        localStorage.setItem('pendingParcelBookings', JSON.stringify(pendingBookings));
-    }
-    
-    window.pendingEarlyDelivery = null;
-}
+// ============================================
+// BOOKING FLOW NAVIGATION
+// ============================================
 
-// Make functions globally accessible
-window.acceptEarlyDelivery = acceptEarlyDelivery;
-window.declineEarlyDelivery = declineEarlyDelivery;
-
+/**
+ * Advances to the next step in the booking flow
+ * Updates step indicators, shows/hides content sections, and initializes step-specific features
+ * 
+ * Steps:
+ * 1: Route Selection
+ * 2: Location Selection - Sets up map and autocomplete
+ * 3: Passenger/Parcel Information - Generates forms
+ * 4: Booking Summary
+ * 5: Payment
+ * 6: Confirmation
+ * 
+ * Features:
+ * - Updates step indicator UI (active/completed states)
+ * - Shows/hides appropriate content sections
+ * - Initializes step-specific functionality (maps, forms, etc.)
+ * 
+ * Usage: Called when user clicks "Next" button or selects a route
+ */
 function nextStep() {
-    if (currentStep < 4) {
+    if (currentStep < 6) {
         const activeStepEl = document.querySelector(`#step${currentStep}`);
         if (activeStepEl) {
             activeStepEl.classList.remove('active');
@@ -908,6 +1219,7 @@ function nextStep() {
         }
         
         if (currentStep === 2) {
+            // Location Selection step
             const passengerContent = document.getElementById('passenger-selection');
             if (passengerContent) {
                 passengerContent.classList.add('active');
@@ -939,18 +1251,34 @@ function nextStep() {
                 bookingType = 'passengers';
             }
         } else if (currentStep === 3) {
+            // Passenger/Parcel Information step
+            // This step is handled by the form generation
+        } else if (currentStep === 4) {
+            // Booking Summary step
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
                 confirmationContent.classList.add('active');
             }
             updateBookingSummary();
-        } else if (currentStep === 4) {
+        } else if (currentStep === 5) {
             // Payment step will be shown by showPaymentStep()
             showPaymentStep();
         }
     }
 }
 
+/**
+ * Returns to the previous step in the booking flow
+ * Updates step indicators and shows/hides content sections accordingly
+ * 
+ * Process:
+ * 1. Marks current step as inactive
+ * 2. Decrements current step counter
+ * 3. Shows previous step content
+ * 4. Updates step indicator UI
+ * 
+ * Usage: Called when user clicks "Back" button
+ */
 function goBack() {
     if (currentStep > 1) {
         const activeStep = document.querySelector(`#step${currentStep}`);
@@ -981,12 +1309,14 @@ function goBack() {
                 passengerContent.classList.add('active');
             }
         } else if (currentStep === 3) {
+            // Passenger/Parcel Information step - handled by form generation
+        } else if (currentStep === 4) {
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
                 confirmationContent.classList.add('active');
                 updateBookingSummary();
             }
-        } else if (currentStep === 4) {
+        } else if (currentStep === 5) {
             const paymentStep = document.getElementById('payment-step');
             if (paymentStep) {
                 paymentStep.classList.add('active');
@@ -995,116 +1325,37 @@ function goBack() {
     }
 }
 
-// Trip Selection Functions
-function selectTripOption(option) {
-    // Don't allow selecting join if user has 15 passengers
-    if (option === 'join' && passengerCount >= 15) {
-        return;
-    }
-    
-    tripOption = option;
-    
-    // Remove selection from both cards
-    document.getElementById('create-trip-option').classList.remove('selected');
-    document.getElementById('join-trip-option').classList.remove('selected');
-    
-    // Select the chosen option
-    if (option === 'create') {
-        document.getElementById('create-trip-option').classList.add('selected');
-        document.getElementById('available-trips-section').style.display = 'none';
-        document.getElementById('create-trip-section').style.display = 'block';
-        document.getElementById('continue-trip-btn').style.display = 'inline-flex';
-        
-        // Set city names based on route
-        const route = routes[selectedRoute];
-        const cities = route.name.split(' → ');
-        document.getElementById('origin-city').textContent = cities[0];
-        document.getElementById('destination-city').textContent = cities[1];
-        document.getElementById('origin-city-pickup').textContent = cities[0];
-        document.getElementById('destination-city-dropoff').textContent = cities[1];
-        
-        // Initialize trip locations map with slight delay to ensure DOM is ready
-        setTimeout(() => {
-            initializeTripLocationsMap();
-        }, 100);
-        
-    } else if (option === 'join') {
-        document.getElementById('join-trip-option').classList.add('selected');
-        document.getElementById('create-trip-section').style.display = 'none';
-        document.getElementById('continue-trip-btn').style.display = 'none';
-        loadAvailableTrips();
 
-        // Attempt auto-selection based on preferred date and capacity
-        setTimeout(() => {
-            autoSelectTripIfPossible();
-        }, 0);
-    }
-}
+// ============================================
+// LOCATION SELECTION FUNCTIONS
+// ============================================
 
-// Initialize Trip Locations Map
+/**
+ * Initializes trip locations map for location selection
+ * Note: Mapbox functionality has been removed
+ * 
+ * Usage: Called when user reaches location selection step
+ */
 function initializeTripLocationsMap() {
-    if (tripLocationsMap) {
-        tripLocationsMap.remove();
-    }
-
-    mapboxgl.accessToken = accessToken;
-    
-    const route = routes[selectedRoute];
-    
-    tripLocationsMap = new mapboxgl.Map({
-        container: 'trip-locations-map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: route.coordinates.start,
-        zoom: 12,
-        pitch: 0,
-        bearing: 0,
-        interactive: true,
-        dragRotate: false,
-        touchZoomRotate: false,
-        pitchWithRotate: false
-    });
-
-    // Disable pitch/rotation
-    tripLocationsMap.touchZoomRotate.disableRotation();
-    tripLocationsMap.dragRotate.disable();
-
-    // Add navigation controls
-    tripLocationsMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    
-    // Add scale control
-    tripLocationsMap.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
-
+    // Mapbox functionality removed
     // Clear existing points
     pickupPoints = [];
     dropoffPoints = [];
-
-    // Setup geocoding for all input fields after map loads
-    tripLocationsMap.on('load', () => {
-        setupLocationInputs();
-        
-        // Resize map to ensure proper rendering
-        tripLocationsMap.resize();
-        
-        // Add initial marker for origin city
-        new mapboxgl.Marker({ color: '#FFD52F', scale: 0.8 })
-            .setLngLat(route.coordinates.start)
-            .setPopup(new mapboxgl.Popup().setHTML(`
-                <div style="padding: 8px;">
-                    <strong>Origin: ${route.name.split(' → ')[0]}</strong>
-                </div>
-            `))
-            .addTo(tripLocationsMap);
-    });
-
-    // Resize map after a short delay to ensure container is fully rendered
-    setTimeout(() => {
-        if (tripLocationsMap) {
-            tripLocationsMap.resize();
-        }
-    }, 500);
+    
+    // Setup location inputs
+    setupLocationInputs();
 }
 
-// Setup location inputs with geocoding and autocomplete
+/**
+ * Sets up all location input fields with autocomplete functionality
+ * Configures pickup and dropoff inputs for the selected route
+ * 
+ * Process:
+ * - Finds all pickup and dropoff input fields
+ * - Sets up autocomplete for each input based on city boundaries
+ * 
+ * Usage: Called after trip locations map loads
+ */
 function setupLocationInputs() {
     const route = routes[selectedRoute];
     const cities = route.name.split(' → ');
@@ -1120,61 +1371,54 @@ function setupLocationInputs() {
     });
 }
 
-// Setup autocomplete for a single input
+/**
+ * Sets up autocomplete for a single location input field
+ * Note: Mapbox Geocoding API functionality has been removed
+ * 
+ * @param {HTMLElement} input - The input element to add autocomplete to
+ * @param {string} type - Either 'pickup' or 'dropoff'
+ * @param {string} city - The city name to restrict suggestions to
+ * 
+ * Usage: Called by setupLocationInputs() for each input field
+ */
 function setupAutocomplete(input, type, city) {
-    const index = input.dataset.index;
-    const suggestionsId = `suggestions-${type}-${index}`;
-    let suggestionsList = document.getElementById(suggestionsId);
-    
-    let debounceTimer;
-
-    input.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        const query = this.value.trim();
-
-        if (query.length < 3) {
-            suggestionsList.classList.remove('show');
-            return;
-        }
-
-        debounceTimer = setTimeout(async () => {
-            await fetchSuggestions(query, city, type, index);
-        }, 300);
-    });
-
-    // Close suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
-            suggestionsList.classList.remove('show');
-        }
-    });
+    // Mapbox autocomplete functionality removed
+    // This function is kept for compatibility but does not provide autocomplete
 }
 
-// Fetch suggestions from Mapbox API
+/**
+ * Fetches location suggestions
+ * Note: Mapbox Geocoding API functionality has been removed
+ * 
+ * @param {string} query - The search query entered by user
+ * @param {string} city - The city to restrict results to
+ * @param {string} type - Either 'pickup' or 'dropoff'
+ * @param {string} index - The index of the input field
+ * 
+ * Usage: Called by autocomplete input handler after debounce
+ */
 async function fetchSuggestions(query, city, type, index) {
+    // Mapbox Geocoding API functionality removed
     const suggestionsId = `suggestions-${type}-${index}`;
     const suggestionsList = document.getElementById(suggestionsId);
-    
-    if (!suggestionsList) return;
-
-    try {
-        const response = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query + ' ' + city)}.json?access_token=${accessToken}&limit=5&country=ZA`
-        );
-        const data = await response.json();
-
-        if (data.features && data.features.length > 0) {
-            displaySuggestions(data.features, type, index, city);
-        } else {
-            suggestionsList.classList.remove('show');
-        }
-    } catch (error) {
-        console.error('Error fetching suggestions:', error);
+    if (suggestionsList) {
+        suggestionsList.classList.remove('show');
     }
 }
 
-// Display suggestions dropdown
+/**
+ * Displays location suggestions in a dropdown list
+ * Note: Mapbox API functionality has been removed
+ * 
+ * @param {Array} features - Array of location features
+ * @param {string} type - Either 'pickup' or 'dropoff'
+ * @param {string} index - The index of the input field
+ * @param {string} requiredCity - The city that suggestions must be in
+ * 
+ * Usage: Called after fetchSuggestions() receives results
+ */
 function displaySuggestions(features, type, index, requiredCity) {
+    // Mapbox functionality removed - no suggestions displayed
     const suggestionsId = `suggestions-${type}-${index}`;
     const suggestionsList = document.getElementById(suggestionsId);
     
@@ -1229,67 +1473,39 @@ function selectSuggestion(feature, type, index) {
 
 // Add marker to map from selected suggestion
 function addMarkerToMap(feature, type, index) {
-    const [lng, lat] = feature.center;
-    const markerColor = type === 'pickup' ? '#FFD52F' : '#01386A';
-    
-    const marker = new mapboxgl.Marker({ color: markerColor })
-        .setLngLat([lng, lat])
-        .setPopup(new mapboxgl.Popup().setHTML(`
-            <div style="padding: 8px; min-width: 200px;">
-                <strong style="color: ${type === 'pickup' ? '#FFD52F' : '#01386A'};">${type === 'pickup' ? 'Pickup' : 'Drop-off'} Point</strong><br>
-                <span style="font-size: 0.9rem;">${feature.place_name}</span>
-            </div>
-        `))
-        .addTo(tripLocationsMap);
-
-    // Store the point
+    // Mapbox functionality removed
+    // Store the point without map marker
+    const [lng, lat] = feature.center || [0, 0];
     const point = {
         index: index,
-        address: feature.place_name,
-        coordinates: [lng, lat],
-        marker: marker
+        address: feature.place_name || '',
+        coordinates: [lng, lat]
     };
 
     if (type === 'pickup') {
-        // Remove old marker if exists
+        // Remove old point if exists
         const existingIndex = pickupPoints.findIndex(p => p.index == index);
         if (existingIndex !== -1) {
-            pickupPoints[existingIndex].marker.remove();
             pickupPoints[existingIndex] = point;
         } else {
             pickupPoints.push(point);
         }
     } else {
-        // Remove old marker if exists
+        // Remove old point if exists
         const existingIndex = dropoffPoints.findIndex(p => p.index == index);
         if (existingIndex !== -1) {
-            dropoffPoints[existingIndex].marker.remove();
             dropoffPoints[existingIndex] = point;
         } else {
             dropoffPoints.push(point);
         }
     }
-
-    // Fit map to show all points
-    fitMapToPoints();
 }
 
 // Fit map to show all points
 function fitMapToPoints() {
-    if (!tripLocationsMap) return;
-
-    const allPoints = [...pickupPoints, ...dropoffPoints];
-    if (allPoints.length === 0) return;
-
-    const bounds = new mapboxgl.LngLatBounds();
-    allPoints.forEach(point => {
-        bounds.extend(point.coordinates);
-    });
-
-    tripLocationsMap.fitBounds(bounds, {
-        padding: 100,
-        maxZoom: 12
-    });
+    // Mapbox functionality removed
+    // This function is kept for compatibility but does not adjust map bounds
+    // tripLocationsMap is no longer used
 }
 
 // Add Pickup Point
@@ -1404,291 +1620,19 @@ function updateRemoveButtons() {
     });
 }
 
-function loadAvailableTrips() {
-    const availableTripsSection = document.getElementById('available-trips-section');
-    const availableTripsList = document.getElementById('available-trips-list');
-    const dateFilterInput = document.getElementById('trip-date-filter');
-    
-    if (!selectedRoute || !passengerCount) return;
-    
-    const route = routes[selectedRoute];
-    // Calculate seats needed for passengers only
-    const totalNeeded = passengerCount;
-    
-    // Update filter info
-    document.getElementById('filter-route').textContent = route.name;
-    document.getElementById('filter-passengers').textContent = passengerCount;
-    document.getElementById('filter-seats-needed').textContent = Math.max(15 - passengerCount, 0);
-    
-    // Sample available trips (in production, this would come from an API)
-    // Use dynamic dates so filters like "tomorrow" match the user's selected date
-    const today = new Date();
-    const toISO = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${dd}`;
-    };
-    const addDaysISO = (base, days) => {
-        const d = new Date(base);
-        d.setDate(d.getDate() + days);
-        return toISO(d);
-    };
+// Trip management functions removed - trip option functionality no longer needed
 
-    const availableTrips = [
-        {
-            id: 'trip-001',
-            route: selectedRoute,
-            organizer: 'John M.',
-            currentPassengers: 5,
-            seatsAvailable: 9,
-            departureTime: 'Tomorrow 08:00 AM',
-            departureDate: addDaysISO(today, 1),
-            pricePerPerson: route.price,
-            // Used extra space: 1 Medium + 1 Small (as per example)
-            usedExtraSpace: { large: 0, medium: 1, small: 1 }
-        },
-        {
-            id: 'trip-002',
-            route: selectedRoute,
-            organizer: 'Sarah K.',
-            currentPassengers: 6,
-            seatsAvailable: 8,
-            departureTime: '10:00 AM',
-            departureDate: addDaysISO(today, 5),
-            pricePerPerson: route.price,
-            // Used extra space: 2 Large (full large capacity used)
-            usedExtraSpace: { large: 2, medium: 0, small: 0 }
-        },
-        {
-            id: 'trip-003',
-            route: selectedRoute,
-            organizer: 'Mike T.',
-            currentPassengers: 8,
-            seatsAvailable: 6,
-            departureTime: '2:00 PM',
-            departureDate: addDaysISO(today, 7),
-            pricePerPerson: route.price,
-            // No extra space used (full capacity available)
-            usedExtraSpace: { large: 0, medium: 0, small: 0 }
-        }
-    ];
-    
-    // Prefill date filter with preferred date if available and empty
-    if (dateFilterInput && desiredTripDate && !dateFilterInput.value) {
-        dateFilterInput.value = desiredTripDate;
-    }
-
-    // Filter trips that have enough seats
-    let matchingTrips = availableTrips.filter(trip => 
-        trip.route === selectedRoute && trip.seatsAvailable >= totalNeeded
-    );
-
-    // Apply date filter if provided
-    const selectedDate = dateFilterInput && dateFilterInput.value ? dateFilterInput.value : '';
-    if (selectedDate) {
-        matchingTrips = matchingTrips.filter(trip => trip.departureDate === selectedDate);
-    }
-    
-    // Save for later lookups
-    lastLoadedTrips = matchingTrips;
-
-    // Display trips
-    availableTripsList.innerHTML = '';
-    
-    if (matchingTrips.length === 0) {
-        // Build similar trips list based on closest date and capacity proximity
-        const selectedDateStr = (dateFilterInput && dateFilterInput.value) ? dateFilterInput.value : desiredTripDate;
-        const selectedDateObj = selectedDateStr ? new Date(selectedDateStr + 'T00:00:00') : null;
-
-        const onRouteTrips = availableTrips.filter(t => t.route === selectedRoute);
-
-        const scoredTrips = onRouteTrips.map(t => {
-            const tDate = new Date(t.departureDate + 'T00:00:00');
-            const dayDiff = selectedDateObj ? Math.abs(Math.round((tDate - selectedDateObj) / (1000*60*60*24))) : 9999;
-            const hasCapacity = t.seatsAvailable >= totalNeeded;
-            return { trip: t, dayDiff, hasCapacity };
-        });
-
-        // Prefer trips that meet capacity, then closest date
-        scoredTrips.sort((a, b) => {
-            if (a.hasCapacity !== b.hasCapacity) return a.hasCapacity ? -1 : 1;
-            return a.dayDiff - b.dayDiff;
-        });
-
-        const suggestions = scoredTrips.slice(0, 5);
-
-        let suggestionsHTML = `
-            <div class="no-trips-message">
-                <i class="ri-error-warning-line"></i>
-                <h4>No Exact Match Found</h4>
-                <p>We couldn't find a trip on ${selectedDateStr || 'your selected date'}. Here are the closest alternatives on this route${totalNeeded ? ` (needing ${totalNeeded} seats)` : ''}:</p>
-            </div>
-        `;
-
-        if (suggestions.length === 0) {
-            suggestionsHTML += `
-                <div class="no-trips-message">
-                    <p>No similar trips are available right now. You can create a new trip instead.</p>
-                </div>
-            `;
-        } else {
-            suggestions.forEach(({ trip, hasCapacity, dayDiff }) => {
-                // Calculate remaining extra space
-                const used = trip.usedExtraSpace || { large: 0, medium: 0, small: 0 };
-                const remaining = calculateRemainingExtraSpace(used.large, used.medium, used.small);
-                
-                suggestionsHTML += `
-                    <div class="available-trip-card" data-trip-id="${trip.id}" onclick="selectTrip('${trip.id}')">
-                        <div class="available-trip-header">
-                            <h4><i class="ri-map-pin-user-line"></i>Trip by ${trip.organizer}</h4>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #e3f2fd; border-radius: 6px;">
-                                    <i class="ri-user-line" style="color: #01386A;"></i>
-                                    <strong style="color: #01386A;">Seats available:</strong>
-                                    <span style="font-weight: 700; color: #01386A; font-size: 1.1rem;">${trip.seatsAvailable}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f3e5f5; border-radius: 6px; flex-wrap: wrap;">
-                                    <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
-                                    <strong style="color: #7b1fa2;">Extra space available:</strong>
-                                    <span style="color: #7b1fa2;">Large ${remaining.large} | Medium ${(remaining.large * 2) + remaining.medium} | Small ${(remaining.large * 4) + (remaining.medium * 2) + remaining.small}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="available-trip-details">
-                            <div class="trip-detail-item">
-                                <i class="ri-calendar-line"></i>
-                                <span><strong>Date:</strong> ${trip.departureDate}${selectedDateObj ? ` (±${dayDiff} day${dayDiff===1?'':'s'})` : ''}</span>
-                            </div>
-                            <div class="trip-detail-item">
-                                <i class="ri-time-line"></i>
-                                <span><strong>Time:</strong> ${trip.departureTime}</span>
-                            </div>
-                            <div class="trip-detail-item">
-                                <i class="ri-user-line"></i>
-                                <span><strong>Capacity:</strong> ${trip.seatsAvailable} available${hasCapacity ? '' : ` (need ${totalNeeded})`}</span>
-                            </div>
-                            <div class="trip-detail-item">
-                                <i class="ri-money-dollar-circle-line"></i>
-                                <span><strong>R${trip.pricePerPerson}</strong> per person</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        availableTripsList.innerHTML = suggestionsHTML;
-    } else {
-        matchingTrips.forEach(trip => {
-            // Calculate remaining extra space
-            const used = trip.usedExtraSpace || { large: 0, medium: 0, small: 0 };
-            const remaining = calculateRemainingExtraSpace(used.large, used.medium, used.small);
-            
-            const tripHTML = `
-                <div class="available-trip-card" data-trip-id="${trip.id}" onclick="selectTrip('${trip.id}')">
-                    <div class="available-trip-header">
-                        <h4><i class="ri-map-pin-user-line"></i>Trip by ${trip.organizer}</h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #e3f2fd; border-radius: 6px;">
-                                <i class="ri-user-line" style="color: #01386A;"></i>
-                                <strong style="color: #01386A;">Seats available:</strong>
-                                <span style="font-weight: 700; color: #01386A; font-size: 1.1rem;">${trip.seatsAvailable}</span>
-                            </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f3e5f5; border-radius: 6px; flex-wrap: wrap;">
-                                    <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
-                                    <strong style="color: #7b1fa2;">Extra space available:</strong>
-                                    <span style="color: #7b1fa2;">Large ${remaining.large} | Medium ${(remaining.large * 2) + remaining.medium} | Small ${(remaining.large * 4) + (remaining.medium * 2) + remaining.small}</span>
-                                </div>
-                        </div>
-                    </div>
-                    <div class="available-trip-details">
-                        <div class="trip-detail-item">
-                            <i class="ri-user-line"></i>
-                            <span><strong>${trip.currentPassengers}</strong> passengers joined</span>
-                        </div>
-                        <div class="trip-detail-item">
-                            <i class="ri-calendar-line"></i>
-                            <span><strong>Departure:</strong> ${trip.departureTime}</span>
-                        </div>
-                        <div class="trip-detail-item">
-                            <i class="ri-money-dollar-circle-line"></i>
-                            <span><strong>R${trip.pricePerPerson}</strong> per person</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            availableTripsList.innerHTML += tripHTML;
-        });
-    }
-    
-    availableTripsSection.style.display = 'block';
-
-    // Bind change handler once to re-filter on date change
-    if (dateFilterInput && !dateFilterInput.dataset.bound) {
-        dateFilterInput.addEventListener('change', () => {
-            loadAvailableTrips();
-        });
-        dateFilterInput.dataset.bound = 'true';
-    }
-}
-
-// Auto-select trip for Join flow when date and capacity match
-function autoSelectTripIfPossible() {
-    if (tripOption !== 'join') return;
-
-    const dateFilterInput = document.getElementById('trip-date-filter');
-    const selectedDate = (dateFilterInput && dateFilterInput.value) ? dateFilterInput.value : desiredTripDate;
-    if (!selectedDate || !Array.isArray(lastLoadedTrips)) return;
-
-    const needed = passengerCount;
-    const match = lastLoadedTrips.find(t => t.departureDate === selectedDate && t.seatsAvailable >= needed);
-    if (match) {
-        // Select trip and proceed to summary
-        selectTrip(match.id);
-        // Move to Booking Summary (Step 4)
-        nextStep();
-    }
-}
-
-function selectTrip(tripId) {
-    selectedTrip = tripId;
-    selectedTripInfo = lastLoadedTrips.find(t => t.id === tripId) || null;
-    
-    // Remove selection from all trip cards
-    document.querySelectorAll('.available-trip-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    
-    // Select the chosen trip
-    document.querySelector(`[data-trip-id="${tripId}"]`).classList.add('selected');
-    
-    // Show continue button
-    document.getElementById('continue-trip-btn').style.display = 'inline-flex';
-}
-
+// Continue trip selection - validates location points and proceeds
 function continueTripSelection() {
-    if (!tripOption) {
-        alert('Please select a trip option: Create New Trip or Join Existing Trip');
+    // Validate that at least one pickup and one dropoff point is entered
+    if (pickupPoints.length === 0) {
+        alert('Please add at least one pickup point for your trip.');
         return;
     }
     
-    if (tripOption === 'join' && !selectedTrip) {
-        alert('Please select a trip to join');
+    if (dropoffPoints.length === 0) {
+        alert('Please add at least one drop-off point for your trip.');
         return;
-    }
-
-    if (tripOption === 'create') {
-        // Validate that at least one pickup and one dropoff point is entered
-        if (pickupPoints.length === 0) {
-            alert('Please add at least one pickup point for your trip.');
-            return;
-        }
-        
-        if (dropoffPoints.length === 0) {
-            alert('Please add at least one drop-off point for your trip.');
-            return;
-        }
     }
     
     // Validate parcel information if parcels are added
@@ -1744,6 +1688,24 @@ function validatePhoneInputPublic(input) {
 }
 
 // Validate parcel information
+// ============================================
+// VALIDATION FUNCTIONS
+// ============================================
+
+/**
+ * Validates all parcel information before proceeding to booking summary
+ * Checks that all required fields are filled for each parcel
+ * 
+ * Validation Checks:
+ * - Parcel size is selected
+ * - Sender name and phone are provided
+ * - Receiver name and phone are provided
+ * - At least one parcel image is uploaded (optional but recommended)
+ * 
+ * @returns {boolean} - true if all parcels are valid, false otherwise
+ * 
+ * Usage: Called when user clicks "Continue" from parcel information step
+ */
 function validateParcelInformation() {
     for (let i = 1; i <= parcelCount; i++) {
         const parcel = parcelData[i];
@@ -1812,16 +1774,25 @@ function validateParcelInformation() {
         }
     }
     
-    // Delivery window is no longer required
-    // Set default if not set
-    if (!deliveryWindow) {
-        deliveryWindow = 'standard';
-    }
-    
     return { valid: true };
 }
 
 // Validate passenger information
+/**
+ * Validates all passenger information before proceeding to booking summary
+ * Checks that all required fields are filled for each passenger
+ * 
+ * Validation Checks:
+ * - First name and last name are provided
+ * - Email is valid format
+ * - Phone number is valid South African format
+ * - ID number is provided (optional but recommended)
+ * - Next of kin information is provided (optional)
+ * 
+ * @returns {boolean} - true if all passengers are valid, false otherwise
+ * 
+ * Usage: Called when user clicks "Continue" from passenger information step
+ */
 function validatePassengerInformation() {
     // Get user profile to check if email/phone exists
     const userProfileString = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
@@ -2097,33 +2068,8 @@ function validateAndProceed() {
     // Save booking type and preferences to sessionStorage
     sessionStorage.setItem('bookingType', bookingType);
     if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
-        // Set default delivery window if not set
-        if (!deliveryWindow) {
-            deliveryWindow = 'standard';
-        }
-        sessionStorage.setItem('deliveryWindow', deliveryWindow);
-        sessionStorage.setItem('notifyEarlyDelivery', notifyEarlyDelivery);
         sessionStorage.setItem('parcelCount', parcelCount);
         sessionStorage.setItem('parcelData', JSON.stringify(parcelData));
-        
-        // Save parcel booking to localStorage with pending status (for early delivery checking)
-        if (selectedRoute) {
-            const pendingParcelBooking = {
-                id: 'PARCEL_' + Date.now(),
-                routeId: selectedRoute,
-                deliveryWindow: deliveryWindow,
-                parcelCount: parcelCount,
-                parcelData: parcelData,
-                notifyEarlyDelivery: notifyEarlyDelivery,
-                status: notifyEarlyDelivery ? 'pending_early_delivery' : 'pending',
-                createdAt: new Date().toISOString(),
-                earlierTrip: null // Will be populated by background checking
-            };
-            
-            const pendingBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-            pendingBookings.push(pendingParcelBooking);
-            localStorage.setItem('pendingParcelBookings', JSON.stringify(pendingBookings));
-        }
     }
 
     if (bookingType === 'passengers') {
@@ -2177,7 +2123,6 @@ function handleBookingTypeChange(type) {
         if (capacityInfoSection) capacityInfoSection.style.display = 'none'; // Hidden - not needed for passengers
         if (matchingStatus) matchingStatus.style.display = 'none';
         generatePassengerForms();
-        checkAndDisableJoinOption();
     } else {
         if (passengerSection) passengerSection.style.display = 'none';
         if (parcelSection) parcelSection.style.display = 'block';
@@ -2202,7 +2147,6 @@ function incrementPassengersPublic() {
         passengerCount = 1;
         generatePassengerForms();
         updateCapacityDisplay();
-        checkAndDisableJoinOption();
         updateCounterDisplays();
         updatePassengerCounterButtons();
     }
@@ -2216,7 +2160,6 @@ function decrementPassengersPublic() {
         passengerCount--;
         generatePassengerForms();
         updateCapacityDisplay();
-        checkAndDisableJoinOption();
         updateCounterDisplays();
         updatePassengerCounterButtons();
     }
@@ -2355,18 +2298,6 @@ function updatePassengerInfo() {
     updateCapacityDisplay();
     updateCounterDisplays();
     
-    // Delivery window selection removed - set default
-    if (!deliveryWindow) {
-        deliveryWindow = 'standard';
-    }
-    
-    // Bind early delivery notification checkbox
-    const notifyCheckbox = document.getElementById('notify-early-delivery');
-    if (notifyCheckbox) {
-        notifyCheckbox.addEventListener('change', function() {
-            notifyEarlyDelivery = this.checked;
-        });
-    }
 }
 
 // Update step indicator visibility based on booking type
@@ -2378,6 +2309,26 @@ function updateStepIndicator() {
     }
 }
 
+// ============================================
+// FORM GENERATION FUNCTIONS
+// ============================================
+
+/**
+ * Generates passenger information forms dynamically based on passenger count
+ * Creates form fields for each passenger including personal info and next of kin
+ * 
+ * Form Fields Per Passenger:
+ * - Personal Information: First name, Last name, Email, Phone, ID Number
+ * - Next of Kin: First name, Last name, Phone
+ * 
+ * Features:
+ * - Pre-fills logged-in user's information for first passenger
+ * - Adds validation attributes to required fields
+ * - Generates unique IDs for each field based on passenger index
+ * - Updates form container HTML
+ * 
+ * Usage: Called when passenger count changes or booking type is set to 'passengers'
+ */
 function generatePassengerForms() {
     const formsContainer = document.getElementById('passenger-forms');
     if (!formsContainer) return;
@@ -2575,6 +2526,24 @@ function generatePassengerForms() {
 }
 
 // Parcel Form Generation
+/**
+ * Generates parcel information forms dynamically based on parcel count
+ * Creates form fields for each parcel including sender, receiver, and parcel details
+ * 
+ * Form Fields Per Parcel:
+ * - Parcel Details: Size (Large/Medium/Small), Weight, Description
+ * - Sender Information: Name, Phone
+ * - Receiver Information: Name, Phone
+ * - Images: Upload multiple images of the parcel
+ * 
+ * Features:
+ * - Generates unique IDs for each field based on parcel number
+ * - Handles image upload and preview
+ * - Updates parcel data object as user fills forms
+ * - Shows/hides fields based on parcel size selection
+ * 
+ * Usage: Called when parcel count changes or booking type is set to 'parcels'
+ */
 function generateParcelForms() {
     if (!PARCEL_FEATURE_ENABLED) return;
 
@@ -2726,6 +2695,28 @@ function removeParcelImagePublic(parcelNumber, imageIndex) {
     }
 }
 
+// ============================================
+// BOOKING SUMMARY & CONFIRMATION
+// ============================================
+
+/**
+ * Updates the booking summary display with current booking details
+ * Shows different information based on booking type (passengers vs parcels)
+ * 
+ * For Passenger Bookings:
+ * - Route, passenger count, pickup/dropoff points, total amount
+ * 
+ * For Parcel Bookings:
+ * - Route, parcel count, estimated total
+ * 
+ * Process:
+ * 1. Reads booking data from state and sessionStorage
+ * 2. Generates HTML summary based on booking type
+ * 3. Updates summary container in UI
+ * 4. Calculates and displays total amount
+ * 
+ * Usage: Called when user reaches booking summary step or booking details change
+ */
 function updateBookingSummary() {
     if (!selectedRoute || !routes[selectedRoute]) return;
     
@@ -2738,12 +2729,6 @@ function updateBookingSummary() {
     if (bookingTypeFromStorage === 'parcels') {
         const savedParcelCount = parseInt(sessionStorage.getItem('parcelCount') || parcelCount) || parcelCount;
         const savedParcelData = JSON.parse(sessionStorage.getItem('parcelData') || JSON.stringify(parcelData)) || parcelData;
-        const savedDeliveryWindow = sessionStorage.getItem('deliveryWindow') || deliveryWindow || 'standard';
-        const savedNotifyEarly = sessionStorage.getItem('notifyEarlyDelivery') === 'true' || notifyEarlyDelivery;
-        
-        const deliveryWindowText = savedDeliveryWindow === 'early'
-            ? 'Early delivery (subject to availability)'
-            : 'Standard schedule (Tue & Fri dispatch)';
         
         // Calculate pricing (placeholder - in real app, this would be calculated based on parcel sizes and space usage)
         // For now, assume parcels use extra space pricing
@@ -2759,7 +2744,6 @@ function updateBookingSummary() {
                 <span>Route:</span>
                 <span>${route.name}</span>
             </div>
-            <!-- Delivery Window selection removed -->
             <div class="summary-row">
                 <span>Number of Parcels:</span>
                 <span>${savedParcelCount} parcel(s)</span>
@@ -2771,10 +2755,6 @@ function updateBookingSummary() {
             <div class="summary-row">
                 <span>Duration:</span>
                 <span>~${route.duration} hours</span>
-            </div>
-            <div class="summary-row">
-                <span>Early Delivery Notification:</span>
-                <span>${savedNotifyEarly ? 'Enabled' : 'Disabled'}</span>
             </div>
         `;
         
@@ -2829,13 +2809,6 @@ function updateBookingSummary() {
         // Handle passenger bookings (existing logic)
         const totalPrice = route.price * passengerCount;
 
-        let tripTypeText = 'Not selected';
-        if (tripOption === 'create') {
-            tripTypeText = 'Create New Trip';
-        } else if (tripOption === 'join') {
-            tripTypeText = 'Join Existing Trip';
-        }
-
         let pickupLocations = 'Not specified';
         if (pickupPoints.length > 0) {
             pickupLocations = pickupPoints.map(p => p.address).join('<br>');
@@ -2847,24 +2820,13 @@ function updateBookingSummary() {
         }
 
         // Resolve date/time
-        let tripDateDisplay = '-';
-        let tripTimeDisplay = '-';
-        if (tripOption === 'create') {
-            tripDateDisplay = desiredTripDate || '-';
-            tripTimeDisplay = 'To be confirmed';
-        } else if (tripOption === 'join' && selectedTripInfo) {
-            tripDateDisplay = selectedTripInfo.departureDate || '-';
-            tripTimeDisplay = selectedTripInfo.departureTime || '-';
-        }
+        let tripDateDisplay = desiredTripDate || '-';
+        let tripTimeDisplay = 'To be confirmed';
 
         summaryHTML = `
             <div class="summary-row">
                 <span>Route:</span>
                 <span>${route.name}</span>
-            </div>
-            <div class="summary-row">
-                <span>Trip Type:</span>
-                <span>${tripTypeText}</span>
             </div>
             <div class="summary-row">
                 <span>Trip Date:</span>
@@ -2875,8 +2837,8 @@ function updateBookingSummary() {
                 <span>${tripTimeDisplay}</span>
             </div>
             <div class="summary-row">
-                <span>Current Trip Passengers:</span>
-                <span>${(tripOption === 'join' && selectedTripInfo) ? selectedTripInfo.currentPassengers : passengerCount}</span>
+                <span>Passengers:</span>
+                <span>${passengerCount} person(s)</span>
             </div>
             <div class="summary-row">
                 <span>Distance:</span>
@@ -2887,24 +2849,14 @@ function updateBookingSummary() {
                 <span>~${route.duration} hours</span>
             </div>
             <div class="summary-row">
-                <span>Passengers:</span>
-                <span>${passengerCount} person(s)</span>
+                <span>Pickup Points:</span>
+                <span>${pickupLocations}</span>
+            </div>
+            <div class="summary-row">
+                <span>Drop-off Points:</span>
+                <span>${dropoffLocations}</span>
             </div>
         `;
-
-        // Add pickup/dropoff points if creating a trip
-        if (tripOption === 'create') {
-            summaryHTML += `
-                <div class="summary-row">
-                    <span>Pickup Points:</span>
-                    <span>${pickupLocations}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Drop-off Points:</span>
-                    <span>${dropoffLocations}</span>
-                </div>
-            `;
-        }
 
         summaryHTML += `
             <div class="summary-row">
@@ -2921,6 +2873,17 @@ function updateBookingSummary() {
     document.getElementById('booking-summary').innerHTML = summaryHTML;
 }
 
+/**
+ * Handles booking confirmation and proceeds to payment
+ * Validates that all required information is complete before proceeding
+ * 
+ * Process:
+ * 1. Validates booking information
+ * 2. Stores booking data in sessionStorage
+ * 3. Proceeds to payment step
+ * 
+ * Usage: Called when user clicks "Confirm Booking" button
+ */
 function confirmBooking() {
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
     
@@ -3191,6 +3154,20 @@ function showPaymentStep() {
     setupCardInputFormatting();
 }
 
+// ============================================
+// PAYMENT PROCESSING FUNCTIONS
+// ============================================
+
+/**
+ * Sets up automatic formatting for card input fields
+ * Formats card number with spaces and expiry with slash
+ * 
+ * Features:
+ * - Card number: Adds space every 4 digits (e.g., "1234 5678 9012 3456")
+ * - Card expiry: Formats as MM/YY
+ * 
+ * Usage: Called when payment step is shown
+ */
 function setupCardInputFormatting() {
     // Format card number input
     const cardNumberInput = document.getElementById('card-number');
@@ -3217,6 +3194,21 @@ function setupCardInputFormatting() {
 
 let selectedPaymentMethodInBooking = null;
 
+/**
+ * Handles payment method selection (Card, EFT, Mobile)
+ * Updates UI to show selected method and corresponding form
+ * 
+ * @param {string} method - Payment method: 'card', 'eft', or 'mobile'
+ * 
+ * Process:
+ * 1. Removes selection from all payment method cards
+ * 2. Highlights selected payment method card
+ * 3. Hides all payment forms
+ * 4. Shows form for selected payment method
+ * 5. Enables pay button
+ * 
+ * Usage: Called when user clicks on a payment method card
+ */
 function selectPaymentMethodInBooking(method) {
     selectedPaymentMethodInBooking = method;
     
@@ -3250,6 +3242,19 @@ function selectPaymentMethodInBooking(method) {
     }
 }
 
+/**
+ * Updates the booking summary displayed in the payment step
+ * Shows route, passenger/parcel count, price per unit, and total amount
+ * Also generates payment reference for EFT payments
+ * 
+ * Process:
+ * - Reads booking data from state and sessionStorage
+ * - Calculates total amount based on booking type
+ * - Updates all summary display elements
+ * - Generates unique payment reference (TKS + timestamp)
+ * 
+ * Usage: Called when payment step is shown or booking details change
+ */
 function updatePaymentBookingSummary() {
     if (!selectedRoute) return;
     
@@ -3286,6 +3291,22 @@ function updatePaymentBookingSummary() {
     }
 }
 
+/**
+ * Validates payment form and initiates payment processing
+ * Validates inputs based on selected payment method
+ * 
+ * Validation:
+ * - Card: Validates card number, name, expiry, CVV
+ * - Mobile: Validates mobile number
+ * - EFT: No validation needed (reference is auto-generated)
+ * 
+ * Process:
+ * 1. Validates form inputs
+ * 2. Shows processing state on pay button
+ * 3. Calls completePaymentInBooking() after 2 second delay
+ * 
+ * Usage: Called when user clicks "Pay Now" button
+ */
 function processPaymentInBooking() {
     if (!selectedPaymentMethodInBooking) {
         alert('Please select a payment method');
@@ -3331,7 +3352,29 @@ function processPaymentInBooking() {
     }, 2000);
 }
 
-function completePaymentInBooking() {
+/**
+ * Completes the payment and creates booking via API
+ * This is the main function that finalizes the booking process
+ * 
+ * Process:
+ * 1. Hides payment form and shows success message
+ * 2. Reveals vehicle information to user
+ * 3. Prepares route points from pickup/dropoff selections
+ * 4. Creates booking via bookingApi.createBooking()
+ * 5. Adds passengers via bookingApi.addPassenger() (if passenger booking)
+ * 6. Adds parcels via bookingApi.addParcel() (if parcel booking)
+ * 7. Creates payment record via paymentApi.createPayment()
+ * 8. Saves booking to localStorage for backward compatibility
+ * 9. Stores booking in sessionStorage for confirmation display
+ * 
+ * API Integration:
+ * - Uses bookingApi for booking creation and passenger/parcel addition
+ * - Uses paymentApi for payment record creation
+ * - Falls back to localStorage if API calls fail
+ * 
+ * Usage: Called after payment validation and processing delay
+ */
+async function completePaymentInBooking() {
     // Hide payment content
     const paymentContent = document.getElementById('payment-content');
     if (paymentContent) {
@@ -3347,18 +3390,130 @@ function completePaymentInBooking() {
     // Reveal vehicle information
     revealVehicleInfoInBooking();
     
-    // Save payment data to localStorage
+    // Get selected vehicle info
+    const selectedVehicleData = JSON.parse(sessionStorage.getItem('selectedVehicle') || '{}');
     const route = routes[selectedRoute];
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
     const totalAmount = bookingTypeFromStorage === 'parcels' 
         ? (parcelCount || 0) * route.price 
         : route.price * passengerCount;
     
+    // Get passenger data
+    const passengerData = JSON.parse(sessionStorage.getItem('passengerData') || '[]');
+    
+    // Prepare route points
+    const routePoints = [];
+    pickupPoints.forEach((point, index) => {
+        routePoints.push({
+            point_type: 'pickup',
+            point_name: point.address || `Pickup Point ${index + 1}`,
+            address: point.address,
+            coordinates: point.coordinates || (point.lat && point.lng ? { lat: point.lat, lng: point.lng } : null),
+            order_index: index + 1,
+            expected_time: desiredTripDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+    });
+    dropoffPoints.forEach((point, index) => {
+        routePoints.push({
+            point_type: 'dropoff',
+            point_name: point.address || `Dropoff Point ${index + 1}`,
+            address: point.address,
+            coordinates: point.coordinates || (point.lat && point.lng ? { lat: point.lat, lng: point.lng } : null),
+            order_index: pickupPoints.length + index + 1,
+            expected_time: desiredTripDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+    });
+    
+    // Create booking via API
+    let apiBooking = null;
+    try {
+        const bookingData = {
+            owner_id: selectedVehicleData.owner_id,
+            vehicle_id: selectedVehicleData.vehicle_id || selectedVehicleData.id,
+            driver_id: null, // Will be assigned by owner
+            existing_route_id: selectedRoute, // Route ID
+            booking_mode: 'route',
+            passenger_count: bookingTypeFromStorage === 'parcels' ? 0 : passengerCount,
+            parcel_count: bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : 0,
+            total_seats_available: selectedVehicleData.capacity || 15,
+            total_amount_needed: totalAmount,
+            scheduled_pickup: desiredTripDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            route_points: routePoints,
+            special_instructions: null
+        };
+
+        const response = await bookingApi.createBooking(bookingData);
+        if (response.success && response.booking) {
+            apiBooking = response.booking;
+            
+            // Add passengers to booking
+            if (passengerData && passengerData.length > 0) {
+                for (let i = 0; i < passengerData.length; i++) {
+                    const passenger = passengerData[i];
+                    try {
+                        await bookingApi.addPassenger(apiBooking.id, {
+                            passenger_type: 'guest',
+                            first_name: passenger.firstName,
+                            last_name: passenger.lastName,
+                            email: passenger.email,
+                            phone: passenger.phone,
+                            id_number: passenger.idNumber || null,
+                            pickup_point: pickupPoints[i] || null,
+                            dropoff_point: dropoffPoints[i] || null,
+                            next_of_kin_first_name: passenger.nextOfKin?.firstName || '',
+                            next_of_kin_last_name: passenger.nextOfKin?.lastName || '',
+                            next_of_kin_phone: passenger.nextOfKin?.phone || '',
+                            is_primary: i === 0
+                        });
+                    } catch (error) {
+                        console.error('Error adding passenger:', error);
+                    }
+                }
+            }
+            
+            // Add parcels to booking
+            if (bookingTypeFromStorage === 'parcels') {
+                const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
+                for (const [key, parcel] of Object.entries(parcelDataFromStorage)) {
+                    try {
+                        await bookingApi.addParcel(apiBooking.id, {
+                            size: parcel.size || 'small',
+                            weight: parcel.weight || null,
+                            description: parcel.description || null,
+                            sender_name: parcel.senderName || '',
+                            sender_phone: parcel.senderPhone || '',
+                            receiver_name: parcel.receiverName || '',
+                            receiver_phone: parcel.receiverPhone || '',
+                            images: parcel.images || [],
+                            delivery_window: null
+                        });
+                    } catch (error) {
+                        console.error('Error adding parcel:', error);
+                    }
+                }
+            }
+            
+            // Create payment
+            try {
+                await paymentApi.createPayment({
+                    booking_id: apiBooking.id,
+                    amount: totalAmount,
+                    payment_method: selectedPaymentMethodInBooking || 'EFT',
+                    payer_type: 'registered'
+                });
+            } catch (error) {
+                console.error('Error creating payment:', error);
+            }
+        }
+    } catch (error) {
+        console.error('Error creating booking via API:', error);
+        // Continue with localStorage fallback
+    }
+    
     // Save parcel data if parcels were booked
     let savedParcelData = null;
     if (bookingTypeFromStorage === 'parcels') {
         const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
-        // Store parcel data with images as File objects (will be converted to base64 when needed)
         savedParcelData = {};
         Object.keys(parcelDataFromStorage).forEach(key => {
             const parcel = parcelDataFromStorage[key];
@@ -3369,7 +3524,7 @@ function completePaymentInBooking() {
                 receiverPhone: parcel.receiverPhone || '',
                 secretCode: parcel.secretCode || generateSecretCode(),
                 size: parcel.size || 'small',
-                images: parcel.images || [] // Store File objects, will convert when displaying
+                images: parcel.images || []
             };
         });
     }
@@ -3380,30 +3535,31 @@ function completePaymentInBooking() {
         seatSecretCode = generateSecretCode();
     }
     
-    // Create booking
+    // Create booking object for localStorage (for backward compatibility)
     const booking = {
-        id: 'BK' + Date.now(),
-        reference: 'TKS' + Date.now().toString().slice(-8),
+        id: apiBooking?.id || 'BK' + Date.now(),
+        booking_id: apiBooking?.id,
+        reference: apiBooking?.booking_reference || 'TKS' + Date.now().toString().slice(-8),
         routeId: selectedRoute,
         routeName: route.name,
         bookingType: bookingTypeFromStorage,
         passengers: bookingTypeFromStorage === 'parcels' ? 0 : passengerCount,
         parcels: bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : 0,
         parcelData: savedParcelData,
-        seatSecretCode: seatSecretCode, // Secret code for seat bookings
+        seatSecretCode: seatSecretCode,
         pricePerPerson: route.price,
         totalAmount: totalAmount,
-        tripOption: tripOption,
         pickupPoints: pickupPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
         dropoffPoints: dropoffPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
-        tripDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        tripDate: desiredTripDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         bookingDate: new Date().toISOString(),
         status: 'paid',
+        booking_status: 'paid',
         paymentMethod: selectedPaymentMethodInBooking,
         paymentDate: new Date().toISOString()
     };
     
-    // Save to userBookings
+    // Save to userBookings (for backward compatibility)
     const userBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
     userBookings.push(booking);
     localStorage.setItem('userBookings', JSON.stringify(userBookings));
@@ -3412,8 +3568,8 @@ function completePaymentInBooking() {
     localStorage.setItem('completedBooking', JSON.stringify(booking));
     sessionStorage.setItem('currentBooking', JSON.stringify(booking));
     
-    // Always save trip data for trip status page (if it's a created trip)
-    if (tripOption === 'create' && bookingTypeFromStorage === 'passengers') {
+    // Save trip data for trip status page (for passenger bookings)
+    if (bookingTypeFromStorage === 'passengers') {
         // Save trip data with all booking information
         const tripData = {
             routeId: selectedRoute,
@@ -3445,9 +3601,8 @@ function completePaymentInBooking() {
     // Also save booking data for trip status page to access
     localStorage.setItem('completedBooking', JSON.stringify(booking));
     
-    // Check if this is a trip that needs more passengers (create trip with less than 15 passengers)
+    // Check if this is a trip that needs more passengers (less than 15 passengers)
     const needsMorePassengers = (bookingTypeFromStorage === 'passengers' && 
-                                 tripOption === 'create' && 
                                  passengerCount < 15);
     
     if (needsMorePassengers) {
@@ -3541,11 +3696,9 @@ function topNavZIndexDecrease() {
 window.selectRoute = selectRoute;
 window.nextStep = nextStep;
 window.goBack = goBack;
-window.selectTripOption = selectTripOption;
 window.addPickupPoint = addPickupPoint;
 window.addDropoffPoint = addDropoffPoint;
 window.removeLocation = removeLocation;
-window.selectTrip = selectTrip;
 window.continueTripSelection = continueTripSelection;
 window.updatePassengerInfo = updatePassengerInfo;
 window.confirmBooking = confirmBooking;
@@ -3611,7 +3764,7 @@ function viewActiveTrip() {
 }
 
 function saveActiveTripToStorage() {
-    if (tripOption === 'create' && passengerCount < 15) {
+    if (passengerCount < 15) {
         const route = routes[selectedRoute];
         
         const tripData = {
@@ -3635,27 +3788,28 @@ function saveActiveTripToStorage() {
     }
 }
 
-// Check if join option should be disabled
-function checkAndDisableJoinOption() {
-    const joinTripCard = document.getElementById('join-trip-option');
-    const joinDisabledOverlay = document.getElementById('join-trip-disabled');
-    
-    if (!joinTripCard || !joinDisabledOverlay) {
-        return;
-    }
-    
-    if (passengerCount >= 15) {
-        // Disable join existing trip option
-        joinTripCard.classList.add('disabled');
-        joinDisabledOverlay.style.display = 'flex';
-    } else {
-        // Enable join existing trip option
-        joinTripCard.classList.remove('disabled');
-        joinDisabledOverlay.style.display = 'none';
-    }
-}
 
-// === USER BOOKINGS DISPLAY FUNCTIONALITY ===
+// ============================================
+// BOOKING MANAGEMENT FUNCTIONS
+// ============================================
+
+/**
+ * Loads and displays user's bookings from localStorage
+ * Separates bookings into upcoming and history categories
+ * 
+ * Process:
+ * 1. Retrieves bookings from localStorage
+ * 2. Separates into upcoming (future paid trips) and history (past/completed trips)
+ * 3. Updates count displays
+ * 4. Displays bookings in appropriate tabs
+ * 5. Shows bookings section if bookings exist
+ * 
+ * Categories:
+ * - Upcoming: Paid trips with trip date in the future
+ * - History: Completed trips or trips with date in the past
+ * 
+ * Usage: Called on page load to display user's existing bookings
+ */
 function loadUserBookings() {
     const userBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
     
@@ -3790,15 +3944,6 @@ function createBookingItemHTML(booking, type) {
                             ${bookingDate.toLocaleDateString()}
                         </div>
                     </div>
-                    ${booking.tripOption ? `
-                        <div class="booking-detail">
-                            <div class="booking-detail-label">Trip Type</div>
-                            <div class="booking-detail-value">
-                                <i class="ri-route-line"></i>
-                                ${booking.tripOption === 'custom' ? 'Custom Trip' : booking.tripOption === 'create' ? 'Created Trip' : 'Joined Trip'}
-                            </div>
-                        </div>
-                    ` : ''}
                 </div>
                 
                 ${createBookingLocationsHTML(booking)}
@@ -3848,11 +3993,11 @@ function createBookingLocationsHTML(booking) {
 function createBookingActionsHTML(booking, type) {
     let actions = '';
     
-    actions += `
-        <button class="booking-action-btn secondary" onclick="viewBookingOnMap('${booking.id}')">
-            <i class="ri-map-pin-line"></i> View on Map
-        </button>
-    `;
+        actions += `
+            <button class="booking-action-btn secondary" onclick="viewBookingOnMap('${booking.id}')">
+                <i class="ri-map-pin-line"></i> View on Map
+            </button>
+        `;
     
     return actions;
 }
@@ -3949,55 +4094,6 @@ window.payForExistingBooking = payForExistingBooking;
 window.cancelExistingBooking = cancelExistingBooking;
 window.viewBookingOnMap = viewBookingOnMap;
 
-// Check for early delivery notifications on route selection step
-function checkEarlyDeliveryOnRouteStep() {
-    // This function checks if user is on route selection step and has pending parcel bookings
-    const routeSelectionContent = document.getElementById('route-selection');
-    if (!routeSelectionContent || !routeSelectionContent.classList.contains('active')) {
-        return;
-    }
-    
-    // Check for any pending parcel bookings with early delivery
-    const pendingParcelBookings = JSON.parse(localStorage.getItem('pendingParcelBookings') || '[]');
-    const earlyDeliveryBookings = pendingParcelBookings.filter(booking => 
-        booking.status === 'pending_early_delivery' && booking.earlierTrip
-    );
-    
-    // If user has a selected route, check for early delivery on that route
-    if (selectedRoute && earlyDeliveryBookings.length > 0) {
-        const matchingBooking = earlyDeliveryBookings.find(booking => booking.routeId === selectedRoute);
-        if (matchingBooking && matchingBooking.earlierTrip) {
-            showEarlyDeliveryNotification(matchingBooking.earlierTrip, matchingBooking.deliveryWindow, selectedRoute);
-        }
-    }
-}
-
-// Demo function to show early delivery notification with fake data (for testing/preview)
-function showDemoEarlyDeliveryNotification() {
-    if (!PARCEL_FEATURE_ENABLED) return;
-
-    // Create fake earlier trip data
-    const fakeEarlierTrip = {
-        id: 'TRIP_DEMO_' + Date.now(),
-        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-ZA', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        }), // 2 days from now
-        time: '08:30',
-        parcelSpace: 'Available',
-        routeId: 'jhb-ct',
-        availableSpace: {
-            large: 3,
-            medium: 7,
-            small: 15
-        }
-    };
-    
-    // Show notification with demo data
-    showEarlyDeliveryNotification(fakeEarlierTrip, 'friday', 'jhb-ct');
-}
 
 // Notifications Management
 let notifications = [];
@@ -4037,35 +4133,6 @@ function loadNotifications() {
     // Get notifications from localStorage
     const savedNotifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
     
-    // Add demo early delivery notification if it doesn't exist
-    const hasEarlyDeliveryNotification = savedNotifications.some(n => n.type === 'early_delivery');
-    
-    if (!hasEarlyDeliveryNotification) {
-        const demoEarlyDeliveryNotification = {
-            id: 'NOTIF_' + Date.now(),
-            type: 'early_delivery',
-            title: 'Earlier Delivery Available!',
-            message: 'Great news! We found a trip on Johannesburg → Cape Town that can collect and deliver your parcels sooner than your chosen delivery window (Friday).',
-            time: new Date().toISOString(),
-            read: false,
-            data: {
-                routeId: 'jhb-ct',
-                routeName: 'Johannesburg → Cape Town',
-                earlierDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-ZA', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                }),
-                earlierTime: '08:30',
-                originalWindow: 'Friday',
-                parcelSpace: 'Large: 3 | Medium: 7 | Small: 15'
-            }
-        };
-        savedNotifications.unshift(demoEarlyDeliveryNotification);
-        localStorage.setItem('userNotifications', JSON.stringify(savedNotifications));
-    }
-    
     notifications = savedNotifications;
     displayNotifications();
     updateNotificationBadge();
@@ -4089,22 +4156,8 @@ function displayNotifications() {
     notificationsList.innerHTML = notifications.map(notification => {
         const timeAgo = getTimeAgo(notification.time);
         const unreadClass = !notification.read ? 'unread' : '';
-        const iconClass = notification.type === 'early_delivery' ? 'early-delivery' : 'default';
-        const icon = notification.type === 'early_delivery' ? 'ri-notification-3-line' : 'ri-information-line';
-        
-        let actionButtons = '';
-        if (notification.type === 'early_delivery' && !notification.read) {
-            actionButtons = `
-                <div class="notification-actions">
-                    <button class="notification-action-btn accept" onclick="handleEarlyDeliveryFromNotification('${notification.id}', 'accept')">
-                        Accept & Complete Payment
-                    </button>
-                    <button class="notification-action-btn decline" onclick="handleEarlyDeliveryFromNotification('${notification.id}', 'decline')">
-                        Keep Original Window
-                    </button>
-                </div>
-            `;
-        }
+        const iconClass = 'default';
+        const icon = 'ri-information-line';
         
         return `
             <div class="notification-item ${unreadClass}" onclick="markNotificationAsRead('${notification.id}')">
@@ -4165,26 +4218,6 @@ function markNotificationAsRead(notificationId) {
     }
 }
 
-// Handle early delivery notification action
-function handleEarlyDeliveryFromNotification(notificationId, action) {
-    const notification = notifications.find(n => n.id === notificationId);
-    if (!notification || notification.type !== 'early_delivery') return;
-    
-    markNotificationAsRead(notificationId);
-    
-    if (action === 'accept') {
-        // Navigate to booking page with early delivery accepted
-        sessionStorage.setItem('selectedEarlyDeliveryTrip', JSON.stringify(notification.data));
-        sessionStorage.setItem('deliveryWindow', 'early');
-        sessionStorage.setItem('originalDeliveryWindow', notification.data.originalWindow);
-        
-        // Redirect to booking-public.html or payment page
-        window.location.href = 'booking-public.html';
-    } else {
-        // User declined, just close dropdown
-        toggleNotifications();
-    }
-}
 
 // Check authentication and load notifications
 function checkAuthAndLoadNotifications() {
@@ -4209,52 +4242,21 @@ function checkAuthAndLoadNotifications() {
 // Make functions globally accessible
 window.toggleNotifications = toggleNotifications;
 window.markNotificationAsRead = markNotificationAsRead;
-window.handleEarlyDeliveryFromNotification = handleEarlyDeliveryFromNotification;
 
 // Initialize the page
 // Update extra space display on page load
 document.addEventListener('DOMContentLoaded', function() {
-    updateExtraSpaceDisplay();
+    populateRouteCards(); // Generate route cards dynamically from routes object
     initializeMap();
     checkActiveTrip();
     loadUserBookings();
     setupBookingsTabs();
     checkForJoinLink(); // Check if user is joining via shared link
-    checkEarlyDeliveryOnRouteStep(); // Check for early delivery notifications
     
     // Load notifications if user is logged in
     const fullNav = document.getElementById('fullNav');
     if (fullNav && fullNav.style.display !== 'none') {
         loadNotifications();
-    }
-    
-    // Simulate background checking for early delivery (this would be backend in production)
-    simulateBackgroundEarlyDeliveryCheck();
-    
-    // DEMO: Show early delivery notification with fake data for preview
-    // Remove this line in production - it's just for testing/preview
-    setTimeout(() => {
-        showDemoEarlyDeliveryNotification();
-    }, 1000); // Show after 1 second to let page load
-    
-    // Also check when route selection step is shown
-    const routeSelection = document.getElementById('route-selection');
-    if (routeSelection) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    if (routeSelection.classList.contains('active')) {
-                        checkEarlyDeliveryOnRouteStep();
-                    }
-                }
-            });
-        });
-        observer.observe(routeSelection, { attributes: true });
-        
-        // Also check immediately if route selection is already active
-        if (routeSelection.classList.contains('active')) {
-            checkEarlyDeliveryOnRouteStep();
-        }
     }
 });
 

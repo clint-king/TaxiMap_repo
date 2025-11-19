@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Existing Routes - TeksiMap</title>
+  <link rel="stylesheet" href="../../css/adminStyle.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="admin-existing-routes.html" class="active">Existing Routes</a>
+        <a href="admin-vehicles.html">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-dashboard">
+    <div class="admin-section">
+      <h1><i class="fas fa-route"></i> Existing Routes Management</h1>
+      
+      <!-- Add Route Button -->
+      <div class="filter-controls">
+        <button class="btn btn-primary" onclick="openAddRouteModal()">
+          <i class="fas fa-plus"></i> Add New Route
+        </button>
+        <div>
+          <label for="statusFilter">Filter by Status:</label>
+          <select id="statusFilter" onchange="filterRoutes()">
+            <option value="all">All Routes</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="refreshRoutes()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Routes Table -->
+      <div style="overflow-x: auto; margin-top: 2rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Route Name</th>
+              <th>Origin</th>
+              <th>Destination</th>
+              <th>Distance (km)</th>
+              <th>Duration (hours)</th>
+              <th>Base Fare (R)</th>
+              <th>Small Parcel (R)</th>
+              <th>Medium Parcel (R)</th>
+              <th>Large Parcel (R)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="routesTableBody">
+            <tr>
+              <td colspan="12" style="text-align: center; padding: 2rem;">
+                Loading routes...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Route Modal -->
+  <div id="routeModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add New Route</h2>
+        <button class="modal-close" onclick="closeRouteModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="routeForm" onsubmit="handleRouteSubmit(event)">
+        <div class="form-group">
+          <label for="route_name">Route Name *</label>
+          <input type="text" id="route_name" name="route_name" required placeholder="e.g., Tzaneen to Johannesburg">
+        </div>
+        
+        <div class="form-group">
+          <label for="origin">Origin *</label>
+          <input type="text" id="origin" name="origin" required placeholder="e.g., Tzaneen">
+        </div>
+        
+        <div class="form-group">
+          <label for="destination">Destination *</label>
+          <input type="text" id="destination" name="destination" required placeholder="e.g., Johannesburg">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="distance_km">Distance (km) *</label>
+            <input type="number" id="distance_km" name="distance_km" step="0.01" min="0" required placeholder="e.g., 350.5">
+          </div>
+          
+          <div class="form-group">
+            <label for="typical_duration_hours">Duration (hours) *</label>
+            <input type="number" id="typical_duration_hours" name="typical_duration_hours" step="0.01" min="0" required placeholder="e.g., 4.5">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="base_fare">Base Fare (R) *</label>
+          <input type="number" id="base_fare" name="base_fare" step="0.01" min="0" required placeholder="e.g., 250.00">
+        </div>
+        
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Parcel Prices (R)</h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="small_parcel_price">Small Parcel *</label>
+            <input type="number" id="small_parcel_price" name="small_parcel_price" step="0.01" min="0" required placeholder="e.g., 60.00">
+          </div>
+          
+          <div class="form-group">
+            <label for="medium_parcel_price">Medium Parcel *</label>
+            <input type="number" id="medium_parcel_price" name="medium_parcel_price" step="0.01" min="0" required placeholder="e.g., 150.00">
+          </div>
+          
+          <div class="form-group">
+            <label for="large_parcel_price">Large Parcel *</label>
+            <input type="number" id="large_parcel_price" name="large_parcel_price" step="0.01" min="0" required placeholder="e.g., 400.00">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeRouteModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Add Route</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="../../js/authentication/logout.js"></script>
+  <script type="module" src="../../js/admin/adminCommon.js"></script>
+  <script type="module" src="../../js/admin/adminExistingRoutes.js"></script>
+  <script type="module">
+    import { requireAuth } from '../../js/authentication/logout.js';
+    import { toggleAdminMobileMenu, logout } from '../../js/admin/adminCommon.js';
+    import { 
+      loadRoutes, 
+      openAddRouteModal, 
+      closeRouteModal, 
+      handleRouteSubmit,
+      editRoute,
+      deleteRoute,
+      filterRoutes,
+      refreshRoutes
+    } from '../../js/admin/adminExistingRoutes.js';
+    
+    // Make functions globally available
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+    window.logout = logout;
+    window.openAddRouteModal = openAddRouteModal;
+    window.closeRouteModal = closeRouteModal;
+    window.handleRouteSubmit = handleRouteSubmit;
+    window.editRoute = editRoute;
+    window.deleteRoute = deleteRoute;
+    window.filterRoutes = filterRoutes;
+    window.refreshRoutes = refreshRoutes;
+    
+    // Check authentication and load data
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+      loadRoutes();
+    });
+  </script>
+</body>
+</html>
+

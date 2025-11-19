@@ -1,6 +1,12 @@
 // Profile Page JavaScript
 import axios from 'axios';
 import { BASE_URL } from "../AddressSelection.js";
+import * as bookingApi from '../api/bookingApi.js';
+import * as vehicleApi from '../api/vehicleApi.js';
+import * as driverApi from '../api/driverApi.js';
+import * as ownerApi from '../api/ownerApi.js';
+import * as paymentApi from '../api/paymentApi.js';
+import * as documentApi from '../api/documentApi.js';
 
 axios.defaults.withCredentials = true;
 
@@ -55,6 +61,7 @@ class ProfileManager {
 
     async init() {
         await this.loadUserData();
+        this.setupUserTypeSpecificTabs();
         this.setupEventListeners();
         this.loadActivityLog();
         this.setupTabNavigation();
@@ -62,6 +69,381 @@ class ProfileManager {
         this.setupModalEvents();
         this.setupMobileMenu();
         this.setupBookingsTab();
+    }
+
+    setupUserTypeSpecificTabs() {
+        if (!this.currentUser) return;
+
+        const userType = this.currentUser.user_type;
+        const driverTabs = document.querySelectorAll('.driver-only');
+        const ownerTabs = document.querySelectorAll('.owner-only');
+        const adminTabs = document.querySelectorAll('.admin-only');
+
+        // Show/hide tabs based on user type
+        if (userType === 'driver') {
+            driverTabs.forEach(tab => tab.style.display = 'block');
+        } else {
+            driverTabs.forEach(tab => tab.style.display = 'none');
+        }
+
+        if (userType === 'owner') {
+            ownerTabs.forEach(tab => tab.style.display = 'block');
+        } else {
+            ownerTabs.forEach(tab => tab.style.display = 'none');
+        }
+
+        if (userType === 'admin') {
+            adminTabs.forEach(tab => tab.style.display = 'block');
+        } else {
+            adminTabs.forEach(tab => tab.style.display = 'none');
+        }
+
+        // Load user-type-specific data when tabs are clicked
+        this.setupUserTypeDataLoaders();
+    }
+
+    setupUserTypeDataLoaders() {
+        const userType = this.currentUser?.user_type;
+
+        // Driver data loaders
+        const driverInfoTab = document.getElementById('driver-info');
+        if (driverInfoTab && userType === 'driver') {
+            this.loadDriverInfo();
+        }
+
+        const driverDocumentsTab = document.getElementById('driver-documents');
+        if (driverDocumentsTab && userType === 'driver') {
+            // Load when tab is clicked
+            const tabBtn = document.querySelector('[data-tab="driver-documents"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadDriverDocuments());
+            }
+        }
+
+        const driverVehiclesTab = document.getElementById('driver-vehicles');
+        if (driverVehiclesTab && userType === 'driver') {
+            const tabBtn = document.querySelector('[data-tab="driver-vehicles"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadDriverVehicles());
+            }
+        }
+
+        // Owner data loaders
+        const businessInfoTab = document.getElementById('business-info');
+        if (businessInfoTab && userType === 'owner') {
+            this.loadOwnerProfile();
+        }
+
+        const ownerVehiclesTab = document.getElementById('owner-vehicles');
+        if (ownerVehiclesTab && userType === 'owner') {
+            const tabBtn = document.querySelector('[data-tab="owner-vehicles"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadOwnerVehicles());
+            }
+        }
+
+        const ownerDriversTab = document.getElementById('owner-drivers');
+        if (ownerDriversTab && userType === 'owner') {
+            const tabBtn = document.querySelector('[data-tab="owner-drivers"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadOwnerDrivers());
+            }
+        }
+
+        const ownerRevenueTab = document.getElementById('owner-revenue');
+        if (ownerRevenueTab && userType === 'owner') {
+            const tabBtn = document.querySelector('[data-tab="owner-revenue"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadOwnerRevenue());
+            }
+        }
+
+        // Admin data loaders
+        const adminDashboardTab = document.getElementById('admin-dashboard');
+        if (adminDashboardTab && userType === 'admin') {
+            const tabBtn = document.querySelector('[data-tab="admin-dashboard"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadAdminDashboard());
+            }
+        }
+
+        const userManagementTab = document.getElementById('user-management');
+        if (userManagementTab && userType === 'admin') {
+            const tabBtn = document.querySelector('[data-tab="user-management"]');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', () => this.loadUserManagement());
+            }
+        }
+    }
+
+    // ============================================
+    // DRIVER DATA LOADERS
+    // ============================================
+
+    async loadDriverInfo() {
+        try {
+            const response = await driverApi.getDriverProfile();
+            if (response.success && response.driver) {
+                const driver = response.driver;
+                
+                // Populate driver info form
+                const licenseNumber = document.getElementById('licenseNumber');
+                const licenseExpiry = document.getElementById('licenseExpiry');
+                const driverStatus = document.getElementById('driverStatus');
+                const verificationStatus = document.getElementById('verificationStatus');
+                const ratingDisplay = document.getElementById('driverRatingDisplay');
+
+                if (licenseNumber) licenseNumber.value = driver.license_number || '';
+                if (licenseExpiry) licenseExpiry.value = driver.license_expiry || '';
+                if (driverStatus) driverStatus.value = driver.status || 'pending';
+                if (verificationStatus) verificationStatus.value = driver.verification_status || 'pending';
+                
+                if (ratingDisplay) {
+                    const ratingValue = ratingDisplay.querySelector('.rating-value');
+                    const ratingStars = ratingDisplay.querySelector('.rating-stars');
+                    if (ratingValue) ratingValue.textContent = driver.rating ? driver.rating.toFixed(1) : 'N/A';
+                    if (ratingStars) {
+                        const stars = Math.round(driver.rating || 0);
+                        ratingStars.innerHTML = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error loading driver info:', error);
+        }
+    }
+
+    async loadDriverDocuments() {
+        try {
+            const response = await driverApi.getDriverDocuments();
+            const container = document.getElementById('driverDocumentsList');
+            if (!container) return;
+
+            if (response.success && response.documents) {
+                if (response.documents.length === 0) {
+                    container.innerHTML = '<p>No documents uploaded yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = response.documents.map(doc => `
+                    <div class="document-item">
+                        <h4>${doc.document_type}</h4>
+                        <p>Status: ${doc.status}</p>
+                        ${doc.expiry_date ? `<p>Expires: ${new Date(doc.expiry_date).toLocaleDateString()}</p>` : ''}
+                        <img src="${doc.image_url}" alt="${doc.document_type}" style="max-width: 200px;">
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading driver documents:', error);
+            const container = document.getElementById('driverDocumentsList');
+            if (container) container.innerHTML = '<p>Error loading documents.</p>';
+        }
+    }
+
+    async loadDriverVehicles() {
+        try {
+            const response = await vehicleApi.getDriverVehicles();
+            const container = document.getElementById('assignedVehiclesList');
+            if (!container) return;
+
+            if (response.success && response.vehicles) {
+                if (response.vehicles.length === 0) {
+                    container.innerHTML = '<p>No vehicles assigned.</p>';
+                    return;
+                }
+
+                container.innerHTML = response.vehicles.map(vehicle => `
+                    <div class="vehicle-card">
+                        <h4>${vehicle.make} ${vehicle.model}</h4>
+                        <p>Registration: ${vehicle.registration_number}</p>
+                        <p>Capacity: ${vehicle.capacity} seats</p>
+                        <p>Status: ${vehicle.vehicle_status}</p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading driver vehicles:', error);
+            const container = document.getElementById('assignedVehiclesList');
+            if (container) container.innerHTML = '<p>Error loading vehicles.</p>';
+        }
+    }
+
+    // ============================================
+    // OWNER DATA LOADERS
+    // ============================================
+
+    async loadOwnerProfile() {
+        try {
+            const response = await ownerApi.getOwnerProfile();
+            if (response.success && response.owner) {
+                const owner = response.owner;
+                
+                // Populate business info form
+                const businessName = document.getElementById('businessName');
+                const businessType = document.getElementById('businessType');
+                const businessRegistrationNumber = document.getElementById('businessRegistrationNumber');
+                const taxNumber = document.getElementById('taxNumber');
+                const totalVehicles = document.getElementById('totalVehicles');
+                const totalDrivers = document.getElementById('totalDrivers');
+                const ownerStatus = document.getElementById('ownerStatus');
+                const ownerVerificationStatus = document.getElementById('ownerVerificationStatus');
+
+                if (businessName) businessName.value = owner.business_name || '';
+                if (businessType) businessType.value = owner.business_type || 'individual';
+                if (businessRegistrationNumber) businessRegistrationNumber.value = owner.business_registration_number || '';
+                if (taxNumber) taxNumber.value = owner.tax_number || '';
+                if (totalVehicles) totalVehicles.value = owner.total_vehicles || 0;
+                if (totalDrivers) totalDrivers.value = owner.total_drivers || 0;
+                if (ownerStatus) ownerStatus.value = owner.status || 'pending';
+                if (ownerVerificationStatus) ownerVerificationStatus.value = owner.verification_status || 'pending';
+            }
+        } catch (error) {
+            console.error('Error loading owner profile:', error);
+        }
+    }
+
+    async loadOwnerVehicles() {
+        try {
+            const response = await vehicleApi.getOwnerVehicles();
+            const container = document.getElementById('ownerVehiclesList');
+            if (!container) return;
+
+            if (response.success && response.vehicles) {
+                if (response.vehicles.length === 0) {
+                    container.innerHTML = '<p>No vehicles registered yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = response.vehicles.map(vehicle => `
+                    <div class="vehicle-card">
+                        <h4>${vehicle.make} ${vehicle.model}</h4>
+                        <p>Registration: ${vehicle.registration_number}</p>
+                        <p>Capacity: ${vehicle.capacity} seats</p>
+                        <p>Status: ${vehicle.vehicle_status}</p>
+                        ${vehicle.driver_name ? `<p>Driver: ${vehicle.driver_name}</p>` : '<p>No driver assigned</p>'}
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading owner vehicles:', error);
+            const container = document.getElementById('ownerVehiclesList');
+            if (container) container.innerHTML = '<p>Error loading vehicles.</p>';
+        }
+    }
+
+    async loadOwnerDrivers() {
+        try {
+            const response = await driverApi.getOwnerDrivers();
+            const container = document.getElementById('ownerDriversList');
+            if (!container) return;
+
+            if (response.success && response.drivers) {
+                if (response.drivers.length === 0) {
+                    container.innerHTML = '<p>No drivers assigned yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = response.drivers.map(driver => `
+                    <div class="driver-card">
+                        <h4>${driver.name}</h4>
+                        <p>Email: ${driver.email}</p>
+                        <p>Phone: ${driver.phone || 'N/A'}</p>
+                        <p>License: ${driver.license_number || 'N/A'}</p>
+                        <p>Vehicles: ${driver.vehicle_count || 0}</p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading owner drivers:', error);
+            const container = document.getElementById('ownerDriversList');
+            if (container) container.innerHTML = '<p>Error loading drivers.</p>';
+        }
+    }
+
+    async loadOwnerRevenue() {
+        try {
+            const response = await ownerApi.getOwnerRevenue();
+            const summaryContainer = document.getElementById('revenueSummary');
+            const transactionsContainer = document.getElementById('revenueTransactions');
+            
+            if (summaryContainer && response.summary) {
+                summaryContainer.innerHTML = `
+                    <div class="revenue-summary-card">
+                        <h3>Total Earnings: R${parseFloat(response.summary.total_earnings || 0).toFixed(2)}</h3>
+                        <p>Total Commission: R${parseFloat(response.summary.total_commission || 0).toFixed(2)}</p>
+                        <p>Total Transactions: ${response.summary.total_transactions || 0}</p>
+                    </div>
+                `;
+            }
+
+            if (transactionsContainer && response.transactions) {
+                if (response.transactions.length === 0) {
+                    transactionsContainer.innerHTML = '<p>No revenue transactions yet.</p>';
+                    return;
+                }
+
+                transactionsContainer.innerHTML = response.transactions.map(transaction => `
+                    <div class="transaction-card">
+                        <p>Amount: R${parseFloat(transaction.owner_amount || 0).toFixed(2)}</p>
+                        <p>Date: ${new Date(transaction.created_at).toLocaleDateString()}</p>
+                        <p>Status: ${transaction.status}</p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading owner revenue:', error);
+        }
+    }
+
+    // ============================================
+    // ADMIN DATA LOADERS
+    // ============================================
+
+    async loadAdminDashboard() {
+        try {
+            const response = await bookingApi.getBookingStatistics();
+            const container = document.getElementById('adminStats');
+            if (!container) return;
+
+            if (response.success && response.statistics) {
+                const stats = response.statistics;
+                container.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Bookings</h3>
+                            <p>${stats.total_bookings || 0}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Pending</h3>
+                            <p>${stats.pending || 0}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Completed</h3>
+                            <p>${stats.completed || 0}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total Revenue</h3>
+                            <p>R${parseFloat(stats.total_revenue || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading admin dashboard:', error);
+        }
+    }
+
+    async loadUserManagement() {
+        try {
+            // This would need a separate API endpoint for user management
+            const container = document.getElementById('userManagementList');
+            if (container) {
+                container.innerHTML = '<p>User management feature coming soon.</p>';
+            }
+        } catch (error) {
+            console.error('Error loading user management:', error);
+        }
     }
 
     async loadUserData() {
@@ -175,7 +557,41 @@ class ProfileManager {
             passwordChangeForm.addEventListener('submit', (e) => this.handlePasswordChangeSubmit(e));
         }
 
+        // Business info form (owner)
+        const businessInfoForm = document.getElementById('businessInfoForm');
+        if (businessInfoForm) {
+            businessInfoForm.addEventListener('submit', (e) => this.handleBusinessInfoSubmit(e));
+        }
+
         // Logout functionality is now handled globally in logout.js
+    }
+
+    async handleBusinessInfoSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const response = await ownerApi.updateOwnerProfile({
+                business_name: data.businessName,
+                business_type: data.businessType,
+                business_registration_number: data.businessRegistrationNumber,
+                tax_number: data.taxNumber
+            });
+
+            if (response.success) {
+                this.showMessage('Business information updated successfully!', 'success');
+                this.addActivityLog('profile', 'Business information updated');
+                // Reload owner profile
+                await this.loadOwnerProfile();
+            } else {
+                this.showMessage(response.message || 'Failed to update business information', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating business info:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to update business information. Please try again.';
+            this.showMessage(errorMessage, 'error');
+        }
     }
 
     async handleProfilePictureUpload(event) {
@@ -709,14 +1125,52 @@ class ProfileManager {
         this.loadBookings();
     }
 
-    loadBookings() {
-        // Get bookings from localStorage
-        const bookings = this.getBookingsFromStorage();
-        
-        // Display bookings by category
-        this.displayUpcomingBookings(bookings.upcoming);
-        this.displayUnpaidBookings(bookings.unpaid);
-        this.displayHistoryBookings(bookings.history);
+    async loadBookings() {
+        try {
+            const userType = this.currentUser?.user_type;
+            let response;
+
+            // Load bookings based on user type
+            if (userType === 'driver') {
+                response = await bookingApi.getDriverBookings();
+            } else if (userType === 'owner') {
+                response = await bookingApi.getOwnerBookings();
+            } else {
+                // Client or default
+                response = await bookingApi.getMyBookings();
+            }
+
+            if (response.success && response.bookings) {
+                const bookings = response.bookings;
+                const now = new Date();
+
+                const categorized = {
+                    upcoming: bookings.filter(booking => 
+                        booking.booking_status === 'paid' && 
+                        new Date(booking.scheduled_pickup) > now
+                    ),
+                    unpaid: bookings.filter(booking => 
+                        booking.booking_status === 'pending' || booking.booking_status === 'confirmed'
+                    ),
+                    history: bookings.filter(booking => 
+                        (booking.booking_status === 'paid' && new Date(booking.scheduled_pickup) <= now) ||
+                        booking.booking_status === 'completed'
+                    )
+                };
+
+                // Display bookings by category
+                this.displayUpcomingBookings(categorized.upcoming);
+                this.displayUnpaidBookings(categorized.unpaid);
+                this.displayHistoryBookings(categorized.history);
+            }
+        } catch (error) {
+            console.error('Error loading bookings:', error);
+            // Fallback to localStorage if API fails
+            const bookings = this.getBookingsFromStorage();
+            this.displayUpcomingBookings(bookings.upcoming);
+            this.displayUnpaidBookings(bookings.unpaid);
+            this.displayHistoryBookings(bookings.history);
+        }
     }
 
     getBookingsFromStorage() {
@@ -791,15 +1245,27 @@ class ProfileManager {
     }
 
     getBookingCardHTML(booking, type) {
-        const statusClass = booking.status === 'paid' ? 'paid' : booking.status === 'unpaid' || booking.status === 'confirmed' ? 'unpaid' : 'completed';
-        const statusText = booking.status === 'paid' ? 'PAID' : booking.status === 'unpaid' || booking.status === 'confirmed' ? 'UNPAID' : 'COMPLETED';
+        // Handle both API format and localStorage format
+        const bookingStatus = booking.booking_status || booking.status;
+        const bookingRef = booking.booking_reference || booking.reference;
+        const tripDate = booking.scheduled_pickup || booking.tripDate;
+        const totalAmount = booking.total_amount_paid || booking.total_amount_needed || booking.totalAmount;
+        const passengerCount = booking.passenger_count || booking.passengers || 0;
+        const routeName = booking.route_name || booking.routeName || 'Taxi Booking';
+
+        const statusClass = bookingStatus === 'paid' ? 'paid' : 
+                          bookingStatus === 'unpaid' || bookingStatus === 'pending' || bookingStatus === 'confirmed' ? 'unpaid' : 
+                          'completed';
+        const statusText = bookingStatus === 'paid' ? 'PAID' : 
+                          bookingStatus === 'unpaid' || bookingStatus === 'pending' || bookingStatus === 'confirmed' ? 'UNPAID' : 
+                          bookingStatus === 'completed' ? 'COMPLETED' : bookingStatus?.toUpperCase() || 'PENDING';
 
         return `
             <div class="booking-card ${statusClass}" data-booking-id="${booking.id}">
                 <div class="booking-card-header">
                     <div class="booking-card-title">
-                        <h4><i class="fas fa-taxi"></i> ${booking.routeName || 'Taxi Booking'}</h4>
-                        <div class="booking-reference">Ref: ${booking.reference}</div>
+                        <h4><i class="fas fa-taxi"></i> ${routeName}</h4>
+                        <div class="booking-reference">Ref: ${bookingRef}</div>
                     </div>
                     <div class="booking-status-badge ${statusClass}">${statusText}</div>
                 </div>
@@ -808,28 +1274,28 @@ class ProfileManager {
                         <div class="booking-detail-label">Trip Date</div>
                         <div class="booking-detail-value">
                             <i class="fas fa-calendar"></i>
-                            ${new Date(booking.tripDate).toLocaleDateString()}
+                            ${new Date(tripDate).toLocaleDateString()}
                         </div>
                     </div>
                     <div class="booking-detail-item">
                         <div class="booking-detail-label">Passengers</div>
                         <div class="booking-detail-value">
                             <i class="fas fa-users"></i>
-                            ${booking.passengers}
+                            ${passengerCount}
                         </div>
                     </div>
                     <div class="booking-detail-item">
                         <div class="booking-detail-label">Total Amount</div>
                         <div class="booking-detail-value">
                             <i class="fas fa-money-bill-wave"></i>
-                            R${booking.totalAmount}
+                            R${parseFloat(totalAmount || 0).toFixed(2)}
                         </div>
                     </div>
                     <div class="booking-detail-item">
                         <div class="booking-detail-label">Booking Date</div>
                         <div class="booking-detail-value">
                             <i class="fas fa-clock"></i>
-                            ${new Date(booking.bookingDate).toLocaleDateString()}
+                            ${new Date(booking.created_at || booking.bookingDate).toLocaleDateString()}
                         </div>
                     </div>
                 </div>
@@ -932,54 +1398,62 @@ class ProfileManager {
         window.location.href = '/pages/customer/booking-payment.html';
     }
 
-    viewBookingDetails(bookingId) {
-        const allBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
-        const booking = allBookings.find(b => b.id === bookingId);
-        
-        if (!booking) {
-            this.showMessage('Booking not found', 'error');
-            return;
-        }
+    async viewBookingDetails(bookingId) {
+        try {
+            const response = await bookingApi.getBookingDetails(bookingId);
+            
+            if (response.success && response.booking) {
+                const booking = response.booking;
+                
+                // Create and show detailed modal
+                let detailsHTML = `
+                    <div style="text-align: left;">
+                        <h3 style="margin-bottom: 1rem; color: #01386A;">Booking Details</h3>
+                        <div style="display: grid; gap: 1rem;">
+                            <div><strong>Reference:</strong> ${booking.booking_reference || booking.reference}</div>
+                            <div><strong>Route:</strong> ${booking.route_name || booking.routeName || 'N/A'}</div>
+                            <div><strong>Passengers:</strong> ${booking.passenger_count || booking.passengers || 0}</div>
+                            <div><strong>Parcels:</strong> ${booking.parcel_count || 0}</div>
+                            <div><strong>Trip Date:</strong> ${new Date(booking.scheduled_pickup || booking.tripDate).toLocaleDateString()}</div>
+                            <div><strong>Total Amount:</strong> R${parseFloat(booking.total_amount_needed || booking.totalAmount || 0).toFixed(2)}</div>
+                            <div><strong>Amount Paid:</strong> R${parseFloat(booking.total_amount_paid || 0).toFixed(2)}</div>
+                            <div><strong>Status:</strong> ${(booking.booking_status || booking.status || 'pending').toUpperCase()}</div>
+                            ${booking.driver_name ? `<div><strong>Driver:</strong> ${booking.driver_name}</div>` : ''}
+                            ${booking.owner_name ? `<div><strong>Owner:</strong> ${booking.owner_name}</div>` : ''}
+                        </div>
+                    </div>
+                `;
 
-        // Create and show detailed modal
-        let detailsHTML = `
-            <div style="text-align: left;">
-                <h3 style="margin-bottom: 1rem; color: #01386A;">Booking Details</h3>
-                <div style="display: grid; gap: 1rem;">
-                    <div><strong>Reference:</strong> ${booking.reference}</div>
-                    <div><strong>Route:</strong> ${booking.routeName || 'N/A'}</div>
-                    <div><strong>Passengers:</strong> ${booking.passengers}</div>
-                    <div><strong>Trip Date:</strong> ${new Date(booking.tripDate).toLocaleDateString()}</div>
-                    <div><strong>Total Amount:</strong> R${booking.totalAmount}</div>
-                    <div><strong>Status:</strong> ${booking.status.toUpperCase()}</div>
-                </div>
-            </div>
-        `;
-
-        // Show in modal
-        const modal = document.getElementById('confirmationModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const confirmBtn = document.getElementById('confirmBtn');
-        
-        if (modal && modalMessage) {
-            modalMessage.innerHTML = detailsHTML;
-            confirmBtn.style.display = 'none';
-            modal.style.display = 'block';
+                // Show in modal
+                const modal = document.getElementById('confirmationModal');
+                const modalMessage = document.getElementById('modalMessage');
+                const confirmBtn = document.getElementById('confirmBtn');
+                
+                if (modal && modalMessage) {
+                    modalMessage.innerHTML = detailsHTML;
+                    confirmBtn.style.display = 'none';
+                    modal.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching booking details:', error);
+            this.showMessage('Failed to load booking details', 'error');
         }
     }
 
-    cancelBooking(bookingId) {
+    async cancelBooking(bookingId) {
         this.showConfirmationModal(
             'Are you sure you want to cancel this booking? This action cannot be undone.',
-            () => {
-                // Remove booking from storage
-                let allBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
-                allBookings = allBookings.filter(b => b.id !== bookingId);
-                localStorage.setItem('userBookings', JSON.stringify(allBookings));
-
-                // Reload bookings display
-                this.loadBookings();
-                this.showMessage('Booking cancelled successfully', 'success');
+            async () => {
+                try {
+                    await bookingApi.cancelBooking(bookingId, 'Cancelled by user');
+                    // Reload bookings display
+                    await this.loadBookings();
+                    this.showMessage('Booking cancelled successfully', 'success');
+                } catch (error) {
+                    console.error('Error cancelling booking:', error);
+                    this.showMessage(error.response?.data?.message || 'Failed to cancel booking', 'error');
+                }
             }
         );
     }

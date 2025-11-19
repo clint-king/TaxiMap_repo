@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Reports - TeksiMap</title>
-  <link rel="stylesheet" href="./css/adminStyle.css">
+  <link rel="stylesheet" href="../../css/adminStyle.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
@@ -35,6 +35,9 @@
         <a href="admin-pending.html">Pending Routes</a>
         <a href="admin-feedback.html">Feedback</a>
         <a href="admin-contributors.html">Contributors</a>
+        <a href="admin-existing-routes.html">Existing Routes</a>
+        <a href="admin-vehicles.html">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
         <a href="../customer/client.html" class="user-link">User View</a>
         <a href="#" onclick="logout()" class="logout-link">Logout</a>
       </div>
@@ -246,7 +249,7 @@
       sortRouteTable, 
       filterRouteTable, 
       exportReports 
-    } from './js/admin/adminReports.js';
+    } from '../../js/admin/adminReports.js';
     
     // Make functions globally available
     window.toggleAdminMobileMenu = toggleAdminMobileMenu;

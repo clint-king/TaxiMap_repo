@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Vehicles - TeksiMap</title>
+  <link rel="stylesheet" href="../../css/adminStyle.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="admin-existing-routes.html">Existing Routes</a>
+        <a href="admin-vehicles.html" class="active">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-dashboard">
+    <div class="admin-section">
+      <h1><i class="fas fa-car"></i> Vehicle Management</h1>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <div>
+          <label for="statusFilter">Filter by Status:</label>
+          <select id="statusFilter" onchange="filterVehicles()">
+            <option value="all">All Vehicles</option>
+            <option value="pending">Pending Approval</option>
+            <option value="approve">Approved</option>
+            <option value="reject">Rejected</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+        <div>
+          <label for="vehicleStatusFilter">Vehicle Status:</label>
+          <select id="vehicleStatusFilter" onchange="filterVehicles()">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="refreshVehicles()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Vehicles Table -->
+      <div style="overflow-x: auto; margin-top: 2rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Registration</th>
+              <th>Make/Model</th>
+              <th>Owner</th>
+              <th>Driver</th>
+              <th>Route</th>
+              <th>Admin Status</th>
+              <th>Vehicle Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 2rem;">
+                Loading vehicles...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Details Modal -->
+  <div id="vehicleModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h2 id="modalTitle">Vehicle Details</h2>
+        <button class="modal-close" onclick="closeVehicleModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="vehicleModalBody">
+        <!-- Content will be loaded dynamically -->
+      </div>
+      <div class="modal-footer" id="vehicleModalFooter">
+        <!-- Action buttons will be loaded dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../../js/authentication/logout.js"></script>
+  <script type="module" src="../../js/admin/adminCommon.js"></script>
+  <script type="module" src="../../js/admin/adminVehicles.js"></script>
+  <script type="module">
+    import { requireAuth } from '../../js/authentication/logout.js';
+    import { toggleAdminMobileMenu, logout } from '../../js/admin/adminCommon.js';
+    import { 
+      loadVehicles, 
+      viewVehicleDetails,
+      approveVehicle,
+      rejectVehicle,
+      suspendVehicle,
+      filterVehicles,
+      refreshVehicles,
+      closeVehicleModal
+    } from '../../js/admin/adminVehicles.js';
+    
+    // Make functions globally available
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+    window.logout = logout;
+    window.viewVehicleDetails = viewVehicleDetails;
+    window.approveVehicle = approveVehicle;
+    window.rejectVehicle = rejectVehicle;
+    window.suspendVehicle = suspendVehicle;
+    window.filterVehicles = filterVehicles;
+    window.refreshVehicles = refreshVehicles;
+    window.closeVehicleModal = closeVehicleModal;
+    
+    // Check authentication and load data
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+      loadVehicles();
+    });
+  </script>
+</body>
+</html>
+

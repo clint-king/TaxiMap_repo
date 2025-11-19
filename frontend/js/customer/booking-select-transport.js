@@ -1,4 +1,6 @@
 // Select Transport Page JavaScript
+import * as vehicleApi from '../api/vehicleApi.js';
+
 // Navigation functions (matching standard pages)
 function toggleMobileMenu() {
     const navLinks = document.querySelector('.nav-links');
@@ -84,11 +86,74 @@ function selectTransportType(type) {
     filterVehicles();
 }
 
-function loadAvailableVehicles() {
-    // Mock data - in real implementation, this would come from your backend
+async function loadAvailableVehicles() {
+    try {
+        // Get route ID from sessionStorage or tripInfo
+        const tripInfoData = sessionStorage.getItem('tripInfo');
+        const tripInfo = tripInfoData ? JSON.parse(tripInfoData) : null;
+        const routeId = sessionStorage.getItem('selectedRouteId') || tripInfo?.routeId;
+
+        if (routeId) {
+            // Load vehicles by route
+            const response = await vehicleApi.getVehiclesByRoute(routeId);
+            if (response.success && response.vehicles) {
+                availableVehicles = response.vehicles.map(vehicle => ({
+                    id: vehicle.id,
+                    vehicle_id: vehicle.id,
+                    owner_id: vehicle.owner_id,
+                    type: vehicle.vehicle_type,
+                    name: `${vehicle.make} ${vehicle.model}`,
+                    capacity: vehicle.capacity,
+                    registration: vehicle.registration_number,
+                    owner: vehicle.owner_name || 'N/A',
+                    rating: 4.5, // Default rating, can be calculated from ratings table
+                    price: 15.50, // This should come from route pricing
+                    distance: 2.3,
+                    image: vehicle.images && vehicle.images.length > 0 ? vehicle.images[0] : '../../assets/images/tol00005_u27946_3.jpg',
+                    features: vehicle.features || [],
+                    status: vehicle.vehicle_status
+                }));
+                displayVehicles(availableVehicles);
+                return;
+            }
+        }
+
+        // Fallback: Search vehicles (if no route ID)
+        const searchParams = {
+            vehicle_type: selectedTransportType || null,
+            status: 'active'
+        };
+        const response = await vehicleApi.searchVehicles(searchParams);
+        if (response.success && response.vehicles) {
+            availableVehicles = response.vehicles.map(vehicle => ({
+                id: vehicle.id,
+                vehicle_id: vehicle.id,
+                owner_id: vehicle.owner_id,
+                type: vehicle.vehicle_type,
+                name: `${vehicle.make} ${vehicle.model}`,
+                capacity: vehicle.capacity,
+                registration: vehicle.registration_number,
+                owner: vehicle.owner_name || 'N/A',
+                rating: 4.5,
+                price: 15.50,
+                distance: 2.3,
+                image: vehicle.images && vehicle.images.length > 0 ? vehicle.images[0] : '../../assets/images/tol00005_u27946_3.jpg',
+                features: vehicle.features || [],
+                status: vehicle.vehicle_status
+            }));
+            displayVehicles(availableVehicles);
+            return;
+        }
+    } catch (error) {
+        console.error('Error loading vehicles from API:', error);
+    }
+
+    // Fallback to mock data if API fails
     availableVehicles = [
         {
             id: 1,
+            vehicle_id: 1,
+            owner_id: 1,
             type: 'minibus',
             name: 'Golden Arrow Minibus',
             capacity: 16,
@@ -383,6 +448,17 @@ function proceedToPayment() {
     
     const totalPrice = calculateTotalPrice(selectedVehicle);
     
+    // Store selected vehicle info for booking creation
+    sessionStorage.setItem('selectedVehicle', JSON.stringify({
+        id: selectedVehicle.id,
+        vehicle_id: selectedVehicle.vehicle_id || selectedVehicle.id,
+        owner_id: selectedVehicle.owner_id,
+        name: selectedVehicle.name,
+        type: selectedVehicle.type,
+        capacity: selectedVehicle.capacity,
+        owner: selectedVehicle.owner
+    }));
+    
     // Create booking with unpaid status
     const booking = {
         id: 'BK' + Date.now(),
@@ -397,6 +473,8 @@ function proceedToPayment() {
         tripDate: `${tripInfo.departureDate}T${tripInfo.departureTime}`,
         bookingDate: new Date().toISOString(),
         status: 'unpaid',
+        vehicle_id: selectedVehicle.vehicle_id || selectedVehicle.id,
+        owner_id: selectedVehicle.owner_id,
         vehicleInfo: {
             name: selectedVehicle.name,
             type: selectedVehicle.type,

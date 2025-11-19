@@ -5,6 +5,16 @@
 -- taxi/transport booking system with drivers, owners, and bookings
 -- ============================================
 --
+-- IMPORTANT: PREREQUISITE TABLE
+-- ============================================
+-- This migration assumes the 'users' table already exists with:
+--   - ID BIGINT AUTO_INCREMENT PRIMARY KEY (or equivalent)
+--   - user_type ENUM('client', 'driver', 'owner', 'admin')
+--   - Other standard user fields (email, password, etc.)
+--
+-- If the users table doesn't exist, create it first before running this migration.
+-- ============================================
+--
 -- QUICK REFERENCE: USER ARCHITECTURE
 -- ============================================
 -- 
@@ -15,15 +25,15 @@
 --    - Admins (user_type='admin')
 --
 -- ✅ PROFILE TABLES extend users (NOT separate user tables):
---    - driver_profiles.user_id → users.id (one-to-one)
---    - owner_profiles.user_id → users.id (one-to-one)
+--    - driver_profiles.user_id → users.ID (one-to-one)
+--    - owner_profiles.user_id → users.ID (one-to-one)
 --    - Clients & Admins: No profile table needed
 --
--- ✅ ALL other tables reference users.id:
---    - vehicles.owner_id → users.id
---    - vehicles.driver_id → users.id
---    - bookings.user_id → users.id
---    - bookings.owner_id → users.id
+-- ✅ ALL other tables reference users.ID:
+--    - vehicles.owner_id → users.ID
+--    - vehicles.driver_id → users.ID
+--    - bookings.user_id → users.ID
+--    - bookings.owner_id → users.ID
 --
 -- VISUAL STRUCTURE:
 -- ============================================
@@ -49,15 +59,18 @@
 -- ============================================
 -- 1. EXISTING (REGISTERED) ROUTES
 -- ============================================
+-- No dependencies - can be created first
 CREATE TABLE IF NOT EXISTS existing_routes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    type ENUM("long-distance", "local") DEFAULT "long-distance",
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     route_name VARCHAR(255) NOT NULL,
     origin VARCHAR(255) NOT NULL,
-    destination VARCHAR(255) NULL,
-    distance_km DECIMAL(6,2) NULL,
-    typical_duration_minutes INT NULL,
+    destination VARCHAR(255) NOT NULL,
+    distance_km DECIMAL(6,2) NOT NULL,
+    typical_duration_hours DECIMAL(10,2) NOT NULL,
     base_fare DECIMAL(10,2) NOT NULL,
+    small_parcel_price DECIMAL(10,2) NOT NULL,
+    medium_parcel_price DECIMAL(10,2) NOT NULL,
+    large_parcel_price DECIMAL(10,2) NOT NULL,
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -65,12 +78,90 @@ CREATE TABLE IF NOT EXISTS existing_routes (
 );
 
 -- ============================================
--- 2. VEHICLES TABLE
+-- 2. DRIVER PROFILES
 -- ============================================
+-- Depends on: users table
+CREATE TABLE IF NOT EXISTS driver_profiles (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    license_number VARCHAR(50),
+    license_expiry DATE,
+    id_number VARCHAR(20),
+    status ENUM('active', 'pending',  'inactive') DEFAULT 'pending',
+    verification_status ENUM('pending', 'verified','suspended', 'rejected') DEFAULT 'pending',
+    verification_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
+    INDEX idx_status (status),
+    INDEX idx_verification (verification_status),
+    INDEX idx_license (license_number),
+    INDEX idx_id_number (id_number)
+);
+
+-- ============================================
+-- 3. DRIVER DOCUMENTS (License, ID Copy, etc.)
+-- ============================================
+-- Depends on: users table
+-- Note: Documents are stored as images (JPG, PNG, etc.)
+-- Multiple images can be stored for each document type (e.g., front/back of license)
+CREATE TABLE IF NOT EXISTS driver_documents (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    driver_id BIGINT NOT NULL,
+    document_type ENUM('license', 'id_copy', 'proof_of_address', 'other') NOT NULL,
+    reference_number VARCHAR(100) NULL, -- Official reference number from the document (e.g., license number, ID number)
+    image_url VARCHAR(500) NOT NULL, -- URL to document image (JPG, PNG, etc.)
+    image_order INT DEFAULT 1, -- Order for multiple images of same document (1, 2, 3...)
+    expiry_date DATE,
+    issue_date DATE,
+    issuing_authority VARCHAR(255), -- e.g., "Department of Transport", "Home Affairs"
+    status ENUM('pending', 'verified', 'rejected', 'expired', 'expiring_soon') DEFAULT 'pending',
+    verified_by BIGINT NULL, -- Admin who verified
+    verified_at TIMESTAMP NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (driver_id) REFERENCES users(ID) ON DELETE CASCADE,
+    FOREIGN KEY (verified_by) REFERENCES users(ID) ON DELETE SET NULL,
+    INDEX idx_driver (driver_id),
+    INDEX idx_type (document_type),
+    INDEX idx_status (status),
+    INDEX idx_expiry (expiry_date),
+    INDEX idx_driver_type (driver_id, document_type), -- For finding all images of a specific document type
+    INDEX idx_reference_number (reference_number) -- For reference lookups
+);
+
+-- ============================================
+-- 4. OWNER PROFILES
+-- ============================================
+-- Depends on: users table
+CREATE TABLE IF NOT EXISTS owner_profiles (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    business_name VARCHAR(255),
+    business_registration_number VARCHAR(50),
+    tax_number VARCHAR(50),
+    business_type ENUM('individual', 'company') DEFAULT 'individual',
+    total_vehicles INT DEFAULT 0,
+    total_drivers INT DEFAULT 0,
+    status ENUM('active', 'pending', 'suspended', 'inactive') DEFAULT 'pending',
+    verification_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
+    verification_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   
+    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
+    INDEX idx_status (status),
+    INDEX idx_verification (verification_status)
+);
+
+-- ============================================
+-- 5. VEHICLES TABLE
+-- ============================================
+-- Depends on: users table, existing_routes table
 CREATE TABLE IF NOT EXISTS vehicles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    owner_id INT NOT NULL,
-    driver_id INT NULL, -- NULL if no driver assigned
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    owner_id BIGINT NOT NULL,
+    driver_id BIGINT NULL, -- NULL if no driver assigned
     existing_route_id INT NULL,
     registration_number VARCHAR(20) NOT NULL UNIQUE,
     license_plate VARCHAR(20) NOT NULL,
@@ -90,9 +181,9 @@ CREATE TABLE IF NOT EXISTS vehicles (
     features JSON, -- AC, WiFi, etc.
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (existing_route_id) REFERENCES existing_routes(id) ON DELETE SET NULL,
+    FOREIGN KEY (owner_id) REFERENCES users(ID) ON DELETE CASCADE,
+    FOREIGN KEY (driver_id) REFERENCES users(ID) ON DELETE SET NULL,
+    FOREIGN KEY (existing_route_id) REFERENCES existing_routes(ID) ON DELETE SET NULL,
     INDEX idx_owner (owner_id),
     INDEX idx_driver (driver_id),
     INDEX idx_status (vehicle_status),
@@ -102,12 +193,37 @@ CREATE TABLE IF NOT EXISTS vehicles (
 );
 
 -- ============================================
--- 2B. VEHICLE DOCUMENTS (Roadworthy, Permit, Route Selection)
+-- 5.1. VEHICLE QUEUE (Taxi Line/Rotation System)
 -- ============================================
+-- Depends on: vehicles table, existing_routes table
+-- This table manages vehicle rotation/queue system where vehicles take turns
+-- Each route has its own queue of active vehicles approved for that route
+-- When a vehicle is selected for a trip, it moves to the end of the queue
+-- This simulates taxis in a line at a taxi rank, each taking their turn
+CREATE TABLE IF NOT EXISTS vehicle_queue (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    existing_route_id INT NOT NULL, -- Route this queue is for (e.g., Tzaneen → Johannesburg)
+    vehicle_id INT NOT NULL,
+    queue_position INT NOT NULL, -- Position in line (1 = next, 2 = second, etc.)
+    last_selected_at DATETIME NULL, -- When this vehicle was last selected for a trip
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (existing_route_id) REFERENCES existing_routes(ID) ON DELETE CASCADE,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(ID) ON DELETE CASCADE,
+    UNIQUE KEY uniq_route_vehicle (existing_route_id, vehicle_id), -- One entry per vehicle per route
+    INDEX idx_route_queue (existing_route_id, queue_position), -- For ordering by route
+    INDEX idx_vehicle (vehicle_id),
+    INDEX idx_position (queue_position)
+);
+
+-- ============================================
+-- 6. VEHICLE DOCUMENTS (Roadworthy, Permit, Route Selection)
+-- ============================================
+-- Depends on: vehicles table, users table
  -- Note: Documents are stored as images (JPG, PNG, etc.)
 -- Multiple images can be stored for each document type (e.g., front/back of roadworthy)
 CREATE TABLE IF NOT EXISTS vehicle_documents (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id INT NOT NULL,
     document_type ENUM('roadworthy', 'permit', 'temporary_permit',  'registration', 'other') NOT NULL,
     reference_number VARCHAR(100) NULL, -- Official reference number from the document (e.g., roadworthy certificate number, permit number)
@@ -125,13 +241,13 @@ CREATE TABLE IF NOT EXISTS vehicle_documents (
     route_destination VARCHAR(255) NULL, -- Long-distance route: destination location (e.g., "Johannesburg")
     -- Note: For local routes, use 'route' field. For long-distance routes, use 'route_origin' and 'route_destination'
     status ENUM('pending', 'verified', 'rejected', 'expired', 'expiring_soon') DEFAULT 'pending',
-    verified_by INT NULL, -- Admin who verified
+    verified_by BIGINT NULL, -- Admin who verified
     verified_at TIMESTAMP NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
-    FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(ID) ON DELETE CASCADE,
+    FOREIGN KEY (verified_by) REFERENCES users(ID) ON DELETE SET NULL,
     INDEX idx_vehicle (vehicle_id),
     INDEX idx_type (document_type),
     INDEX idx_status (status),
@@ -145,61 +261,60 @@ CREATE TABLE IF NOT EXISTS vehicle_documents (
 );
 
 -- ============================================
--- 4. OWNER PROFILES
+-- 7. PAYER PROFILES (External payment contributors)
 -- ============================================
-CREATE TABLE IF NOT EXISTS owner_profiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
-    business_name VARCHAR(255),
-    business_registration_number VARCHAR(50),
-    tax_number VARCHAR(50),
-    business_type ENUM('individual', 'company') DEFAULT 'individual',
-    total_vehicles INT DEFAULT 0,
-    total_drivers INT DEFAULT 0,
-    status ENUM('active', 'pending', 'suspended', 'inactive') DEFAULT 'pending',
-    verification_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
-    verification_notes TEXT,
+-- Depends on: users table
+CREATE TABLE IF NOT EXISTS payer_profiles (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    linked_user_id BIGINT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    email VARCHAR(255),
+    phone VARCHAR(30),
+    metadata JSON,
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,   
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_status (status),
-    INDEX idx_verification (verification_status)
+    FOREIGN KEY (linked_user_id) REFERENCES users(ID) ON DELETE SET NULL,
+    INDEX idx_email (email),
+    INDEX idx_phone (phone),
+    INDEX idx_linked_user (linked_user_id)
 );
 
 -- ============================================
--- 5. BOOKINGS TABLE
+-- 8. BOOKINGS TABLE
 -- ============================================
+-- Depends on: users table, vehicles table, existing_routes table
 CREATE TABLE IF NOT EXISTS bookings (  
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_reference VARCHAR(20) UNIQUE,
-    user_id INT NULL, -- Passenger/client who made the booking (nullable for pooled route-based requests)
-    owner_id INT NOT NULL,
+    user_id BIGINT NULL, -- Passenger/client who made the booking (nullable for pooled route-based requests)
+    owner_id BIGINT NOT NULL,
     vehicle_id INT NOT NULL,
-    driver_id INT NULL, -- Optional assigned driver at time of booking
+    driver_id BIGINT NULL, -- Optional assigned driver at time of booking
     existing_route_id INT NULL, -- Set when booking_mode = 'route'
     booking_mode ENUM('route', 'custom') NOT NULL DEFAULT 'route',
     booking_status ENUM('pending', 'confirmed', 'paid', 'cancelled', 'completed', 'refunded') DEFAULT 'pending',
     passenger_count INT DEFAULT 0,
     parcel_count INT DEFAULT 0,
     total_seats_available INT NOT NULL DEFAULT 15,
-    payment_transaction_id VARCHAR(255),
+    payment_id INT NULL, -- Reference to payments table (created after this table)
     total_amount_needed DECIMAL(10,2) NOT NULL,
     total_amount_paid DECIMAL(10,2) NOT NULL,
     scheduled_pickup DATETIME NOT NULL,
     route_points JSON, -- Array of route points
     special_instructions TEXT,
     cancellation_reason TEXT,
-    cancelled_by INT NULL, -- User who cancelled
+    cancelled_by BIGINT NULL, -- User who cancelled
     cancelled_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE RESTRICT,
-    FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (existing_route_id) REFERENCES existing_routes(id) ON DELETE SET NULL,
-    FOREIGN KEY (cancelled_by) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (payment_transaction_id) REFERENCES payments(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE SET NULL,
+    FOREIGN KEY (owner_id) REFERENCES users(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (driver_id) REFERENCES users(ID) ON DELETE SET NULL,
+    FOREIGN KEY (existing_route_id) REFERENCES existing_routes(ID) ON DELETE SET NULL,
+    FOREIGN KEY (cancelled_by) REFERENCES users(ID) ON DELETE SET NULL,
     INDEX idx_user (user_id),
     INDEX idx_owner_booking (owner_id),
     INDEX idx_vehicle_booking (vehicle_id),
@@ -207,7 +322,6 @@ CREATE TABLE IF NOT EXISTS bookings (
     INDEX idx_existing_route_booking (existing_route_id),
     INDEX idx_mode (booking_mode),
     INDEX idx_status (booking_status),
-    INDEX idx_payment_status (payment_status),
     INDEX idx_pickup (scheduled_pickup)
 );
 
@@ -216,10 +330,11 @@ CREATE TABLE IF NOT EXISTS bookings (
 --   'custom' : booking uses free-text pickup/dropoff captured on the booking record
 
 -- ============================================
--- 6. PASSENGER PROFILES (Guest/non-registered passengers)
+-- 9. PASSENGER PROFILES (Guest/non-registered passengers)
 -- ============================================
+-- Depends on: bookings table
 CREATE TABLE IF NOT EXISTS passenger_profiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE,
@@ -229,8 +344,8 @@ CREATE TABLE IF NOT EXISTS passenger_profiles (
     last_seen_booking_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (first_seen_booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
-    FOREIGN KEY (last_seen_booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
+    FOREIGN KEY (first_seen_booking_id) REFERENCES bookings(ID) ON DELETE SET NULL,
+    FOREIGN KEY (last_seen_booking_id) REFERENCES bookings(ID) ON DELETE SET NULL,
     INDEX idx_email (email),
     INDEX idx_phone (phone),
     INDEX idx_first_seen (first_seen_booking_id),
@@ -238,34 +353,15 @@ CREATE TABLE IF NOT EXISTS passenger_profiles (
 );
 
 -- ============================================
--- 7. PAYER PROFILES (External payment contributors)
+-- 10. BOOKING PASSENGERS (Passengers in a booking)
 -- ============================================
-CREATE TABLE IF NOT EXISTS payer_profiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    linked_user_id INT NULL,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    email VARCHAR(255),
-    phone VARCHAR(30),
-    metadata JSON,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (linked_user_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_email (email),
-    INDEX idx_phone (phone),
-    INDEX idx_linked_user (linked_user_id)
-);
-
--- ============================================
--- 8. BOOKING PASSENGERS (Passengers in a booking)
--- ============================================
+-- Depends on: bookings table, users table, passenger_profiles table
 CREATE TABLE IF NOT EXISTS booking_passengers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
     passenger_number INT NOT NULL, -- 1, 2, 3, etc.
     passenger_type ENUM('registered', 'guest') DEFAULT 'guest',
-    linked_user_id INT NULL, -- Reference to existing signed-up user
+    linked_user_id BIGINT NULL, -- Reference to existing signed-up user
     passenger_profile_id INT NULL, -- Reference to stored guest profile
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -284,9 +380,9 @@ CREATE TABLE IF NOT EXISTS booking_passengers (
     next_of_kin_phone VARCHAR(20) NOT NULL,
     joined_via_link BOOLEAN DEFAULT FALSE, -- Joined through shared booking link
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-    FOREIGN KEY (linked_user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (passenger_profile_id) REFERENCES passenger_profiles(id) ON DELETE SET NULL,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE CASCADE,
+    FOREIGN KEY (linked_user_id) REFERENCES users(ID) ON DELETE SET NULL,
+    FOREIGN KEY (passenger_profile_id) REFERENCES passenger_profiles(ID) ON DELETE SET NULL,
     INDEX idx_booking (booking_id),
     INDEX idx_primary (is_primary),
     INDEX idx_linked_user (linked_user_id),
@@ -299,10 +395,11 @@ CREATE TABLE IF NOT EXISTS booking_passengers (
 --   'guest' passengers use reusable passenger_profiles records (passenger_profile_id populated, linked_user_id NULL)
 
 -- ============================================
--- 9. BOOKING PARCELS
+-- 11. BOOKING PARCELS
 -- ============================================
+-- Depends on: bookings table
 CREATE TABLE IF NOT EXISTS booking_parcels (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
     parcel_number INT NOT NULL,
     size ENUM('small', 'medium', 'large') NOT NULL,
@@ -322,19 +419,20 @@ CREATE TABLE IF NOT EXISTS booking_parcels (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE CASCADE,
     INDEX idx_booking (booking_id),
     INDEX idx_status (status),
     INDEX idx_secret_code (secret_code)
 );
 
 -- ============================================
--- 10. PAYMENTS TABLE
+-- 12. PAYMENTS TABLE
 -- ============================================
+-- Depends on: bookings table, users table, payer_profiles table
 CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
-    user_id INT NULL, -- Registered account paying (nullable for guest contributions)
+    user_id BIGINT NULL, -- Registered account paying (nullable for guest contributions)
     payer_profile_id INT NULL, -- Guest/external payer profile reference
     amount DECIMAL(10,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'ZAR',
@@ -350,9 +448,9 @@ CREATE TABLE IF NOT EXISTS payments (
     processed_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE RESTRICT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (payer_profile_id) REFERENCES payer_profiles(id) ON DELETE SET NULL,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE SET NULL,
+    FOREIGN KEY (payer_profile_id) REFERENCES payer_profiles(ID) ON DELETE SET NULL,
     INDEX idx_booking (booking_id),
     INDEX idx_user (user_id),
     INDEX idx_payer_profile (payer_profile_id),
@@ -363,23 +461,24 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 -- ============================================
--- 11. RATINGS & REVIEWS (Booking-level)
+-- 13. RATINGS & REVIEWS (Booking-level)
 -- ============================================
+-- Depends on: bookings table, users table
 CREATE TABLE IF NOT EXISTS booking_ratings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
-    rated_by INT NOT NULL, -- User who gave the rating
+    rated_by BIGINT NOT NULL, -- User who gave the rating
     rated_type ENUM('driver', 'vehicle', 'owner', 'booking') NOT NULL,
-    rated_user_id INT NULL, -- Driver/Owner being rated
+    rated_user_id BIGINT NULL, -- Driver/Owner being rated
     rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
     review_text TEXT,
     is_visible BOOLEAN DEFAULT TRUE,
     admin_response TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-    FOREIGN KEY (rated_by) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (rated_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE CASCADE,
+    FOREIGN KEY (rated_by) REFERENCES users(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (rated_user_id) REFERENCES users(ID) ON DELETE SET NULL,
     INDEX idx_booking_rating (booking_id),
     INDEX idx_rated_user (rated_user_id),
     INDEX idx_rated_by (rated_by),
@@ -389,75 +488,79 @@ CREATE TABLE IF NOT EXISTS booking_ratings (
 -- ============================================
 -- 12. NOTIFICATIONS
 -- ============================================
-CREATE TABLE IF NOT EXISTS notifications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    type ENUM('booking', 'payment', 'rating', 'system', 'driver', 'owner') NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    related_id INT NULL, -- ID of related booking/payment/event
-    related_type VARCHAR(50) NULL, -- 'booking', 'payment', etc.
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at DATETIME NULL,
-    action_url VARCHAR(500) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user (user_id),
-    INDEX idx_read (is_read),
-    INDEX idx_type (type),
-    INDEX idx_created (created_at)
-);
+-- CREATE TABLE IF NOT EXISTS notifications (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     type ENUM('booking', 'payment', 'rating', 'system', 'driver', 'owner') NOT NULL,
+--     title VARCHAR(255) NOT NULL,
+--     message TEXT NOT NULL,
+--     related_id INT NULL, -- ID of related booking/payment/event
+--     related_type VARCHAR(50) NULL, -- 'booking', 'payment', etc.
+--     is_read BOOLEAN DEFAULT FALSE,
+--     read_at DATETIME NULL,
+--     action_url VARCHAR(500) NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     INDEX idx_user (user_id),
+--     INDEX idx_read (is_read),
+--     INDEX idx_type (type),
+--     INDEX idx_created (created_at)
+-- );
 
 -- ============================================
--- 13. DRIVER ASSIGNMENTS (Historical tracking)
+-- 14. DRIVER ASSIGNMENTS (Historical tracking)
 -- ============================================
+-- Depends on: users table, vehicles table
 CREATE TABLE IF NOT EXISTS driver_vehicle_assignments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    driver_id INT NOT NULL,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    driver_id BIGINT NOT NULL,
     vehicle_id INT NOT NULL,
-    assigned_by INT NOT NULL, -- Owner/admin who assigned
+    assigned_by BIGINT NOT NULL, -- Owner/admin who assigned
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     unassigned_at DATETIME NULL,
     status ENUM('active', 'completed', 'cancelled') DEFAULT 'active',
     notes TEXT,
-    FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (driver_id) REFERENCES users(ID) ON DELETE CASCADE,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(ID) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(ID) ON DELETE RESTRICT,
     INDEX idx_driver (driver_id),
     INDEX idx_vehicle (vehicle_id),
     INDEX idx_status (status)
 );
 
 -- ============================================
--- 14. BOOKING ROUTE POINTS (Pickup/Dropoff/Stops)
+-- 15. BOOKING ROUTE POINTS (Pickup/Dropoff/Stops)
 -- ============================================
+-- Depends on: bookings table
 CREATE TABLE IF NOT EXISTS booking_route_points (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
     point_type ENUM('pickup', 'dropoff', 'stop') NOT NULL,
     point_name VARCHAR(255) NOT NULL,
-    coordinates POINT,
+    coordinates POINT NULL,
     address TEXT,
     order_index INT NOT NULL, -- Order in sequence
     expected_time DATETIME,
     actual_time DATETIME NULL,
     status ENUM('pending', 'completed', 'skipped') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE CASCADE,
     INDEX idx_booking_point (booking_id),
     INDEX idx_type (point_type),
-    INDEX idx_order (order_index),
-    SPATIAL INDEX idx_coordinates (coordinates)
+    INDEX idx_order (order_index)
+    -- Note: SPATIAL INDEX removed because coordinates can be NULL
+    -- If you need spatial indexing, make coordinates NOT NULL and add: SPATIAL INDEX idx_coordinates (coordinates)
 );
 
 -- ============================================
--- 15. REVENUE & COMMISSIONS
+-- 16. REVENUE & COMMISSIONS
 -- ============================================
+-- Depends on: bookings table, users table
 CREATE TABLE IF NOT EXISTS revenue_transactions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
-    owner_id INT NOT NULL,
-    driver_id INT NOT NULL,
+    owner_id BIGINT NOT NULL,
+    driver_id BIGINT NOT NULL,
     gross_amount DECIMAL(10,2) NOT NULL,
     platform_commission DECIMAL(10,2) DEFAULT 0.00,
     owner_amount DECIMAL(10,2) NOT NULL,
@@ -468,9 +571,9 @@ CREATE TABLE IF NOT EXISTS revenue_transactions (
     processed_at DATETIME NULL,
     payout_date DATE NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE RESTRICT,
-    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (owner_id) REFERENCES users(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (driver_id) REFERENCES users(ID) ON DELETE RESTRICT,
     INDEX idx_owner (owner_id),
     INDEX idx_driver (driver_id),
     INDEX idx_booking (booking_id),
@@ -481,42 +584,43 @@ CREATE TABLE IF NOT EXISTS revenue_transactions (
 -- ============================================
 -- 16. MAINTENANCE & SERVICE RECORDS
 -- ============================================
-CREATE TABLE IF NOT EXISTS vehicle_maintenance (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id INT NOT NULL,
-    maintenance_type ENUM('service', 'repair', 'inspection', 'other') NOT NULL,
-    description TEXT NOT NULL,
-    service_provider VARCHAR(255),
-    cost DECIMAL(10,2),
-    mileage INT,
-    service_date DATE NOT NULL,
-    next_service_date DATE,
-    documents JSON, -- Service receipts, invoices
-    performed_by INT NULL, -- User who recorded this
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
-    FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_vehicle (vehicle_id),
-    INDEX idx_date (service_date),
-    INDEX idx_type (maintenance_type)
-);
+-- CREATE TABLE IF NOT EXISTS vehicle_maintenance (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     vehicle_id INT NOT NULL,
+--     maintenance_type ENUM('service', 'repair', 'inspection', 'other') NOT NULL,
+--     description TEXT NOT NULL,
+--     service_provider VARCHAR(255),
+--     cost DECIMAL(10,2),
+--     mileage INT,
+--     service_date DATE NOT NULL,
+--     next_service_date DATE,
+--     documents JSON, -- Service receipts, invoices
+--     performed_by INT NULL, -- User who recorded this
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+--     FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL,
+--     INDEX idx_vehicle (vehicle_id),
+--     INDEX idx_date (service_date),
+--     INDEX idx_type (maintenance_type)
+-- );
 
 -- ============================================
 -- 17. CANCELLATION POLICIES & PENALTIES
 -- ============================================
+-- Depends on: bookings table, users table
 CREATE TABLE IF NOT EXISTS cancellations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    ID INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
-    cancelled_by INT NOT NULL,
+    cancelled_by BIGINT NOT NULL,
     cancellation_type ENUM('passenger', 'driver', 'owner', 'system') NOT NULL,
     reason TEXT,
     refund_amount DECIMAL(10,2) DEFAULT 0.00,
     penalty_amount DECIMAL(10,2) DEFAULT 0.00,
     cancellation_policy_applied VARCHAR(50), -- 'full_refund', 'partial_refund', 'no_refund'
     cancelled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE RESTRICT,
-    FOREIGN KEY (cancelled_by) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (booking_id) REFERENCES bookings(ID) ON DELETE RESTRICT,
+    FOREIGN KEY (cancelled_by) REFERENCES users(ID) ON DELETE RESTRICT,
     INDEX idx_booking (booking_id),
     INDEX idx_cancelled_by (cancelled_by),
     INDEX idx_type (cancellation_type)
@@ -528,10 +632,21 @@ CREATE TABLE IF NOT EXISTS cancellations (
 -- These indexes will help with common queries
 
 -- Composite index for user bookings
-CREATE INDEX idx_bookings_user_status ON bookings(user_id, booking_status, created_at);
+CREATE INDEX IF NOT EXISTS idx_bookings_user_status ON bookings(user_id, booking_status, created_at);
 
 -- Composite index for owner revenue
-CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_revenue_owner_date ON revenue_transactions(owner_id, status, created_at);
+
+-- ============================================
+-- 19. ADD FOREIGN KEY FOR PAYMENT_ID IN BOOKINGS
+-- ============================================
+-- Note: This must be added AFTER the payments table is created
+-- Add foreign key constraint for payment_id in bookings table
+-- Note: If constraint already exists, this will fail - you may need to drop it first
+-- DROP FOREIGN KEY fk_booking_payment; (if needed)
+ALTER TABLE bookings 
+ADD CONSTRAINT fk_booking_payment 
+FOREIGN KEY (payment_id) REFERENCES payments(ID) ON DELETE SET NULL;
 
 -- ============================================
 -- SUMMARY: ALL TABLES IN THIS MIGRATION
@@ -539,14 +654,16 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 -- 
 -- CORE USER TABLES (Profile Extensions):
 --   1. driver_profiles - Extra info for users with user_type='driver'
---   2. owner_profiles - Extra info for users with user_type='owner'
---   3. driver_documents - Documents uploaded by drivers
+--   2. driver_documents - Documents uploaded by drivers (license, ID copy, etc.)
+--   3. owner_profiles - Extra info for users with user_type='owner'
 --
 -- VEHICLE & FLEET MANAGEMENT:
 --   4. existing_routes - Pre-approved long-distance routes and fares
 --   5. vehicles - Vehicle inventory (optionally linked to a route)
+--   5.1. vehicle_queue - Vehicle rotation/queue system per route (taxi line - vehicles take turns)
+--       Each route has its own queue of active vehicles approved for that route
 --   6. vehicle_documents - Roadworthy / permits / etc.
---   7. vehicle_maintenance - Maintenance & service history
+--   7. vehicle_maintenance - Maintenance & service history (commented out)
 --   8. driver_vehicle_assignments - Historical driver→vehicle assignments
 --
 -- BOOKINGS & PAYMENTS:
@@ -562,8 +679,8 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 --
 -- FEEDBACK & NOTIFICATIONS:
 --   18. booking_ratings - Booking-level ratings & reviews
---   19. notifications - User alerts (booking/payment/system)
---   20. activity_logs - System-wide auditing
+--   19. notifications - User alerts (booking/payment/system) (commented out)
+--   20. activity_logs - System-wide auditing (referenced but not defined here)
 --
 -- ============================================
 -- EXAMPLE QUERIES: HOW TABLES CONNECT
@@ -572,15 +689,15 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 -- Example 1: Get a driver with their profile
 -- SELECT u.*, dp.license_number, dp.driver_rating 
 -- FROM users u
--- LEFT JOIN driver_profiles dp ON u.id = dp.user_id
--- WHERE u.id = ? AND u.user_type = 'driver';
+-- LEFT JOIN driver_profiles dp ON u.ID = dp.user_id
+-- WHERE u.ID = ? AND u.user_type = 'driver';
 
 -- Example 2: Get an owner with their vehicles
--- SELECT u.*, op.business_name, v.id as vehicle_id, v.registration_number
+-- SELECT u.*, op.business_name, v.ID as vehicle_id, v.registration_number
 -- FROM users u
--- LEFT JOIN owner_profiles op ON u.id = op.user_id
--- LEFT JOIN vehicles v ON u.id = v.owner_id
--- WHERE u.id = ? AND u.user_type = 'owner';
+-- LEFT JOIN owner_profiles op ON u.ID = op.user_id
+-- LEFT JOIN vehicles v ON u.ID = v.owner_id
+-- WHERE u.ID = ? AND u.user_type = 'owner';
 
 -- Example 3: Get a booking with passenger and payment info
 -- SELECT 
@@ -588,9 +705,9 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 --     bp.first_name, bp.last_name, bp.next_of_kin_phone,
 --     p.amount, p.payment_status, p.transaction_id
 -- FROM bookings b
--- LEFT JOIN booking_passengers bp ON b.id = bp.booking_id AND bp.is_primary = TRUE
--- LEFT JOIN payments p ON b.id = p.booking_id
--- WHERE b.id = ?;
+-- LEFT JOIN booking_passengers bp ON b.ID = bp.booking_id AND bp.is_primary = TRUE
+-- LEFT JOIN payments p ON b.ID = p.booking_id
+-- WHERE b.ID = ?;
 
 -- Example 4: Get vehicle permit documents with route information
 -- SELECT 
@@ -607,7 +724,7 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 -- Example 5: Find vehicles by route type (local)
 -- SELECT v.*, vd.route as local_route
 -- FROM vehicles v
--- JOIN vehicle_documents vd ON v.id = vd.vehicle_id
+-- JOIN vehicle_documents vd ON v.ID = vd.vehicle_id
 -- WHERE vd.document_type = 'permit'
 --   AND vd.route_type = 'local'
 --   AND vd.route = 'Johannesburg'
@@ -616,7 +733,7 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 -- Example 6: Find vehicles by route type (long-distance)
 -- SELECT v.*, vd.route_origin, vd.route_destination
 -- FROM vehicles v
--- JOIN vehicle_documents vd ON v.id = vd.vehicle_id
+-- JOIN vehicle_documents vd ON v.ID = vd.vehicle_id
 -- WHERE vd.document_type = 'permit'
 --   AND vd.route_type = 'long-distance'
 --   AND ((vd.route_origin = 'Tzaneen' AND vd.route_destination = 'Johannesburg')
@@ -697,8 +814,9 @@ CREATE INDEX idx_revenue_owner_date ON revenue_transactions(owner_id, status, cr
 -- REMEMBER:
 -- - All users (client, driver, owner, admin) are in the users table
 -- - Profile tables (driver_profiles, owner_profiles) extend users, not replace them
--- - Every foreign key to users references users.id, not a separate user type table
+-- - Every foreign key to users references users.ID, not a separate user type table
 -- - Clients and Admins don't need profile tables - they only use the users table
+-- - All table primary keys use ID (uppercase) to match users.ID
 --
 -- ============================================
 

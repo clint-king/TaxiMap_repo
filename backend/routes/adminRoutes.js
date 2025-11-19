@@ -3,6 +3,8 @@ import {AddTaxiRank , getRoute , listTaxiRanks, getTaxiRank, getUniqueRouteName 
 import adminFeedbackController from "../controllers/adminFeedbackController.js";
 import adminRouteController from "../controllers/adminRouteController.js";
 import adminReportsController from "../controllers/adminReportsController.js";
+import existingRouteController from "../controllers/existingRouteController.js";
+import authenticateUser from "../Middleware/authenticateUser.js";
 
 
 
@@ -47,5 +49,12 @@ router.get("/contributors", adminRouteController.getAllContributors);
 router.get("/reports", adminReportsController.getAnalyticsData);
 router.get("/reports/user-activities", adminReportsController.getUserActivityDetails);
 router.get("/reports/route-usage", adminReportsController.getRouteUsageDetails);
+
+// Existing routes management (Admin only)
+router.post("/existing-routes", authenticateUser, existingRouteController.createExistingRoute);
+router.get("/existing-routes", authenticateUser, existingRouteController.getAllExistingRoutes);
+router.get("/existing-routes/:routeId", authenticateUser, existingRouteController.getExistingRoute);
+router.put("/existing-routes/:routeId", authenticateUser, existingRouteController.updateExistingRoute);
+router.delete("/existing-routes/:routeId", authenticateUser, existingRouteController.deleteExistingRoute);
 
 export default router;

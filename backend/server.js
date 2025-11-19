@@ -5,6 +5,12 @@ import auth from './routes/AuthRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import driverRoutes from './routes/driverRoutes.js';
+import ownerRoutes from './routes/ownerRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
@@ -47,6 +53,13 @@ app.use("/auth",auth );
 app.use("/feedback", feedbackRoutes);
 app.use("/help", helpRoutes);
 app.use("/contact", contactRoutes);
+// Booking system routes
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/vehicles", vehicleRoutes);
+app.use("/api/drivers", driverRoutes);
+app.use("/api/owners", ownerRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/documents", documentRoutes);
 
 
 

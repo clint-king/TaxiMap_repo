@@ -1,5 +1,17 @@
 
 /* Profile Page Specific Styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -8,12 +20,22 @@ body {
     min-height: 100vh;
     max-height: 100vh;
     overflow: hidden;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .wrapper {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .page-content {
@@ -23,7 +45,11 @@ body {
     align-items: center;
     min-height: calc(100vh - 60px);
     max-height: calc(100vh - 60px);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .profile-container {
@@ -32,11 +58,11 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     width: 90%;
     max-width: 800px;
-    max-height: calc(100vh - 100px);
-    overflow: hidden;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* Profile Header */
@@ -47,6 +73,10 @@ body {
     display: flex;
     align-items: center;
     gap: 30px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .profile-picture-section {
@@ -144,6 +174,10 @@ body {
     display: flex;
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .tab-btn {
@@ -157,6 +191,8 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 .tab-btn:hover {
@@ -173,9 +209,12 @@ body {
 /* Tab Content */
 .tab-content {
     flex: 1;
-    overflow-y: auto;
+    overflow: visible;
+    overflow-x: hidden;
     padding: 30px;
-    max-height: none;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
 }
 
 .tab-panel {
@@ -189,6 +228,10 @@ body {
 /* Form Sections */
 .form-section {
     margin-bottom: 40px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .form-section h2 {
@@ -200,6 +243,9 @@ body {
 
 .form-group {
     margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .form-group label {
@@ -212,6 +258,7 @@ body {
 .form-group input,
 .form-group textarea {
     width: 100%;
+    max-width: 100%;
     padding: 12px 15px;
     border: 2px solid #e9ecef;
     border-radius: 8px;
@@ -297,6 +344,13 @@ body {
 }
 
 /* Activity Section */
+.activity-section {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
 .activity-section h2 {
     color: #01386A;
     margin-bottom: 25px;
@@ -396,6 +450,8 @@ body {
     max-width: 500px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     animation: modalSlideIn 0.3s ease;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 @keyframes modalSlideIn {
@@ -455,6 +511,8 @@ body {
     z-index: 1500;
     max-width: 400px;
     width: 90%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .message {
@@ -496,17 +554,26 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
+    }
+
     .page-content {
-        
         align-items: flex-start;
         justify-content: center;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .profile-container {
+        width: 100%;
         max-width: 100%;
-        margin: 0 auto;
+        margin: 0;
         border-radius: 15px;
-        max-height: calc(100vh - 80px);
+        box-sizing: border-box;
     }
 
     .profile-header {
@@ -514,6 +581,9 @@ body {
         flex-direction: column;
         text-align: center;
         gap: 20px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .profile-info h1 {
@@ -537,10 +607,12 @@ body {
 
     .tab-content {
         flex: 1;
-        overflow-y: auto;
+        overflow: visible;
+        overflow-x: hidden;
         padding: 20px;
-        -webkit-overflow-scrolling: touch;
-        max-height: none;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .activity-filters {
@@ -585,6 +657,21 @@ body {
 
     .tab-content {
         padding: 15px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .profile-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .profile-header {
+        padding: 20px 15px;
+        width: 100%;
+        max-width: 100%;
     }
 }
 
@@ -593,7 +680,6 @@ body {
     .profile-container {
         max-width: 1000px;
         margin: 0 auto;
-        max-height: calc(100vh - 120px);
     }
     
     .page-content {
@@ -606,7 +692,6 @@ body {
 @media (min-width: 1600px) {
     .profile-container {
         max-width: 1200px;
-        max-height: calc(100vh - 140px);
     }
 }
 
@@ -932,5 +1017,18 @@ body {
     .booking-btn {
         width: 100%;
         justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .booking-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bookings-section {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 } 

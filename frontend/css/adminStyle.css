@@ -712,6 +712,11 @@ body.has-map-layout {
   color: white;
 }
 
+.status-badge.verified {
+  background: #28a745;
+  color: white;
+}
+
 .status-badge.reviewed {
   background: #28a745;
   color: white;
@@ -802,6 +807,93 @@ body.has-map-layout {
 
 .modal-body {
   padding: 20px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal[style*="display: flex"],
+.modal.show {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #193148;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 0 0 0 2px rgba(255, 213, 0, 0.2);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.modal-content form {
+  padding: 20px;
+}
+
+.info-group {
+  margin-bottom: 1rem;
+}
+
+.info-group label {
+  display: block;
+  font-weight: 600;
+  color: #193148;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.info-group p {
+  margin: 0;
+  color: #333;
+  padding: 0.5rem 0;
+}
+
+.info-group small {
+  display: block;
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
 }
 
 .modal-footer {
