@@ -17,6 +17,7 @@ export const createVehicle = async (req, res) => {
         checkUserType(req.user, ['owner', 'admin']);
 
         const {
+            owner_id, // Admin can specify owner_id, otherwise uses logged-in user
             existing_route_id,
             registration_number,
             license_plate,
@@ -24,25 +25,90 @@ export const createVehicle = async (req, res) => {
             model,
             color,
             capacity,
+            extraspace_parcel_sp,
             vehicle_type,
             route_types,
+            direction_type,
             description,
             images,
             videos,
             features
         } = req.body;
 
+        // Determine owner_id: admin can specify, otherwise use logged-in user
+        const finalOwnerId = req.user.user_type === 'admin' && owner_id ? owner_id : userId;
+
         // Validate required fields
         if (!registration_number || !license_plate || !make || !model || !vehicle_type || !capacity) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields"
+                message: "Missing required fields: registration_number, license_plate, make, model, vehicle_type, capacity"
             });
+        }
+
+        // Validate capacity range
+        if (capacity < 10 || capacity > 22) {
+            return res.status(400).json({
+                success: false,
+                message: "Capacity must be between 10 and 22"
+            });
+        }
+
+        // Parse and validate extraspace_parcel_sp
+        // Default to 12 if not provided, null, 0, or invalid
+        let finalExtraspaceParcelSp = 12; // Default value
+        if (extraspace_parcel_sp !== undefined && extraspace_parcel_sp !== null && extraspace_parcel_sp !== '') {
+            // Parse to integer
+            const parsedValue = parseInt(extraspace_parcel_sp, 10);
+            if (!isNaN(parsedValue) && parsedValue > 0) {
+                // Validate range
+                if (parsedValue < 4 || parsedValue > 16) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "extraspace_parcel_sp must be between 4 and 16"
+                    });
+                }
+                // Validate multiple of 4
+                if (parsedValue % 4 !== 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "extraspace_parcel_sp must be a multiple of 4"
+                    });
+                }
+                finalExtraspaceParcelSp = parsedValue;
+            }
+        }
+
+        // Validate route_types
+        let routeTypesValue = 'long-distance'; // Default
+        if (route_types) {
+            if (Array.isArray(route_types)) {
+                // Convert array to SET format (comma-separated string)
+                const validTypes = route_types.filter(rt => ['custom', 'long-distance'].includes(rt));
+                routeTypesValue = validTypes.length > 0 ? validTypes.join(',') : 'long-distance';
+            } else if (typeof route_types === 'string') {
+                routeTypesValue = route_types;
+            }
+        }
+
+        // Validate direction_type
+        let directionTypeValue = 'from_loc1,from_loc2'; // Default: both directions
+        if (direction_type) {
+            if (Array.isArray(direction_type)) {
+                // Convert array to SET format (comma-separated string)
+                const validDirections = direction_type.filter(d => ['from_loc1', 'from_loc2'].includes(d));
+                directionTypeValue = validDirections.length > 0 ? validDirections.join(',') : 'from_loc1,from_loc2';
+            } else if (typeof direction_type === 'string') {
+                // Validate string format
+                const directions = direction_type.split(',').map(d => d.trim());
+                const validDirections = directions.filter(d => ['from_loc1', 'from_loc2'].includes(d));
+                directionTypeValue = validDirections.length > 0 ? validDirections.join(',') : 'from_loc1,from_loc2';
+            }
         }
 
         // Check if registration number already exists
         const [existing] = await pool.execute(
-            "SELECT id FROM vehicles WHERE registration_number = ?",
+            "SELECT ID FROM vehicles WHERE registration_number = ?",
             [registration_number]
         );
 
@@ -53,17 +119,38 @@ export const createVehicle = async (req, res) => {
             });
         }
 
+        // Verify owner exists and get owner_profiles.ID
+        const [ownerProfiles] = await pool.execute(
+            `SELECT op.ID 
+             FROM owner_profiles op
+             INNER JOIN users u ON op.user_id = u.ID
+             WHERE u.ID = ? AND u.user_type = 'owner'`,
+            [finalOwnerId]
+        );
+        
+        if (ownerProfiles.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Owner profile not found or user is not an owner"
+            });
+        }
+
+        const ownerProfileId = ownerProfiles[0].ID;
+
         // Insert vehicle
+        // Note: route_types and direction_type are SET fields, so we pass comma-separated strings
+        // vehicle_status defaults to 'inactive', admin_status defaults to 'pending'
+        // Use owner_profiles.ID instead of users.ID
         const [result] = await pool.execute(
             `INSERT INTO vehicles (
                 owner_id, existing_route_id, registration_number, license_plate,
-                make, model, color, capacity, vehicle_type, route_types,
-                description, images, videos, features, vehicle_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+                make, model, color, capacity, extraspace_parcel_sp, vehicle_type, route_types, direction_type,
+                description, images, videos, features, vehicle_status, admin_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'inactive', 'pending')`,
             [
-                userId, existing_route_id || null, registration_number, license_plate,
-                make, model, color || null, capacity, vehicle_type,
-                JSON.stringify(route_types || []), description || null,
+                ownerProfileId, existing_route_id || null, registration_number, license_plate,
+                make, model, color || null, capacity, finalExtraspaceParcelSp, vehicle_type,
+                routeTypesValue, directionTypeValue, description || null,
                 JSON.stringify(images || []), JSON.stringify(videos || []),
                 JSON.stringify(features || [])
             ]
@@ -71,8 +158,8 @@ export const createVehicle = async (req, res) => {
 
         // Update owner profile vehicle count
         await pool.execute(
-            "UPDATE owner_profiles SET total_vehicles = total_vehicles + 1 WHERE user_id = ?",
-            [userId]
+            "UPDATE owner_profiles SET total_vehicles = total_vehicles + 1 WHERE ID = ?",
+            [ownerProfileId]
         );
 
         res.status(201).json({
@@ -80,7 +167,9 @@ export const createVehicle = async (req, res) => {
             message: "Vehicle created successfully",
             vehicle: {
                 id: result.insertId,
-                registration_number
+                registration_number,
+                admin_status: 'pending',
+                vehicle_status: 'inactive'
             }
         });
     } catch (error) {
@@ -99,15 +188,24 @@ export const getOwnerVehicles = async (req, res) => {
         const userId = req.user.id;
         checkUserType(req.user, ['owner', 'admin']);
 
-        const { status, limit = 50, offset = 0 } = req.query;
+        const { status } = req.query;
+        
+        // Ensure limit and offset are valid integers with defaults
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = parseInt(req.query.offset) || 0;
 
+        // Build query without driver information
+        // Select specific columns to avoid loading large JSON fields during sort
         let query = `
-            SELECT v.*, 
-                   er.route_name, er.origin, er.destination,
-                   u_driver.name as driver_name, u_driver.email as driver_email
+            SELECT v.ID, v.owner_id, v.driver_id, v.existing_route_id,
+                   v.registration_number, v.license_plate, v.make, v.model, v.color,
+                   v.capacity, v.extraspace_parcel_sp, v.vehicle_type, v.vehicle_status,
+                   v.admin_status, v.route_types, v.description,
+                   v.images, v.videos, v.features,
+                   v.created_at, v.updated_at,
+                   er.route_name, er.location_1, er.location_2
             FROM vehicles v
-            LEFT JOIN existing_routes er ON v.existing_route_id = er.id
-            LEFT JOIN users u_driver ON v.driver_id = u_driver.id
+            LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
             WHERE v.owner_id = ?
         `;
         const params = [userId];
@@ -117,17 +215,64 @@ export const getOwnerVehicles = async (req, res) => {
             params.push(status);
         }
 
-        query += ` ORDER BY v.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), parseInt(offset));
+        // Order by ID (which is auto-increment and correlates with created_at) to avoid sort memory issues
+        // Alternatively, we could add an index on created_at, but using ID is more efficient
+        query += ` ORDER BY v.ID DESC LIMIT ${limit} OFFSET ${offset}`;
 
         const [vehicles] = await pool.execute(query, params);
 
-        // Parse JSON fields
+        // Parse JSON fields (MySQL2 may already parse JSON columns automatically)
         vehicles.forEach(vehicle => {
-            if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
-            if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
-            if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
-            if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
+            // route_types is SET('custom', 'long-distance'), so it comes as comma-separated string
+            // Convert to array for frontend consistency
+            if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+                vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+            } else if (!vehicle.route_types) {
+                vehicle.route_types = [];
+            }
+            
+            // Parse JSON fields only if they are strings (MySQL2 may already parse them as objects)
+            if (vehicle.images) {
+                if (typeof vehicle.images === 'string') {
+                    try {
+                        vehicle.images = JSON.parse(vehicle.images);
+                    } catch (e) {
+                        vehicle.images = [];
+                    }
+                } else if (!Array.isArray(vehicle.images)) {
+                    vehicle.images = [];
+                }
+            } else {
+                vehicle.images = [];
+            }
+            
+            if (vehicle.videos) {
+                if (typeof vehicle.videos === 'string') {
+                    try {
+                        vehicle.videos = JSON.parse(vehicle.videos);
+                    } catch (e) {
+                        vehicle.videos = [];
+                    }
+                } else if (!Array.isArray(vehicle.videos)) {
+                    vehicle.videos = [];
+                }
+            } else {
+                vehicle.videos = [];
+            }
+            
+            if (vehicle.features) {
+                if (typeof vehicle.features === 'string') {
+                    try {
+                        vehicle.features = JSON.parse(vehicle.features);
+                    } catch (e) {
+                        vehicle.features = [];
+                    }
+                } else if (!Array.isArray(vehicle.features)) {
+                    vehicle.features = [];
+                }
+            } else {
+                vehicle.features = [];
+            }
         });
 
         res.json({
@@ -153,12 +298,12 @@ export const getVehicleDetails = async (req, res) => {
             `SELECT v.*, 
                     u_owner.name as owner_name, u_owner.email as owner_email,
                     u_driver.name as driver_name, u_driver.email as driver_email,
-                    er.route_name, er.origin, er.destination
+                    er.route_name, er.location_1, er.location_2
              FROM vehicles v
-             LEFT JOIN users u_owner ON v.owner_id = u_owner.id
-             LEFT JOIN users u_driver ON v.driver_id = u_driver.id
-             LEFT JOIN existing_routes er ON v.existing_route_id = er.id
-             WHERE v.id = ?`,
+             LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+             LEFT JOIN users u_driver ON v.driver_id = u_driver.ID
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
+             WHERE v.ID = ?`,
             [vehicleId]
         );
 
@@ -182,11 +327,58 @@ export const getVehicleDetails = async (req, res) => {
             });
         }
 
-        // Parse JSON fields
-        if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
-        if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
-        if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
-        if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
+        // Parse route_types (SET type - comma-separated string, not JSON)
+        if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+            vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+        } else if (!vehicle.route_types) {
+            vehicle.route_types = [];
+        }
+        
+        // Parse JSON fields (MySQL2 may already parse JSON columns automatically)
+        if (vehicle.images) {
+            if (typeof vehicle.images === 'string') {
+                try {
+                    vehicle.images = JSON.parse(vehicle.images);
+                } catch (e) {
+                    console.error(`Error parsing images for vehicle ${vehicle.ID}:`, e);
+                    vehicle.images = [];
+                }
+            } else if (!Array.isArray(vehicle.images)) {
+                vehicle.images = [];
+            }
+        } else {
+            vehicle.images = [];
+        }
+        
+        if (vehicle.videos) {
+            if (typeof vehicle.videos === 'string') {
+                try {
+                    vehicle.videos = JSON.parse(vehicle.videos);
+                } catch (e) {
+                    console.error(`Error parsing videos for vehicle ${vehicle.ID}:`, e);
+                    vehicle.videos = [];
+                }
+            } else if (!Array.isArray(vehicle.videos)) {
+                vehicle.videos = [];
+            }
+        } else {
+            vehicle.videos = [];
+        }
+        
+        if (vehicle.features) {
+            if (typeof vehicle.features === 'string') {
+                try {
+                    vehicle.features = JSON.parse(vehicle.features);
+                } catch (e) {
+                    console.error(`Error parsing features for vehicle ${vehicle.ID}:`, e);
+                    vehicle.features = [];
+                }
+            } else if (!Array.isArray(vehicle.features)) {
+                vehicle.features = [];
+            }
+        } else {
+            vehicle.features = [];
+        }
 
         // Get documents
         const [documents] = await pool.execute(
@@ -194,18 +386,11 @@ export const getVehicleDetails = async (req, res) => {
             [vehicleId]
         );
 
-        // Get maintenance records
-        const [maintenance] = await pool.execute(
-            "SELECT * FROM vehicle_maintenance WHERE vehicle_id = ? ORDER BY service_date DESC",
-            [vehicleId]
-        );
-
         res.json({
             success: true,
             vehicle: {
                 ...vehicle,
-                documents,
-                maintenance
+                documents
             }
         });
     } catch (error) {
@@ -228,7 +413,7 @@ export const updateVehicle = async (req, res) => {
 
         // Get vehicle
         const [vehicles] = await pool.execute(
-            "SELECT * FROM vehicles WHERE id = ? AND owner_id = ?",
+            "SELECT * FROM vehicles WHERE ID = ? AND owner_id = ?",
             [vehicleId, userId]
         );
 
@@ -242,7 +427,7 @@ export const updateVehicle = async (req, res) => {
         // Build update query
         const allowedFields = [
             'make', 'model', 'color', 'capacity', 'vehicle_type',
-            'route_types', 'description', 'images', 'videos', 'features',
+            'route_types', 'direction_type', 'description', 'images', 'videos', 'features',
             'existing_route_id', 'vehicle_status'
         ];
         const updates = [];
@@ -255,6 +440,18 @@ export const updateVehicle = async (req, res) => {
                 updates.push(`${field} = ?`);
                 if (['route_types', 'images', 'videos', 'features'].includes(field)) {
                     values.push(JSON.stringify(updateData[field]));
+                } else if (field === 'direction_type') {
+                    // Handle direction_type SET field
+                    let directionTypeValue = 'from_loc1,from_loc2'; // Default
+                    if (Array.isArray(updateData[field])) {
+                        const validDirections = updateData[field].filter(d => ['from_loc1', 'from_loc2'].includes(d));
+                        directionTypeValue = validDirections.length > 0 ? validDirections.join(',') : 'from_loc1,from_loc2';
+                    } else if (typeof updateData[field] === 'string') {
+                        const directions = updateData[field].split(',').map(d => d.trim());
+                        const validDirections = directions.filter(d => ['from_loc1', 'from_loc2'].includes(d));
+                        directionTypeValue = validDirections.length > 0 ? validDirections.join(',') : 'from_loc1,from_loc2';
+                    }
+                    values.push(directionTypeValue);
                 } else {
                     values.push(updateData[field]);
                     // Track if vehicle_status is being changed
@@ -273,25 +470,29 @@ export const updateVehicle = async (req, res) => {
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             values.push(vehicleId);
-            await pool.execute(
-                `UPDATE vehicles SET ${updates.join(', ')} WHERE id = ?`,
+            await connection.execute(
+                `UPDATE vehicles SET ${updates.join(', ')} WHERE ID = ?`,
                 values
             );
 
             // If vehicle status is set to 'inactive', remove from queue
             if (vehicleStatusChanged && newVehicleStatus === 'inactive') {
-                await pool.execute(
+                await connection.execute(
                     "DELETE FROM vehicle_queue WHERE vehicle_id = ?",
                     [vehicleId]
                 );
             }
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             res.json({
                 success: true,
@@ -300,8 +501,10 @@ export const updateVehicle = async (req, res) => {
                     : "Vehicle updated successfully"
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error updating vehicle:", error);
@@ -322,7 +525,7 @@ export const deleteVehicle = async (req, res) => {
 
         // Get vehicle
         const [vehicles] = await pool.execute(
-            "SELECT * FROM vehicles WHERE id = ? AND owner_id = ?",
+            "SELECT * FROM vehicles WHERE ID = ? AND owner_id = ?",
             [vehicleId, userId]
         );
 
@@ -348,7 +551,7 @@ export const deleteVehicle = async (req, res) => {
         }
 
         // Delete vehicle (cascade will handle related records)
-        await pool.execute("DELETE FROM vehicles WHERE id = ?", [vehicleId]);
+        await pool.execute("DELETE FROM vehicles WHERE ID = ?", [vehicleId]);
 
         // Update owner profile vehicle count
         await pool.execute(
@@ -387,7 +590,7 @@ export const assignDriver = async (req, res) => {
 
         // Get vehicle
         const [vehicles] = await pool.execute(
-            "SELECT * FROM vehicles WHERE id = ? AND owner_id = ?",
+            "SELECT * FROM vehicles WHERE ID = ? AND owner_id = ?",
             [vehicleId, userId]
         );
 
@@ -439,14 +642,48 @@ export const assignDriver = async (req, res) => {
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Check if driver already has a vehicle assigned (one-to-one relationship)
+        const [driverVehicles] = await pool.execute(
+            "SELECT ID, registration_number FROM vehicles WHERE driver_id = ? AND vehicle_status = 'active'",
+            [driver_id]
+        );
+
+        // Check if vehicle already has a driver assigned
+        const vehicleHasDriver = vehicles[0].driver_id !== null;
+
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
-            // Unassign previous driver if exists
-            // Note: We don't remove vehicle from queue here because we're immediately assigning a new driver
-            if (vehicles[0].driver_id) {
-                await pool.execute(
+            // Start transaction
+            await connection.beginTransaction();
+
+            // One-to-one relationship: Unassign driver from their current vehicle if they have one
+            if (driverVehicles.length > 0) {
+                const currentVehicleId = driverVehicles[0].ID;
+                console.log(`Unassigning driver ${driver_id} from vehicle ${currentVehicleId} (one-to-one relationship)`);
+                
+                // Update assignment record
+                await connection.execute(
+                    `UPDATE driver_vehicle_assignments 
+                     SET unassigned_at = NOW(), status = 'completed' 
+                     WHERE vehicle_id = ? AND driver_id = ? AND status = 'active'`,
+                    [currentVehicleId, driver_id]
+                );
+                
+                // Remove driver from vehicle
+                await connection.execute(
+                    "UPDATE vehicles SET driver_id = NULL WHERE ID = ?",
+                    [currentVehicleId]
+                );
+            }
+
+            // Unassign previous driver from this vehicle if exists
+            if (vehicleHasDriver) {
+                const previousDriverId = vehicles[0].driver_id;
+                console.log(`Unassigning previous driver ${previousDriverId} from vehicle ${vehicleId}`);
+                
+                await connection.execute(
                     `UPDATE driver_vehicle_assignments 
                      SET unassigned_at = NOW(), status = 'completed' 
                      WHERE vehicle_id = ? AND status = 'active'`,
@@ -455,18 +692,22 @@ export const assignDriver = async (req, res) => {
             }
 
             // Update vehicle with new driver
-            await pool.execute(
-                "UPDATE vehicles SET driver_id = ? WHERE id = ?",
+            await connection.execute(
+                "UPDATE vehicles SET driver_id = ? WHERE ID = ?",
                 [driver_id, vehicleId]
             );
 
             // Create assignment record
-            await pool.execute(
+            await connection.execute(
                 `INSERT INTO driver_vehicle_assignments (
                     driver_id, vehicle_id, assigned_by, status
                 ) VALUES (?, ?, ?, 'active')`,
                 [driver_id, vehicleId, userId]
             );
+
+            // Commit transaction first before calling addVehicleToQueue (which has its own transaction logic)
+            await connection.commit();
+            connection.release(); // Release connection before external function call
 
             // Add vehicle to queue now that it has a verified, active driver
             // If vehicle was already in queue, addVehicleToQueue will handle it (returns already_exists: true)
@@ -483,22 +724,107 @@ export const assignDriver = async (req, res) => {
                 };
             }
 
-            await pool.execute('COMMIT');
-
             res.json({
                 success: true,
                 message: "Driver assigned successfully",
                 queue: queueResult
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            if (connection) {
+                connection.release(); // Ensure connection is released even if commit was called
+            }
         }
     } catch (error) {
         console.error("Error assigning driver:", error);
         res.status(500).json({
             success: false,
             message: "Failed to assign driver",
+            error: error.message
+        });
+    }
+};
+
+// Get available vehicles for assignment (verified and active, without driver)
+export const getAvailableVehiclesForAssignment = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        checkUserType(req.user, ['owner']);
+
+        // Get owner's vehicles that are:
+        // 1. Approved by admin (admin_status = 'approve')
+        // 2. Active (vehicle_status = 'active')
+        // 3. Don't have a driver assigned (driver_id IS NULL)
+        const [vehicles] = await pool.execute(
+            `SELECT v.ID, v.registration_number, v.license_plate, v.make, v.model, 
+                    v.color, v.vehicle_type, v.capacity, er.route_name
+             FROM vehicles v
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
+             WHERE v.owner_id = ? 
+               AND v.admin_status = 'approve'
+               AND v.vehicle_status = 'active'
+               AND v.driver_id IS NULL
+             ORDER BY v.registration_number`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            vehicles
+        });
+    } catch (error) {
+        console.error("Error fetching available vehicles:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch available vehicles",
+            error: error.message
+        });
+    }
+};
+
+// Get current vehicle-driver assignments for owner
+export const getCurrentAssignments = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        checkUserType(req.user, ['owner']);
+
+        // Get owner's vehicles with assigned drivers
+        // Join with users to get driver information and driver_profiles for verification status
+        const [assignments] = await pool.execute(
+            `SELECT 
+                v.ID as vehicle_id, v.registration_number, v.license_plate, v.make, v.model, 
+                v.color, v.vehicle_type, v.capacity, v.vehicle_status, v.admin_status,
+                er.route_name, er.ID as route_id,
+                u_driver.ID as driver_id, u_driver.name as driver_name, u_driver.email as driver_email, 
+                u_driver.phone as driver_phone,
+                dp.license_number as driver_license, dp.license_expiry as driver_license_expiry,
+                dp.status as driver_status, dp.verification_status as driver_verification_status,
+                dva.assigned_at, dva.ID as assignment_id
+             FROM vehicles v
+             INNER JOIN users u_driver ON v.driver_id = u_driver.ID
+             INNER JOIN driver_profiles dp ON u_driver.ID = dp.user_id
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
+             LEFT JOIN driver_vehicle_assignments dva ON v.ID = dva.vehicle_id 
+                AND u_driver.ID = dva.driver_id 
+                AND dva.status = 'active'
+             WHERE v.owner_id = ? 
+               AND v.driver_id IS NOT NULL
+               AND v.vehicle_status = 'active'
+             ORDER BY v.registration_number`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            assignments
+        });
+    } catch (error) {
+        console.error("Error fetching current assignments:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch current assignments",
             error: error.message
         });
     }
@@ -513,7 +839,7 @@ export const unassignDriver = async (req, res) => {
 
         // Get vehicle
         const [vehicles] = await pool.execute(
-            "SELECT * FROM vehicles WHERE id = ? AND owner_id = ?",
+            "SELECT * FROM vehicles WHERE ID = ? AND owner_id = ?",
             [vehicleId, userId]
         );
 
@@ -531,12 +857,15 @@ export const unassignDriver = async (req, res) => {
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             // Update assignment record
-            await pool.execute(
+            await connection.execute(
                 `UPDATE driver_vehicle_assignments 
                  SET unassigned_at = NOW(), status = 'completed' 
                  WHERE vehicle_id = ? AND driver_id = ? AND status = 'active'`,
@@ -544,27 +873,30 @@ export const unassignDriver = async (req, res) => {
             );
 
             // Update vehicle (remove driver)
-            await pool.execute(
-                "UPDATE vehicles SET driver_id = NULL WHERE id = ?",
+            await connection.execute(
+                "UPDATE vehicles SET driver_id = NULL WHERE ID = ?",
                 [vehicleId]
             );
 
             // Remove vehicle from queue when driver is unassigned
             // (Vehicle cannot be in queue without a verified driver)
-            await pool.execute(
+            await connection.execute(
                 "DELETE FROM vehicle_queue WHERE vehicle_id = ?",
                 [vehicleId]
             );
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             res.json({
                 success: true,
                 message: "Driver unassigned successfully. Vehicle removed from queue."
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error unassigning driver:", error);
@@ -589,10 +921,10 @@ export const getDriverVehicles = async (req, res) => {
         const [vehicles] = await pool.execute(
             `SELECT v.*, 
                     u_owner.name as owner_name, u_owner.email as owner_email,
-                    er.route_name, er.origin, er.destination
+                    er.route_name, er.location_1, er.location_2
              FROM vehicles v
-             LEFT JOIN users u_owner ON v.owner_id = u_owner.id
-             LEFT JOIN existing_routes er ON v.existing_route_id = er.id
+             LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
              WHERE v.driver_id = ? AND v.vehicle_status = 'active'
              ORDER BY v.created_at DESC`,
             [userId]
@@ -600,7 +932,13 @@ export const getDriverVehicles = async (req, res) => {
 
         // Parse JSON fields
         vehicles.forEach(vehicle => {
-            if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
+            // route_types is SET('custom', 'long-distance'), so it comes as comma-separated string
+            // Convert to array for frontend consistency
+            if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+                vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+            } else if (!vehicle.route_types) {
+                vehicle.route_types = [];
+            }
             if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
             if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
             if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
@@ -632,10 +970,10 @@ export const searchVehicles = async (req, res) => {
         let query = `
             SELECT v.*, 
                    u_owner.name as owner_name,
-                   er.route_name, er.origin, er.destination
+                   er.route_name, er.location_1, er.location_2
             FROM vehicles v
-            LEFT JOIN users u_owner ON v.owner_id = u_owner.id
-            LEFT JOIN existing_routes er ON v.existing_route_id = er.id
+            LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+            LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
             WHERE v.vehicle_status = ?
         `;
         const params = [status];
@@ -661,7 +999,13 @@ export const searchVehicles = async (req, res) => {
 
         // Parse JSON fields
         vehicles.forEach(vehicle => {
-            if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
+            // route_types is SET('custom', 'long-distance'), so it comes as comma-separated string
+            // Convert to array for frontend consistency
+            if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+                vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+            } else if (!vehicle.route_types) {
+                vehicle.route_types = [];
+            }
             if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
             if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
             if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
@@ -689,10 +1033,10 @@ export const getVehiclesByRoute = async (req, res) => {
         const [vehicles] = await pool.execute(
             `SELECT v.*, 
                     u_owner.name as owner_name,
-                    er.route_name, er.origin, er.destination
+                    er.route_name, er.location_1, er.location_2
              FROM vehicles v
-             LEFT JOIN users u_owner ON v.owner_id = u_owner.id
-             LEFT JOIN existing_routes er ON v.existing_route_id = er.id
+             LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
              WHERE v.existing_route_id = ? AND v.vehicle_status = 'active'
              ORDER BY v.created_at DESC`,
             [routeId]
@@ -700,7 +1044,13 @@ export const getVehiclesByRoute = async (req, res) => {
 
         // Parse JSON fields
         vehicles.forEach(vehicle => {
-            if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
+            // route_types is SET('custom', 'long-distance'), so it comes as comma-separated string
+            // Convert to array for frontend consistency
+            if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+                vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+            } else if (!vehicle.route_types) {
+                vehicle.route_types = [];
+            }
             if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
             if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
             if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
@@ -729,17 +1079,28 @@ export const getAllVehicles = async (req, res) => {
     try {
         checkUserType(req.user, ['admin']);
 
-        const { status, limit = 100, offset = 0 } = req.query;
+        const { status, admin_status } = req.query;
+        
+        // Ensure limit and offset are valid integers with defaults
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = parseInt(req.query.offset) || 0;
 
+        // Build query with specific columns to avoid loading large JSON fields during sort
+        // This prevents "Out of sort memory" errors
         let query = `
-            SELECT v.*, 
+            SELECT v.ID, v.owner_id, v.driver_id, v.existing_route_id,
+                   v.registration_number, v.license_plate, v.make, v.model, v.color,
+                   v.capacity, v.extraspace_parcel_sp, v.vehicle_type, v.vehicle_status,
+                   v.admin_status, v.route_types, v.description,
+                   v.images, v.videos, v.features,
+                   v.created_at, v.updated_at,
                    u_owner.name as owner_name, u_owner.email as owner_email,
                    u_driver.name as driver_name,
-                   er.route_name
+                   er.route_name, er.location_1, er.location_2
             FROM vehicles v
-            LEFT JOIN users u_owner ON v.owner_id = u_owner.id
-            LEFT JOIN users u_driver ON v.driver_id = u_driver.id
-            LEFT JOIN existing_routes er ON v.existing_route_id = er.id
+            LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+            LEFT JOIN users u_driver ON v.driver_id = u_driver.ID
+            LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
             WHERE 1=1
         `;
         const params = [];
@@ -749,17 +1110,73 @@ export const getAllVehicles = async (req, res) => {
             params.push(status);
         }
 
-        query += ` ORDER BY v.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), parseInt(offset));
+        if (admin_status) {
+            query += ` AND v.admin_status = ?`;
+            params.push(admin_status);
+        }
+
+        // Order by ID (which is auto-increment and correlates with created_at) to avoid sort memory issues
+        // ID is indexed (primary key), making sorting much more efficient
+        // Alternatively, we could add an index on created_at, but using ID is more efficient
+        query += ` ORDER BY v.ID DESC LIMIT ${limit} OFFSET ${offset}`;
 
         const [vehicles] = await pool.execute(query, params);
 
-        // Parse JSON fields
+        // Parse JSON fields (MySQL2 may already parse JSON columns automatically)
         vehicles.forEach(vehicle => {
-            if (vehicle.route_types) vehicle.route_types = JSON.parse(vehicle.route_types);
-            if (vehicle.images) vehicle.images = JSON.parse(vehicle.images);
-            if (vehicle.videos) vehicle.videos = JSON.parse(vehicle.videos);
-            if (vehicle.features) vehicle.features = JSON.parse(vehicle.features);
+            // route_types is SET('custom', 'long-distance'), so it comes as comma-separated string
+            // Convert to array for frontend consistency
+            if (vehicle.route_types && typeof vehicle.route_types === 'string') {
+                vehicle.route_types = vehicle.route_types.split(',').map(rt => rt.trim());
+            } else if (!vehicle.route_types) {
+                vehicle.route_types = [];
+            }
+            
+            // Parse JSON fields only if they are strings (MySQL2 may already parse them as objects)
+            if (vehicle.images) {
+                if (typeof vehicle.images === 'string') {
+                    try {
+                        vehicle.images = JSON.parse(vehicle.images);
+                    } catch (e) {
+                        console.error(`Error parsing images for vehicle ${vehicle.ID}:`, e);
+                        vehicle.images = [];
+                    }
+                } else if (!Array.isArray(vehicle.images)) {
+                    vehicle.images = [];
+                }
+            } else {
+                vehicle.images = [];
+            }
+            
+            if (vehicle.videos) {
+                if (typeof vehicle.videos === 'string') {
+                    try {
+                        vehicle.videos = JSON.parse(vehicle.videos);
+                    } catch (e) {
+                        console.error(`Error parsing videos for vehicle ${vehicle.ID}:`, e);
+                        vehicle.videos = [];
+                    }
+                } else if (!Array.isArray(vehicle.videos)) {
+                    vehicle.videos = [];
+                }
+            } else {
+                vehicle.videos = [];
+            }
+            
+            if (vehicle.features) {
+                if (typeof vehicle.features === 'string') {
+                    try {
+                        vehicle.features = JSON.parse(vehicle.features);
+                    } catch (e) {
+                        console.error(`Error parsing features for vehicle ${vehicle.ID}:`, e);
+                        vehicle.features = [];
+                    }
+                } else if (!Array.isArray(vehicle.features)) {
+                    vehicle.features = [];
+                }
+            } else {
+                vehicle.features = [];
+            }
         });
 
         res.json({
@@ -790,25 +1207,29 @@ export const updateVehicleStatusAdmin = async (req, res) => {
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             // Update vehicle status
-            await pool.execute(
-                "UPDATE vehicles SET vehicle_status = ? WHERE id = ?",
+            await connection.execute(
+                "UPDATE vehicles SET vehicle_status = ? WHERE ID = ?",
                 [vehicle_status, vehicleId]
             );
 
             // If vehicle status is set to 'inactive', remove from queue
             if (vehicle_status === 'inactive') {
-                await pool.execute(
+                await connection.execute(
                     "DELETE FROM vehicle_queue WHERE vehicle_id = ?",
                     [vehicleId]
                 );
             }
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             res.json({
                 success: true,
@@ -817,8 +1238,10 @@ export const updateVehicleStatusAdmin = async (req, res) => {
                     : "Vehicle status updated successfully"
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error updating vehicle status:", error);
@@ -1026,12 +1449,15 @@ export const approveVehicle = async (req, res) => {
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             // Get vehicle before update
-            const [vehiclesBefore] = await pool.execute(
+            const [vehiclesBefore] = await connection.execute(
                 `SELECT ID, existing_route_id, vehicle_status, admin_status, registration_number, route_types
                  FROM vehicles 
                  WHERE ID = ?`,
@@ -1039,7 +1465,8 @@ export const approveVehicle = async (req, res) => {
             );
 
             if (vehiclesBefore.length === 0) {
-                await pool.execute('ROLLBACK');
+                await connection.rollback();
+                connection.release();
                 return res.status(404).json({
                     success: false,
                     message: "Vehicle not found"
@@ -1052,13 +1479,13 @@ export const approveVehicle = async (req, res) => {
             // If approving, also set vehicle_status to 'active'
             // Note: Vehicle will be added to queue when owner assigns a verified driver
             if (admin_status === 'approve') {
-                await pool.execute(
+                await connection.execute(
                     "UPDATE vehicles SET admin_status = ?, vehicle_status = 'active' WHERE ID = ?",
                     [admin_status, vehicleId]
                 );
             } else {
                 // For reject/suspended, only update admin_status
-                await pool.execute(
+                await connection.execute(
                     "UPDATE vehicles SET admin_status = ? WHERE ID = ?",
                     [admin_status, vehicleId]
                 );
@@ -1067,13 +1494,14 @@ export const approveVehicle = async (req, res) => {
             // If rejected or suspended, remove from queue if it exists
             // (Vehicle should not be in queue if rejected/suspended)
             if (admin_status !== 'approve') {
-                await pool.execute(
+                await connection.execute(
                     "DELETE FROM vehicle_queue WHERE vehicle_id = ?",
                     [vehicleId]
                 );
             }
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             // Get updated vehicle info
             const [vehiclesAfter] = await pool.execute(
@@ -1094,8 +1522,10 @@ export const approveVehicle = async (req, res) => {
                 vehicle: vehiclesAfter[0]
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error approving vehicle:", error);
@@ -1210,33 +1640,36 @@ export const initializeVehicleQueue = async (req, res) => {
         if (activeVehicles.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: `No active and approved vehicles with verified, active drivers found for route: ${route.route_name} (${route.origin} → ${route.destination})`
+                message: `No active and approved vehicles with verified, active drivers found for route: ${route.route_name} (${route.location_1} → ${route.location_2})`
             });
         }
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             // Remove queue entries for vehicles that are no longer active or no longer on this route
             const activeVehicleIds = activeVehicles.map(v => v.ID);
             if (activeVehicleIds.length > 0) {
                 const placeholders = activeVehicleIds.map(() => '?').join(',');
-                await pool.execute(
+                await connection.execute(
                     `DELETE FROM vehicle_queue 
                      WHERE existing_route_id = ? AND vehicle_id NOT IN (${placeholders})`,
                     [route_id, ...activeVehicleIds]
                 );
             } else {
                 // No active vehicles, clear entire queue for this route
-                await pool.execute(
+                await connection.execute(
                     "DELETE FROM vehicle_queue WHERE existing_route_id = ?",
                     [route_id]
                 );
             }
 
             // Get existing queue entries for this route
-            const [existingQueue] = await pool.execute(
+            const [existingQueue] = await connection.execute(
                 `SELECT vehicle_id, queue_position, last_selected_at, created_at
                  FROM vehicle_queue 
                  WHERE existing_route_id = ?
@@ -1255,7 +1688,7 @@ export const initializeVehicleQueue = async (req, res) => {
 
             for (const vehicle of newVehicles) {
                 maxPosition++;
-                await pool.execute(
+                await connection.execute(
                     `INSERT INTO vehicle_queue (existing_route_id, vehicle_id, queue_position)
                      VALUES (?, ?, ?)
                      ON DUPLICATE KEY UPDATE queue_position = queue_position`,
@@ -1266,7 +1699,7 @@ export const initializeVehicleQueue = async (req, res) => {
             // Reorder all positions based on when vehicle was FIRST added to queue (created_at)
             // This preserves "first approved = first in line" principle
             // If vehicle_queue.created_at is same, use vehicle.created_at as tiebreaker
-            const [allQueueEntries] = await pool.execute(
+            const [allQueueEntries] = await connection.execute(
                 `SELECT vq.vehicle_id, vq.queue_position, vq.last_selected_at, vq.created_at as queue_created_at,
                         v.created_at as vehicle_created_at
                  FROM vehicle_queue vq
@@ -1281,7 +1714,7 @@ export const initializeVehicleQueue = async (req, res) => {
 
             // Update positions sequentially based on original approval order
             for (let i = 0; i < allQueueEntries.length; i++) {
-                await pool.execute(
+                await connection.execute(
                     `UPDATE vehicle_queue 
                      SET queue_position = ? 
                      WHERE existing_route_id = ? AND vehicle_id = ?`,
@@ -1289,7 +1722,8 @@ export const initializeVehicleQueue = async (req, res) => {
                 );
             }
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             // Get final queue with vehicle details
             // Only include vehicles that are active, approved, and have verified, active drivers
@@ -1320,15 +1754,17 @@ export const initializeVehicleQueue = async (req, res) => {
                 route: {
                     id: route.ID,
                     name: route.route_name,
-                    origin: route.origin,
-                    destination: route.destination
+                    location_1: route.location_1,
+                    location_2: route.location_2
                 },
                 queue: finalQueue,
                 total_vehicles: finalQueue.length
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error initializing vehicle queue:", error);
@@ -1455,8 +1891,8 @@ export const getNextVehicleInQueue = async (req, res) => {
                 route: {
                     id: route.ID,
                     name: route.route_name,
-                    origin: route.origin,
-                    destination: route.destination
+                    location_1: route.location_1,
+                    location_2: route.location_2
                 },
                 next_vehicle: null,
                 message: "No vehicle available at position 1 for this route"
@@ -1630,13 +2066,16 @@ export const selectNextVehicle = async (req, res) => {
 
         const route = routes[0];
 
-        // Start transaction
-        await pool.execute('START TRANSACTION');
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
 
         try {
+            // Start transaction
+            await connection.beginTransaction();
+
             // Verify the specified vehicle is actually at position 1 for this route
             // This ensures we're moving the correct vehicle (verification)
-            const [vehicleAtPosition1] = await pool.execute(
+            const [vehicleAtPosition1] = await connection.execute(
                 `SELECT vq.*, v.registration_number, v.make, v.model, v.vehicle_type, 
                         v.capacity, v.vehicle_status, v.admin_status, v.driver_id, v.ID as vehicle_id, v.owner_id,
                         u_driver.name as driver_name,
@@ -1660,7 +2099,8 @@ export const selectNextVehicle = async (req, res) => {
             );
 
             if (vehicleAtPosition1.length === 0) {
-                await pool.execute('ROLLBACK');
+                await connection.rollback();
+                connection.release();
                 return res.status(404).json({
                     success: false,
                     message: `Vehicle with ID ${vehicle_id} is not at position 1 for route: ${route.route_name}. Please verify the vehicle ID and route.`
@@ -1671,7 +2111,7 @@ export const selectNextVehicle = async (req, res) => {
 
             // Get total count of vehicles in queue for this route
             // Only count vehicles that are active, approved, and have verified, active drivers
-            const [countResult] = await pool.execute(
+            const [countResult] = await connection.execute(
                 `SELECT COUNT(*) as total 
                  FROM vehicle_queue vq
                  INNER JOIN vehicles v ON vq.vehicle_id = v.ID
@@ -1689,7 +2129,7 @@ export const selectNextVehicle = async (req, res) => {
             // First, move all vehicles up by 1 (positions 2,3,4... become 1,2,3...)
             // This shifts everyone forward, leaving position 1 empty
             // Only move vehicles that are active, approved, and have verified, active drivers
-            await pool.execute(
+            await connection.execute(
                 `UPDATE vehicle_queue vq
                  INNER JOIN vehicles v ON vq.vehicle_id = v.ID
                  LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
@@ -1706,16 +2146,17 @@ export const selectNextVehicle = async (req, res) => {
 
             // Then move selected vehicle to the end and update timestamp
             // This records when it was selected and puts it at the back of the line
-            await pool.execute(
+            await connection.execute(
                 `UPDATE vehicle_queue 
                  SET queue_position = ?, 
                      last_selected_at = NOW(),
                      updated_at = NOW()
                  WHERE existing_route_id = ? AND vehicle_id = ?`,
-                [totalVehicles, route_id, vehicleId]
+                [totalVehicles, route_id, vehicle_id]
             );
 
-            await pool.execute('COMMIT');
+            // Commit transaction
+            await connection.commit();
 
             // Get updated queue
             // Only show vehicles that are active, approved, and have verified, active drivers
@@ -1746,8 +2187,8 @@ export const selectNextVehicle = async (req, res) => {
                 route: {
                     id: route.ID,
                     name: route.route_name,
-                    origin: route.origin,
-                    destination: route.destination
+                    location_1: route.location_1,
+                    location_2: route.location_2
                 },
                 selected_vehicle: {
                     ...selectedVehicle,
@@ -1758,8 +2199,10 @@ export const selectNextVehicle = async (req, res) => {
                 next_vehicle: updatedQueue.length > 0 ? updatedQueue[0] : null
             });
         } catch (error) {
-            await pool.execute('ROLLBACK');
+            await connection.rollback();
             throw error;
+        } finally {
+            connection.release(); // Release the connection back to the pool
         }
     } catch (error) {
         console.error("Error selecting next vehicle:", error);
@@ -1789,6 +2232,8 @@ export default {
     initializeVehicleQueue,
     getVehicleQueue,
     getNextVehicleInQueue,
-    selectNextVehicle
+    selectNextVehicle,
+    getAvailableVehiclesForAssignment,
+    getCurrentAssignments
 };
 

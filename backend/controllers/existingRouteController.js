@@ -11,8 +11,8 @@ const checkUserType = (user, allowedTypes) => {
  * 
  * Required fields:
  * - route_name
- * - origin
- * - destination
+ * - location_1
+ * - location_2
  * - distance_km
  * - typical_duration_hours
  * - base_fare
@@ -29,8 +29,8 @@ export const createExistingRoute = async (req, res) => {
 
         const {
             route_name,
-            origin,
-            destination,
+            location_1,
+            location_2,
             distance_km,
             typical_duration_hours,
             base_fare,
@@ -41,13 +41,13 @@ export const createExistingRoute = async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!route_name || !origin || !destination || distance_km === undefined || 
+        if (!route_name || !location_1 || !location_2 || distance_km === undefined || 
             typical_duration_hours === undefined || base_fare === undefined ||
             small_parcel_price === undefined || medium_parcel_price === undefined || 
             large_parcel_price === undefined) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields: route_name, origin, destination, distance_km, typical_duration_hours, base_fare, small_parcel_price, medium_parcel_price, large_parcel_price"
+                message: "Missing required fields: route_name, location_1, location_2, distance_km, typical_duration_hours, base_fare, small_parcel_price, medium_parcel_price, large_parcel_price"
             });
         }
 
@@ -59,27 +59,27 @@ export const createExistingRoute = async (req, res) => {
             });
         }
 
-        // Check if route already exists (unique constraint on origin, destination)
+        // Check if route already exists (unique constraint on location_1, location_2)
         const [existing] = await pool.execute(
-            "SELECT ID FROM existing_routes WHERE origin = ? AND destination = ?",
-            [origin, destination]
+            "SELECT ID FROM existing_routes WHERE location_1 = ? AND location_2 = ?",
+            [location_1, location_2]
         );
 
         if (existing.length > 0) {
             return res.status(409).json({
                 success: false,
-                message: `Route from ${origin} to ${destination} already exists`
+                message: `Route from ${location_1} to ${location_2} already exists`
             });
         }
 
         // Insert new route
         const [result] = await pool.execute(
             `INSERT INTO existing_routes (
-                route_name, origin, destination, distance_km, typical_duration_hours,
+                route_name, location_1, location_2, distance_km, typical_duration_hours,
                 base_fare, small_parcel_price, medium_parcel_price, large_parcel_price, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                route_name, origin, destination, 
+                route_name, location_1, location_2, 
                 parseFloat(distance_km), parseFloat(typical_duration_hours),
                 parseFloat(base_fare), parseFloat(small_parcel_price),
                 parseFloat(medium_parcel_price), parseFloat(large_parcel_price),
@@ -93,8 +93,8 @@ export const createExistingRoute = async (req, res) => {
             route: {
                 id: result.insertId,
                 route_name,
-                origin,
-                destination,
+                location_1,
+                location_2,
                 distance_km: parseFloat(distance_km),
                 typical_duration_hours: parseFloat(typical_duration_hours),
                 base_fare: parseFloat(base_fare),
@@ -119,11 +119,13 @@ export const createExistingRoute = async (req, res) => {
  */
 export const getAllExistingRoutes = async (req, res) => {
     try {
-        checkUserType(req.user, ['admin']);
+        checkUserType(req.user, ['admin','client','driver','owner']);
 
         const { status } = req.query;
 
-        let query = "SELECT * FROM existing_routes";
+        // Explicitly select ID to ensure it's included
+        // Use alias to avoid case sensitivity issues
+        let query = "SELECT existing_routes.ID, route_name, location_1, location_2, distance_km, typical_duration_hours, base_fare, small_parcel_price, medium_parcel_price, large_parcel_price, status, created_at, updated_at FROM existing_routes";
         let params = [];
 
         if (status) {
@@ -134,24 +136,46 @@ export const getAllExistingRoutes = async (req, res) => {
         query += " ORDER BY created_at DESC";
 
         const [routes] = await pool.execute(query, params);
+        
+        // Debug: Log first route to check ID
+        if (routes.length > 0) {
+            console.log('First route from database (raw):', routes[0]);
+            console.log('Route ID value (id):', routes[0].id, '(ID):', routes[0].ID);
+            console.log('Route keys:', Object.keys(routes[0]));
+        }
 
         res.json({
             success: true,
-            routes: routes.map(route => ({
-                id: route.ID,
-                route_name: route.route_name,
-                origin: route.origin,
-                destination: route.destination,
-                distance_km: route.distance_km,
-                typical_duration_hours: route.typical_duration_hours,
-                base_fare: route.base_fare,
-                small_parcel_price: route.small_parcel_price,
-                medium_parcel_price: route.medium_parcel_price,
-                large_parcel_price: route.large_parcel_price,
-                status: route.status,
-                created_at: route.created_at,
-                updated_at: route.updated_at
-            })),
+            routes: routes.map(route => {
+                // Try multiple possible ID field names (id, ID, route_id)
+                // MySQL returns column names in lowercase by default, so check id first
+                const routeId = route.id !== null && route.id !== undefined ? route.id :
+                               (route.ID !== null && route.ID !== undefined ? route.ID :
+                               (route.route_id !== null && route.route_id !== undefined ? route.route_id : null));
+                
+                // Ensure ID is always present and valid
+                if (!routeId && routeId !== 0) {
+                    console.error('Route missing ID in database - Full route object:', route);
+                    console.error('Route keys:', Object.keys(route));
+                    console.error('route.id:', route.id, 'route.ID:', route.ID, 'route.route_id:', route.route_id);
+                }
+                
+                return {
+                    id: routeId, // Use the found ID
+                    route_name: route.route_name,
+                    location_1: route.location_1,
+                    location_2: route.location_2,
+                    distance_km: route.distance_km,
+                    typical_duration_hours: route.typical_duration_hours,
+                    base_fare: route.base_fare,
+                    small_parcel_price: route.small_parcel_price,
+                    medium_parcel_price: route.medium_parcel_price,
+                    large_parcel_price: route.large_parcel_price,
+                    status: route.status,
+                    created_at: route.created_at,
+                    updated_at: route.updated_at
+                };
+            }),
             total: routes.length
         });
     } catch (error) {
@@ -192,8 +216,8 @@ export const getExistingRoute = async (req, res) => {
             route: {
                 id: route.ID,
                 route_name: route.route_name,
-                origin: route.origin,
-                destination: route.destination,
+                location_1: route.location_1,
+                location_2: route.location_2,
                 distance_km: route.distance_km,
                 typical_duration_hours: route.typical_duration_hours,
                 base_fare: route.base_fare,
@@ -225,8 +249,8 @@ export const updateExistingRoute = async (req, res) => {
         const { routeId } = req.params;
         const {
             route_name,
-            origin,
-            destination,
+            location_1,
+            location_2,
             distance_km,
             typical_duration_hours,
             base_fare,
@@ -249,17 +273,17 @@ export const updateExistingRoute = async (req, res) => {
             });
         }
 
-        // If origin/destination changed, check for conflicts
-        if (origin && destination) {
+        // If location_1/location_2 changed, check for conflicts
+        if (location_1 && location_2) {
             const [conflicts] = await pool.execute(
-                "SELECT ID FROM existing_routes WHERE origin = ? AND destination = ? AND ID != ?",
-                [origin, destination, routeId]
+                "SELECT ID FROM existing_routes WHERE location_1 = ? AND location_2 = ? AND ID != ?",
+                [location_1, location_2, routeId]
             );
 
             if (conflicts.length > 0) {
                 return res.status(409).json({
                     success: false,
-                    message: `Route from ${origin} to ${destination} already exists`
+                    message: `Route from ${location_1} to ${location_2} already exists`
                 });
             }
         }
@@ -272,13 +296,13 @@ export const updateExistingRoute = async (req, res) => {
             updates.push("route_name = ?");
             values.push(route_name);
         }
-        if (origin !== undefined) {
-            updates.push("origin = ?");
-            values.push(origin);
+        if (location_1 !== undefined) {
+            updates.push("location_1 = ?");
+            values.push(location_1);
         }
-        if (destination !== undefined) {
-            updates.push("destination = ?");
-            values.push(destination);
+        if (location_2 !== undefined) {
+            updates.push("location_2 = ?");
+            values.push(location_2);
         }
         if (distance_km !== undefined) {
             updates.push("distance_km = ?");

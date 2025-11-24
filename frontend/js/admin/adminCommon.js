@@ -15,18 +15,22 @@ export function logout() {
   }
 }
 
-// Common API request function
+// Common API request function (uses cookie-based authentication)
 export async function makeAdminRequest(endpoint, options = {}) {
   const defaultOptions = {
+    credentials: 'include', // Include cookies for authentication
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
       'Content-Type': 'application/json'
     }
   };
 
   const response = await fetch(`${BASE_URL}/admin/${endpoint}`, {
     ...defaultOptions,
-    ...options
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...(options.headers || {})
+    }
   });
 
   if (!response.ok) {

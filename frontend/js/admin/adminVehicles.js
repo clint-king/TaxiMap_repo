@@ -1,26 +1,21 @@
 import axios from 'axios';
 import { BASE_URL } from '../AddressSelection.js';
 
+// Use cookie-based authentication (same as client-side APIs)
+axios.defaults.withCredentials = true;
+
 let allVehicles = [];
 let filteredVehicles = [];
 let currentVehicle = null;
+let allOwners = [];
+let allRoutes = [];
 
 /**
  * Load all vehicles from the API
  */
 export async function loadVehicles() {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('No authentication token found');
-            return;
-        }
-
-        const response = await axios.get(`${BASE_URL}/api/vehicles/admin/all`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await axios.get(`${BASE_URL}/api/vehicles/admin/all`);
 
         if (response.data.success) {
             allVehicles = response.data.vehicles;
@@ -54,14 +49,20 @@ function renderVehicles() {
     }
 
     tbody.innerHTML = filteredVehicles.map(vehicle => {
-        // Parse JSON fields if they're strings
+        // route_types is SET, so it comes as comma-separated string or array
         let routeTypes = vehicle.route_types;
         if (typeof routeTypes === 'string') {
-            try {
-                routeTypes = JSON.parse(routeTypes);
-            } catch (e) {
+            // If it's a comma-separated string, split it
+            if (routeTypes.includes(',')) {
+                routeTypes = routeTypes.split(',').map(rt => rt.trim());
+            } else if (routeTypes) {
+                // Single value
+                routeTypes = [routeTypes];
+            } else {
                 routeTypes = [];
             }
+        } else if (!routeTypes) {
+            routeTypes = [];
         }
 
         return `
@@ -83,9 +84,9 @@ function renderVehicles() {
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="viewVehicleDetails(${vehicle.ID || vehicle.id})" title="View Details">
-                        <i class="fas fa-eye"></i> View
-                    </button>
+                    <a href="admin-vehicle-details.html?id=${vehicle.ID || vehicle.id}" class="btn btn-sm btn-primary" title="View Details">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
                 </td>
             </tr>
         `;
@@ -110,20 +111,9 @@ function getAdminStatusClass(status) {
  */
 export async function viewVehicleDetails(vehicleId) {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showError('Authentication required');
-            return;
-        }
-
         // Get vehicle details
         const vehicleResponse = await axios.get(
-            `${BASE_URL}/api/vehicles/${vehicleId}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            }
+            `${BASE_URL}/api/vehicles/${vehicleId}`
         );
 
         if (!vehicleResponse.data.success) {
@@ -137,12 +127,7 @@ export async function viewVehicleDetails(vehicleId) {
         let documents = [];
         try {
             const docsResponse = await axios.get(
-                `${BASE_URL}/api/documents/vehicle/${vehicleId}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }
+                `${BASE_URL}/api/documents/vehicle/${vehicleId}`
             );
             if (docsResponse.data.success) {
                 documents = docsResponse.data.documents || [];
@@ -151,14 +136,20 @@ export async function viewVehicleDetails(vehicleId) {
             console.error('Error loading documents:', error);
         }
 
-        // Parse JSON fields
+        // route_types is SET, so it comes as comma-separated string or array
         let routeTypes = currentVehicle.route_types;
         if (typeof routeTypes === 'string') {
-            try {
-                routeTypes = JSON.parse(routeTypes);
-            } catch (e) {
+            // If it's a comma-separated string, split it
+            if (routeTypes.includes(',')) {
+                routeTypes = routeTypes.split(',').map(rt => rt.trim());
+            } else if (routeTypes) {
+                // Single value
+                routeTypes = [routeTypes];
+            } else {
                 routeTypes = [];
             }
+        } else if (!routeTypes) {
+            routeTypes = [];
         }
 
         let images = currentVehicle.images;
@@ -220,8 +211,8 @@ export async function viewVehicleDetails(vehicleId) {
                     <div class="info-group">
                         <label>Route:</label>
                         <p>${escapeHtml(currentVehicle.route_name || 'N/A')}</p>
-                        ${currentVehicle.origin && currentVehicle.destination ? 
-                            `<small>${escapeHtml(currentVehicle.origin)} → ${escapeHtml(currentVehicle.destination)}</small>` : ''}
+                        ${currentVehicle.location_1 && currentVehicle.location_2 ? 
+                            `<small>${escapeHtml(currentVehicle.location_1)} → ${escapeHtml(currentVehicle.location_2)}</small>` : ''}
                     </div>
                     <div class="info-group">
                         <label>Admin Status:</label>
@@ -313,16 +304,9 @@ export async function approveVehicle(vehicleId) {
     }
 
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.put(
             `${BASE_URL}/api/vehicles/${vehicleId}/admin/approve`,
-            { admin_status: 'approve' },
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+            { admin_status: 'approve' }
         );
 
         if (response.data.success) {
@@ -348,16 +332,9 @@ export async function rejectVehicle(vehicleId) {
     }
 
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.put(
             `${BASE_URL}/api/vehicles/${vehicleId}/admin/approve`,
-            { admin_status: 'reject' },
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+            { admin_status: 'reject' }
         );
 
         if (response.data.success) {
@@ -383,16 +360,9 @@ export async function suspendVehicle(vehicleId) {
     }
 
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.put(
             `${BASE_URL}/api/vehicles/${vehicleId}/admin/approve`,
-            { admin_status: 'suspended' },
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+            { admin_status: 'suspended' }
         );
 
         if (response.data.success) {
@@ -466,11 +436,162 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Open modal for adding a new vehicle
+ */
+export async function openAddVehicleModal() {
+    const modal = document.getElementById('addVehicleModal');
+    document.getElementById('addVehicleForm').reset();
+    
+    // Load owners and routes
+    await loadOwners();
+    await loadRoutes();
+    
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+}
+
+/**
+ * Close add vehicle modal
+ */
+export function closeAddVehicleModal() {
+    const modal = document.getElementById('addVehicleModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.getElementById('addVehicleForm').reset();
+}
+
+/**
+ * Load all owners for dropdown
+ */
+async function loadOwners() {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/owners/admin/all`);
+
+        if (response.data.success) {
+            allOwners = response.data.owners || [];
+            const ownerSelect = document.getElementById('add_owner_id');
+            ownerSelect.innerHTML = '<option value="">Select Owner</option>' +
+                allOwners.map(owner => 
+                    `<option value="${owner.ID || owner.id}">${escapeHtml(owner.name || owner.email)} (${escapeHtml(owner.email)})</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error loading owners:', error);
+        document.getElementById('add_owner_id').innerHTML = '<option value="">Error loading owners</option>';
+    }
+}
+
+/**
+ * Load all routes for dropdown
+ */
+async function loadRoutes() {
+    try {
+        const response = await axios.get(`${BASE_URL}/admin/existing-routes`);
+
+        if (response.data.success) {
+            allRoutes = response.data.routes || [];
+            const routeSelect = document.getElementById('add_existing_route_id');
+            routeSelect.innerHTML = '<option value="">None (Custom routes only)</option>' +
+                allRoutes.map(route => 
+                    `<option value="${route.id}">${escapeHtml(route.route_name)} (${escapeHtml(route.location_1)} → ${escapeHtml(route.location_2)})</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error loading routes:', error);
+        document.getElementById('add_existing_route_id').innerHTML = '<option value="">Error loading routes</option>';
+    }
+}
+
+/**
+ * Handle add vehicle form submission
+ */
+export async function handleAddVehicleSubmit(event) {
+    event.preventDefault();
+    
+    const formData = {
+        owner_id: document.getElementById('add_owner_id').value,
+        registration_number: document.getElementById('add_registration_number').value.trim(),
+        license_plate: document.getElementById('add_license_plate').value.trim(),
+        make: document.getElementById('add_make').value.trim(),
+        model: document.getElementById('add_model').value.trim(),
+        color: document.getElementById('add_color').value.trim() || null,
+        vehicle_type: document.getElementById('add_vehicle_type').value,
+        capacity: parseInt(document.getElementById('add_capacity').value),
+        extraspace_parcel_sp: parseInt(document.getElementById('add_extraspace_parcel_sp').value),
+        existing_route_id: document.getElementById('add_existing_route_id').value || null,
+        description: document.getElementById('add_description').value.trim() || null
+    };
+
+    // Get route types from checkboxes
+    const routeTypesCheckboxes = document.querySelectorAll('input[name="route_types"]:checked');
+    formData.route_types = Array.from(routeTypesCheckboxes).map(cb => cb.value);
+
+    // Parse JSON fields
+    try {
+        const imagesText = document.getElementById('add_images').value.trim();
+        formData.images = imagesText ? JSON.parse(imagesText) : [];
+    } catch (e) {
+        showError('Invalid JSON format for images');
+        return;
+    }
+
+    try {
+        const videosText = document.getElementById('add_videos').value.trim();
+        formData.videos = videosText ? JSON.parse(videosText) : [];
+    } catch (e) {
+        showError('Invalid JSON format for videos');
+        return;
+    }
+
+    try {
+        const featuresText = document.getElementById('add_features').value.trim();
+        formData.features = featuresText ? JSON.parse(featuresText) : [];
+    } catch (e) {
+        showError('Invalid JSON format for features');
+        return;
+    }
+
+    // Validate extraspace_parcel_sp
+    if (isNaN(formData.extraspace_parcel_sp) || formData.extraspace_parcel_sp < 4 || formData.extraspace_parcel_sp > 16) {
+        showError('Extra Space Parcel (SP) must be a valid number between 4 and 16');
+        return;
+    }
+    if (formData.extraspace_parcel_sp % 4 !== 0) {
+        showError('Extra Space Parcel (SP) must be a multiple of 4 (4, 8, 12, or 16)');
+        return;
+    }
+
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/vehicles`,
+            formData
+        );
+
+        if (response.data.success) {
+            showSuccess('Vehicle created successfully');
+            closeAddVehicleModal();
+            loadVehicles();
+        } else {
+            showError(response.data.message || 'Failed to create vehicle');
+        }
+    } catch (error) {
+        console.error('Error creating vehicle:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to create vehicle';
+        showError(errorMessage);
+    }
+}
+
 // Close modal when clicking outside
 window.onclick = function(event) {
-    const modal = document.getElementById('vehicleModal');
-    if (event.target === modal) {
+    const vehicleModal = document.getElementById('vehicleModal');
+    const addVehicleModal = document.getElementById('addVehicleModal');
+    
+    if (event.target === vehicleModal) {
         closeVehicleModal();
+    }
+    if (event.target === addVehicleModal) {
+        closeAddVehicleModal();
     }
 }
 

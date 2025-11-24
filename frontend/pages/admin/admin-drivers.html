@@ -36,6 +36,7 @@
         <a href="admin-existing-routes.html">Existing Routes</a>
         <a href="admin-vehicles.html">Vehicles</a>
         <a href="admin-drivers.html" class="active">Drivers</a>
+        <a href="admin-execute-booking.html">Execute Booking</a>
         <a href="../customer/client.html" class="user-link">User View</a>
         <a href="#" onclick="logout()" class="logout-link">Logout</a>
       </div>
@@ -100,24 +101,6 @@
     </div>
   </div>
 
-  <!-- Driver Details Modal -->
-  <div id="driverModal" class="modal">
-    <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
-      <div class="modal-header">
-        <h2 id="modalTitle">Driver Details</h2>
-        <button class="modal-close" onclick="closeDriverModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-body" id="driverModalBody">
-        <!-- Content will be loaded dynamically -->
-      </div>
-      <div class="modal-footer" id="driverModalFooter">
-        <!-- Action buttons will be loaded dynamically -->
-      </div>
-    </div>
-  </div>
-
   <script type="module" src="../../js/authentication/logout.js"></script>
   <script type="module" src="../../js/admin/adminCommon.js"></script>
   <script type="module" src="../../js/admin/adminDrivers.js"></script>
@@ -127,26 +110,16 @@
     import { 
       loadDrivers, 
       viewDriverDetails,
-      verifyDriver,
-      rejectDriver,
-      suspendDriver,
-      activateDriver,
       filterDrivers,
-      refreshDrivers,
-      closeDriverModal
+      refreshDrivers
     } from '../../js/admin/adminDrivers.js';
     
     // Make functions globally available
     window.toggleAdminMobileMenu = toggleAdminMobileMenu;
     window.logout = logout;
     window.viewDriverDetails = viewDriverDetails;
-    window.verifyDriver = verifyDriver;
-    window.rejectDriver = rejectDriver;
-    window.suspendDriver = suspendDriver;
-    window.activateDriver = activateDriver;
     window.filterDrivers = filterDrivers;
     window.refreshDrivers = refreshDrivers;
-    window.closeDriverModal = closeDriverModal;
     
     // Check authentication and load data
     document.addEventListener('DOMContentLoaded', () => {

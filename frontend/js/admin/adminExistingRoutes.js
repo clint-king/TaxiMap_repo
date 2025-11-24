@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { BASE_URL } from '../AddressSelection.js';
 
+// Use cookie-based authentication (same as client-side APIs)
+axios.defaults.withCredentials = true;
+
 let currentRouteId = null;
 let allRoutes = [];
 let filteredRoutes = [];
@@ -10,20 +13,35 @@ let filteredRoutes = [];
  */
 export async function loadRoutes() {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('No authentication token found');
-            return;
-        }
-
-        const response = await axios.get(`${BASE_URL}/admin/existing-routes`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await axios.get(`${BASE_URL}/admin/existing-routes`);
 
         if (response.data.success) {
-            allRoutes = response.data.routes;
+            // Debug: Log the first route to see its structure
+            if (response.data.routes && response.data.routes.length > 0) {
+                console.log('Sample route from API:', response.data.routes[0]);
+                console.log('Route keys:', Object.keys(response.data.routes[0]));
+            }
+            
+            // Ensure all routes have an id property (map ID to id if needed)
+            allRoutes = response.data.routes.map(route => {
+                // Try multiple possible ID field names
+                const routeId = route.id || route.ID || route.route_id || route.routeId || null;
+                
+                if (!routeId) {
+                    console.error('Route missing ID - full route object:', route);
+                    console.error('Available keys:', Object.keys(route));
+                }
+                
+                const normalizedRoute = {
+                    ...route,
+                    id: routeId
+                };
+                // Remove ID if we have id to avoid confusion
+                if (normalizedRoute.id && normalizedRoute.ID) {
+                    delete normalizedRoute.ID;
+                }
+                return normalizedRoute;
+            });
             filteredRoutes = allRoutes;
             renderRoutes();
         } else {
@@ -53,33 +71,53 @@ function renderRoutes() {
         return;
     }
 
-    tbody.innerHTML = filteredRoutes.map(route => `
+    tbody.innerHTML = filteredRoutes.map(route => {
+        // Get route ID (handle both id and ID cases, and check for null/undefined)
+        const routeId = route.id !== null && route.id !== undefined ? route.id : 
+                       (route.ID !== null && route.ID !== undefined ? route.ID : null);
+        
+        // Convert DECIMAL fields from database (strings) to numbers
+        const baseFare = parseFloat(route.base_fare) || 0;
+        const smallParcelPrice = parseFloat(route.small_parcel_price) || 0;
+        const mediumParcelPrice = parseFloat(route.medium_parcel_price) || 0;
+        const largeParcelPrice = parseFloat(route.large_parcel_price) || 0;
+        
+        // Validate routeId before rendering
+        if (!routeId && routeId !== 0) {
+            console.error('Route missing ID - Route object:', route);
+            console.error('Route keys:', Object.keys(route));
+            console.error('route.id:', route.id, 'route.ID:', route.ID);
+            return ''; // Skip this route if no ID
+        }
+        
+        return `
         <tr>
-            <td>${route.id}</td>
+            <td>${routeId}</td>
             <td>${escapeHtml(route.route_name)}</td>
-            <td>${escapeHtml(route.origin)}</td>
-            <td>${escapeHtml(route.destination)}</td>
+            <td>${escapeHtml(route.location_1)}</td>
+            <td>${escapeHtml(route.location_2)}</td>
             <td>${route.distance_km}</td>
             <td>${route.typical_duration_hours}</td>
-            <td>R${route.base_fare.toFixed(2)}</td>
-            <td>R${route.small_parcel_price.toFixed(2)}</td>
-            <td>R${route.medium_parcel_price.toFixed(2)}</td>
-            <td>R${route.large_parcel_price.toFixed(2)}</td>
+            <td>R${baseFare.toFixed(2)}</td>
+            <td>R${smallParcelPrice.toFixed(2)}</td>
+            <td>R${mediumParcelPrice.toFixed(2)}</td>
+            <td>R${largeParcelPrice.toFixed(2)}</td>
             <td>
                 <span class="status-badge ${route.status === 'active' ? 'active' : 'inactive'}">
                     ${route.status}
                 </span>
             </td>
             <td>
-                <button class="btn btn-sm btn-primary" onclick="editRoute(${route.id})" title="Edit">
+                <button class="btn btn-sm btn-primary" onclick="editRoute(${routeId})" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteRoute(${route.id})" title="Delete">
+                <button class="btn btn-sm btn-danger" onclick="deleteRoute(${routeId})" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 /**
@@ -115,8 +153,8 @@ export async function handleRouteSubmit(event) {
     
     const formData = {
         route_name: document.getElementById('route_name').value.trim(),
-        origin: document.getElementById('origin').value.trim(),
-        destination: document.getElementById('destination').value.trim(),
+        location_1: document.getElementById('location_1').value.trim(),
+        location_2: document.getElementById('location_2').value.trim(),
         distance_km: parseFloat(document.getElementById('distance_km').value),
         typical_duration_hours: parseFloat(document.getElementById('typical_duration_hours').value),
         base_fare: parseFloat(document.getElementById('base_fare').value),
@@ -127,36 +165,18 @@ export async function handleRouteSubmit(event) {
     };
 
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showError('Authentication required');
-            return;
-        }
-
         let response;
         if (currentRouteId) {
             // Update existing route
             response = await axios.put(
                 `${BASE_URL}/admin/existing-routes/${currentRouteId}`,
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
+                formData
             );
         } else {
             // Create new route
             response = await axios.post(
                 `${BASE_URL}/admin/existing-routes`,
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
+                formData
             );
         }
 
@@ -178,31 +198,27 @@ export async function handleRouteSubmit(event) {
  * Edit a route
  */
 export async function editRoute(routeId) {
+    // Validate routeId
+    if (!routeId || routeId === 'undefined' || routeId === 'null') {
+        console.error('Invalid route ID:', routeId);
+        showError('Invalid route ID. Please try again.');
+        return;
+    }
+    
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showError('Authentication required');
-            return;
-        }
-
         const response = await axios.get(
-            `${BASE_URL}/admin/existing-routes/${routeId}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            }
+            `${BASE_URL}/admin/existing-routes/${routeId}`
         );
 
         if (response.data.success) {
             const route = response.data.route;
-            currentRouteId = route.id;
+            currentRouteId = route.id || route.ID;
             
             document.getElementById('modalTitle').textContent = 'Edit Route';
             document.getElementById('submitBtn').textContent = 'Update Route';
             document.getElementById('route_name').value = route.route_name;
-            document.getElementById('origin').value = route.origin;
-            document.getElementById('destination').value = route.destination;
+            document.getElementById('location_1').value = route.location_1;
+            document.getElementById('location_2').value = route.location_2;
             document.getElementById('distance_km').value = route.distance_km;
             document.getElementById('typical_duration_hours').value = route.typical_duration_hours;
             document.getElementById('base_fare').value = route.base_fare;
@@ -232,19 +248,8 @@ export async function deleteRoute(routeId) {
     }
 
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            showError('Authentication required');
-            return;
-        }
-
         const response = await axios.delete(
-            `${BASE_URL}/admin/existing-routes/${routeId}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            }
+            `${BASE_URL}/admin/existing-routes/${routeId}`
         );
 
         if (response.data.success) {

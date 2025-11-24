@@ -70,6 +70,9 @@ router.get("/admin/all", authenticateUser, bookingController.getAllBookings);
 // Get booking statistics
 router.get("/admin/statistics", authenticateUser, bookingController.getBookingStatistics);
 
+// Execute booking (admin) - creates booking and moves vehicle to end of queue
+router.post("/admin/execute", authenticateUser, bookingController.executeBookingAdmin);
+
 // Update booking status (admin)
 router.put("/:bookingId/admin/status", authenticateUser, bookingController.updateBookingStatusAdmin);
 

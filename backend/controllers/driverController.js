@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import bcrypt from 'bcrypt';
 
 const checkUserType = (user, allowedTypes) => {
     if (!allowedTypes.includes(user.user_type)) {
@@ -17,10 +18,12 @@ export const getDriverProfile = async (req, res) => {
         checkUserType(req.user, ['driver', 'admin']);
 
         const [drivers] = await pool.execute(
-            `SELECT u.*, dp.*
+            `SELECT u.*, dp.*,
+                    u_owner.ID as owner_user_id, u_owner.name as owner_name, u_owner.email as owner_email
              FROM users u
-             LEFT JOIN driver_profiles dp ON u.id = dp.user_id
-             WHERE u.id = ? AND u.user_type = 'driver'`,
+             LEFT JOIN driver_profiles dp ON u.ID = dp.user_id
+             LEFT JOIN users u_owner ON dp.owner_id = u_owner.ID
+             WHERE u.ID = ? AND u.user_type = 'driver'`,
             [userId]
         );
 
@@ -35,14 +38,18 @@ export const getDriverProfile = async (req, res) => {
         const [vehicles] = await pool.execute(
             `SELECT v.*, er.route_name
              FROM vehicles v
-             LEFT JOIN existing_routes er ON v.existing_route_id = er.id
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
              WHERE v.driver_id = ? AND v.vehicle_status = 'active'`,
             [userId]
         );
 
-        // Get documents
+        // Get documents - join through driver_profiles to use driver_profiles.ID
         const [documents] = await pool.execute(
-            "SELECT * FROM driver_documents WHERE driver_id = ? ORDER BY created_at DESC",
+            `SELECT dd.* 
+             FROM driver_documents dd
+             INNER JOIN driver_profiles dp ON dd.driver_id = dp.ID
+             WHERE dp.user_id = ? 
+             ORDER BY dd.created_at DESC`,
             [userId]
         );
 
@@ -151,14 +158,19 @@ export const getDriverDocuments = async (req, res) => {
         checkUserType(req.user, ['driver', 'admin']);
 
         // If admin, allow getting documents for any driver via query param
-        let driverId = userId;
+        let targetUserId = userId;
         if (req.user.user_type === 'admin' && req.query.driverId) {
-            driverId = req.query.driverId;
+            targetUserId = req.query.driverId;
         }
 
+        // Get documents - join through driver_profiles to use driver_profiles.ID
         const [documents] = await pool.execute(
-            "SELECT * FROM driver_documents WHERE driver_id = ? ORDER BY created_at DESC",
-            [driverId]
+            `SELECT dd.* 
+             FROM driver_documents dd
+             INNER JOIN driver_profiles dp ON dd.driver_id = dp.ID
+             WHERE dp.user_id = ? 
+             ORDER BY dd.created_at DESC`,
+            [targetUserId]
         );
 
         res.json({
@@ -197,13 +209,28 @@ export const uploadDriverDocument = async (req, res) => {
             });
         }
 
+        // Get driver_profiles.ID from user_id
+        const [driverProfiles] = await pool.execute(
+            "SELECT ID FROM driver_profiles WHERE user_id = ?",
+            [userId]
+        );
+
+        if (driverProfiles.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver profile not found"
+            });
+        }
+
+        const driverProfileId = driverProfiles[0].ID;
+
         const [result] = await pool.execute(
             `INSERT INTO driver_documents (
                 driver_id, document_type, reference_number, image_url,
                 expiry_date, issue_date, issuing_authority, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [
-                userId, document_type, reference_number || null, image_url,
+                driverProfileId, document_type, reference_number || null, image_url,
                 expiry_date || null, issue_date || null, issuing_authority || null
             ]
         );
@@ -232,9 +259,24 @@ export const deleteDriverDocument = async (req, res) => {
         checkUserType(req.user, ['driver', 'admin']);
         const { documentId } = req.params;
 
+        // Get driver_profiles.ID from user_id
+        const [driverProfiles] = await pool.execute(
+            "SELECT ID FROM driver_profiles WHERE user_id = ?",
+            [userId]
+        );
+
+        if (driverProfiles.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver profile not found"
+            });
+        }
+
+        const driverProfileId = driverProfiles[0].ID;
+
         await pool.execute(
             "DELETE FROM driver_documents WHERE id = ? AND driver_id = ?",
-            [documentId, userId]
+            [documentId, driverProfileId]
         );
 
         res.json({
@@ -306,22 +348,249 @@ export const getDriverStatistics = async (req, res) => {
 // OWNER ROUTES
 // ============================================
 
+// Create driver (owner creates driver account and profile)
+export const createDriver = async (req, res) => {
+    try {
+        const ownerId = req.user.id;
+        checkUserType(req.user, ['owner', 'admin']);
+
+        const {
+            firstName,
+            surname,
+            email,
+            password,
+            phone,
+            address,
+            id_number,
+            license_number,
+            license_expiry,
+            license_photo,
+            photo
+        } = req.body;
+
+        // Validate required fields
+        if (!firstName || !surname || !email || !password || !phone || !address || 
+            !id_number || !license_number || !license_expiry) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields: firstName, surname, email, password, phone, address, id_number, license_number, license_expiry"
+            });
+        }
+
+        // Validate password length
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters long"
+            });
+        }
+
+        // Check if email already exists
+        const [existingUsers] = await pool.execute(
+            "SELECT ID FROM users WHERE email = ?",
+            [email]
+        );
+
+        if (existingUsers.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already exists"
+            });
+        }
+
+        // Check if ID number already exists in driver_profiles
+        const [existingIdNumbers] = await pool.execute(
+            "SELECT user_id FROM driver_profiles WHERE id_number = ?",
+            [id_number]
+        );
+
+        if (existingIdNumbers.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "ID number already registered"
+            });
+        }
+
+        // Check if license number already exists
+        const [existingLicenses] = await pool.execute(
+            "SELECT user_id FROM driver_profiles WHERE license_number = ?",
+            [license_number]
+        );
+
+        if (existingLicenses.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "License number already registered"
+            });
+        }
+
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
+
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create user account
+            const fullName = `${firstName} ${surname}`.trim();
+            const [userResult] = await connection.execute(
+                `INSERT INTO users (
+                    name, email, password, user_type, phone, location,
+                    email_verified, verification_token, profile_picture
+                ) VALUES (?, ?, ?, 'driver', ?, ?, true, NULL, ?)`,
+                [fullName, email, hashedPassword, phone, address, photo || null]
+            );
+
+            const userId = userResult.insertId;
+            const ownerUserId = req.user.id; // Owner creating this driver
+
+            // Get owner_profiles.ID from user_id
+            const [ownerProfiles] = await connection.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [ownerUserId]
+            );
+
+            if (ownerProfiles.length === 0) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({
+                    success: false,
+                    message: "Owner profile not found"
+                });
+            }
+
+            const ownerProfileId = ownerProfiles[0].ID;
+
+            // Create driver profile (with owner_id from owner_profiles.ID)
+            const [profileResult] = await connection.execute(
+                `INSERT INTO driver_profiles (
+                    user_id, owner_id, license_number, license_expiry, id_number,
+                    status, verification_status
+                ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending')`,
+                [userId, ownerProfileId, license_number, license_expiry, id_number]
+            );
+
+            const driverProfileId = profileResult.insertId;
+
+            // If license photo is provided, create a document record
+            // Use driver_profiles.ID instead of users.ID
+            if (license_photo) {
+                await connection.execute(
+                    `INSERT INTO driver_documents (
+                        driver_id, document_type, image_url, status
+                    ) VALUES (?, 'license', ?, 'pending')`,
+                    [driverProfileId, license_photo]
+                );
+            }
+
+            // Commit transaction
+            await connection.commit();
+
+            res.status(201).json({
+                success: true,
+                message: "Driver created successfully",
+                driver: {
+                    user_id: userId,
+                    name: fullName,
+                    email,
+                    license_number,
+                    status: 'pending',
+                    verification_status: 'pending'
+                }
+            });
+        } catch (error) {
+            // Rollback transaction on error
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Always release the connection
+            connection.release();
+        }
+    } catch (error) {
+        console.error("Error creating driver:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create driver",
+            error: error.message
+        });
+    }
+};
+
+// Get available drivers for assignment (verified and active, without vehicle)
+export const getAvailableDriversForAssignment = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        checkUserType(req.user, ['owner']);
+
+        // Get owner's drivers that are:
+        // 1. Verified by admin (verification_status = 'verified')
+        // 2. Active (status = 'active')
+        // 3. Don't have a vehicle assigned (not in vehicles table with driver_id)
+        const [drivers] = await pool.execute(
+            `SELECT u.ID, u.name, u.email, u.phone, dp.license_number, dp.license_expiry
+             FROM users u
+             INNER JOIN driver_profiles dp ON u.ID = dp.user_id
+             LEFT JOIN vehicles v ON u.ID = v.driver_id AND v.vehicle_status = 'active'
+             WHERE dp.owner_id = ? 
+               AND u.user_type = 'driver'
+               AND dp.verification_status = 'verified'
+               AND dp.status = 'active'
+               AND v.ID IS NULL
+             ORDER BY u.name`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            drivers
+        });
+    } catch (error) {
+        console.error("Error fetching available drivers:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch available drivers",
+            error: error.message
+        });
+    }
+};
+
 // Get owner's drivers
 export const getOwnerDrivers = async (req, res) => {
     try {
         const userId = req.user.id;
         checkUserType(req.user, ['owner', 'admin']);
 
+        // For admin, allow querying any owner's drivers via query param
+        const ownerId = req.user.user_type === 'admin' && req.query.owner_id 
+            ? parseInt(req.query.owner_id) 
+            : userId;
+
+        console.log(`[getOwnerDrivers] Fetching drivers for owner_id: ${ownerId} (user_id: ${userId}, user_type: ${req.user.user_type})`);
+
         const [drivers] = await pool.execute(
-            `SELECT DISTINCT u.*, dp.license_number, dp.license_expiry,
-                    (SELECT COUNT(*) FROM vehicles WHERE driver_id = u.id AND owner_id = ?) as vehicle_count
+            `SELECT u.*, dp.ID as driver_profile_id, dp.license_number, dp.license_expiry, dp.id_number,
+                    dp.status, dp.verification_status, dp.created_at as driver_since,
+                    (SELECT COUNT(*) FROM vehicles WHERE driver_id = u.ID) as vehicle_count
              FROM users u
-             LEFT JOIN driver_profiles dp ON u.id = dp.user_id
-             INNER JOIN vehicles v ON v.driver_id = u.id
-             WHERE v.owner_id = ? AND u.user_type = 'driver'
+             INNER JOIN driver_profiles dp ON u.ID = dp.user_id
+             WHERE dp.owner_id = ? AND u.user_type = 'driver'
              ORDER BY u.name`,
-            [userId, userId]
+            [ownerId]
         );
+
+        console.log(`[getOwnerDrivers] Found ${drivers.length} drivers for owner_id: ${ownerId}`);
+
+        // If no drivers found, check if there are any drivers without owner_id
+        if (drivers.length === 0) {
+            const [allDrivers] = await pool.execute(
+                `SELECT COUNT(*) as count FROM driver_profiles WHERE owner_id IS NULL OR owner_id != ?`,
+                [ownerId]
+            );
+            console.log(`[getOwnerDrivers] Drivers without matching owner_id: ${allDrivers[0]?.count || 0}`);
+        }
 
         res.json({
             success: true,
@@ -348,11 +617,17 @@ export const getAllDrivers = async (req, res) => {
 
         const { status, limit = 100, offset = 0 } = req.query;
 
+        // Validate and parse limit and offset
+        const limitValue = Math.max(1, Math.min(parseInt(limit) || 100, 1000)); // Between 1 and 1000
+        const offsetValue = Math.max(0, parseInt(offset) || 0); // At least 0
+
         let query = `
             SELECT u.*, dp.*,
-                   (SELECT COUNT(*) FROM vehicles WHERE driver_id = u.id) as vehicle_count
+                   u_owner.ID as owner_user_id, u_owner.name as owner_name, u_owner.email as owner_email,
+                   (SELECT COUNT(*) FROM vehicles WHERE driver_id = u.ID) as vehicle_count
             FROM users u
-            LEFT JOIN driver_profiles dp ON u.id = dp.user_id
+            LEFT JOIN driver_profiles dp ON u.ID = dp.user_id
+            LEFT JOIN users u_owner ON dp.owner_id = u_owner.ID
             WHERE u.user_type = 'driver'
         `;
         const params = [];
@@ -362,8 +637,9 @@ export const getAllDrivers = async (req, res) => {
             params.push(status);
         }
 
-        query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), parseInt(offset));
+        // Use template literals for LIMIT and OFFSET since they're validated integers
+        // MySQL2 prepared statements don't support parameterized LIMIT/OFFSET
+        query += ` ORDER BY u.created_at DESC LIMIT ${limitValue} OFFSET ${offsetValue}`;
 
         const [drivers] = await pool.execute(query, params);
 
@@ -381,7 +657,90 @@ export const getAllDrivers = async (req, res) => {
     }
 };
 
+// Get driver details (admin endpoint)
+export const getDriverDetails = async (req, res) => {
+    try {
+        console.log('getDriverDetails called with driverId:', req.params.driverId);
+        checkUserType(req.user, ['admin']);
+        const { driverId } = req.params;
+
+        // Get driver by driver_profiles.ID (driverId is the driver_profiles.ID, not users.ID)
+        // Note: driver_profiles.owner_id references owner_profiles.ID (not users.ID)
+        console.log('Querying database for driver profile with ID:', driverId);
+        // We need to get the driver profile first, then join to users table
+        const [drivers] = await pool.execute(
+            `SELECT u.*, dp.*,
+                    u_owner.ID as owner_user_id, u_owner.name as owner_name, u_owner.email as owner_email,
+                    op.ID as owner_profile_id
+             FROM driver_profiles dp
+             INNER JOIN users u ON dp.user_id = u.ID
+             LEFT JOIN owner_profiles op ON dp.owner_id = op.ID
+             LEFT JOIN users u_owner ON op.user_id = u_owner.ID
+             WHERE dp.ID = ? AND u.user_type = 'driver'`,
+            [driverId]
+        );
+
+        console.log('Query result - drivers found:', drivers.length);
+        if (drivers.length === 0) {
+            console.log('No driver found with ID:', driverId);
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
+
+        const driver = drivers[0];
+        const driverUserId = driver.user_id; // Get the user_id from driver_profiles
+
+        // Get assigned vehicles
+        // v.driver_id references users.ID, so use driver.user_id
+        const [vehicles] = await pool.execute(
+            `SELECT v.*, er.route_name
+             FROM vehicles v
+             LEFT JOIN existing_routes er ON v.existing_route_id = er.ID
+             WHERE v.driver_id = ? AND v.vehicle_status = 'active'`,
+            [driverUserId]
+        );
+
+        // Get documents - driver_documents.driver_id references driver_profiles.ID
+        const [documents] = await pool.execute(
+            `SELECT dd.* 
+             FROM driver_documents dd
+             WHERE dd.driver_id = ? 
+             ORDER BY dd.created_at DESC`,
+            [driverId]
+        );
+
+        // Get ratings - rated_user_id references users.ID, so use driver.user_id
+        const [ratings] = await pool.execute(
+            `SELECT AVG(rating) as avg_rating, COUNT(*) as total_ratings
+             FROM booking_ratings
+             WHERE rated_type = 'driver' AND rated_user_id = ?`,
+            [driverUserId]
+        );
+
+        res.json({
+            success: true,
+            driver: {
+                ...driver,
+                vehicles,
+                documents,
+                rating: ratings[0]?.avg_rating || 0,
+                total_ratings: ratings[0]?.total_ratings || 0
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching driver details:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch driver details",
+            error: error.message
+        });
+    }
+};
+
 // Verify driver
+// Note: driverId is driver_profiles.ID, not users.ID
 export const verifyDriver = async (req, res) => {
     try {
         checkUserType(req.user, ['admin']);
@@ -395,12 +754,23 @@ export const verifyDriver = async (req, res) => {
             });
         }
 
-        await pool.execute(
+        console.log('Verifying driver with driver_profiles.ID:', driverId);
+
+        const [result] = await pool.execute(
             `UPDATE driver_profiles 
              SET verification_status = ?, verification_notes = ?, verified_at = NOW()
-             WHERE user_id = ?`,
+             WHERE ID = ?`,
             [verification_status, verification_notes || null, driverId]
         );
+
+        console.log('Update result:', result.affectedRows, 'rows affected');
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
 
         res.json({
             success: true,
@@ -417,6 +787,7 @@ export const verifyDriver = async (req, res) => {
 };
 
 // Update driver status
+// Note: driverId is driver_profiles.ID, not users.ID
 export const updateDriverStatus = async (req, res) => {
     try {
         checkUserType(req.user, ['admin']);
@@ -430,10 +801,21 @@ export const updateDriverStatus = async (req, res) => {
             });
         }
 
-        await pool.execute(
-            "UPDATE driver_profiles SET status = ? WHERE user_id = ?",
+        console.log('Updating driver status with driver_profiles.ID:', driverId);
+
+        const [result] = await pool.execute(
+            "UPDATE driver_profiles SET status = ? WHERE ID = ?",
             [status, driverId]
         );
+
+        console.log('Update result:', result.affectedRows, 'rows affected');
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
 
         res.json({
             success: true,
@@ -449,16 +831,104 @@ export const updateDriverStatus = async (req, res) => {
     }
 };
 
-export default {
+// Update driver status by owner (only if driver is verified)
+// Note: driverId is driver_profiles.ID, not users.ID
+export const updateDriverStatusByOwner = async (req, res) => {
+    try {
+        checkUserType(req.user, ['owner']);
+        const { driverId } = req.params;
+        const { status } = req.body;
+        const ownerUserId = req.user.id;
+
+        if (!status || !['active', 'inactive'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "status is required and must be 'active' or 'inactive'"
+            });
+        }
+
+        console.log('Owner updating driver status:', { driverId, status, ownerUserId });
+
+        // First, verify that the driver belongs to this owner and is verified
+        // Note: driver_profiles.owner_id references users(ID) directly
+        const [driver] = await pool.execute(
+            `SELECT dp.ID, dp.verification_status, dp.owner_id, dp.status
+             FROM driver_profiles dp
+             WHERE dp.ID = ?`,
+            [driverId]
+        );
+
+        if (driver.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
+
+        const driverData = driver[0];
+
+        // Check if driver belongs to this owner
+        if (driverData.owner_id !== ownerUserId) {
+            return res.status(403).json({
+                success: false,
+                message: "You do not have permission to update this driver's status"
+            });
+        }
+
+        // Check if driver is verified by admin
+        if (driverData.verification_status !== 'verified') {
+            return res.status(400).json({
+                success: false,
+                message: "Driver must be verified by admin before status can be changed. Current verification status: " + driverData.verification_status
+            });
+        }
+
+        // Update status
+        const [result] = await pool.execute(
+            "UPDATE driver_profiles SET status = ? WHERE ID = ?",
+            [status, driverId]
+        );
+
+        console.log('Update result:', result.affectedRows, 'rows affected');
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Driver status updated successfully"
+        });
+    } catch (error) {
+        console.error("Error updating driver status by owner:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update driver status",
+            error: error.message
+        });
+    }
+};
+
+// Export all driver controller functions
+const driverController = {
     getDriverProfile,
     updateDriverProfile,
     getDriverDocuments,
     uploadDriverDocument,
     deleteDriverDocument,
     getDriverStatistics,
+    createDriver,
     getOwnerDrivers,
     getAllDrivers,
+    getDriverDetails,
     verifyDriver,
-    updateDriverStatus
+    updateDriverStatus,
+    updateDriverStatusByOwner,
+    getAvailableDriversForAssignment
 };
+
+export default driverController;
 

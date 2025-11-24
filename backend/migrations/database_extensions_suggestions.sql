@@ -63,8 +63,8 @@
 CREATE TABLE IF NOT EXISTS existing_routes (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     route_name VARCHAR(255) NOT NULL,
-    origin VARCHAR(255) NOT NULL,
-    destination VARCHAR(255) NOT NULL,
+    location_1 VARCHAR(255) NOT NULL,
+    location_2 VARCHAR(255) NOT NULL,
     distance_km DECIMAL(6,2) NOT NULL,
     typical_duration_hours DECIMAL(10,2) NOT NULL,
     base_fare DECIMAL(10,2) NOT NULL,
@@ -74,16 +74,18 @@ CREATE TABLE IF NOT EXISTS existing_routes (
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uniq_route (origin, destination)
+    UNIQUE KEY uniq_route (location_1, location_2)
 );
 
 -- ============================================
 -- 2. DRIVER PROFILES
 -- ============================================
 -- Depends on: users table
+-- Note: A driver works for ONE owner (1-to-many: one owner has many drivers)
 CREATE TABLE IF NOT EXISTS driver_profiles (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE,
+    owner_id BIGINT NOT NULL, -- Owner who employs this driver
     license_number VARCHAR(50),
     license_expiry DATE,
     id_number VARCHAR(20),
@@ -93,10 +95,12 @@ CREATE TABLE IF NOT EXISTS driver_profiles (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(ID) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES users(ID) ON DELETE RESTRICT, -- Prevent deletion of owner if they have drivers
     INDEX idx_status (status),
     INDEX idx_verification (verification_status),
     INDEX idx_license (license_number),
-    INDEX idx_id_number (id_number)
+    INDEX idx_id_number (id_number),
+    INDEX idx_owner (owner_id) -- For finding all drivers of an owner
 );
 
 -- ============================================
@@ -169,12 +173,11 @@ CREATE TABLE IF NOT EXISTS vehicles (
     model VARCHAR(50) NOT NULL,
     color VARCHAR(30),
     capacity INT NOT NULL DEFAULT 15 CHECK (capacity >= 10 AND capacity <= 22), -- Passenger capacity (10-22 seats: minibus min to van max)
+    extraspace_parcel_sp INT NOT NULL DEFAULT 12 CHECK(extraspace_parcel_sp >= 4 AND extraspace_parcel_sp <= 16), -- the application will make sure that the value is in the multiple of 4
     vehicle_type ENUM('minibus', 'van') NOT NULL,
-    vehicle_status ENUM('active', 'maintenance', 'inactive', 'suspended') DEFAULT 'active',
-    route_types JSON, -- Array of route types: ['local'], ['long-distance'], ['custom'], ['local', 'custom'], ['long-distance', 'custom']
-    -- Note: Cannot have both 'local' and 'long-distance' in the same array
-    -- If vehicle has ['local', 'custom'], permit document uses 'local'
-    -- If vehicle has ['long-distance', 'custom'], permit document uses 'long-distance'
+    vehicle_status ENUM('active', 'inactive') DEFAULT 'inactive',
+    admin_status ENUM('pending','approve','reject','suspended') DEFAULT 'pending',
+    route_types SET('custom', 'long-distance') DEFAULT 'long-distance',
     description TEXT, -- Vehicle description/details
     images JSON, -- Array of vehicle image URLs
     videos JSON, -- Array of vehicle video URLs

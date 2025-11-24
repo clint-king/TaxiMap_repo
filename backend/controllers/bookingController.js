@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import { v4 as uuidv4 } from 'uuid';
 import { getNextVehicleInQueueHelper } from "./vehicleController.js";
+import vehicleController from "./vehicleController.js";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -29,7 +30,7 @@ const checkUserType = (user, allowedTypes) => {
  * - booking_mode = 'route'
  * - total_seats_available from vehicle capacity
  * - total_amount_needed from route base_fare
- * - route_points from route origin/destination
+ * - route_points from route location_1/location_2
  * - scheduled_pickup, passenger_count, parcel_count can be optionally provided
  * 
  * @param {number} existing_route_id - Required: The route ID
@@ -92,18 +93,18 @@ export const createRouteBasedBooking = async (req, res) => {
         // Calculate total amount needed (base fare, can be adjusted later for passengers/parcels)
         const totalAmountNeeded = baseFare;
 
-        // Create route points from route origin and destination
+        // Create route points from route location_1 and location_2
         const routePoints = [
             {
                 point_type: 'pickup',
-                point_name: route.origin,
-                address: route.origin,
+                point_name: route.location_1,
+                address: route.location_1,
                 expected_time: scheduled_pickup || new Date().toISOString()
             },
             {
                 point_type: 'dropoff',
-                point_name: route.destination || route.origin,
-                address: route.destination || route.origin,
+                point_name: route.location_2 || route.location_1,
+                address: route.location_2 || route.location_1,
                 expected_time: scheduled_pickup || new Date().toISOString()
             }
         ];
@@ -178,8 +179,8 @@ export const createRouteBasedBooking = async (req, res) => {
                 route_info: {
                     route_id: route.ID,
                     route_name: route.route_name,
-                    origin: route.origin,
-                    destination: route.destination,
+                    location_1: route.location_1,
+                    location_2: route.location_2,
                     base_fare: baseFare
                 }
             });
@@ -322,7 +323,7 @@ export const getMyBookings = async (req, res) => {
                    v.registration_number, v.make, v.model, v.capacity,
                    u_owner.name as owner_name, u_owner.email as owner_email,
                    u_driver.name as driver_name, u_driver.email as driver_email,
-                   er.route_name, er.origin, er.destination
+                   er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u_owner ON b.owner_id = u_owner.id
@@ -382,7 +383,7 @@ export const getBookingDetails = async (req, res) => {
                     v.*, 
                     u_owner.name as owner_name, u_owner.email as owner_email, u_owner.phone as owner_phone,
                     u_driver.name as driver_name, u_driver.email as driver_email, u_driver.phone as driver_phone,
-                    er.route_name, er.origin, er.destination
+                    er.route_name, er.location_1, er.location_2
              FROM bookings b
              LEFT JOIN vehicles v ON b.vehicle_id = v.id
              LEFT JOIN users u_owner ON b.owner_id = u_owner.id
@@ -916,7 +917,7 @@ export const getDriverBookings = async (req, res) => {
             SELECT b.*, 
                    v.registration_number, v.make, v.model,
                    u_client.name as client_name, u_client.email as client_email,
-                   er.route_name, er.origin, er.destination
+                   er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u_client ON b.user_id = u_client.id
@@ -1049,7 +1050,7 @@ export const getOwnerBookings = async (req, res) => {
                    v.registration_number, v.make, v.model,
                    u_client.name as client_name, u_client.email as client_email,
                    u_driver.name as driver_name,
-                   er.route_name, er.origin, er.destination
+                   er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u_client ON b.user_id = u_client.id
@@ -1236,7 +1237,7 @@ export const getAllBookings = async (req, res) => {
                    u_client.name as client_name, u_client.email as client_email,
                    u_owner.name as owner_name,
                    u_driver.name as driver_name,
-                   er.route_name, er.origin, er.destination
+                   er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u_client ON b.user_id = u_client.id
@@ -1345,6 +1346,292 @@ export const updateBookingStatusAdmin = async (req, res) => {
     }
 };
 
+/**
+ * Admin endpoint to execute a booking
+ * Creates a route-based booking and automatically moves the vehicle to the end of the queue
+ * 
+ * @param {number} existing_route_id - Required: The route ID
+ * @param {number} vehicle_id - Required: The vehicle ID at position 1 (for verification)
+ * @param {string} scheduled_pickup - Optional: When the trip should start
+ * @param {number} passenger_count - Optional: Number of passengers (defaults to 0)
+ * @param {number} parcel_count - Optional: Number of parcels (defaults to 0)
+ * @param {string} special_instructions - Optional: Special instructions
+ */
+export const executeBookingAdmin = async (req, res) => {
+    try {
+        checkUserType(req.user, ['admin']);
+        const userId = req.user.id;
+        
+        const {
+            existing_route_id,
+            vehicle_id, // Required for verification
+            scheduled_pickup,
+            passenger_count = 0,
+            parcel_count = 0,
+            special_instructions = null
+        } = req.body;
+
+        // Validate required fields
+        if (!existing_route_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required field: existing_route_id"
+            });
+        }
+
+        if (!vehicle_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required field: vehicle_id (for verification)"
+            });
+        }
+
+        // Get route information
+        const [routes] = await pool.execute(
+            "SELECT * FROM existing_routes WHERE ID = ? AND status = 'active'",
+            [existing_route_id]
+        );
+
+        if (routes.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found or inactive"
+            });
+        }
+
+        const route = routes[0];
+
+        // Get the next vehicle in queue (position 1) for this route
+        const nextVehicleInfo = await getNextVehicleInQueueHelper(existing_route_id);
+
+        if (!nextVehicleInfo) {
+            return res.status(404).json({
+                success: false,
+                message: "No vehicle available at position 1 for this route. Please try again later."
+            });
+        }
+
+        // Verify the vehicle_id matches the one at position 1
+        if (nextVehicleInfo.vehicle_id !== parseInt(vehicle_id)) {
+            return res.status(400).json({
+                success: false,
+                message: `Vehicle ID mismatch. Vehicle at position 1 is ${nextVehicleInfo.vehicle_id}, not ${vehicle_id}`
+            });
+        }
+
+        // Extract information from queue and route
+        const vehicleId = nextVehicleInfo.vehicle_id;
+        const driverId = nextVehicleInfo.driver_id;
+        const ownerId = nextVehicleInfo.owner_id;
+        const totalSeatsAvailable = nextVehicleInfo.capacity;
+        const baseFare = parseFloat(route.base_fare);
+        
+        // Calculate total amount needed (base fare, can be adjusted later for passengers/parcels)
+        const totalAmountNeeded = baseFare;
+
+        // Create route points from route location_1 and location_2
+        const routePoints = [
+            {
+                point_type: 'pickup',
+                point_name: route.location_1,
+                address: route.location_1,
+                expected_time: scheduled_pickup || new Date().toISOString()
+            },
+            {
+                point_type: 'dropoff',
+                point_name: route.location_2 || route.location_1,
+                address: route.location_2 || route.location_1,
+                expected_time: scheduled_pickup || new Date().toISOString()
+            }
+        ];
+
+        // Generate unique booking reference
+        const booking_reference = generateBookingReference();
+
+        // Get a connection for transaction
+        const connection = await pool.getConnection();
+
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+
+            // Insert booking
+            const [result] = await connection.execute(
+                `INSERT INTO bookings (
+                    booking_reference, user_id, owner_id, vehicle_id, driver_id, 
+                    existing_route_id, booking_mode, booking_status, passenger_count, 
+                    parcel_count, total_seats_available, total_amount_needed, 
+                    total_amount_paid, scheduled_pickup, route_points, special_instructions
+                ) VALUES (?, ?, ?, ?, ?, ?, 'route', 'pending', ?, ?, ?, ?, 0.00, ?, ?, ?)`,
+                [
+                    booking_reference, userId, ownerId, vehicleId, driverId,
+                    existing_route_id, passenger_count, parcel_count, 
+                    totalSeatsAvailable, totalAmountNeeded,
+                    scheduled_pickup || new Date().toISOString(), 
+                    JSON.stringify(routePoints), special_instructions
+                ]
+            );
+
+            const bookingId = result.insertId;
+
+            // Insert route points
+            for (let i = 0; i < routePoints.length; i++) {
+                const point = routePoints[i];
+                await connection.execute(
+                    `INSERT INTO booking_route_points (
+                        booking_id, point_type, point_name, address, order_index, expected_time
+                    ) VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        bookingId, point.point_type, point.point_name,
+                        point.address, i + 1, point.expected_time
+                    ]
+                );
+            }
+
+            // Commit transaction first
+            await connection.commit();
+            connection.release();
+
+            // Move vehicle to end of queue after successful booking creation
+            // This is done after commit to ensure booking is saved first
+            let queueResult = null;
+            try {
+                // Get a new connection for queue operations (after booking transaction is committed)
+                const queueConnection = await pool.getConnection();
+                
+                try {
+                    await queueConnection.beginTransaction();
+
+                    // Verify vehicle is at position 1
+                    const [queueCheck] = await queueConnection.execute(
+                        `SELECT queue_position FROM vehicle_queue 
+                         WHERE existing_route_id = ? AND vehicle_id = ? AND queue_position = 1`,
+                        [existing_route_id, vehicleId]
+                    );
+
+                    if (queueCheck.length > 0) {
+                        // Get total count of vehicles in queue for this route (active, approved, verified drivers)
+                        const [countResult] = await queueConnection.execute(
+                            `SELECT COUNT(*) as total 
+                             FROM vehicle_queue vq
+                             INNER JOIN vehicles v ON vq.vehicle_id = v.ID
+                             LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
+                             WHERE vq.existing_route_id = ? 
+                               AND v.vehicle_status = 'active' 
+                               AND v.admin_status = 'approve'
+                               AND v.driver_id IS NOT NULL
+                               AND dp.verification_status = 'verified'
+                               AND dp.status = 'active'`,
+                            [existing_route_id]
+                        );
+                        const totalVehicles = countResult[0].total;
+                        const newPosition = totalVehicles; // Move to last position
+
+                        // First, move all other vehicles up by 1 position (2→1, 3→2, etc.)
+                        await queueConnection.execute(
+                            `UPDATE vehicle_queue vq
+                             INNER JOIN vehicles v ON vq.vehicle_id = v.ID
+                             LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
+                             SET vq.queue_position = vq.queue_position - 1
+                             WHERE vq.existing_route_id = ? 
+                               AND vq.queue_position > 1
+                               AND v.vehicle_status = 'active' 
+                               AND v.admin_status = 'approve'
+                               AND v.driver_id IS NOT NULL
+                               AND dp.verification_status = 'verified'
+                               AND dp.status = 'active'`,
+                            [existing_route_id]
+                        );
+
+                        // Move the selected vehicle to the end and update last_selected_at
+                        await queueConnection.execute(
+                            `UPDATE vehicle_queue 
+                             SET last_selected_at = NOW(), queue_position = ? 
+                             WHERE existing_route_id = ? AND vehicle_id = ?`,
+                            [newPosition, existing_route_id, vehicleId]
+                        );
+
+                        await queueConnection.commit();
+                        queueResult = {
+                            success: true,
+                            message: "Vehicle moved to end of queue",
+                            new_position: newPosition
+                        };
+                    } else {
+                        await queueConnection.rollback();
+                        queueResult = {
+                            success: false,
+                            message: "Vehicle not found at position 1 in queue"
+                        };
+                    }
+                } catch (queueError) {
+                    await queueConnection.rollback();
+                    throw queueError;
+                } finally {
+                    queueConnection.release();
+                }
+            } catch (queueError) {
+                // Log error but don't fail the booking
+                console.error("Error moving vehicle to end of queue after booking:", queueError);
+                queueResult = {
+                    success: false,
+                    message: queueError.message,
+                    error: queueError.message
+                };
+            }
+
+            res.status(201).json({
+                success: true,
+                message: "Booking executed successfully. Vehicle moved to end of queue.",
+                booking: {
+                    id: bookingId,
+                    booking_reference,
+                    booking_status: 'pending',
+                    booking_mode: 'route',
+                    vehicle_id: vehicleId,
+                    driver_id: driverId,
+                    owner_id: ownerId,
+                    existing_route_id: existing_route_id,
+                    route_name: route.route_name,
+                    total_seats_available: totalSeatsAvailable,
+                    total_amount_needed: totalAmountNeeded
+                },
+                vehicle_info: {
+                    vehicle_id: vehicleId,
+                    registration_number: nextVehicleInfo.registration_number,
+                    make: nextVehicleInfo.make,
+                    model: nextVehicleInfo.model,
+                    capacity: totalSeatsAvailable,
+                    driver_name: nextVehicleInfo.driver_name,
+                    owner_name: nextVehicleInfo.owner_name
+                },
+                route_info: {
+                    route_id: route.ID,
+                    route_name: route.route_name,
+                    location_1: route.location_1,
+                    location_2: route.location_2,
+                    base_fare: baseFare
+                },
+                queue_result: queueResult
+            });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            if (connection) {
+                connection.release();
+            }
+        }
+    } catch (error) {
+        console.error("Error executing booking (admin):", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to execute booking",
+            error: error.message
+        });
+    }
+};
+
 export default {
     createRouteBasedBooking,
     createCustomBooking,
@@ -1364,6 +1651,7 @@ export default {
     updateBooking,
     getAllBookings,
     getBookingStatistics,
-    updateBookingStatusAdmin
+    updateBookingStatusAdmin,
+    executeBookingAdmin
 };
 

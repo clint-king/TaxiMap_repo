@@ -332,6 +332,68 @@
             color: white;
         }
 
+        /* Verification status badges */
+        .driver-status-badge.verified {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .driver-status-badge.pending {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+        }
+
+        .driver-status-badge.rejected {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .driver-status-badge.suspended {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+
+        /* Status toggle buttons */
+        .btn-active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-active:hover {
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-inactive {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-inactive:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
         .driver-actions {
             display: flex;
             gap: 0.75rem;
@@ -501,236 +563,8 @@
     
   <!-- Logout Script -->
   <script type="module" src="../../js/authentication/logout.js"></script>
-    <script>
-        // Navigation functions
-        function toggleMobileMenu() {
-            const mobileMenu = document.getElementById('mobileMenu');
-            mobileMenu.classList.toggle('show');
-        }
-
-        function topNavZIndexDecrease() {
-            // Function for navigation link clicks
-        }
-
-        // Check authentication status
-        document.addEventListener('DOMContentLoaded', function() {
-            const authButtons = document.getElementById('authButtons');
-            const fullNav = document.getElementById('fullNav');
-            
-            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile') || 
-                              localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-            
-            if (isLoggedIn) {
-                if (authButtons) authButtons.style.display = 'none';
-                if (fullNav) fullNav.style.display = 'flex';
-            } else {
-                if (authButtons) authButtons.style.display = 'flex';
-                if (fullNav) fullNav.style.display = 'none';
-            }
-
-            loadDrivers();
-        });
-
-        // Load drivers from localStorage
-        function loadDrivers() {
-            let drivers = JSON.parse(localStorage.getItem('ownerDrivers') || '[]');
-            const driversGrid = document.getElementById('driversGrid');
-            
-            if (!driversGrid) return;
-            
-            // Create sample drivers if none exist (for demo purposes)
-            if (drivers.length === 0) {
-                drivers = createSampleDrivers();
-                localStorage.setItem('ownerDrivers', JSON.stringify(drivers));
-            }
-            
-            if (drivers.length === 0) {
-                driversGrid.innerHTML = `
-                    <div class="no-drivers">
-                        <i class="fas fa-user-tie"></i>
-                        <p>No drivers added yet.</p>
-                        <a href="owner-driver-post.html" class="add-driver-btn" style="display: inline-flex;">
-                            <i class="fas fa-plus"></i>
-                            Add Your First Driver
-                        </a>
-                    </div>
-                `;
-                return;
-            }
-            
-            driversGrid.innerHTML = drivers.map(driver => createDriverCard(driver)).join('');
-        }
-
-        function createSampleDrivers() {
-            const now = new Date();
-            const sampleDrivers = [
-                {
-                    id: 'DRIVER_' + (Date.now() - 86400000 * 30),
-                    photo: null,
-                    firstName: 'Thabo',
-                    surname: 'Molefe',
-                    idNumber: '8501015801087',
-                    dateOfBirth: '1985-01-01',
-                    phone: '071 234 5678',
-                    email: 'thabo.molefe@email.com',
-                    address: '123 Main Street, Johannesburg, Gauteng',
-                    licenseNumber: 'DL123456789',
-                    licenseExpiry: new Date(now.getFullYear() + 2, 5, 15).toISOString().split('T')[0],
-                    licenseClass: 'PDP',
-                    experienceYears: 12,
-                    notes: 'Experienced driver, excellent customer service record.',
-                    status: 'active',
-                    password: 'driver123',
-                    createdAt: new Date(now.getTime() - 86400000 * 30).toISOString(),
-                    updatedAt: new Date(now.getTime() - 86400000 * 30).toISOString()
-                },
-                {
-                    id: 'DRIVER_' + (Date.now() - 86400000 * 20),
-                    photo: null,
-                    firstName: 'Nomsa',
-                    surname: 'Dlamini',
-                    idNumber: '9203155902088',
-                    dateOfBirth: '1992-03-15',
-                    phone: '082 345 6789',
-                    email: 'nomsa.dlamini@email.com',
-                    address: '456 Oak Avenue, Pretoria, Gauteng',
-                    licenseNumber: 'DL987654321',
-                    licenseExpiry: new Date(now.getFullYear() + 1, 8, 20).toISOString().split('T')[0],
-                    licenseClass: 'C',
-                    experienceYears: 8,
-                    notes: 'Very reliable, prefers long-distance routes.',
-                    status: 'active',
-                    password: 'driver123',
-                    createdAt: new Date(now.getTime() - 86400000 * 20).toISOString(),
-                    updatedAt: new Date(now.getTime() - 86400000 * 20).toISOString()
-                },
-                {
-                    id: 'DRIVER_' + (Date.now() - 86400000 * 10),
-                    photo: null,
-                    firstName: 'Sipho',
-                    surname: 'Ngubane',
-                    idNumber: '8805205803089',
-                    dateOfBirth: '1988-05-20',
-                    phone: '073 456 7890',
-                    email: 'sipho.ngubane@email.com',
-                    address: '789 Pine Road, Cape Town, Western Cape',
-                    licenseNumber: 'DL555666777',
-                    licenseExpiry: new Date(now.getFullYear() + 3, 2, 10).toISOString().split('T')[0],
-                    licenseClass: 'EC',
-                    experienceYears: 15,
-                    notes: 'Senior driver, handles heavy vehicles and trailers.',
-                    status: 'active',
-                    password: 'driver123',
-                    createdAt: new Date(now.getTime() - 86400000 * 10).toISOString(),
-                    updatedAt: new Date(now.getTime() - 86400000 * 10).toISOString()
-                },
-                {
-                    id: 'DRIVER_' + (Date.now() - 86400000 * 5),
-                    photo: null,
-                    firstName: 'Lindiwe',
-                    surname: 'Khumalo',
-                    idNumber: '9508105904090',
-                    dateOfBirth: '1995-08-10',
-                    phone: '084 567 8901',
-                    email: 'lindiwe.khumalo@email.com',
-                    address: '321 Elm Street, Durban, KwaZulu-Natal',
-                    licenseNumber: 'DL111222333',
-                    licenseExpiry: new Date(now.getFullYear() + 1, 11, 5).toISOString().split('T')[0],
-                    licenseClass: 'C1',
-                    experienceYears: 5,
-                    notes: 'New driver, very enthusiastic and punctual.',
-                    status: 'active',
-                    password: 'driver123',
-                    createdAt: new Date(now.getTime() - 86400000 * 5).toISOString(),
-                    updatedAt: new Date(now.getTime() - 86400000 * 5).toISOString()
-                }
-            ];
-            
-            return sampleDrivers;
-        }
-
-        function createDriverCard(driver) {
-            const statusClass = `driver-status-${driver.status}`;
-            const statusText = driver.status === 'active' ? 'Active' : 
-                             driver.status === 'inactive' ? 'Inactive' :
-                             driver.status === 'on_leave' ? 'On Leave' : 'Suspended';
-            
-            const photoHtml = driver.photo ? 
-                `<img src="${driver.photo}" alt="${driver.firstName} ${driver.surname}" class="driver-photo">` :
-                `<div class="driver-photo-placeholder"><i class="fas fa-user"></i></div>`;
-            
-            return `
-                <div class="driver-card" data-driver-id="${driver.id}">
-                    <div class="driver-photo-container">
-                        ${photoHtml}
-                    </div>
-                    <div class="driver-info">
-                        <h3 class="driver-name">${escapeHtml(driver.firstName)} ${escapeHtml(driver.surname)}</h3>
-                        <div class="driver-details">
-                            <div class="driver-detail-item">
-                                <i class="fas fa-phone"></i>
-                                <span class="driver-detail-label">Phone:</span>
-                                <span class="driver-detail-value">${escapeHtml(driver.phone)}</span>
-                            </div>
-                            <div class="driver-detail-item">
-                                <i class="fas fa-envelope"></i>
-                                <span class="driver-detail-label">Email:</span>
-                                <span class="driver-detail-value">${escapeHtml(driver.email)}</span>
-                            </div>
-                            <div class="driver-detail-item">
-                                <i class="fas fa-id-badge"></i>
-                                <span class="driver-detail-label">License:</span>
-                                <span class="driver-detail-value">${escapeHtml(driver.licenseNumber)} (${escapeHtml(driver.licenseClass)})</span>
-                            </div>
-                            <div class="driver-detail-item">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span class="driver-detail-label">License Expiry:</span>
-                                <span class="driver-detail-value">${new Date(driver.licenseExpiry).toLocaleDateString('en-ZA')}</span>
-                            </div>
-                            <div class="driver-detail-item">
-                                <i class="fas fa-clock"></i>
-                                <span class="driver-detail-label">Experience:</span>
-                                <span class="driver-detail-value">${driver.experienceYears} years</span>
-                            </div>
-                        </div>
-                        <span class="driver-status-badge ${statusClass}">${statusText}</span>
-                        <div class="driver-actions">
-                            <a href="owner-driver-post.html?id=${driver.id}" class="btn-action btn-edit">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <button class="btn-action btn-delete" onclick="deleteDriver('${driver.id}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function deleteDriver(driverId) {
-            if (!confirm('Are you sure you want to delete this driver? This action cannot be undone.')) {
-                return;
-            }
-            
-            let drivers = JSON.parse(localStorage.getItem('ownerDrivers') || '[]');
-            drivers = drivers.filter(d => d.id !== driverId);
-            localStorage.setItem('ownerDrivers', JSON.stringify(drivers));
-            
-            alert('Driver deleted successfully!');
-            loadDrivers();
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Make functions globally accessible
-        window.toggleMobileMenu = toggleMobileMenu;
-        window.topNavZIndexDecrease = topNavZIndexDecrease;
-    </script>
+  <!-- Main Owner Drivers JavaScript Module -->
+  <script type="module" src="../../js/owner/ownerDrivers.js"></script>
   
 </body>
 </html>

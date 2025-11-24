@@ -22,6 +22,12 @@ router.put("/:vehicleId", authenticateUser, vehicleController.updateVehicle);
 // Delete vehicle
 router.delete("/:vehicleId", authenticateUser, vehicleController.deleteVehicle);
 
+// Get available vehicles for assignment (owner)
+router.get("/owner/available-for-assignment", authenticateUser, vehicleController.getAvailableVehiclesForAssignment);
+
+// Get current vehicle-driver assignments (owner)
+router.get("/owner/current-assignments", authenticateUser, vehicleController.getCurrentAssignments);
+
 // Assign driver to vehicle
 router.put("/:vehicleId/assign-driver", authenticateUser, vehicleController.assignDriver);
 

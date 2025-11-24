@@ -91,6 +91,19 @@ export const getDriverStatistics = async () => {
 // ============================================
 
 /**
+ * Create driver (owner creates driver account and profile)
+ */
+export const createDriver = async (driverData) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/drivers/owner/create`, driverData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating driver:', error);
+        throw error;
+    }
+};
+
+/**
  * Get owner's drivers
  */
 export const getOwnerDrivers = async () => {
@@ -99,6 +112,19 @@ export const getOwnerDrivers = async () => {
         return response.data;
     } catch (error) {
         console.error('Error fetching owner drivers:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update driver status by owner (only if driver is verified)
+ */
+export const updateDriverStatusByOwner = async (driverId, status) => {
+    try {
+        const response = await axios.put(`${BASE_URL}/api/drivers/owner/${driverId}/status`, { status });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating driver status:', error);
         throw error;
     }
 };

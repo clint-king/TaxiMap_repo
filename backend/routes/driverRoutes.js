@@ -4,6 +4,12 @@ import authenticateUser from "../Middleware/authenticateUser.js";
 
 const router = express.Router();
 
+// Debug middleware to log all requests to driver routes
+router.use((req, res, next) => {
+    console.log(`[Driver Routes] ${req.method} ${req.path}`);
+    next();
+});
+
 // ============================================
 // DRIVER ROUTES
 // ============================================
@@ -28,14 +34,27 @@ router.get("/statistics", authenticateUser, driverController.getDriverStatistics
 // ============================================
 // OWNER ROUTES
 // ============================================
+// Create driver (owner creates driver account and profile)
+router.post("/owner/create", authenticateUser, driverController.createDriver);
+
 // Get owner's drivers
 router.get("/owner/my-drivers", authenticateUser, driverController.getOwnerDrivers);
+
+// Get available drivers for assignment (owner)
+router.get("/owner/available-for-assignment", authenticateUser, driverController.getAvailableDriversForAssignment);
+
+// Update driver status (owner can only change status if driver is verified)
+router.put("/owner/:driverId/status", authenticateUser, driverController.updateDriverStatusByOwner);
 
 // ============================================
 // ADMIN ROUTES
 // ============================================
-// Get all drivers
+// Get all drivers (must come before /admin/:driverId to avoid route conflicts)
 router.get("/admin/all", authenticateUser, driverController.getAllDrivers);
+
+// Get driver details (admin)
+// Note: This route must come after /admin/all to avoid matching "all" as a driverId
+router.get("/admin/:driverId", authenticateUser, driverController.getDriverDetails);
 
 // Verify driver
 router.put("/:driverId/verify", authenticateUser, driverController.verifyDriver);
