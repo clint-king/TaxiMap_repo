@@ -6,7 +6,7 @@ import config from "../config/configurations.js";
 //controller
 import {signup , login, verifyEmail, resendVerificationEmail, getProfile, updateProfile, changePassword, changeEmail, forgotPassword, resetPassword, getUserActivities, getUserActivityStats, createUserActivity} from "../controllers/AuthController.js";
 import authenticateUser from "../Middleware/authenticateUser.js";
-import { validateSignup, validateLogin, validateProfileUpdate } from '../middleware/validation.js';
+import { validateSignup, validateLogin, validateProfileUpdate } from '../Middleware/validation.js';
 
 const router = express.Router();
 

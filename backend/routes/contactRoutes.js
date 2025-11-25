@@ -1,6 +1,6 @@
 import express from 'express';
 import contactController from '../controllers/contactController.js';
-import { validateContact } from '../middleware/validation.js';
+import { validateContact } from '../Middleware/validation.js';
 
 const router = express.Router();
 

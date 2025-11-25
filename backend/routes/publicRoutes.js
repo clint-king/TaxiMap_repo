@@ -4,9 +4,9 @@
  */
 import express from 'express';
 import publicController from '../controllers/publicController.js';
-import { publicContributorsLimiter } from '../middleware/rateLimiter.js';
+import { publicContributorsLimiter } from '../Middleware/rateLimiter.js';
 import { query } from 'express-validator';
-import { handleValidationErrors } from '../middleware/validation.js';
+import { handleValidationErrors } from '../Middleware/validation.js';
 
 const router = express.Router();
 

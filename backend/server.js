@@ -13,7 +13,7 @@ import helmet from 'helmet';
 import config from "./config/configurations.js"; 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { sanitizeInput } from './middleware/sanitizeMiddleware.js';
+import { sanitizeInput } from './Middleware/sanitizeMiddleware.js';
 
 
 const port = config.port || 3000 ;

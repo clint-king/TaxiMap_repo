@@ -1,7 +1,7 @@
 import express from 'express';
 import feedbackController from '../controllers/feedbackController.js';
 import authenticateUser from '../Middleware/authenticateUser.js';
-import { validateFeedback, validateId } from '../middleware/validation.js';
+import { validateFeedback, validateId } from '../Middleware/validation.js';
 
 const router = express.Router();
 
