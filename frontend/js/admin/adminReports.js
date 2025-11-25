@@ -424,7 +424,7 @@ function populateUserTable() {
       <td>${escapeHTML(user.name || '')}</td>
       <td>${escapeHTML(user.email || '')}</td>
       <td>${formatDate(user.registrationDate)}</td>
-      <td>${formatDate(user.lastLogin)}</td>
+      <td>${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}</td>
       <td>${user.activityCount || 0}</td>
       <td>${user.routesContributed || 0}</td>
       <td>${createStatusBadge(user.status)}</td>
@@ -488,11 +488,18 @@ export function filterUserTable() {
   if (filter === 'active') {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    filteredUsers = reportData.users.filter(user => new Date(user.lastLogin) > weekAgo);
-  } else if (filter === 'inactive') {
+    filteredUsers = reportData.users.filter(user => {
+      if (user.lastLogin === 'Never') return false;
+      return new Date(user.lastLogin) > weekAgo;
+    });
+  } else if (filter === 'dormant') {
+    // Filter for users who are Dormant (30+ days since last login or never logged in)
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 30);
-    filteredUsers = reportData.users.filter(user => new Date(user.lastLogin) < monthAgo);
+    filteredUsers = reportData.users.filter(user => {
+      if (user.lastLogin === 'Never') return true;
+      return new Date(user.lastLogin) < monthAgo;
+    });
   } else if (filter === 'contributors') {
     filteredUsers = reportData.users.filter(user => user.routesContributed > 0);
   }
@@ -507,7 +514,7 @@ export function filterUserTable() {
       <td>${escapeHTML(user.name || '')}</td>
       <td>${escapeHTML(user.email || '')}</td>
       <td>${formatDate(user.registrationDate)}</td>
-      <td>${formatDate(user.lastLogin)}</td>
+      <td>${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}</td>
       <td>${user.activityCount || 0}</td>
       <td>${user.routesContributed || 0}</td>
       <td>${createStatusBadge(user.status)}</td>

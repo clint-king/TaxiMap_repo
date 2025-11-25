@@ -249,28 +249,31 @@ async function getUserAnalytics(db, startDate, endDate) {
         u.name,
         u.email,
         u.created_at as registrationDate,
-        ua.last_login,
-        COALESCE(ua.activity_count, 0) as activityCount,
+        -- Get ALL-TIME last login and activity count (not filtered by date range)
+        ua_all.last_login,
+        COALESCE(ua_all.activity_count, 0) as activityCount,
         COALESCE(c.routes_contributed, 0) as routesContributed,
+        -- Calculate status based on ALL-TIME last login
         CASE 
-          WHEN ua.last_login >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 'Active'
-          WHEN ua.last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 'Moderate'
-          ELSE 'Inactive'
+          WHEN ua_all.last_login IS NULL THEN 'Dormant'
+          WHEN ua_all.last_login >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 'Active'
+          WHEN ua_all.last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 'Moderate'
+          ELSE 'Dormant'
         END as status
       FROM users u
+      -- Get ALL activities (all-time) for last_login and activity_count
       LEFT JOIN (
         SELECT 
           user_id,
           MAX(created_at) as last_login,
           COUNT(*) as activity_count
         FROM user_activities 
-        WHERE created_at BETWEEN ? AND ?
         GROUP BY user_id
-      ) ua ON u.ID = ua.user_id
+      ) ua_all ON u.ID = ua_all.user_id
       LEFT JOIN contributors c ON u.ID = c.user_id
       ORDER BY u.created_at DESC
       LIMIT 100
-    `, [startDate, endDate]);
+    `);
 
     return rows.map(row => ({
       id: row.id,
