@@ -3,10 +3,14 @@ import {AddTaxiRank , getRoute , listTaxiRanks, getTaxiRank, getUniqueRouteName 
 import adminFeedbackController from "../controllers/adminFeedbackController.js";
 import adminRouteController from "../controllers/adminRouteController.js";
 import adminReportsController from "../controllers/adminReportsController.js";
+import authenticateUser from "../Middleware/authenticateUser.js";
 
 
 
 const router = express.Router();
+
+// All admin routes require authentication
+router.use(authenticateUser);
 
 
 

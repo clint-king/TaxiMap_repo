@@ -8,55 +8,32 @@ const externalClient = axios.create({
   withCredentials: false // No credentials for external APIs
 });
 
-// Add global axios interceptor for session expiration
-axios.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.log('Session expired detected by interceptor');
-            console.log('Error details:', error.response.status, error.response.data);
-            console.log('Current path:', window.location.pathname);
-            
-            // Check if user profile exists in localStorage (user is logged in)
-            const userProfile = localStorage.getItem('userProfile');
-            console.log('User profile exists:', !!userProfile);
-            
-            if (!userProfile) {
-                // No user profile, redirect to login
-                console.log('No user profile found, redirecting to login');
-                window.location.href = '/login.html';
-                return Promise.reject(error);
-            }
-            
-            // User profile exists but request failed - this might be a session expiration
-            // Only redirect if we're not on the login page and the error is persistent
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
-                console.log('User profile exists but request failed, clearing storage and redirecting');
-            // Clear local storage
-            localStorage.removeItem('userProfile');
-            localStorage.removeItem('activityLog');
-            
-            // Show message to user
-            const messageContainer = document.getElementById('messageContainer');
-            if (messageContainer) {
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message error';
-                messageElement.textContent = 'Session expired. Redirecting to home page...';
-                messageContainer.appendChild(messageElement);
-            }
-            
-            // Redirect to home page after a short delay
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 2000);
-            } else {
-                console.log('On login/signup page, not redirecting');
-            }
-        }
-        return Promise.reject(error);
-    }
-);
+// Helper function to make authenticated client requests (similar to admin's makeAdminRequest)
+// This prevents the global interceptor from redirecting immediately
+async function makeClientRequest(endpoint, options = {}) {
+  const defaultOptions = {
+    method: options.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    withCredentials: true, // Include cookies for authentication
+    ...options
+  };
+
+  try {
+    const response = await axios(`${BASE_URL}/client/${endpoint}`, defaultOptions);
+    return response;
+  } catch (error) {
+    // Don't redirect here - let the calling function handle errors
+    // This prevents immediate redirects on page load
+    throw error;
+  }
+}
+
+// REMOVED global axios interceptor - it was too aggressive and redirected immediately
+// Admin pages don't use a global interceptor, they handle errors per request
+// This is the correct approach to prevent premature redirects
 
 // === DOM ELEMENTS ===
 
@@ -322,24 +299,53 @@ window.addEventListener('load', () => {
 });
 
 
-// Delay HighlightRoutes to ensure user is properly authenticated
+// Delay HighlightRoutes to ensure user is properly authenticated and cookie is set
+// Wait for page to fully load and cookie to be available after redirect
 setTimeout(() => {
   // Add authentication check before making the request
   const userProfile = localStorage.getItem('userProfile');
   if (!userProfile) {
-    console.log('No user profile found, redirecting to login');
-    window.location.href = '/login.html';
+    console.log('No user profile found, redirecting to homepage');
+    window.location.href = '/index.html';
     return;
   }
   
-  HighlightRoutes();
-}, 1000);
+  // Try to load routes, with retry logic if cookie isn't ready yet
+  HighlightRoutesWithRetry();
+}, 3000); // Increased delay to 3 seconds to ensure cookie is fully set after redirect
+
+async function HighlightRoutesWithRetry(retryCount = 0) {
+  const maxRetries = 3; // Increased retries
+  
+  try {
+    await HighlightRoutes();
+    console.log('Routes loaded successfully');
+  } catch (err) {
+    // If it's an auth error and we haven't retried too many times, wait and retry
+    if (err.response && (err.response.status === 401 || err.response.status === 403) && retryCount < maxRetries) {
+      console.log(`Authentication error (cookie may not be ready), retrying... (${retryCount + 1}/${maxRetries})`);
+      // Wait longer between retries (cookie might not be ready yet)
+      setTimeout(() => {
+        HighlightRoutesWithRetry(retryCount + 1);
+      }, 2000); // Wait 2 seconds between retries
+    } else if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+      // After all retries failed, redirect (but only if we're on client page)
+      console.error('Authentication failed after all retries. Redirecting to homepage...');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('activityLog');
+      localStorage.removeItem('token');
+      window.location.href = '/index.html';
+    } else {
+      // If it's a different error, just log it
+      console.error('Error loading routes:', err);
+    }
+  }
+}
 
 async function HighlightRoutes() {
   try {
-    const response = await axios.get(`${BASE_URL}/client/listOfAllRoutes`, {
-      withCredentials: true
-    });
+    // Use makeClientRequest helper instead of direct axios call
+    const response = await makeClientRequest('listOfAllRoutes');
 
     const resultInfo = response.data.routes;
     let allCoords = [];
@@ -414,14 +420,9 @@ map.addSource(sourceId, { type: "geojson", data: mask });
   } catch (err) {
     console.error('Error in HighlightRoutes:', err);
     
-    // Only redirect if it's an authentication error and we're not already on login page
-    if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-      const currentPath = window.location.pathname;
-      if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
-        console.log('Authentication error in HighlightRoutes, redirecting to login');
-        window.location.href = '/login.html';
-      }
-    }
+    // Don't redirect here - let the retry logic or interceptor handle it
+    // Just re-throw the error so HighlightRoutesWithRetry can handle retries
+    throw err;
   }
 }
 
@@ -1170,18 +1171,15 @@ async function sendsearchInfo() {
       destinationCoordinates.longitude != -500
     ) {
       try {
-        const response = await axios.post(
-          `${BASE_URL}/client/findingPath`,
-          {
+        const response = await makeClientRequest('findingPath', {
+          method: 'POST',
+          data: {
             sourceCoords: sourceCoordinates,
             sourceProvince: sourceProv.province,
             destinationCoords: destinationCoordinates,
             destinationProvince: destinationProv.province,
-          },
-  {
-    withCredentials: true
-  }
-        );
+          }
+        });
 
         const dataReceived = response.data;
         console.log("Route results : ", dataReceived);
@@ -2116,12 +2114,7 @@ function hideBufferHighlight() {
 // Example usage from HighlightMap()
 async function HighlightMap() {
   try {
-    const response = await axios.get(
-      `${BASE_URL}/client/listOfAllRoutes`,
-  {
-    withCredentials: true
-  }
-    );
+    const response = await makeClientRequest('listOfAllRoutes');
     const resultInfo = response.data.routes;
 
     let listOfRoutes = [];

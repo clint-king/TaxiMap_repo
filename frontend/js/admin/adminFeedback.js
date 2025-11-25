@@ -1,5 +1,6 @@
 // Admin Feedback functionality
 import { makeAdminRequest, showLoading, showError, formatDate, createStatusBadge } from './adminCommon.js';
+import { escapeHTML } from '../utils/sanitize.js';
 
 let feedbackData = [];
 
@@ -31,19 +32,19 @@ function displayFeedback(feedback) {
     <div class="feedback-card">
       <div class="feedback-header">
         <div class="feedback-type">
-          <span class="type-badge ${item.feedback_type}">${item.feedback_type}</span>
+          <span class="type-badge ${escapeHTML(item.feedback_type || '')}">${escapeHTML(item.feedback_type || '')}</span>
         </div>
         <div class="feedback-status">
-          <span class="status-badge ${item.status}">${item.status}</span>
+          <span class="status-badge ${escapeHTML(item.status || '')}">${escapeHTML(item.status || '')}</span>
         </div>
         <div class="feedback-date">
           ${formatDate(item.created_at)}
         </div>
       </div>
       <div class="feedback-content">
-        <h3>${item.subject}</h3>
-        <p>${item.message}</p>
-        ${item.user_email ? `<p><strong>From:</strong> ${item.user_email}</p>` : ''}
+        <h3>${escapeHTML(item.subject || '')}</h3>
+        <p>${escapeHTML(item.message || '')}</p>
+        ${item.user_email ? `<p><strong>From:</strong> ${escapeHTML(item.user_email)}</p>` : ''}
       </div>
       ${item.status === 'pending' ? `
         <div class="feedback-actions">
@@ -58,7 +59,7 @@ function displayFeedback(feedback) {
       ${item.admin_response ? `
         <div class="admin-response">
           <h4>Admin Response:</h4>
-          <p>${item.admin_response}</p>
+          <p>${escapeHTML(item.admin_response)}</p>
         </div>
       ` : ''}
     </div>

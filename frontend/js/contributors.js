@@ -1,5 +1,7 @@
 // Contributors page functionality
+import '../css/tailwind.css';
 import { BASE_URL } from './AddressSelection.js';
+import { escapeHTML } from './utils/sanitize.js';
 
 class ContributorsManager {
   constructor() {
@@ -14,7 +16,8 @@ class ContributorsManager {
 
   async loadContributors() {
     try {
-      const response = await fetch(`${BASE_URL}/admin/contributors`);
+      // Use public endpoint - no authentication required, no sensitive data
+      const response = await fetch(`${BASE_URL}/public/contributors`);
       if (response.ok) {
         const data = await response.json();
         this.contributors = data.contributors || [];
@@ -67,19 +70,19 @@ class ContributorsManager {
     card.innerHTML = `
       <div class="flex items-center mb-4">
         <div class="w-16 h-16 ${colorClass} rounded-full flex items-center justify-center font-bold text-xl">
-          ${initials}
+          ${escapeHTML(initials)}
         </div>
         <div class="ml-4">
-          <h3 class="font-bold">${contributor.name}</h3>
-          <span class="text-sm text-gray-500">${contributor.region || 'Route Contributor'}</span>
+          <h3 class="font-bold">${escapeHTML(contributor.name || '')}</h3>
+          <span class="text-sm text-gray-500">${escapeHTML(contributor.region || 'Route Contributor')}</span>
         </div>
       </div>
       <p class="text-gray-600 mb-4">
-        ${this.getContributorDescription(contributor)}
+        ${escapeHTML(this.getContributorDescription(contributor))}
       </p>
       <div class="flex justify-between items-center">
         <span class="${badgeClass} text-xs font-semibold px-3 py-1 rounded-full">
-          ${this.getContributorBadge(contributor)}
+          ${escapeHTML(this.getContributorBadge(contributor))}
         </span>
         <span class="text-xs text-gray-500">${this.formatDate(contributor.created_at)}</span>
       </div>

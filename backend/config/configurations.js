@@ -19,7 +19,7 @@ const config = {
   // Database Configuration
   database: {
     host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "Taxi Map database",
+    user: process.env.DB_USER || "taximap_user",
     password: process.env.DB_PASSWORD || "12345",
     name: process.env.DB_NAME || "taximapdb",
     port: process.env.DB_PORT || 3306

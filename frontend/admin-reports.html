@@ -260,9 +260,11 @@
     window.exportReports = exportReports;
     
     // Check authentication before loading the page
-    document.addEventListener('DOMContentLoaded', () => {
-      requireAuth();
-      initializeReports();
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthenticated = await requireAuth();
+      if (isAuthenticated) {
+        initializeReports();
+      }
     });
   </script>
 

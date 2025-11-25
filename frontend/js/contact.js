@@ -1,4 +1,5 @@
 // Contact form functionality
+import '../css/tailwind.css';
 import { BASE_URL } from './AddressSelection.js';
 
 class ContactForm {

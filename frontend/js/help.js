@@ -1,6 +1,7 @@
 import axios from "axios";
 import popup from "./popup.js";
 import { BASE_URL } from "./AddressSelection.js";
+import { escapeHTML } from "./utils/sanitize.js";
 
 axios.defaults.withCredentials = true;
 
@@ -49,12 +50,12 @@ function displayFAQs(faqs) {
     faqList.innerHTML = faqs.map(faq => `
         <div class="faq-item">
             <div class="faq-question" onclick="toggleFAQ(this)">
-                <span class="faq-category">${faq.category}</span>
-                <h3>${faq.question}</h3>
+                <span class="faq-category">${escapeHTML(faq.category || '')}</span>
+                <h3>${escapeHTML(faq.question || '')}</h3>
                 <i class="fas fa-chevron-down faq-toggle"></i>
             </div>
             <div class="faq-answer">
-                <p>${faq.answer}</p>
+                <p>${escapeHTML(faq.answer || '')}</p>
             </div>
         </div>
     `).join("");
@@ -99,13 +100,13 @@ function displayUserQuestions(questions) {
         <div class="question-item">
             <div class="question-meta">
                 <span>Submitted: ${new Date(question.created_at).toLocaleDateString()}</span>
-                <span class="question-status status-${question.status}">${question.status}</span>
+                <span class="question-status status-${escapeHTML(question.status || '')}">${escapeHTML(question.status || '')}</span>
             </div>
-            <div class="question-text">${question.question}</div>
+            <div class="question-text">${escapeHTML(question.question || '')}</div>
             ${question.admin_answer ? `
                 <div class="admin-answer">
                     <h4>Admin Response:</h4>
-                    <p>${question.admin_answer}</p>
+                    <p>${escapeHTML(question.admin_answer)}</p>
                 </div>
             ` : ''}
         </div>
@@ -154,7 +155,7 @@ function showError(message) {
     faqList.innerHTML = `
         <div class="loading">
             <i class="fas fa-exclamation-triangle"></i>
-            <p>${message}</p>
+            <p>${escapeHTML(message)}</p>
         </div>
     `;
 }

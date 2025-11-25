@@ -144,9 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initializeApp() {
   try {
-    // Check authentication
+    // Authentication is now handled by requireClientAuth() in route-suggestion.html
+    // Just verify userProfile exists (requireClientAuth already checked backend)
     const userProfile = localStorage.getItem('userProfile');
     if (!userProfile) {
+      // If somehow we got here without userProfile, redirect
+      // But this shouldn't happen since requireClientAuth handles it
+      console.log('No user profile found, redirecting to login');
       window.location.href = 'login.html';
       return;
     }

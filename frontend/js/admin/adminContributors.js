@@ -1,5 +1,6 @@
 // Admin Contributors functionality
 import { makeAdminRequest, showLoading, showError, formatDate, createStatusBadge } from './adminCommon.js';
+import { escapeHTML } from '../utils/sanitize.js';
 
 let contributorsData = [];
 
@@ -39,28 +40,31 @@ function displayContributors(contributors) {
     return;
   }
 
-  const contributorsHtml = contributors.map(contributor => `
+  const contributorsHtml = contributors.map(contributor => {
+    const name = contributor.name || '';
+    const firstChar = name.charAt(0).toUpperCase();
+    return `
     <div class="contributor-card">
       <div class="contributor-header">
         <div class="contributor-avatar">
-          ${contributor.name.charAt(0).toUpperCase()}
+          ${escapeHTML(firstChar)}
         </div>
         <div class="contributor-info">
-          <h3>${contributor.name}</h3>
-          <p class="contributor-email">${contributor.email || 'No email'}</p>
-          <p class="contributor-region">${contributor.region}</p>
+          <h3>${escapeHTML(name)}</h3>
+          <p class="contributor-email">${escapeHTML(contributor.email || 'No email')}</p>
+          <p class="contributor-region">${escapeHTML(contributor.region || '')}</p>
         </div>
         <div class="contributor-stats">
           <div class="stat-item">
-            <span class="stat-number">${contributor.routes_contributed}</span>
+            <span class="stat-number">${contributor.routes_contributed || 0}</span>
             <span class="stat-label">Routes</span>
           </div>
-          <span class="status-badge ${contributor.status}">${contributor.status}</span>
+          <span class="status-badge ${escapeHTML(contributor.status || '')}">${escapeHTML(contributor.status || '')}</span>
         </div>
       </div>
       <div class="contributor-details">
         <p><strong>Joined:</strong> ${formatDate(contributor.created_at)}</p>
-        <p><strong>Username:</strong> ${contributor.username || 'N/A'}</p>
+        <p><strong>Username:</strong> ${escapeHTML(contributor.username || 'N/A')}</p>
       </div>
       <div class="contributor-actions">
         <button class="btn btn-primary" onclick="viewContributorDetails(${contributor.ID})">
@@ -71,7 +75,8 @@ function displayContributors(contributors) {
         </button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   container.innerHTML = contributorsHtml;
 }
@@ -117,18 +122,18 @@ export function viewContributorDetails(contributorId) {
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Contributor Details: ${contributor.name}</h2>
+        <h2>Contributor Details: ${escapeHTML(contributor.name || '')}</h2>
         <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="contributor-detail-info">
-          <p><strong>Name:</strong> ${contributor.name}</p>
-          <p><strong>Email:</strong> ${contributor.email || 'N/A'}</p>
-          <p><strong>Username:</strong> ${contributor.username || 'N/A'}</p>
-          <p><strong>Region:</strong> ${contributor.region}</p>
-          <p><strong>Routes Contributed:</strong> ${contributor.routes_contributed}</p>
+          <p><strong>Name:</strong> ${escapeHTML(contributor.name || '')}</p>
+          <p><strong>Email:</strong> ${escapeHTML(contributor.email || 'N/A')}</p>
+          <p><strong>Username:</strong> ${escapeHTML(contributor.username || 'N/A')}</p>
+          <p><strong>Region:</strong> ${escapeHTML(contributor.region || '')}</p>
+          <p><strong>Routes Contributed:</strong> ${contributor.routes_contributed || 0}</p>
           <p><strong>Status:</strong> ${createStatusBadge(contributor.status)}</p>
           <p><strong>Joined:</strong> ${formatDate(contributor.created_at)}</p>
         </div>

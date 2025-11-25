@@ -91,9 +91,11 @@
     window.refreshPendingRoutes = refreshPendingRoutes;
     
     // Check authentication and load data
-    document.addEventListener('DOMContentLoaded', () => {
-      requireAuth();
-      loadPendingRoutes();
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthenticated = await requireAuth();
+      if (isAuthenticated) {
+        loadPendingRoutes();
+      }
     });
   </script>
 </body>

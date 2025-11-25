@@ -23,20 +23,10 @@ function handleSessionExpiration() {
   // Clear local storage
   localStorage.removeItem('userProfile');
   localStorage.removeItem('activityLog');
+  localStorage.removeItem('token');
   
-  // Show message to user
-  const messageContainer = document.getElementById('messageContainer');
-  if (messageContainer) {
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message error';
-    messageElement.textContent = 'Session expired. Redirecting to home page...';
-    messageContainer.appendChild(messageElement);
-  }
-  
-  // Redirect to home page after a short delay
-  setTimeout(() => {
-    window.location.href = '/index.html';
-  }, 2000);
+  // Redirect to homepage immediately
+  window.location.href = '/index.html';
 }
 
 // Export the configured axios instance and handler

@@ -62,17 +62,82 @@ export function checkAuthStatus() {
 }
 
 // Check if user is authenticated and redirect to home if not
-export function requireAuth() {
+// For admin pages - requires admin user_type
+export async function requireAuth() {
     const userProfile = localStorage.getItem('userProfile');
     
+    // First check: if no userProfile in localStorage, redirect immediately
     if (!userProfile) {
-        // User is not logged in, redirect to home page
         console.log('User not authenticated, redirecting to home page');
         window.location.href = '/index.html';
         return false;
     }
     
-    return true;
+    // Second check: verify authentication with backend (with retry for cookie timing)
+    return await verifyAuthWithRetry(true); // true = admin required
+}
+
+// Check if user is authenticated (for client pages - allows client user_type)
+// Has retry logic to handle cookie timing issues after login redirect
+export async function requireClientAuth() {
+    const userProfile = localStorage.getItem('userProfile');
+    
+    // First check: if no userProfile in localStorage, redirect immediately
+    if (!userProfile) {
+        console.log('User not authenticated, redirecting to home page');
+        window.location.href = '/index.html';
+        return false;
+    }
+    
+    // Second check: verify authentication with backend (with retry for cookie timing)
+    return await verifyAuthWithRetry(false); // false = client allowed
+}
+
+// Helper function to verify auth with retry logic
+async function verifyAuthWithRetry(requireAdmin = false, retryCount = 0) {
+    const maxRetries = 3;
+    
+    try {
+        const response = await axios.get(`${BASE_URL}/auth/profile`, {
+            withCredentials: true
+        });
+        
+        if (!response.data.success) {
+            throw new Error('Authentication failed');
+        }
+        
+        // Check if user is admin (for admin pages)
+        const user = response.data.user;
+        if (requireAdmin && user && user.user_type !== 'admin') {
+            console.log('User is not an admin, redirecting to home page');
+            localStorage.removeItem('userProfile');
+            localStorage.removeItem('activityLog');
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        // If it's an auth error and we haven't retried too many times, wait and retry
+        // This handles the case where cookie isn't ready yet after login redirect
+        if (error.response && (error.response.status === 401 || error.response.status === 403) && retryCount < maxRetries) {
+            console.log(`Auth check failed (cookie may not be ready), retrying... (${retryCount + 1}/${maxRetries})`);
+            // Wait and retry (cookie might not be ready yet after redirect)
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Wait 1.5 seconds
+            return await verifyAuthWithRetry(requireAdmin, retryCount + 1);
+        }
+        
+        // After all retries failed, or it's a different error
+        console.log('Authentication verification failed after retries, redirecting to home page');
+        // Clear local storage on authentication failure
+        localStorage.removeItem('userProfile');
+        localStorage.removeItem('activityLog');
+        localStorage.removeItem('token');
+        // Redirect to home page
+        window.location.href = '/index.html';
+        return false;
+    }
 }
 
 // Highlight current page in navigation

@@ -114,9 +114,11 @@
     window.viewContributorRoutes = viewContributorRoutes;
     
     // Check authentication and load data
-    document.addEventListener('DOMContentLoaded', () => {
-      requireAuth();
-      loadContributors();
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthenticated = await requireAuth();
+      if (isAuthenticated) {
+        loadContributors();
+      }
     });
   </script>
 </body>

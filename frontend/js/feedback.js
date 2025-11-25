@@ -2,18 +2,13 @@
 import axios from 'axios';
 import {BASE_URL} from "./AddressSelection.js";
 
-// Add global axios interceptor for session expiration
-axios.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            // Session expired, redirect to login
-            localStorage.removeItem('userProfile');
-            window.location.href = '/login.html';
-        }
-        return Promise.reject(error);
-    }
-);
+// REMOVED global axios interceptor - it was too aggressive and redirected immediately
+// Authentication is now handled by requireClientAuth() in feedback.html
+// This prevents immediate redirects on page load when cookie isn't ready yet
+// Errors are handled per request instead of globally
+
+// Configure axios to use cookies for authentication
+axios.defaults.withCredentials = true;
 
 // Mobile menu toggle
 function toggleMobileMenu() {

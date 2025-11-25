@@ -5,16 +5,36 @@ import auth from './routes/AuthRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import publicRoutes from './routes/publicRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import config from "./config/configurations.js"; 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { sanitizeInput } from './middleware/sanitizeMiddleware.js';
 
 
 const port = config.port || 3000 ;
 const app = express();
+
+// Security middleware - must be first
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://api.mapbox.com", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://api.mapbox.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://api.mapbox.com"],
+      fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow Mapbox iframes
+}));
 
 //middleware
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -24,6 +44,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
+
+// Input sanitization middleware - sanitize all incoming data
+app.use(sanitizeInput);
 
 // Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +64,7 @@ app.get('/health', (req, res) => {
 });
 
 //route
+app.use("/public", publicRoutes); // Public routes (no authentication)
 app.use("/admin", adminRoutes);
 app.use("/client" , clientRoutes);
 app.use("/auth",auth );

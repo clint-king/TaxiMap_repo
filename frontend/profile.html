@@ -199,11 +199,11 @@
 
     <script type="module" src="./js/logout.js"></script>
     <script type="module">
-      import { requireAuth } from './js/logout.js';
+      import { requireClientAuth } from './js/logout.js';
       
-      // Check authentication before loading the page
-      document.addEventListener('DOMContentLoaded', () => {
-        requireAuth();
+      // Check authentication before loading the page (with retry logic for cookie timing)
+      document.addEventListener('DOMContentLoaded', async () => {
+        await requireClientAuth();
       });
     </script>
     <script type="module" src="./js/profile.js"></script>

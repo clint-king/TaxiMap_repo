@@ -246,8 +246,8 @@
     window.logout = logout;
     
     // Check authentication
-    document.addEventListener('DOMContentLoaded', () => {
-      requireAuth();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await requireAuth();
     });
   </script>
   <script  type="module" src="./js/route.js" defer></script>
