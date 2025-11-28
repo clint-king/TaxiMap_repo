@@ -18,6 +18,10 @@ let nextVehicle = null;
 document.addEventListener('DOMContentLoaded', function() {
     loadRoutes();
     setupEventListeners();
+    
+    // Make functions globally accessible for onclick handlers
+    window.loadNextVehicle = loadNextVehicle;
+    window.resetForm = resetForm;
 });
 
 // ============================================
@@ -63,7 +67,8 @@ function renderRoutes() {
 
     availableRoutes.forEach(route => {
         const option = document.createElement('option');
-        option.value = route.ID;
+        // Use id (lowercase) as returned from backend, or ID (uppercase) as fallback
+        option.value = route.id || route.ID;
         option.textContent = `${route.route_name} (${route.location_1} → ${route.location_2})`;
         routeSelect.appendChild(option);
     });
@@ -74,9 +79,15 @@ function renderRoutes() {
  */
 async function loadNextVehicle() {
     const routeId = document.getElementById('routeSelect').value;
+    const directionType = document.getElementById('directionSelect').value;
     
     if (!routeId) {
         alert('Please select a route first');
+        return;
+    }
+    
+    if (!directionType) {
+        alert('Please select a direction first');
         return;
     }
 
@@ -86,18 +97,30 @@ async function loadNextVehicle() {
         loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
         const response = await axios.get(`${BASE_URL}/api/vehicles/queue/next`, {
-            params: { route_id: routeId }
+            params: { 
+                route_id: routeId,
+                direction_type: directionType
+            }
         });
 
         if (!response.data.success) {
             throw new Error(response.data.message || 'Failed to load next vehicle');
         }
 
-        selectedRoute = response.data.route;
+        // Update selectedRoute with route info from API (but preserve the original if needed)
+        const routeFromApi = response.data.route;
+        if (routeFromApi) {
+            // Ensure we have the route ID - use the one from availableRoutes if API doesn't have it
+            selectedRoute = {
+                ...routeFromApi,
+                id: routeFromApi.id || routeFromApi.ID || selectedRoute?.id || selectedRoute?.ID,
+                ID: routeFromApi.ID || routeFromApi.id || selectedRoute?.ID || selectedRoute?.id
+            };
+        }
         nextVehicle = response.data.next_vehicle;
 
         if (!nextVehicle) {
-            alert('No vehicle available at position 1 for this route. Please try again later.');
+            alert(`No vehicle available for this route with direction '${directionType}'. Please try again later.`);
             hideNextVehicleSection();
             return;
         }
@@ -235,11 +258,73 @@ function setupEventListeners() {
 
     routeSelect.addEventListener('change', function() {
         const routeId = this.value;
-        document.getElementById('loadVehicleBtn').disabled = !routeId;
         hideNextVehicleSection();
-        selectedRoute = null;
         nextVehicle = null;
+        
+        // Show/hide direction selection based on route selection
+        const directionGroup = document.getElementById('directionGroup');
+        const directionSelect = document.getElementById('directionSelect');
+        const loadVehicleBtn = document.getElementById('loadVehicleBtn');
+        
+        if (routeId) {
+            // Find the selected route (check both id and ID for compatibility)
+            const route = availableRoutes.find(r => {
+                const rId = r.id || r.ID;
+                return rId == routeId;
+            });
+            
+            console.log('Selected routeId:', routeId);
+            console.log('Found route:', route);
+            console.log('Available routes:', availableRoutes);
+            
+            if (route && route.location_1 && route.location_2) {
+                // Store the selected route for later use
+                selectedRoute = route;
+                
+                // Populate direction options
+                directionSelect.innerHTML = '<option value="">-- Select Direction --</option>';
+                
+                // Option 1: From location1 to location2 (from_loc1)
+                const option1 = document.createElement('option');
+                option1.value = 'from_loc1';
+                option1.textContent = `From ${route.location_1} to ${route.location_2}`;
+                directionSelect.appendChild(option1);
+                
+                // Option 2: From location2 to location1 (from_loc2)
+                const option2 = document.createElement('option');
+                option2.value = 'from_loc2';
+                option2.textContent = `From ${route.location_2} to ${route.location_1}`;
+                directionSelect.appendChild(option2);
+                
+                directionGroup.style.display = 'block';
+                // Disable load button until direction is selected
+                loadVehicleBtn.disabled = true;
+                console.log('Direction dropdown shown');
+            } else {
+                console.error('Route not found or missing location data:', route);
+                console.error('Route location_1:', route?.location_1, 'location_2:', route?.location_2);
+                selectedRoute = null;
+                directionGroup.style.display = 'none';
+                loadVehicleBtn.disabled = true;
+            }
+        } else {
+            selectedRoute = null;
+            directionGroup.style.display = 'none';
+            directionSelect.innerHTML = '<option value="">-- Select Direction --</option>';
+            loadVehicleBtn.disabled = true;
+        }
     });
+    
+    // Also listen for direction selection changes
+    const directionSelect = document.getElementById('directionSelect');
+    if (directionSelect) {
+        directionSelect.addEventListener('change', function() {
+            const directionValue = this.value;
+            const loadVehicleBtn = document.getElementById('loadVehicleBtn');
+            // Enable load button only when both route and direction are selected
+            loadVehicleBtn.disabled = !(selectedRoute && directionValue);
+        });
+    }
 
     executeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -260,17 +345,37 @@ async function executeBooking() {
         return;
     }
 
+    const directionType = document.getElementById('directionSelect').value;
+    if (!directionType) {
+        alert('Please select a direction');
+        return;
+    }
+
     const scheduledPickup = document.getElementById('scheduledPickup').value;
-    const passengerCount = parseInt(document.getElementById('passengerCount').value) || 0;
-    const parcelCount = parseInt(document.getElementById('parcelCount').value) || 0;
-    const specialInstructions = document.getElementById('specialInstructions').value.trim() || null;
 
     if (!scheduledPickup) {
         alert('Please select a scheduled pickup date and time');
         return;
     }
 
-    if (!confirm(`Execute booking for route "${selectedRoute.name}"?\n\nVehicle: ${nextVehicle.registration_number}\nDriver: ${nextVehicle.driver_name}\n\nThis will move the vehicle to the end of the queue after booking creation.`)) {
+    // Get route ID from dropdown (source of truth)
+    const routeSelect = document.getElementById('routeSelect');
+    const routeId = routeSelect.value;
+    if (!routeId) {
+        alert('Error: Route ID not found. Please select the route again.');
+        return;
+    }
+
+    // Get vehicle ID
+    const vehicleId = nextVehicle.vehicle_id || nextVehicle.ID || nextVehicle.id;
+    if (!vehicleId) {
+        alert('Error: Vehicle ID not found. Please load the vehicle again.');
+        return;
+    }
+
+    const routeName = selectedRoute.name || selectedRoute.route_name || 'Unknown Route';
+
+    if (!confirm(`Execute booking for route "${routeName}"?\n\nVehicle: ${nextVehicle.registration_number}\nDriver: ${nextVehicle.driver_name}\n\nThis will move the vehicle to the end of the queue after booking creation.`)) {
         return;
     }
 
@@ -279,16 +384,21 @@ async function executeBooking() {
         executeBtn.disabled = true;
         executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing Booking...';
 
+        const requestData = {
+            existing_route_id: parseInt(routeId),
+            direction_type: directionType,
+            scheduled_pickup: scheduledPickup,
+            passenger_count: 0,
+            parcel_count: 0,
+            special_instructions: null,
+            vehicle_id: parseInt(vehicleId)
+        };
+        
+        console.log('Sending booking request:', requestData);
+
         const response = await axios.post(
             `${BASE_URL}/api/bookings/admin/execute`,
-            {
-                existing_route_id: selectedRoute.id,
-                scheduled_pickup: scheduledPickup,
-                passenger_count: passengerCount,
-                parcel_count: parcelCount,
-                special_instructions: specialInstructions,
-                vehicle_id: nextVehicle.vehicle_id // For verification
-            }
+            requestData
         );
 
         if (response.data.success) {
@@ -299,6 +409,7 @@ async function executeBooking() {
         }
     } catch (error) {
         console.error('Error executing booking:', error);
+        console.error('Error response:', error.response?.data);
         const errorMessage = error.response?.data?.message || error.message || 'Failed to execute booking';
         alert(`Error: ${errorMessage}`);
     } finally {
@@ -314,10 +425,10 @@ async function executeBooking() {
 function resetForm() {
     document.getElementById('routeSelect').value = '';
     document.getElementById('loadVehicleBtn').disabled = true;
+    document.getElementById('directionGroup').style.display = 'none';
+    document.getElementById('directionSelect').value = '';
+    document.getElementById('directionSelect').innerHTML = '<option value="">-- Select Direction --</option>';
     document.getElementById('scheduledPickup').value = '';
-    document.getElementById('passengerCount').value = '0';
-    document.getElementById('parcelCount').value = '0';
-    document.getElementById('specialInstructions').value = '';
     hideNextVehicleSection();
     selectedRoute = null;
     nextVehicle = null;

@@ -227,6 +227,23 @@ export const updateBooking = async (bookingId, updateData) => {
 };
 
 // ============================================
+// PUBLIC BOOKING APIs (No authentication required)
+// ============================================
+
+/**
+ * Get public pending bookings for display on booking-public page
+ */
+export const getPublicPendingBookings = async () => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/bookings/public/pending`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching public pending bookings:', error);
+        throw error;
+    }
+};
+
+// ============================================
 // ADMIN BOOKING APIs
 // ============================================
 

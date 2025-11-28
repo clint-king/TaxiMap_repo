@@ -1261,6 +1261,11 @@ export const updateVehicleStatusAdmin = async (req, res) => {
  * Adds a vehicle to the queue for its assigned route when a verified driver is assigned
  * This function is called automatically when an owner assigns a verified, active driver to a vehicle
  * 
+ * IMPORTANT: Each existing_route has its own independent queue with positions starting from 1
+ * For example:
+ * - Route ID 1: vehicles with queue_position 1, 2, 3, 4, 5...
+ * - Route ID 2: vehicles with queue_position 1, 2, 3, 4, 5... (separate from Route ID 1)
+ * 
  * HOW IT WORKS:
  * ============
  * 1. Gets the vehicle information (including existing_route_id, route_types, and driver_id)
@@ -1268,10 +1273,11 @@ export const updateVehicleStatusAdmin = async (req, res) => {
  * 3. Verifies vehicle has a driver assigned (driver_id is not NULL)
  * 4. Verifies the driver is verified (verification_status = 'verified') and active (status = 'active')
  * 5. Verifies vehicle has 'long-distance' in route_types (only long-distance vehicles can have routes)
- * 6. Checks if vehicle is already in the queue
- * 7. Gets the current queue for the route
- * 8. Adds vehicle to the end of the queue (preserves "first approved = first in line")
- * 9. Returns the updated queue position
+ * 6. Checks if vehicle is already in the queue for this specific route
+ * 7. Gets the current queue for THIS specific route only (filters by existing_route_id)
+ * 8. Calculates next position based on max queue_position for THIS route only
+ * 9. Adds vehicle to the end of the queue for this route (preserves "first approved = first in line")
+ * 10. Returns the updated queue position
  * 
  * Note: Vehicle can only be added to queue if:
  * - Vehicle is approved and active
@@ -1376,19 +1382,20 @@ export const addVehicleToQueue = async (vehicleId) => {
             };
         }
 
-        // Get current queue for this route to determine position
+        // Get current queue for this specific route to determine position
+        // Each existing_route has its own independent queue (1, 2, 3, 4, 5...)
+        // So we only count vehicles in the queue for THIS specific route
         const [currentQueue] = await pool.execute(
-            `SELECT queue_position 
+            `SELECT MAX(queue_position) as max_position
              FROM vehicle_queue 
-             WHERE existing_route_id = ?
-             ORDER BY queue_position DESC
-             LIMIT 1`,
+             WHERE existing_route_id = ?`,
             [vehicle.existing_route_id]
         );
 
-        // Calculate next position (add to end of queue)
-        const nextPosition = currentQueue.length > 0 
-            ? currentQueue[0].queue_position + 1 
+        // Calculate next position (add to end of queue for this specific route)
+        // If no vehicles exist for this route yet, start at position 1
+        const nextPosition = currentQueue.length > 0 && currentQueue[0].max_position !== null
+            ? currentQueue[0].max_position + 1 
             : 1;
 
         // Add vehicle to queue
@@ -1668,9 +1675,10 @@ export const initializeVehicleQueue = async (req, res) => {
                 );
             }
 
-            // Get existing queue entries for this route
+            // Get existing queue entries for THIS specific route only
+            // Each existing_route has its own independent queue (positions 1, 2, 3, 4, 5...)
             const [existingQueue] = await connection.execute(
-                `SELECT vehicle_id, queue_position, last_selected_at, created_at
+                `SELECT vehicle_id, queue_position, created_at
                  FROM vehicle_queue 
                  WHERE existing_route_id = ?
                  ORDER BY queue_position ASC`,
@@ -1680,8 +1688,9 @@ export const initializeVehicleQueue = async (req, res) => {
             const existingVehicleIds = new Set(existingQueue.map(q => q.vehicle_id));
             const newVehicles = activeVehicles.filter(v => !existingVehicleIds.has(v.ID));
 
-            // Add new vehicles to the end of the queue
+            // Add new vehicles to the end of the queue for THIS specific route
             // New vehicles are added based on their creation time (approval time)
+            // Calculate max position only for this route's queue
             let maxPosition = existingQueue.length > 0 
                 ? Math.max(...existingQueue.map(q => q.queue_position))
                 : 0;
@@ -1700,7 +1709,7 @@ export const initializeVehicleQueue = async (req, res) => {
             // This preserves "first approved = first in line" principle
             // If vehicle_queue.created_at is same, use vehicle.created_at as tiebreaker
             const [allQueueEntries] = await connection.execute(
-                `SELECT vq.vehicle_id, vq.queue_position, vq.last_selected_at, vq.created_at as queue_created_at,
+                `SELECT vq.vehicle_id, vq.queue_position, vq.created_at as queue_created_at,
                         v.created_at as vehicle_created_at
                  FROM vehicle_queue vq
                  INNER JOIN vehicles v ON vq.vehicle_id = v.ID
@@ -1777,13 +1786,17 @@ export const initializeVehicleQueue = async (req, res) => {
 };
 
 /**
- * Helper function: Gets the vehicle at position 1 (next in line) for a specific route
+ * Helper function: Gets the next vehicle in queue for a specific route that matches the requested direction
  * This can be called internally from other controllers
  * 
+ * Searches through the queue starting from position 1, finding the first vehicle whose direction_type
+ * SET contains the requested direction (from_loc1 or from_loc2).
+ * 
  * @param {number} route_id - The existing_route_id
- * @returns {Promise<Object|null>} - The vehicle at position 1, or null if no vehicle available
+ * @param {string} direction_type - The requested direction ('from_loc1' or 'from_loc2')
+ * @returns {Promise<Object|null>} - The matching vehicle with its queue position, or null if no vehicle available
  */
-export const getNextVehicleInQueueHelper = async (route_id) => {
+export const getNextVehicleInQueueHelper = async (route_id, direction_type = null) => {
     try {
         // Get route info
         const [routes] = await pool.execute(
@@ -1795,10 +1808,45 @@ export const getNextVehicleInQueueHelper = async (route_id) => {
             return null;
         }
 
-        // Get the vehicle at position 1 (next in line)
-        const [nextVehicle] = await pool.execute(
+        // If no direction_type specified, return vehicle at position 1 (backward compatibility)
+        if (!direction_type) {
+            const [nextVehicle] = await pool.execute(
+                `SELECT vq.*, v.ID as vehicle_id, v.registration_number, v.make, v.model, v.vehicle_type, 
+                        v.capacity, v.extraspace_parcel_sp, v.vehicle_status, v.admin_status, v.driver_id, v.owner_id, v.direction_type,
+                        u_driver.name as driver_name, u_driver.email as driver_email, u_driver.phone as driver_phone,
+                        u_owner.name as owner_name, u_owner.email as owner_email,
+                        dp.status as driver_status, dp.verification_status as driver_verification_status,
+                        dp.license_number as driver_license_number
+                 FROM vehicle_queue vq
+                 INNER JOIN vehicles v ON vq.vehicle_id = v.ID
+                 LEFT JOIN users u_driver ON v.driver_id = u_driver.ID
+                 LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
+                 LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
+                 WHERE vq.existing_route_id = ? 
+                   AND vq.queue_position = 1
+                   AND v.vehicle_status = 'active' 
+                   AND v.admin_status = 'approve'
+                   AND v.driver_id IS NOT NULL
+                   AND dp.verification_status = 'verified'
+                   AND dp.status = 'active'
+                 LIMIT 1`,
+                [route_id]
+            );
+
+            return nextVehicle.length > 0 ? nextVehicle[0] : null;
+        }
+
+        // Validate direction_type
+        if (!['from_loc1', 'from_loc2'].includes(direction_type)) {
+            throw new Error(`Invalid direction_type: ${direction_type}. Must be 'from_loc1' or 'from_loc2'`);
+        }
+
+        // Get all vehicles in queue for this route, ordered by position
+        // Check if each vehicle's direction_type SET contains the requested direction
+        // FIND_IN_SET returns > 0 if the value is found in the SET
+        const [vehicles] = await pool.execute(
             `SELECT vq.*, v.ID as vehicle_id, v.registration_number, v.make, v.model, v.vehicle_type, 
-                    v.capacity, v.vehicle_status, v.admin_status, v.driver_id, v.owner_id,
+                    v.capacity, v.extraspace_parcel_sp, v.vehicle_status, v.admin_status, v.driver_id, v.owner_id, v.direction_type,
                     u_driver.name as driver_name, u_driver.email as driver_email, u_driver.phone as driver_phone,
                     u_owner.name as owner_name, u_owner.email as owner_email,
                     dp.status as driver_status, dp.verification_status as driver_verification_status,
@@ -1809,17 +1857,18 @@ export const getNextVehicleInQueueHelper = async (route_id) => {
              LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
              LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
              WHERE vq.existing_route_id = ? 
-               AND vq.queue_position = 1
                AND v.vehicle_status = 'active' 
                AND v.admin_status = 'approve'
                AND v.driver_id IS NOT NULL
                AND dp.verification_status = 'verified'
                AND dp.status = 'active'
+               AND FIND_IN_SET(?, v.direction_type) > 0
+             ORDER BY vq.queue_position ASC
              LIMIT 1`,
-            [route_id]
+            [route_id, direction_type]
         );
 
-        return nextVehicle.length > 0 ? nextVehicle[0] : null;
+        return vehicles.length > 0 ? vehicles[0] : null;
     } catch (error) {
         console.error("Error in getNextVehicleInQueueHelper:", error);
         throw error;
@@ -1837,7 +1886,7 @@ export const getNextVehicleInQueue = async (req, res) => {
     try {
         checkUserType(req.user, ['owner', 'admin']);
 
-        const { route_id } = req.query;
+        const { route_id, direction_type } = req.query;
 
         if (!route_id) {
             return res.status(400).json({
@@ -1861,31 +1910,14 @@ export const getNextVehicleInQueue = async (req, res) => {
 
         const route = routes[0];
 
-        // Get the vehicle at position 1 (next in line)
-        const [nextVehicle] = await pool.execute(
-            `SELECT vq.*, v.ID as vehicle_id, v.registration_number, v.make, v.model, v.vehicle_type, 
-                    v.capacity, v.vehicle_status, v.admin_status, v.driver_id, v.owner_id,
-                    u_driver.name as driver_name, u_driver.email as driver_email, u_driver.phone as driver_phone,
-                    u_owner.name as owner_name, u_owner.email as owner_email,
-                    dp.status as driver_status, dp.verification_status as driver_verification_status,
-                    dp.license_number as driver_license_number
-             FROM vehicle_queue vq
-             INNER JOIN vehicles v ON vq.vehicle_id = v.ID
-             LEFT JOIN users u_driver ON v.driver_id = u_driver.ID
-             LEFT JOIN users u_owner ON v.owner_id = u_owner.ID
-             LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
-             WHERE vq.existing_route_id = ? 
-               AND vq.queue_position = 1
-               AND v.vehicle_status = 'active' 
-               AND v.admin_status = 'approve'
-               AND v.driver_id IS NOT NULL
-               AND dp.verification_status = 'verified'
-               AND dp.status = 'active'
-             LIMIT 1`,
-            [route_id]
-        );
-
-        if (nextVehicle.length === 0) {
+        // Get the next vehicle matching the direction (if specified) or at position 1
+        const nextVehicle = await getNextVehicleInQueueHelper(route_id, direction_type || null);
+   
+        if (!nextVehicle) {
+            const message = direction_type 
+                ? `No vehicle available for this route with direction '${direction_type}'`
+                : "No vehicle available at position 1 for this route";
+            
             return res.json({
                 success: true,
                 route: {
@@ -1895,7 +1927,7 @@ export const getNextVehicleInQueue = async (req, res) => {
                     location_2: route.location_2
                 },
                 next_vehicle: null,
-                message: "No vehicle available at position 1 for this route"
+                message: message
             });
         }
 
@@ -1904,11 +1936,11 @@ export const getNextVehicleInQueue = async (req, res) => {
             route: {
                 id: route.ID,
                 name: route.route_name,
-                origin: route.origin,
-                destination: route.destination
+                location_1: route.location_1,
+                location_2: route.location_2
             },
-            next_vehicle: nextVehicle[0],
-            queue_position: 1
+            next_vehicle: nextVehicle,
+            queue_position: nextVehicle.queue_position
         });
     } catch (error) {
         console.error("Error fetching next vehicle in queue:", error);
@@ -2006,10 +2038,10 @@ export const getVehicleQueue = async (req, res) => {
  * ============
  * 1. Verifies the specified vehicle_id is actually at position 1 for the route
  * 2. Verifies the vehicle is still active, approved, and has verified driver
- * 3. Updates last_selected_at timestamp (records when it was used)
- * 4. Moves all other vehicles up by 1 position (2→1, 3→2, 4→3, etc.)
- * 5. Moves the specified vehicle to the end of the queue (last position)
- * 6. Returns the moved vehicle and updated queue
+ * 3. Moves all other vehicles up by 1 position (2→1, 3→2, 4→3, etc.)
+ * 4. Moves the specified vehicle to the end of the queue (last position)
+ * 5. Returns the moved vehicle and updated queue
+ * Note: updated_at timestamp is automatically updated due to ON UPDATE CURRENT_TIMESTAMP
  * 
  * EXAMPLE:
  * ========
@@ -2023,7 +2055,7 @@ export const getVehicleQueue = async (req, res) => {
  * After moving:
  * - Position 1: Vehicle B (now next in line)
  * - Position 2: Vehicle C
- * - Position 3: Vehicle A (moved to end, last_selected_at = NOW())
+ * - Position 3: Vehicle A (moved to end)
  * 
  * This ensures fair rotation - each vehicle takes its turn
  * 
@@ -2144,13 +2176,11 @@ export const selectNextVehicle = async (req, res) => {
                 [route_id]
             );
 
-            // Then move selected vehicle to the end and update timestamp
-            // This records when it was selected and puts it at the back of the line
+            // Then move selected vehicle to the end
+            // Note: updated_at will automatically update due to ON UPDATE CURRENT_TIMESTAMP
             await connection.execute(
                 `UPDATE vehicle_queue 
-                 SET queue_position = ?, 
-                     last_selected_at = NOW(),
-                     updated_at = NOW()
+                 SET queue_position = ?
                  WHERE existing_route_id = ? AND vehicle_id = ?`,
                 [totalVehicles, route_id, vehicle_id]
             );
@@ -2192,8 +2222,7 @@ export const selectNextVehicle = async (req, res) => {
                 },
                 selected_vehicle: {
                     ...selectedVehicle,
-                    queue_position: totalVehicles, // Now at end
-                    last_selected_at: new Date().toISOString()
+                    queue_position: totalVehicles // Now at end
                 },
                 updated_queue: updatedQueue,
                 next_vehicle: updatedQueue.length > 0 ? updatedQueue[0] : null

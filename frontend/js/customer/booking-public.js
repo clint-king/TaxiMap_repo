@@ -63,6 +63,12 @@ const PARCEL_FEATURE_ENABLED = true;
 let selectedRoute = null;
 
 /**
+ * Currently selected booking data from the database
+ * Stores the full booking object when a route card is selected
+ */
+let selectedBooking = null;
+
+/**
  * Number of passengers in the current booking
  * Defaults to 1 (the booking user)
  */
@@ -426,7 +432,76 @@ const EXTRA_SPACE_PRICING = {
  * 
  * Usage: Called on page load to populate route cards dynamically
  */
-function populateRouteCards() {
+/**
+ * Converts extra space from small units to display format
+ * Rule: 1 Large = 2 Medium = 4 Small
+ * @param {number} smallCount - Count in small units
+ * @returns {string} - Formatted string like "3 large (or 3 large or 6 medium or 12 small)"
+ */
+function formatExtraSpaceFromSmall(smallCount) {
+    if (smallCount === 0) {
+        return 'No extra space available';
+    }
+    
+    const large = Math.floor(smallCount / 4);
+    const medium = Math.floor(smallCount / 2);
+    
+    // Build the display string: "X large (or X large or Y medium or Z small)"
+    const equivalents = [];
+    if (large > 0) {
+        equivalents.push(`${large} large`);
+    }
+    if (medium > 0) {
+        equivalents.push(`${medium} medium`);
+    }
+    equivalents.push(`${smallCount} small`);
+    
+    if (large > 0) {
+        return `${large} large (or ${equivalents.join(' or ')})`;
+    } else if (medium > 0) {
+        return `${medium} medium (or ${equivalents.join(' or ')})`;
+    } else {
+        return `${smallCount} small`;
+    }
+}
+
+/**
+ * Formats date from datetime string to date only
+ * @param {string} datetimeString - ISO datetime string
+ * @returns {string} - Formatted date string
+ */
+function formatDateOnly(datetimeString) {
+    if (!datetimeString) return 'To be confirmed';
+    const date = new Date(datetimeString);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dayName = days[date.getDay()];
+    return `${year}/${month}/${day} ${dayName}`;
+}
+
+/**
+ * Formats time from datetime string to time only
+ * @param {string} datetimeString - ISO datetime string
+ * @returns {string} - Formatted time string
+ */
+function formatTimeOnly(datetimeString) {
+    if (!datetimeString) return 'To be confirmed';
+    const date = new Date(datetimeString);
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    return `${hours}:${minutes} ${ampm}`;
+}
+
+/**
+ * Populates route cards from pending bookings
+ * Only displays route cards for bookings with status 'pending'
+ */
+async function populateRouteCards() {
     const routeSelectionContainer = document.querySelector('.route-selection');
     if (!routeSelectionContainer) {
         console.warn('Route selection container not found');
@@ -436,84 +511,114 @@ function populateRouteCards() {
     // Clear existing route cards
     routeSelectionContainer.innerHTML = '';
 
-    // Generate route cards for each route in the routes object
-    Object.keys(routes).forEach(routeId => {
-        const route = routes[routeId];
-        if (!route) return;
-
-        // Calculate available seats
-        const availableSeats = route.capacity - (route.occupied || 0);
-
-        // Parse departure date and time from departure string
-        // Format: '2025/11/14 Friday 10:00 am'
-        let departureDate = '';
-        let departureTime = '';
+    try {
+        // Fetch pending bookings from API
+        const response = await bookingApi.getPublicPendingBookings();
         
-        if (route.departure) {
-            const departureParts = route.departure.split(' ');
-            if (departureParts.length >= 3) {
-                departureDate = `${departureParts[0]} ${departureParts[1]}`;
-                departureTime = departureParts.slice(2).join(' ');
-            } else {
-                departureDate = route.departure;
-                departureTime = 'To be confirmed';
+        if (!response.success || !response.bookings || response.bookings.length === 0) {
+            // No pending bookings - hide the route cards section and heading
+            const routeSection = document.querySelector('.route-selection');
+            const routeHeading = routeSelectionContainer.previousElementSibling;
+            if (routeSection) {
+                routeSection.style.display = 'none';
             }
-        } else {
-            departureDate = 'To be confirmed';
-            departureTime = 'To be confirmed';
+            if (routeHeading && routeHeading.tagName === 'H2' && routeHeading.textContent.includes('Available Routes')) {
+                routeHeading.style.display = 'none';
+            }
+            return;
         }
 
-        // Get available extra space for display
-        const availableSpace = getAvailableExtraSpace(route);
-        const extraSpaceText = formatExtraSpaceDisplay(availableSpace);
+        // Show the route cards section and heading
+        const routeSection = document.querySelector('.route-selection');
+        const routeHeading = routeSelectionContainer.previousElementSibling;
+        if (routeSection) {
+            routeSection.style.display = '';
+        }
+        if (routeHeading && routeHeading.tagName === 'H2' && routeHeading.textContent.includes('Available Routes')) {
+            routeHeading.style.display = '';
+        }
 
-        // Generate route card HTML
-        const routeCardHTML = `
-            <div class="route-card" data-route="${routeId}" onclick="selectRoute('${routeId}')">
-                <div class="route-info">
-                    <div class="route-details">
-                        <h3><i class="ri-taxi-line"></i>${escapeAttribute(route.name)}</h3>
-                        <p><i class="ri-map-pin-distance-line"></i><strong>Distance:</strong> ${route.distance} km</p>
-                        <p><i class="ri-time-line"></i><strong>Duration:</strong> ~${route.duration} hours</p>
-                        <p><i class="ri-calendar-line"></i><strong>Date:</strong> ${escapeAttribute(departureDate)}</p>
-                        <p><i class="ri-time-line"></i><strong>Time:</strong> ${escapeAttribute(departureTime)}</p>
-                        <p><i class="ri-user-line"></i><strong>Capacity:</strong> ${availableSeats} seat${availableSeats !== 1 ? 's' : ''} available</p>
-                        <p id="extra-space-${routeId}" style="background: #f3e5f5; padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
-                            <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
-                            <strong style="color: #7b1fa2;">Available Extra Space:</strong> 
-                            <span id="extra-space-display-${routeId}">${escapeAttribute(extraSpaceText)}</span>
-                        </p>
-                    </div>
-                    <div class="route-price">R${route.price}</div>
-                    <div class="extra-space-pricing" style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border: 2px solid #FFD52F; border-radius: 10px;">
-                        <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; font-weight: 600;">
-                            <i class="ri-price-tag-3-line" style="color: #FFD52F;"></i> Extra Space Pricing:
-                        </div> 
-                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span><strong>Large:</strong></span>
-                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.large}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span><strong>Medium:</strong></span>
-                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.medium}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span><strong>Small:</strong></span>
-                                <span style="color: #01386A; font-weight: 700;">R${EXTRA_SPACE_PRICING.small}</span>
+        // Store bookings globally for later use
+        window.pendingBookings = response.bookings;
+
+        // Generate route cards for each pending booking
+        response.bookings.forEach(booking => {
+            // Determine route display based on direction_type
+            let routeDisplay = '';
+            if (booking.direction_type === 'from_loc1') {
+                routeDisplay = `${booking.location_1} → ${booking.location_2}`;
+            } else if (booking.direction_type === 'from_loc2') {
+                routeDisplay = `${booking.location_2} → ${booking.location_1}`;
+            } else {
+                // Fallback
+                routeDisplay = `${booking.location_1} → ${booking.location_2}`;
+            }
+
+            // Format date and time
+            const formattedDate = formatDateOnly(booking.scheduled_pickup);
+            const formattedTime = formatTimeOnly(booking.scheduled_pickup);
+
+            // Format extra space
+            const extraSpaceText = formatExtraSpaceFromSmall(booking.extraspace_parcel_count_sp || 0);
+
+            // Generate unique ID for this booking route card
+            const bookingRouteId = `booking-${booking.ID}`;
+
+            // Generate route card HTML
+            const routeCardHTML = `
+                <div class="route-card" data-route="${bookingRouteId}" data-booking-id="${booking.ID}" onclick="selectRoute('${bookingRouteId}')">
+                    <div class="route-info">
+                        <div class="route-details">
+                            <h3><i class="ri-taxi-line"></i>${escapeAttribute(routeDisplay)}</h3>
+                            <p><i class="ri-time-line"></i><strong>Duration:</strong> ~${booking.typical_duration_hours} hours</p>
+                            <p><i class="ri-calendar-line"></i><strong>Date:</strong> ${escapeAttribute(formattedDate)}</p>
+                            <p><i class="ri-time-line"></i><strong>Time:</strong> ${escapeAttribute(formattedTime)}</p>
+                            <p><i class="ri-user-line"></i><strong>Capacity:</strong> ${booking.total_seats_available} seat${booking.total_seats_available !== 1 ? 's' : ''} available</p>
+                            <p id="extra-space-${bookingRouteId}" style="background: #f3e5f5; padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                                <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
+                                <strong style="color: #7b1fa2;">Available Extra Space:</strong> 
+                                <span id="extra-space-display-${bookingRouteId}">${escapeAttribute(extraSpaceText)}</span>
+                            </p>
+                        </div>
+                        <div class="route-price">R${parseFloat(booking.base_fare).toFixed(2)}</div>
+                        <div class="extra-space-pricing" style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border: 2px solid #FFD52F; border-radius: 10px;">
+                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; font-weight: 600;">
+                                <i class="ri-price-tag-3-line" style="color: #FFD52F;"></i> Extra Space Pricing:
+                            </div> 
+                            <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span><strong>Large:</strong></span>
+                                    <span style="color: #01386A; font-weight: 700;">R${parseFloat(booking.large_parcel_price).toFixed(2)}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span><strong>Medium:</strong></span>
+                                    <span style="color: #01386A; font-weight: 700;">R${parseFloat(booking.medium_parcel_price).toFixed(2)}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span><strong>Small:</strong></span>
+                                    <span style="color: #01386A; font-weight: 700;">R${parseFloat(booking.small_parcel_price).toFixed(2)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
 
-        // Insert route card into container
-        routeSelectionContainer.insertAdjacentHTML('beforeend', routeCardHTML);
-    });
-
-    // Update extra space display after generating cards
-    updateExtraSpaceDisplay();
+            // Insert route card into container
+            routeSelectionContainer.insertAdjacentHTML('beforeend', routeCardHTML);
+        });
+    } catch (error) {
+        console.error('Error loading pending bookings:', error);
+        // Hide route cards section and heading on error
+        const routeSection = document.querySelector('.route-selection');
+        const routeHeading = routeSelectionContainer.previousElementSibling;
+        if (routeSection) {
+            routeSection.style.display = 'none';
+        }
+        if (routeHeading && routeHeading.tagName === 'H2' && routeHeading.textContent.includes('Available Routes')) {
+            routeHeading.style.display = 'none';
+        }
+    }
 }
 
 /**
@@ -764,13 +869,30 @@ let routePolyline = null;
 function initializeLocationSelection() {
     if (!selectedRoute) return;
     
-    const route = routes[selectedRoute];
-    if (!route) return;
+    // Get origin and destination cities from booking data
+    let originCity, destinationCity;
     
-    // Get origin and destination cities
-    const cities = route.name.split(' → ');
-    const originCity = cities[0].trim();
-    const destinationCity = cities[1].trim();
+    if (selectedBooking) {
+        // Use booking data
+        if (selectedBooking.direction_type === 'from_loc1') {
+            originCity = selectedBooking.location_1;
+            destinationCity = selectedBooking.location_2;
+        } else if (selectedBooking.direction_type === 'from_loc2') {
+            originCity = selectedBooking.location_2;
+            destinationCity = selectedBooking.location_1;
+        } else {
+            // Fallback
+            originCity = selectedBooking.location_1;
+            destinationCity = selectedBooking.location_2;
+        }
+    } else {
+        // Fallback to old routes object if booking data not available
+        const route = routes[selectedRoute];
+        if (!route) return;
+        const cities = route.name.split(' → ');
+        originCity = cities[0].trim();
+        destinationCity = cities[1].trim();
+    }
     
     // Update hints
     const pickupHint = document.getElementById('pickup-location-hint');
@@ -788,9 +910,25 @@ function initializeLocationSelection() {
         return;
     }
     
+    // Ensure location selection section is visible
+    const locationSection = document.querySelector('.location-selection-section');
+    if (locationSection) {
+        locationSection.style.display = 'block';
+    }
+    
     // Initialize Google Maps
     const mapContainer = document.getElementById('location-selection-map');
-    if (mapContainer && !locationSelectionMap) {
+    if (!mapContainer) {
+        console.warn('Location selection map container not found');
+        return;
+    }
+    
+    // Ensure map container is visible
+    mapContainer.style.display = 'block';
+    mapContainer.style.visibility = 'visible';
+    mapContainer.style.height = '400px';
+    
+    if (!locationSelectionMap) {
         // Use setTimeout to ensure container is visible
         setTimeout(() => {
             // Get the parent container to calculate actual available width
@@ -846,8 +984,10 @@ function initializeLocationSelection() {
                 }
             });
             
-            // Add route line if coordinates exist
-            if (route.coordinates) {
+            // Add route line if coordinates exist (for old route system)
+            // For booking-based routes, we'll show the route when pickup/dropoff are selected
+            if (routes[selectedRoute] && routes[selectedRoute].coordinates) {
+                const route = routes[selectedRoute];
                 const routePath = [
                     { lat: route.coordinates.start[1], lng: route.coordinates.start[0] },
                     { lat: route.coordinates.end[1], lng: route.coordinates.end[0] }
@@ -861,13 +1001,24 @@ function initializeLocationSelection() {
                     strokeWeight: 3
                 });
                 routePolyline.setMap(locationSelectionMap);
+            } else if (selectedBooking) {
+                // For booking-based routes, center map between origin and destination cities
+                const originBoundary = cityBoundaries[originCity] || cityBoundaries['Pretoria'];
+                const destBoundary = cityBoundaries[destinationCity] || cityBoundaries['Tzaneen'];
+                
+                if (originBoundary && destBoundary) {
+                    const bounds = new google.maps.LatLngBounds();
+                    bounds.extend(new google.maps.LatLng(originBoundary.center.lat, originBoundary.center.lng));
+                    bounds.extend(new google.maps.LatLng(destBoundary.center.lat, destBoundary.center.lng));
+                    locationSelectionMap.fitBounds(bounds);
+                }
             }
             
             // Initialize autocomplete inputs
             initializeAutocomplete();
         }, 100);
-    } else if (locationSelectionMap) {
-        // Map already exists, just initialize autocomplete
+    } else {
+        // Map already exists, just initialize autocomplete and ensure visibility
         initializeAutocomplete();
     }
     
@@ -884,6 +1035,11 @@ function initializeLocationSelection() {
             // Clear container
             pickupContainer.innerHTML = '';
             
+            // Create wrapper for input and suggestions
+            const pickupWrapper = document.createElement('div');
+            pickupWrapper.style.position = 'relative';
+            pickupWrapper.style.width = '100%';
+            
             // Create input element
             const pickupInput = document.createElement('input');
             pickupInput.type = 'text';
@@ -894,63 +1050,169 @@ function initializeLocationSelection() {
             pickupInput.style.border = '2px solid #e0e0e0';
             pickupInput.style.borderRadius = '8px';
             pickupInput.style.fontSize = '1rem';
-            pickupContainer.appendChild(pickupInput);
+            pickupWrapper.appendChild(pickupInput);
             
-            // Initialize Google Places Autocomplete
-            pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput, {
-                bounds: new google.maps.LatLngBounds(
-                    new google.maps.LatLng(originBoundary.bounds.south, originBoundary.bounds.west),
-                    new google.maps.LatLng(originBoundary.bounds.north, originBoundary.bounds.east)
-                ),
-                componentRestrictions: { country: 'za' },
-                fields: ['geometry', 'formatted_address', 'name']
-            });
+            // Create suggestions dropdown
+            const pickupSuggestions = document.createElement('div');
+            pickupSuggestions.id = 'pickup-suggestions';
+            pickupSuggestions.style.display = 'none';
+            pickupSuggestions.style.position = 'absolute';
+            pickupSuggestions.style.top = '100%';
+            pickupSuggestions.style.left = '0';
+            pickupSuggestions.style.right = '0';
+            pickupSuggestions.style.backgroundColor = 'white';
+            pickupSuggestions.style.border = '1px solid #e0e0e0';
+            pickupSuggestions.style.borderRadius = '8px';
+            pickupSuggestions.style.maxHeight = '300px';
+            pickupSuggestions.style.overflowY = 'auto';
+            pickupSuggestions.style.zIndex = '1000';
+            pickupSuggestions.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            pickupWrapper.appendChild(pickupSuggestions);
             
-            // Add listener for place selection
-            pickupAutocomplete.addListener('place_changed', () => {
-                const place = pickupAutocomplete.getPlace();
-                if (!place.geometry) {
+            pickupContainer.appendChild(pickupWrapper);
+            
+            // Initialize AutocompleteService for filtering
+            const autocompleteService = new google.maps.places.AutocompleteService();
+            let pickupService = autocompleteService;
+            
+            // Handle input changes
+            let pickupTimeout;
+            pickupInput.addEventListener('input', () => {
+                clearTimeout(pickupTimeout);
+                const query = pickupInput.value.trim();
+                
+                if (query.length < 2) {
+                    pickupSuggestions.style.display = 'none';
                     return;
                 }
                 
-                const location = place.geometry.location;
-                
-                // Remove existing marker
-                if (pickupMarker) {
-                    pickupMarker.setMap(null);
-                }
-                
-                // Add new marker
-                pickupMarker = new google.maps.Marker({
-                    map: locationSelectionMap,
-                    position: location,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: '#28a745',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2
-                    },
-                    title: place.formatted_address || place.name
-                });
-                
-                // Store pickup location
-                pickupPoints = [{
-                    address: place.formatted_address || place.name,
-                    lat: location.lat(),
-                    lng: location.lng(),
-                    index: 1
-                }];
-                
-                // Fit map to show both markers
-                fitLocationSelectionMap();
+                pickupTimeout = setTimeout(() => {
+                    pickupService.getPlacePredictions({
+                        input: query,
+                        bounds: new google.maps.LatLngBounds(
+                            new google.maps.LatLng(originBoundary.bounds.south, originBoundary.bounds.west),
+                            new google.maps.LatLng(originBoundary.bounds.north, originBoundary.bounds.east)
+                        ),
+                        componentRestrictions: { country: 'za' }
+                    }, (predictions, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+                            // Filter predictions to only include those with the city name
+                            const filteredPredictions = predictions.filter(prediction => {
+                                const description = prediction.description.toLowerCase();
+                                const cityName = originCity.toLowerCase();
+                                return description.includes(cityName);
+                            });
+                            
+                            if (filteredPredictions.length > 0) {
+                                displayPickupSuggestions(filteredPredictions, pickupSuggestions, pickupInput);
+                            } else {
+                                pickupSuggestions.style.display = 'none';
+                            }
+                        } else {
+                            pickupSuggestions.style.display = 'none';
+                        }
+                    });
+                }, 300);
             });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!pickupWrapper.contains(e.target)) {
+                    pickupSuggestions.style.display = 'none';
+                }
+            });
+            
+            // Function to display filtered suggestions
+            function displayPickupSuggestions(predictions, container, input) {
+                container.innerHTML = '';
+                predictions.forEach(prediction => {
+                    const item = document.createElement('div');
+                    item.style.padding = '0.75rem';
+                    item.style.cursor = 'pointer';
+                    item.style.borderBottom = '1px solid #f0f0f0';
+                    item.textContent = prediction.description;
+                    
+                    item.addEventListener('mouseenter', () => {
+                        item.style.backgroundColor = '#f5f5f5';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.backgroundColor = 'white';
+                    });
+                    
+                    item.addEventListener('click', () => {
+                        input.value = prediction.description;
+                        container.style.display = 'none';
+                        
+                        // Get place details
+                        const placesService = new google.maps.places.PlacesService(locationSelectionMap);
+                        placesService.getDetails({
+                            placeId: prediction.place_id,
+                            fields: ['geometry', 'formatted_address', 'name']
+                        }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+                                const location = place.geometry.location;
+                                
+                                // Remove existing marker
+                                if (pickupMarker) {
+                                    pickupMarker.setMap(null);
+                                }
+                                
+                                // Add new marker
+                                pickupMarker = new google.maps.Marker({
+                                    map: locationSelectionMap,
+                                    position: location,
+                                    icon: {
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 8,
+                                        fillColor: '#28a745',
+                                        fillOpacity: 1,
+                                        strokeColor: '#ffffff',
+                                        strokeWeight: 2
+                                    },
+                                    title: place.formatted_address || place.name
+                                });
+                                
+                                // Store pickup location
+                                pickupPoints = [{
+                                    address: place.formatted_address || place.name,
+                                    lat: location.lat(),
+                                    lng: location.lng(),
+                                    index: 1
+                                }];
+                                
+                                // Clear validation error for pickup
+                                const pickupInput = document.getElementById('pickup-location-input');
+                                if (pickupInput) {
+                                    pickupInput.style.borderColor = '#e0e0e0';
+                                }
+                                const locationErrorMsg = document.getElementById('location-validation-message');
+                                if (locationErrorMsg && pickupPoints.length > 0 && dropoffPoints.length > 0) {
+                                    locationErrorMsg.style.display = 'none';
+                                }
+                                
+                                // Fit map to show both markers
+                                fitLocationSelectionMap();
+                                
+                                // Update continue button state
+                                updateContinueButtonState();
+                            }
+                        });
+                    });
+                    
+                    container.appendChild(item);
+                });
+                container.style.display = 'block';
+            }
         }
         
         if (dropoffContainer) {
             // Clear container
             dropoffContainer.innerHTML = '';
+            
+            // Create wrapper for input and suggestions
+            const dropoffWrapper = document.createElement('div');
+            dropoffWrapper.style.position = 'relative';
+            dropoffWrapper.style.width = '100%';
             
             // Create input element
             const dropoffInput = document.createElement('input');
@@ -962,58 +1224,159 @@ function initializeLocationSelection() {
             dropoffInput.style.border = '2px solid #e0e0e0';
             dropoffInput.style.borderRadius = '8px';
             dropoffInput.style.fontSize = '1rem';
-            dropoffContainer.appendChild(dropoffInput);
+            dropoffWrapper.appendChild(dropoffInput);
             
-            // Initialize Google Places Autocomplete
-            dropoffAutocomplete = new google.maps.places.Autocomplete(dropoffInput, {
-                bounds: new google.maps.LatLngBounds(
-                    new google.maps.LatLng(destBoundary.bounds.south, destBoundary.bounds.west),
-                    new google.maps.LatLng(destBoundary.bounds.north, destBoundary.bounds.east)
-                ),
-                componentRestrictions: { country: 'za' },
-                fields: ['geometry', 'formatted_address', 'name']
-            });
+            // Create suggestions dropdown
+            const dropoffSuggestions = document.createElement('div');
+            dropoffSuggestions.id = 'dropoff-suggestions';
+            dropoffSuggestions.style.display = 'none';
+            dropoffSuggestions.style.position = 'absolute';
+            dropoffSuggestions.style.top = '100%';
+            dropoffSuggestions.style.left = '0';
+            dropoffSuggestions.style.right = '0';
+            dropoffSuggestions.style.backgroundColor = 'white';
+            dropoffSuggestions.style.border = '1px solid #e0e0e0';
+            dropoffSuggestions.style.borderRadius = '8px';
+            dropoffSuggestions.style.maxHeight = '300px';
+            dropoffSuggestions.style.overflowY = 'auto';
+            dropoffSuggestions.style.zIndex = '1000';
+            dropoffSuggestions.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            dropoffWrapper.appendChild(dropoffSuggestions);
             
-            // Add listener for place selection
-            dropoffAutocomplete.addListener('place_changed', () => {
-                const place = dropoffAutocomplete.getPlace();
-                if (!place.geometry) {
+            dropoffContainer.appendChild(dropoffWrapper);
+            
+            // Initialize AutocompleteService for filtering
+            const autocompleteService = new google.maps.places.AutocompleteService();
+            let dropoffService = autocompleteService;
+            
+            // Handle input changes
+            let dropoffTimeout;
+            dropoffInput.addEventListener('input', () => {
+                clearTimeout(dropoffTimeout);
+                const query = dropoffInput.value.trim();
+                
+                if (query.length < 2) {
+                    dropoffSuggestions.style.display = 'none';
                     return;
                 }
                 
-                const location = place.geometry.location;
-                
-                // Remove existing marker
-                if (dropoffMarker) {
-                    dropoffMarker.setMap(null);
-                }
-                
-                // Add new marker
-                dropoffMarker = new google.maps.Marker({
-                    map: locationSelectionMap,
-                    position: location,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: '#dc3545',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2
-                    },
-                    title: place.formatted_address || place.name
-                });
-                
-                // Store dropoff location
-                dropoffPoints = [{
-                    address: place.formatted_address || place.name,
-                    lat: location.lat(),
-                    lng: location.lng(),
-                    index: 1
-                }];
-                
-                // Fit map to show both markers
-                fitLocationSelectionMap();
+                dropoffTimeout = setTimeout(() => {
+                    dropoffService.getPlacePredictions({
+                        input: query,
+                        bounds: new google.maps.LatLngBounds(
+                            new google.maps.LatLng(destBoundary.bounds.south, destBoundary.bounds.west),
+                            new google.maps.LatLng(destBoundary.bounds.north, destBoundary.bounds.east)
+                        ),
+                        componentRestrictions: { country: 'za' }
+                    }, (predictions, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+                            // Filter predictions to only include those with the city name
+                            const filteredPredictions = predictions.filter(prediction => {
+                                const description = prediction.description.toLowerCase();
+                                const cityName = destinationCity.toLowerCase();
+                                return description.includes(cityName);
+                            });
+                            
+                            if (filteredPredictions.length > 0) {
+                                displayDropoffSuggestions(filteredPredictions, dropoffSuggestions, dropoffInput);
+                            } else {
+                                dropoffSuggestions.style.display = 'none';
+                            }
+                        } else {
+                            dropoffSuggestions.style.display = 'none';
+                        }
+                    });
+                }, 300);
             });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dropoffWrapper.contains(e.target)) {
+                    dropoffSuggestions.style.display = 'none';
+                }
+            });
+            
+            // Function to display filtered suggestions
+            function displayDropoffSuggestions(predictions, container, input) {
+                container.innerHTML = '';
+                predictions.forEach(prediction => {
+                    const item = document.createElement('div');
+                    item.style.padding = '0.75rem';
+                    item.style.cursor = 'pointer';
+                    item.style.borderBottom = '1px solid #f0f0f0';
+                    item.textContent = prediction.description;
+                    
+                    item.addEventListener('mouseenter', () => {
+                        item.style.backgroundColor = '#f5f5f5';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.backgroundColor = 'white';
+                    });
+                    
+                    item.addEventListener('click', () => {
+                        input.value = prediction.description;
+                        container.style.display = 'none';
+                        
+                        // Get place details
+                        const placesService = new google.maps.places.PlacesService(locationSelectionMap);
+                        placesService.getDetails({
+                            placeId: prediction.place_id,
+                            fields: ['geometry', 'formatted_address', 'name']
+                        }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+                                const location = place.geometry.location;
+                                
+                                // Remove existing marker
+                                if (dropoffMarker) {
+                                    dropoffMarker.setMap(null);
+                                }
+                                
+                                // Add new marker
+                                dropoffMarker = new google.maps.Marker({
+                                    map: locationSelectionMap,
+                                    position: location,
+                                    icon: {
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 8,
+                                        fillColor: '#dc3545',
+                                        fillOpacity: 1,
+                                        strokeColor: '#ffffff',
+                                        strokeWeight: 2
+                                    },
+                                    title: place.formatted_address || place.name
+                                });
+                                
+                                // Store dropoff location
+                                dropoffPoints = [{
+                                    address: place.formatted_address || place.name,
+                                    lat: location.lat(),
+                                    lng: location.lng(),
+                                    index: 1
+                                }];
+                                
+                                // Clear validation error for dropoff
+                                const dropoffInput = document.getElementById('dropoff-location-input');
+                                if (dropoffInput) {
+                                    dropoffInput.style.borderColor = '#e0e0e0';
+                                }
+                                const locationErrorMsg = document.getElementById('location-validation-message');
+                                if (locationErrorMsg && pickupPoints.length > 0 && dropoffPoints.length > 0) {
+                                    locationErrorMsg.style.display = 'none';
+                                }
+                                
+                                // Fit map to show both markers
+                                fitLocationSelectionMap();
+                                
+                                // Update continue button state
+                                updateContinueButtonState();
+                            }
+                        });
+                    });
+                    
+                    container.appendChild(item);
+                });
+                container.style.display = 'block';
+            }
         }
     }
 }
@@ -1162,8 +1525,18 @@ function selectRoute(routeId) {
     });
 
     // Select new route
-    document.querySelector(`[data-route="${routeId}"]`).classList.add('selected');
-    selectedRoute = routeId;
+    const routeCard = document.querySelector(`[data-route="${routeId}"]`);
+    if (routeCard) {
+        routeCard.classList.add('selected');
+        selectedRoute = routeId;
+        
+        // Get booking ID from data attribute
+        const bookingId = routeCard.getAttribute('data-booking-id');
+        if (bookingId && window.pendingBookings) {
+            // Find and store the selected booking data
+            selectedBooking = window.pendingBookings.find(b => b.ID == bookingId);
+        }
+    }
 
     // Update map
     addRouteMarkers();
@@ -1199,8 +1572,17 @@ function selectRoute(routeId) {
  * Usage: Called when user clicks "Next" button or selects a route
  */
 function nextStep() {
+    console.log('nextStep() CALLED - currentStep before increment:', currentStep);
     if (currentStep < 6) {
-        const activeStepEl = document.querySelector(`#step${currentStep}`);
+        // Map currentStep to step indicator before incrementing
+        let currentStepIndicatorId = currentStep;
+        if (currentStep === 4) {
+            currentStepIndicatorId = 3; // Booking Summary is step3 in UI
+        } else if (currentStep === 5) {
+            currentStepIndicatorId = 4; // Payment is step4 in UI
+        }
+        
+        const activeStepEl = document.querySelector(`#step${currentStepIndicatorId}`);
         if (activeStepEl) {
             activeStepEl.classList.remove('active');
             activeStepEl.classList.add('completed');
@@ -1213,7 +1595,20 @@ function nextStep() {
 
         currentStep++;
 
-        const nextStepEl = document.querySelector(`#step${currentStep}`);
+        // Map currentStep to step indicator (step indicators are 1-based, but don't match currentStep exactly)
+        // Step 1: Route Selection (step1)
+        // Step 2: Location Selection (step2)
+        // Step 3: Passenger/Parcel Info (step2 - still in Booking Details)
+        // Step 4: Booking Summary (step3)
+        // Step 5: Payment (step4)
+        let stepIndicatorId = currentStep;
+        if (currentStep === 4) {
+            stepIndicatorId = 3; // Booking Summary is step3 in UI
+        } else if (currentStep === 5) {
+            stepIndicatorId = 4; // Payment is step4 in UI
+        }
+        
+        const nextStepEl = document.querySelector(`#step${stepIndicatorId}`);
         if (nextStepEl) {
             nextStepEl.classList.add('active');
         }
@@ -1223,19 +1618,29 @@ function nextStep() {
             const passengerContent = document.getElementById('passenger-selection');
             if (passengerContent) {
                 passengerContent.classList.add('active');
+                // Ensure location selection section is visible
+                const locationSection = passengerContent.querySelector('.location-selection-section');
+                if (locationSection) {
+                    locationSection.style.display = 'block';
+                }
             }
 
             updatePassengerInfo();
             
             // Initialize location selection map and geocoders
-            initializeLocationSelection();
+            // Use a longer delay to ensure the DOM is ready
+            setTimeout(() => {
+                initializeLocationSelection();
+                // Update button state after initialization to check for locations
+                updateContinueButtonState();
+            }, 300);
             
             // Resize map when step becomes active
             setTimeout(() => {
                 if (locationSelectionMap) {
                     google.maps.event.trigger(locationSelectionMap, 'resize');
                 }
-            }, 500);
+            }, 800);
 
             const dateInput = document.getElementById('desired-trip-date');
             if (dateInput && !dateInput.dataset.bound) {
@@ -1252,15 +1657,169 @@ function nextStep() {
             }
         } else if (currentStep === 3) {
             // Passenger/Parcel Information step
-            // This step is handled by the form generation
+            console.log('=== ENTERING STEP 3: PASSENGER/PARCEL INFORMATION ===');
+            console.log('currentStep value:', currentStep);
+            console.log('You are now on step 3. Fill in passenger/parcel info and click Continue again to go to step 4 (Booking Summary)');
+            
+            // Ensure passenger-selection is visible
+            const passengerContent = document.getElementById('passenger-selection');
+            if (passengerContent) {
+                passengerContent.classList.add('active');
+                passengerContent.style.display = 'block';
+                console.log('Passenger selection content is visible');
+                
+                // Generate passenger forms if needed
+                if (bookingType === 'passengers') {
+                    updatePassengerInfo();
+                    console.log('Passenger forms generated');
+                } else if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
+                    generateParcelForms();
+                    console.log('Parcel forms generated');
+                }
+            } else {
+                console.error('CRITICAL: passenger-selection container not found!');
+            }
         } else if (currentStep === 4) {
             // Booking Summary step
+            console.log('=== ENTERING STEP 4: BOOKING SUMMARY ===');
+            console.log('currentStep value:', currentStep);
+            console.log('Step 4 handler executing...');
+            
+            // Hide all other booking-content sections first
+            document.querySelectorAll('.booking-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            });
+            
+            const confirmationContent = document.getElementById('booking-confirmation');
+            console.log('Confirmation content found:', !!confirmationContent);
+            
+            if (!confirmationContent) {
+                console.error('CRITICAL ERROR: booking-confirmation element does not exist in DOM!');
+                console.log('Available booking-content elements:', document.querySelectorAll('.booking-content').length);
+                return; // Can't proceed without the container
+            }
+            
+            if (confirmationContent) {
+                // Force visibility with multiple methods
+                confirmationContent.classList.add('active');
+                confirmationContent.style.display = 'block';
+                confirmationContent.style.visibility = 'visible';
+                confirmationContent.style.opacity = '1';
+                confirmationContent.style.position = 'relative';
+                confirmationContent.style.zIndex = '1';
+                
+                // Ensure booking summary container is visible
+                const summaryContainer = document.getElementById('booking-summary');
+                console.log('Summary container found:', !!summaryContainer);
+                
+                if (summaryContainer) {
+                    summaryContainer.style.display = 'block';
+                    summaryContainer.style.visibility = 'visible';
+                    summaryContainer.style.opacity = '1';
+                    summaryContainer.style.minHeight = '200px';
+                    summaryContainer.style.width = '100%';
+                    
+                    // Set a test message immediately - FORCE IT TO SHOW
+                    const testHTML = `
+                        <div class="summary-row" style="padding: 2rem; text-align: center; background: #d4edda; border: 2px solid #28a745; border-radius: 10px; margin-bottom: 1rem;">
+                            <span style="font-size: 1.2rem; color: #155724; font-weight: 700;">TEST: Booking Summary Container is Visible!</span>
+                        </div>
+                        <div class="summary-row" style="padding: 1.5rem; background: white; border-radius: 10px;">
+                            <span>Route:</span>
+                            <span>Loading booking information...</span>
+                        </div>
+                    `;
+                    summaryContainer.innerHTML = testHTML;
+                    console.log('Test HTML set in summary container');
+                    
+                    // Force with !important
+                    summaryContainer.setAttribute('style', 
+                        'display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 200px !important; width: 100% !important;'
+                    );
+                } else {
+                    console.error('CRITICAL: Summary container not found!');
+                    console.log('Parent element:', confirmationContent);
+                    console.log('All children:', Array.from(confirmationContent.children).map(c => c.id || c.className));
+                }
+                
+                // Ensure buttons are visible
+                const bookingActions = confirmationContent.querySelector('.booking-actions');
+                console.log('Booking actions found:', !!bookingActions);
+                
+                if (bookingActions) {
+                    bookingActions.style.display = 'flex';
+                    bookingActions.style.visibility = 'visible';
+                    bookingActions.style.gap = '1rem';
+                    bookingActions.style.marginTop = '2rem';
+                } else {
+                    console.error('CRITICAL: Booking actions not found!');
+                }
+                
+                // Ensure h2 title is visible
+                const title = confirmationContent.querySelector('h2');
+                if (title) {
+                    title.style.display = 'block';
+                    title.style.visibility = 'visible';
+                }
+            } else {
+                console.error('CRITICAL: booking-confirmation container not found in DOM!');
+            }
+            
+            // Update summary immediately and with retries
+            console.log('Calling updateBookingSummary from step 4');
+            updateBookingSummary();
+            
+            setTimeout(() => {
+                console.log('Calling updateBookingSummary retry 1 (100ms)');
+                updateBookingSummary();
+            }, 100);
+            
+            setTimeout(() => {
+                console.log('Calling updateBookingSummary retry 2 (500ms)');
+                updateBookingSummary();
+            }, 500);
+            
+            setTimeout(() => {
+                console.log('Calling updateBookingSummary retry 3 (1000ms)');
+                updateBookingSummary();
+            }, 1000);
+            
+            setTimeout(() => {
+                console.log('Final check - calling updateBookingSummary retry 4 (2000ms)');
+                updateBookingSummary();
+                // Final visibility check
+                const finalCheck = document.getElementById('booking-summary');
+                if (finalCheck) {
+                    console.log('Final check - summary container styles:', {
+                        display: window.getComputedStyle(finalCheck).display,
+                        visibility: window.getComputedStyle(finalCheck).visibility,
+                        opacity: window.getComputedStyle(finalCheck).opacity,
+                        innerHTML: finalCheck.innerHTML.substring(0, 100)
+                    });
+                }
+            }, 2000);
+        } else if (currentStep === 5) {
+            // Payment step - hide booking summary and show payment
+            console.log('=== ENTERING STEP 5: PAYMENT ===');
+            
+            // Hide ALL booking-content sections first
+            document.querySelectorAll('.booking-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+                content.style.visibility = 'hidden';
+            });
+            
+            // Explicitly hide booking confirmation (Booking Summary)
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
-                confirmationContent.classList.add('active');
+                confirmationContent.classList.remove('active');
+                confirmationContent.style.display = 'none';
+                confirmationContent.style.visibility = 'hidden';
+                confirmationContent.style.opacity = '0';
+                console.log('Booking summary hidden in nextStep() handler');
             }
-            updateBookingSummary();
-        } else if (currentStep === 5) {
+            
             // Payment step will be shown by showPaymentStep()
             showPaymentStep();
         }
@@ -1281,7 +1840,15 @@ function nextStep() {
  */
 function goBack() {
     if (currentStep > 1) {
-        const activeStep = document.querySelector(`#step${currentStep}`);
+        // Map currentStep to step indicator
+        let currentStepIndicatorId = currentStep;
+        if (currentStep === 4) {
+            currentStepIndicatorId = 3; // Booking Summary is step3 in UI
+        } else if (currentStep === 5) {
+            currentStepIndicatorId = 4; // Payment is step4 in UI
+        }
+        
+        const activeStep = document.querySelector(`#step${currentStepIndicatorId}`);
         const activeContent = document.querySelector('.booking-content.active');
         if (activeStep) {
             activeStep.classList.remove('active');
@@ -1291,7 +1858,15 @@ function goBack() {
         }
         currentStep--;
 
-        const targetStep = document.querySelector(`#step${currentStep}`);
+        // Map new currentStep to step indicator
+        let targetStepIndicatorId = currentStep;
+        if (currentStep === 4) {
+            targetStepIndicatorId = 3; // Booking Summary is step3 in UI
+        } else if (currentStep === 5) {
+            targetStepIndicatorId = 4; // Payment is step4 in UI
+        }
+        
+        const targetStep = document.querySelector(`#step${targetStepIndicatorId}`);
         if (targetStep) {
             targetStep.classList.remove('completed');
             targetStep.classList.add('active');
@@ -1314,8 +1889,9 @@ function goBack() {
             const confirmationContent = document.getElementById('booking-confirmation');
             if (confirmationContent) {
                 confirmationContent.classList.add('active');
-                updateBookingSummary();
+                confirmationContent.style.display = 'block';
             }
+            updateBookingSummary();
         } else if (currentStep === 5) {
             const paymentStep = document.getElementById('payment-step');
             if (paymentStep) {
@@ -1965,6 +2541,17 @@ function updateContinueButtonState() {
     
     if (!continueBtn) return;
     
+    // PRIORITY: Check if pickup and dropoff locations are selected
+    const locationsSelected = pickupPoints.length > 0 && dropoffPoints.length > 0;
+    
+    if (!locationsSelected) {
+        // Disable button if locations not selected
+        continueBtn.disabled = true;
+        continueBtn.style.opacity = '0.5';
+        continueBtn.style.cursor = 'not-allowed';
+        return;
+    }
+    
     // Check validation based on booking type
     if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
         // Validate parcel details
@@ -1984,7 +2571,7 @@ function updateContinueButtonState() {
             if (validationMsg) validationMsg.style.display = 'none';
         }
     } else {
-        // For passengers, button is always enabled (optional info)
+        // For passengers, enable button if locations are selected
         continueBtn.disabled = false;
         continueBtn.style.opacity = '1';
         continueBtn.style.cursor = 'pointer';
@@ -1993,6 +2580,89 @@ function updateContinueButtonState() {
 }
 
 function validateAndProceed() {
+    console.log('=== validateAndProceed() CALLED ===');
+    console.log('Current state:', {
+        currentStep,
+        pickupPoints: pickupPoints.length,
+        dropoffPoints: dropoffPoints.length,
+        bookingType,
+        passengerCount
+    });
+    
+    // PRIORITY: Validate pickup and dropoff locations are selected
+    if (pickupPoints.length === 0) {
+        console.log('VALIDATION FAILED: No pickup points');
+        // Show error message
+        const locationErrorMsg = document.getElementById('location-validation-message');
+        const locationErrorText = document.getElementById('location-validation-message-text');
+        if (locationErrorMsg) {
+            locationErrorMsg.style.display = 'block';
+        }
+        if (locationErrorText) {
+            locationErrorText.textContent = 'Please select a pickup location before proceeding.';
+        }
+        
+        // Scroll to location selection section
+        const locationSection = document.querySelector('.location-selection-section');
+        if (locationSection) {
+            locationSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Highlight pickup input
+        const pickupInput = document.getElementById('pickup-location-input');
+        if (pickupInput) {
+            pickupInput.style.borderColor = '#dc3545';
+            pickupInput.style.borderWidth = '2px';
+            pickupInput.focus();
+        }
+        
+        return;
+    }
+    
+    if (dropoffPoints.length === 0) {
+        // Show error message
+        const locationErrorMsg = document.getElementById('location-validation-message');
+        const locationErrorText = document.getElementById('location-validation-message-text');
+        if (locationErrorMsg) {
+            locationErrorMsg.style.display = 'block';
+        }
+        if (locationErrorText) {
+            locationErrorText.textContent = 'Please select a dropoff location before proceeding.';
+        }
+        
+        // Scroll to location selection section
+        const locationSection = document.querySelector('.location-selection-section');
+        if (locationSection) {
+            locationSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Highlight dropoff input
+        const dropoffInput = document.getElementById('dropoff-location-input');
+        if (dropoffInput) {
+            dropoffInput.style.borderColor = '#dc3545';
+            dropoffInput.style.borderWidth = '2px';
+            dropoffInput.focus();
+        }
+        
+        return;
+    }
+    
+    // Hide location validation message if locations are selected
+    const locationErrorMsg = document.getElementById('location-validation-message');
+    if (locationErrorMsg) {
+        locationErrorMsg.style.display = 'none';
+    }
+    
+    // Reset input border colors
+    const pickupInput = document.getElementById('pickup-location-input');
+    const dropoffInput = document.getElementById('dropoff-location-input');
+    if (pickupInput) {
+        pickupInput.style.borderColor = '#e0e0e0';
+    }
+    if (dropoffInput) {
+        dropoffInput.style.borderColor = '#e0e0e0';
+    }
+    
     // Validate based on booking type
     if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
         // Validate parcel information
@@ -2076,7 +2746,51 @@ function validateAndProceed() {
         sessionStorage.setItem('desiredTripDate', desiredTripDate);
     }
 
+    console.log('About to call nextStep() from validateAndProceed, currentStep:', currentStep);
+    
+    // If we're on step 2 (Booking Details), skip step 3 and go directly to step 4 (Booking Summary)
+    if (currentStep === 2) {
+        console.log('Skipping step 3, going directly to step 4 (Booking Summary)');
+        // Mark step 2 as completed
+        const step2El = document.querySelector('#step2');
+        if (step2El) {
+            step2El.classList.remove('active');
+            step2El.classList.add('completed');
+        }
+        
+        // Hide passenger-selection
+        const passengerContent = document.getElementById('passenger-selection');
+        if (passengerContent) {
+            passengerContent.classList.remove('active');
+            passengerContent.style.display = 'none';
+        }
+        
+        // Set currentStep to 4 (Booking Summary)
+        currentStep = 4;
+        
+        // Mark step 3 as active (which is Booking Summary in UI)
+        const step3El = document.querySelector('#step3');
+        if (step3El) {
+            step3El.classList.add('active');
+        }
+        
+        // Show booking summary
+        const confirmationContent = document.getElementById('booking-confirmation');
+        if (confirmationContent) {
+            confirmationContent.classList.add('active');
+            confirmationContent.style.display = 'block';
+            confirmationContent.style.visibility = 'visible';
+            confirmationContent.style.opacity = '1';
+        }
+        
+        // Update booking summary
+        updateBookingSummary();
+        
+        console.log('After skipping to step 4, currentStep is now:', currentStep);
+    } else {
         nextStep();
+        console.log('After calling nextStep(), currentStep is now:', currentStep);
+    }
 }
 
 // Handle booking type change (passengers vs parcels)
@@ -2718,10 +3432,82 @@ function removeParcelImagePublic(parcelNumber, imageIndex) {
  * Usage: Called when user reaches booking summary step or booking details change
  */
 function updateBookingSummary() {
-    if (!selectedRoute || !routes[selectedRoute]) return;
+    console.log('=== updateBookingSummary FUNCTION CALLED ===');
+    console.log('State:', { 
+        selectedRoute, 
+        selectedBooking: selectedBooking ? 'exists' : 'null',
+        pickupPoints: pickupPoints.length,
+        dropoffPoints: dropoffPoints.length,
+        passengerCount,
+        bookingType,
+        currentStep
+    });
     
-    const route = routes[selectedRoute];
+    // FIRST: Find and ensure container exists and is visible
+    const summaryContainer = document.getElementById('booking-summary');
+    if (!summaryContainer) {
+        console.error('CRITICAL ERROR: booking-summary container does not exist in DOM!');
+        // Try to create it as fallback
+        const confirmationContent = document.getElementById('booking-confirmation');
+        if (confirmationContent) {
+            const newContainer = document.createElement('div');
+            newContainer.id = 'booking-summary';
+            newContainer.className = 'booking-summary';
+            newContainer.style.display = 'block';
+            newContainer.style.visibility = 'visible';
+            newContainer.style.minHeight = '200px';
+            const h2 = confirmationContent.querySelector('h2');
+            if (h2 && h2.nextSibling) {
+                confirmationContent.insertBefore(newContainer, h2.nextSibling);
+            } else {
+                confirmationContent.appendChild(newContainer);
+            }
+            console.log('Created booking-summary container as fallback');
+            return updateBookingSummary(); // Retry
+        }
+        return;
+    }
+    
+    // Ensure container is visible BEFORE generating content
+    summaryContainer.style.display = 'block';
+    summaryContainer.style.visibility = 'visible';
+    summaryContainer.style.opacity = '1';
+    summaryContainer.style.minHeight = '200px';
+    summaryContainer.style.width = '100%';
+    
+    // Get route data from booking or fallback to routes object
+    let routeName = 'Route not selected';
+    let routePrice = 0;
+    let routeDuration = 0;
+    let routeDistance = 0;
+    
+    if (selectedBooking) {
+        // Use booking data
+        if (selectedBooking.direction_type === 'from_loc1') {
+            routeName = `${selectedBooking.location_1 || 'Location 1'} → ${selectedBooking.location_2 || 'Location 2'}`;
+        } else if (selectedBooking.direction_type === 'from_loc2') {
+            routeName = `${selectedBooking.location_2 || 'Location 2'} → ${selectedBooking.location_1 || 'Location 1'}`;
+        } else {
+            routeName = `${selectedBooking.location_1 || 'Location 1'} → ${selectedBooking.location_2 || 'Location 2'}`;
+        }
+        routePrice = parseFloat(selectedBooking.base_fare) || 0;
+        routeDuration = parseFloat(selectedBooking.typical_duration_hours) || 0;
+        routeDistance = 0; // Distance not available in booking data
+    } else if (selectedRoute && routes && routes[selectedRoute]) {
+        // Fallback to old routes object
+        const route = routes[selectedRoute];
+        routeName = route.name || 'Route not selected';
+        routePrice = route.price || 0;
+        routeDuration = route.duration || 0;
+        routeDistance = route.distance || 0;
+    } else {
+        console.warn('No route data available for summary. Using defaults.');
+        // Try to get from sessionStorage or use defaults
+        routeName = 'Route information unavailable';
+    }
+    
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
+    const passengerCountFromStorage = parseInt(sessionStorage.getItem('passengerCount') || passengerCount) || passengerCount;
     
     let summaryHTML = '';
     
@@ -2732,7 +3518,7 @@ function updateBookingSummary() {
         
         // Calculate pricing (placeholder - in real app, this would be calculated based on parcel sizes and space usage)
         // For now, assume parcels use extra space pricing
-        const baseParcelPrice = route.price * 0.6; // Parcels in extra space cost less
+        const baseParcelPrice = routePrice * 0.6; // Parcels in extra space cost less
         const estimatedTotal = baseParcelPrice * savedParcelCount;
         
         summaryHTML = `
@@ -2742,19 +3528,19 @@ function updateBookingSummary() {
             </div>
             <div class="summary-row">
                 <span>Route:</span>
-                <span>${route.name}</span>
+                <span>${routeName}</span>
             </div>
             <div class="summary-row">
                 <span>Number of Parcels:</span>
                 <span>${savedParcelCount} parcel(s)</span>
             </div>
-            <div class="summary-row">
+            ${routeDistance > 0 ? `<div class="summary-row">
                 <span>Distance:</span>
-                <span>${route.distance} km</span>
-            </div>
+                <span>${routeDistance} km</span>
+            </div>` : ''}
             <div class="summary-row">
                 <span>Duration:</span>
-                <span>~${route.duration} hours</span>
+                <span>~${routeDuration} hours</span>
             </div>
         `;
         
@@ -2806,8 +3592,8 @@ function updateBookingSummary() {
             </div>
         `;
     } else {
-        // Handle passenger bookings (existing logic)
-        const totalPrice = route.price * passengerCount;
+        // Handle passenger bookings
+        const totalPrice = routePrice * passengerCountFromStorage;
 
         let pickupLocations = 'Not specified';
         if (pickupPoints.length > 0) {
@@ -2819,14 +3605,28 @@ function updateBookingSummary() {
             dropoffLocations = dropoffPoints.map(p => p.address).join('<br>');
         }
 
-        // Resolve date/time
-        let tripDateDisplay = desiredTripDate || '-';
+        // Resolve date/time from booking or desiredTripDate
+        let tripDateDisplay = '-';
         let tripTimeDisplay = 'To be confirmed';
+        
+        if (selectedBooking && selectedBooking.scheduled_pickup) {
+            tripDateDisplay = formatDateOnly(selectedBooking.scheduled_pickup);
+            tripTimeDisplay = formatTimeOnly(selectedBooking.scheduled_pickup);
+        } else if (desiredTripDate) {
+            tripDateDisplay = formatDateOnly(desiredTripDate);
+            tripTimeDisplay = formatTimeOnly(desiredTripDate);
+        } else {
+            const desiredTripDateFromStorage = sessionStorage.getItem('desiredTripDate');
+            if (desiredTripDateFromStorage) {
+                tripDateDisplay = formatDateOnly(desiredTripDateFromStorage);
+                tripTimeDisplay = formatTimeOnly(desiredTripDateFromStorage);
+            }
+        }
 
         summaryHTML = `
             <div class="summary-row">
                 <span>Route:</span>
-                <span>${route.name}</span>
+                <span>${routeName}</span>
             </div>
             <div class="summary-row">
                 <span>Trip Date:</span>
@@ -2838,15 +3638,15 @@ function updateBookingSummary() {
             </div>
             <div class="summary-row">
                 <span>Passengers:</span>
-                <span>${passengerCount} person(s)</span>
+                <span>${passengerCountFromStorage} person(s)</span>
             </div>
-            <div class="summary-row">
+            ${routeDistance > 0 ? `<div class="summary-row">
                 <span>Distance:</span>
-                <span>${route.distance} km</span>
-            </div>
+                <span>${routeDistance} km</span>
+            </div>` : ''}
             <div class="summary-row">
                 <span>Duration:</span>
-                <span>~${route.duration} hours</span>
+                <span>~${routeDuration} hours</span>
             </div>
             <div class="summary-row">
                 <span>Pickup Points:</span>
@@ -2861,16 +3661,87 @@ function updateBookingSummary() {
         summaryHTML += `
             <div class="summary-row">
                 <span>Price per person:</span>
-                <span>R${route.price}</span>
+                <span>R${routePrice.toFixed(2)}</span>
             </div>
             <div class="summary-row">
                 <span><strong>Total Amount:</strong></span>
-                <span><strong>R${totalPrice}</strong></span>
+                <span><strong>R${totalPrice.toFixed(2)}</strong></span>
             </div>
         `;
     }
-
-    document.getElementById('booking-summary').innerHTML = summaryHTML;
+    
+    // summaryContainer was already declared at the start of the function
+    // Now set the HTML content - ALWAYS set something even if empty
+    if (!summaryHTML || summaryHTML.trim().length === 0) {
+        summaryHTML = `
+            <div class="summary-row" style="padding: 2rem; background: #fff3cd; border-radius: 10px; margin-bottom: 1rem;">
+                <span style="font-weight: 700; color: #856404;">Route:</span>
+                <span style="color: #856404;">Loading booking information...</span>
+            </div>
+            <div class="summary-row" style="padding: 2rem; background: #d1ecf1; border-radius: 10px;">
+                <span style="font-weight: 700; color: #0c5460;">Status:</span>
+                <span style="color: #0c5460;">Please wait while we load your booking details</span>
+            </div>
+        `;
+        console.warn('Summary HTML was empty, using fallback');
+    }
+    
+    // Set the HTML content
+    summaryContainer.innerHTML = summaryHTML;
+    
+    // Force visibility again after setting content
+    summaryContainer.style.display = 'block';
+    summaryContainer.style.visibility = 'visible';
+    summaryContainer.style.opacity = '1';
+    summaryContainer.style.minHeight = '200px';
+    summaryContainer.style.width = '100%';
+    
+    // Verify it's actually visible
+    const computedStyle = window.getComputedStyle(summaryContainer);
+    console.log('Booking summary updated successfully', { 
+        htmlLength: summaryHTML.length,
+        containerExists: !!summaryContainer,
+        containerDisplay: computedStyle.display,
+        containerVisibility: computedStyle.visibility,
+        containerOpacity: computedStyle.opacity,
+        containerHeight: computedStyle.height,
+        parentDisplay: summaryContainer.parentElement ? window.getComputedStyle(summaryContainer.parentElement).display : 'no parent',
+        preview: summaryHTML.substring(0, 150) + '...'
+    });
+    
+    // If still not visible, force it with !important
+    if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+        console.warn('Container is still hidden, forcing with !important');
+        summaryContainer.setAttribute('style', 
+            'display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 200px !important; width: 100% !important;'
+        );
+    }
+    
+    // Ensure the booking-confirmation container is visible
+    const confirmationContainer = document.getElementById('booking-confirmation');
+    if (confirmationContainer) {
+        confirmationContainer.style.display = 'block';
+        confirmationContainer.style.visibility = 'visible';
+        confirmationContainer.classList.add('active');
+        
+        // Ensure buttons are visible
+        const bookingActions = confirmationContainer.querySelector('.booking-actions');
+        if (bookingActions) {
+            bookingActions.style.display = 'flex';
+            bookingActions.style.gap = '1rem';
+            bookingActions.style.visibility = 'visible';
+        } else {
+            console.warn('Booking actions container not found');
+        }
+        
+        // Ensure h2 title is visible
+        const title = confirmationContainer.querySelector('h2');
+        if (title) {
+            title.style.display = 'block';
+        }
+    } else {
+        console.error('CRITICAL: booking-confirmation container not found!');
+    }
 }
 
 /**
@@ -3121,7 +3992,12 @@ function proceedToPayment() {
 }
 
 function showPaymentStep() {
-    // Mark step 3 as completed and step 4 as active
+    console.log('showPaymentStep() called - hiding booking summary, showing payment');
+    
+    // Initialize payment methods visibility (in case DOM wasn't ready earlier)
+    initializePaymentMethods();
+    
+    // Mark step 3 (Booking Summary) as completed and step 4 (Payment) as active
     const step3 = document.getElementById('step3');
     const step4 = document.getElementById('step4');
     if (step3) {
@@ -3132,23 +4008,49 @@ function showPaymentStep() {
         step4.classList.add('active');
     }
     
-    // Update current step
-    currentStep = 4;
+    // Update current step to 5 (Payment step in code, but step4 in UI)
+    currentStep = 5;
     
-    // Hide booking confirmation
+    // Hide ALL booking-content sections first
+    document.querySelectorAll('.booking-content').forEach(content => {
+        content.classList.remove('active');
+        content.style.display = 'none';
+        content.style.visibility = 'hidden';
+    });
+    
+    // Explicitly hide booking confirmation (Booking Summary)
     const confirmationContent = document.getElementById('booking-confirmation');
     if (confirmationContent) {
         confirmationContent.classList.remove('active');
+        confirmationContent.style.display = 'none';
+        confirmationContent.style.visibility = 'hidden';
+        confirmationContent.style.opacity = '0';
+        console.log('Booking summary (booking-confirmation) is now hidden');
     }
     
     // Show payment step
     const paymentStep = document.getElementById('payment-step');
     if (paymentStep) {
         paymentStep.classList.add('active');
+        paymentStep.style.display = 'block';
+        paymentStep.style.visibility = 'visible';
+        paymentStep.style.opacity = '1';
+        console.log('Payment step is now visible');
+    } else {
+        console.error('CRITICAL: payment-step container not found!');
     }
     
     // Update payment booking summary
     updatePaymentBookingSummary();
+    
+    // Automatically select Yoco as the only payment method
+    selectedPaymentMethodInBooking = 'yoco';
+    
+    // Enable pay button since Yoco is the only option
+    const payButton = document.getElementById('pay-button');
+    if (payButton) {
+        payButton.disabled = false;
+    }
     
     // Setup card input formatting
     setupCardInputFormatting();
@@ -3194,11 +4096,17 @@ function setupCardInputFormatting() {
 
 let selectedPaymentMethodInBooking = null;
 
+// Yoco Configuration
+// Set this to your actual Yoco public key, or leave as null/empty to disable Yoco payments
+const YOCO_PUBLIC_KEY = 'pk_test_660c6ab0kwjeRzEb28d4'; // Replace with your Yoco public key, or set to null/empty to disable
+// Enable Yoco if a valid key is provided (starts with 'pk_' for Yoco public keys)
+const YOCO_ENABLED = YOCO_PUBLIC_KEY && YOCO_PUBLIC_KEY.trim() !== '' && YOCO_PUBLIC_KEY.startsWith('pk_');
+
 /**
- * Handles payment method selection (Card, EFT, Mobile)
+ * Handles payment method selection (Yoco, EFT, Mobile, PayFast)
  * Updates UI to show selected method and corresponding form
  * 
- * @param {string} method - Payment method: 'card', 'eft', or 'mobile'
+ * @param {string} method - Payment method: 'yoco', 'eft', 'mobile', or 'payfast'
  * 
  * Process:
  * 1. Removes selection from all payment method cards
@@ -3210,6 +4118,12 @@ let selectedPaymentMethodInBooking = null;
  * Usage: Called when user clicks on a payment method card
  */
 function selectPaymentMethodInBooking(method) {
+    // Check if Yoco is enabled when trying to select it
+    if (method === 'yoco' && !YOCO_ENABLED) {
+        alert('Yoco payment gateway is not configured. Please configure your Yoco public key in booking-public.js, or use a different payment method.');
+        return;
+    }
+    
     selectedPaymentMethodInBooking = method;
     
     // Remove selection from all cards
@@ -3258,13 +4172,36 @@ function selectPaymentMethodInBooking(method) {
 function updatePaymentBookingSummary() {
     if (!selectedRoute) return;
     
-    const route = routes[selectedRoute];
+    // Get route data from booking or fallback to routes object
+    let routeName = '';
+    let routePrice = 450; // Default fallback
+    
+    if (selectedBooking) {
+        // Use booking data
+        if (selectedBooking.direction_type === 'from_loc1') {
+            routeName = `${selectedBooking.location_1} → ${selectedBooking.location_2}`;
+        } else if (selectedBooking.direction_type === 'from_loc2') {
+            routeName = `${selectedBooking.location_2} → ${selectedBooking.location_1}`;
+        } else {
+            routeName = `${selectedBooking.location_1} → ${selectedBooking.location_2}`;
+        }
+        routePrice = parseFloat(selectedBooking.base_fare) || 450;
+    } else if (routes[selectedRoute]) {
+        // Fallback to old routes object
+        const route = routes[selectedRoute];
+        routeName = route.name;
+        routePrice = route.price || 450;
+    }
+    
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
-    const pricePerPerson = route.price || 450;
-    const passengers = bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : passengerCount;
+    const passengerCountFromStorage = parseInt(sessionStorage.getItem('passengerCount') || passengerCount) || passengerCount;
+    const parcelCountFromStorage = parseInt(sessionStorage.getItem('parcelCount') || parcelCount) || parcelCount;
+    
+    const pricePerPerson = routePrice;
+    const passengers = bookingTypeFromStorage === 'parcels' ? parcelCountFromStorage : passengerCountFromStorage;
     const totalAmount = bookingTypeFromStorage === 'parcels' 
-        ? (parcelCount || 0) * route.price 
-        : route.price * passengerCount;
+        ? parcelCountFromStorage * routePrice 
+        : routePrice * passengerCountFromStorage;
     
     // Update summary using the same structure as booking-payment.js
     const summaryRoute = document.getElementById('summary-route');
@@ -3272,16 +4209,16 @@ function updatePaymentBookingSummary() {
     const summaryPricePer = document.getElementById('summary-price-per');
     const summaryTotal = document.getElementById('summary-total');
     
-    if (summaryRoute) summaryRoute.textContent = route.name || '-';
+    if (summaryRoute) summaryRoute.textContent = routeName || '-';
     if (summaryPassengers) {
         if (bookingTypeFromStorage === 'parcels') {
-            summaryPassengers.textContent = parcelCount || 0;
+            summaryPassengers.textContent = parcelCountFromStorage || 0;
         } else {
-            summaryPassengers.textContent = passengerCount;
+            summaryPassengers.textContent = passengerCountFromStorage;
         }
     }
-    if (summaryPricePer) summaryPricePer.textContent = `R${pricePerPerson}`;
-    if (summaryTotal) summaryTotal.textContent = `R${totalAmount}`;
+    if (summaryPricePer) summaryPricePer.textContent = `R${pricePerPerson.toFixed(2)}`;
+    if (summaryTotal) summaryTotal.textContent = `R${totalAmount.toFixed(2)}`;
     
     // Generate payment reference for EFT
     const reference = 'TKS' + Date.now().toString().slice(-8);
@@ -3296,60 +4233,225 @@ function updatePaymentBookingSummary() {
  * Validates inputs based on selected payment method
  * 
  * Validation:
- * - Card: Validates card number, name, expiry, CVV
+ * - Yoco: No validation needed (handled by Yoco SDK)
  * - Mobile: Validates mobile number
  * - EFT: No validation needed (reference is auto-generated)
  * 
  * Process:
- * 1. Validates form inputs
- * 2. Shows processing state on pay button
- * 3. Calls completePaymentInBooking() after 2 second delay
+ * 1. For Yoco: Initializes Yoco checkout and opens payment modal
+ * 2. For other methods: Validates form inputs
+ * 3. Shows processing state on pay button
+ * 4. Calls completePaymentInBooking() after payment success
  * 
  * Usage: Called when user clicks "Pay Now" button
  */
 function processPaymentInBooking() {
+    // Yoco is the only payment method, so always use it
     if (!selectedPaymentMethodInBooking) {
-        alert('Please select a payment method');
+        selectedPaymentMethodInBooking = 'yoco';
+    }
+    
+    // Handle Yoco payment (only payment method)
+    if (selectedPaymentMethodInBooking === 'yoco') {
+        processYocoPayment();
         return;
     }
     
-    // Validate form inputs based on selected method
-    if (selectedPaymentMethodInBooking === 'card') {
-        const cardNumber = document.getElementById('card-number').value;
-        const cardName = document.getElementById('card-name').value;
-        const cardExpiry = document.getElementById('card-expiry').value;
-        const cardCVV = document.getElementById('card-cvv').value;
-        
-        if (!cardNumber || !cardName || !cardExpiry || !cardCVV) {
-            alert('Please fill in all card details');
-            return;
-        }
-        
-        // Basic validation
-        if (cardNumber.replace(/\s/g, '').length < 15) {
-            alert('Please enter a valid card number');
-            return;
-        }
-    } else if (selectedPaymentMethodInBooking === 'mobile') {
-        const mobileNumber = document.getElementById('mobile-number').value;
-        
-        if (!mobileNumber) {
-            alert('Please enter your mobile number');
-            return;
-        }
+    // Fallback (should not happen, but just in case)
+    alert('Payment method not available. Please refresh the page and try again.');
+}
+
+/**
+ * Processes payment using Yoco payment gateway
+ * Initializes Yoco SDK and opens checkout modal
+ * 
+ * Process:
+ * 1. Gets booking total amount from summary
+ * 2. Waits for Yoco SDK to be fully loaded
+ * 3. Initializes Yoco SDK with public key
+ * 4. Creates checkout instance with booking details
+ * 5. Opens Yoco payment modal
+ * 6. Handles payment success/error callbacks
+ * 
+ * Usage: Called when user selects Yoco payment method and clicks "Pay Now"
+ */
+function processYocoPayment() {
+    // Get total amount from summary
+    const summaryTotal = document.getElementById('summary-total');
+    if (!summaryTotal) {
+        alert('Unable to retrieve payment amount. Please try again.');
+        return;
     }
     
-    // Show processing state
-    const payButton = document.getElementById('pay-button');
-    if (payButton) {
-        payButton.disabled = true;
-        payButton.innerHTML = '<i class="ri-loader-4-line"></i> Processing Payment...';
+    // Extract amount from text (e.g., "R450.00" -> 45000 cents)
+    const amountText = summaryTotal.textContent.replace(/[R\s,]/g, '');
+    const amountInRands = parseFloat(amountText);
+    const amountInCents = Math.round(amountInRands * 100);
+    
+    if (!amountInCents || amountInCents <= 0) {
+        alert('Invalid payment amount. Please try again.');
+        return;
     }
     
-    // Simulate payment processing
-    setTimeout(() => {
-        completePaymentInBooking();
-    }, 2000);
+    // Get route name for description
+    const routeName = document.getElementById('summary-route')?.textContent || 'Booking Payment';
+    const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
+    const passengerCountFromStorage = parseInt(sessionStorage.getItem('passengerCount') || passengerCount) || passengerCount;
+    const parcelCountFromStorage = parseInt(sessionStorage.getItem('parcelCount') || parcelCount) || parcelCount;
+    
+    const description = bookingTypeFromStorage === 'parcels' 
+        ? `${parcelCountFromStorage} Parcel(s) - ${routeName}`
+        : `${passengerCountFromStorage} Passenger(s) - ${routeName}`;
+    
+    // Check if Yoco is enabled
+    if (!YOCO_ENABLED) {
+        alert('Yoco payment gateway is not configured. Please configure your Yoco public key in the code, or use a different payment method.');
+        console.warn('Yoco payment attempted but Yoco is not enabled. Set YOCO_PUBLIC_KEY in booking-public.js');
+        return;
+    }
+    
+    // Initialize Yoco SDK with configured public key
+    const yocoPublicKey = YOCO_PUBLIC_KEY;
+    
+    // Function to initialize and open Yoco checkout
+    const initializeAndOpenCheckout = () => {
+        // Check if Yoco SDK is loaded
+        if (typeof window.YocoSDK === 'undefined') {
+            console.error('Yoco SDK not loaded');
+            console.log('Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('yoco')));
+            alert('Payment gateway is not available. Please refresh the page and try again.');
+            return;
+        }
+        
+        try {
+            console.log('Initializing Yoco SDK with public key:', yocoPublicKey.substring(0, 10) + '...');
+            
+            // Initialize Yoco SDK
+            const yoco = new window.YocoSDK({
+                publicKey: yocoPublicKey
+            });
+            
+            // Verify yoco object is created
+            if (!yoco) {
+                throw new Error('Failed to initialize Yoco SDK - yoco object is null/undefined');
+            }
+            
+            console.log('Yoco SDK initialized. Available methods:', Object.keys(yoco));
+            
+            // Check if showPopup method exists (this is the correct Yoco SDK method)
+            if (typeof yoco.showPopup !== 'function') {
+                console.error('Yoco object methods:', Object.keys(yoco));
+                console.error('Yoco object:', yoco);
+                // Try checkout method as fallback
+                if (typeof yoco.checkout === 'function') {
+                    console.warn('showPopup not found, trying checkout method...');
+                } else {
+                    throw new Error('Yoco showPopup method not available. Available methods: ' + Object.keys(yoco).join(', '));
+                }
+            }
+            
+            console.log('Opening Yoco payment popup with amount:', amountInCents, 'cents');
+            
+            // Define callback function
+            const paymentCallback = function (result) {
+                console.log('Yoco callback received:', result);
+                
+                // Show processing state
+                const payButton = document.getElementById('pay-button');
+                if (payButton) {
+                    payButton.disabled = true;
+                    payButton.innerHTML = '<i class="ri-loader-4-line"></i> Processing Payment...';
+                }
+                
+                if (result.error) {
+                    // Handle payment error
+                    console.error('Yoco payment error:', result.error);
+                    alert('Payment failed: ' + (result.error.message || 'An error occurred. Please try again.'));
+                    
+                    // Re-enable pay button
+                    if (payButton) {
+                        payButton.disabled = false;
+                        payButton.innerHTML = '<i class="ri-bank-card-line"></i> Pay Now';
+                    }
+                } else {
+                    // Payment successful
+                    console.log('Yoco payment successful:', result);
+                    
+                    // Store payment data for server-side verification
+                    if (result.token) {
+                        sessionStorage.setItem('yocoPaymentToken', result.token);
+                    }
+                    if (result.id) {
+                        sessionStorage.setItem('yocoPaymentId', result.id);
+                    }
+                    // Store full response for gateway_response field
+                    if (result) {
+                        sessionStorage.setItem('yocoPaymentResponse', JSON.stringify(result));
+                    }
+                    
+                    // Update payment method to include Yoco token
+                    selectedPaymentMethodInBooking = 'yoco';
+                    
+                    // Complete the booking process
+                    completePaymentInBooking();
+                }
+            };
+            
+            // Use showPopup method (correct Yoco SDK API)
+            const popupConfig = {
+                amountInCents: amountInCents,
+                currency: 'ZAR',
+                name: 'TekSiMap Booking',
+                description: description,
+                callback: paymentCallback
+            };
+            
+            console.log('Yoco popup config:', popupConfig);
+            
+            // Call showPopup directly - this opens the payment modal
+            yoco.showPopup(popupConfig);
+            
+        } catch (error) {
+            console.error('Error initializing Yoco checkout:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                yocoSDKAvailable: typeof window.YocoSDK !== 'undefined',
+                yocoSDKType: typeof window.YocoSDK,
+                yocoSDKConstructor: window.YocoSDK ? window.YocoSDK.toString().substring(0, 200) : 'N/A'
+            });
+            alert('Unable to initialize payment gateway: ' + (error.message || 'Unknown error') + '. Please try again or use a different payment method.');
+        }
+    };
+    
+    // Wait for Yoco SDK to be loaded if it's not already available
+    if (typeof window.YocoSDK === 'undefined') {
+        console.log('Yoco SDK not immediately available, waiting for it to load...');
+        
+        // Wait up to 5 seconds for SDK to load
+        let attempts = 0;
+        const maxAttempts = 50; // 50 attempts * 100ms = 5 seconds
+        
+        const checkSDK = setInterval(() => {
+            attempts++;
+            
+            if (typeof window.YocoSDK !== 'undefined') {
+                clearInterval(checkSDK);
+                console.log('Yoco SDK loaded after', attempts * 100, 'ms');
+                initializeAndOpenCheckout();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkSDK);
+                alert('Payment gateway is taking too long to load. Please refresh the page and try again.');
+                console.error('Yoco SDK failed to load after 5 seconds');
+                console.error('Window.YocoSDK:', window.YocoSDK);
+                console.error('Available window properties with "yoco":', Object.keys(window).filter(k => k.toLowerCase().includes('yoco')));
+            }
+        }, 100);
+    } else {
+        // SDK is already loaded, proceed immediately
+        console.log('Yoco SDK is available, proceeding immediately');
+        initializeAndOpenCheckout();
+    }
 }
 
 /**
@@ -3392,11 +4494,36 @@ async function completePaymentInBooking() {
     
     // Get selected vehicle info
     const selectedVehicleData = JSON.parse(sessionStorage.getItem('selectedVehicle') || '{}');
-    const route = routes[selectedRoute];
+    
+    // Get route data - check selectedBooking first, then fallback to routes object
+    let routeName = '';
+    let routePrice = 450; // Default fallback
+    
+    if (selectedBooking) {
+        // Use booking data from database
+        if (selectedBooking.direction_type === 'from_loc1') {
+            routeName = `${selectedBooking.location_1} → ${selectedBooking.location_2}`;
+        } else if (selectedBooking.direction_type === 'from_loc2') {
+            routeName = `${selectedBooking.location_2} → ${selectedBooking.location_1}`;
+        } else {
+            routeName = `${selectedBooking.location_1} → ${selectedBooking.location_2}`;
+        }
+        routePrice = parseFloat(selectedBooking.base_fare) || 450;
+    } else if (selectedRoute && routes && routes[selectedRoute]) {
+        // Fallback to old routes object
+        const route = routes[selectedRoute];
+        routeName = route.name || 'Route not selected';
+        routePrice = route.price || 450;
+    } else {
+        console.warn('No route data available. Using defaults.');
+        routeName = 'Route information unavailable';
+        routePrice = 450;
+    }
+    
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
     const totalAmount = bookingTypeFromStorage === 'parcels' 
-        ? (parcelCount || 0) * route.price 
-        : route.price * passengerCount;
+        ? (parcelCount || 0) * routePrice 
+        : routePrice * passengerCount;
     
     // Get passenger data
     const passengerData = JSON.parse(sessionStorage.getItem('passengerData') || '[]');
@@ -3446,30 +4573,8 @@ async function completePaymentInBooking() {
         if (response.success && response.booking) {
             apiBooking = response.booking;
             
-            // Add passengers to booking
-            if (passengerData && passengerData.length > 0) {
-                for (let i = 0; i < passengerData.length; i++) {
-                    const passenger = passengerData[i];
-                    try {
-                        await bookingApi.addPassenger(apiBooking.id, {
-                            passenger_type: 'guest',
-                            first_name: passenger.firstName,
-                            last_name: passenger.lastName,
-                            email: passenger.email,
-                            phone: passenger.phone,
-                            id_number: passenger.idNumber || null,
-                            pickup_point: pickupPoints[i] || null,
-                            dropoff_point: dropoffPoints[i] || null,
-                            next_of_kin_first_name: passenger.nextOfKin?.firstName || '',
-                            next_of_kin_last_name: passenger.nextOfKin?.lastName || '',
-                            next_of_kin_phone: passenger.nextOfKin?.phone || '',
-                            is_primary: i === 0
-                        });
-                    } catch (error) {
-                        console.error('Error adding passenger:', error);
-                    }
-                }
-            }
+            // Note: Passengers will be added when payment is successful (in paymentController)
+            // This ensures passengers are only added after payment is confirmed
             
             // Add parcels to booking
             if (bookingTypeFromStorage === 'parcels') {
@@ -3495,12 +4600,78 @@ async function completePaymentInBooking() {
             
             // Create payment
             try {
+                // Map payment method for API
+                let paymentMethod = selectedPaymentMethodInBooking || 'EFT';
+                if (paymentMethod === 'yoco') {
+                    paymentMethod = 'card'; // Yoco processes card payments
+                }
+                
+                // Get Yoco payment data if available
+                const yocoPaymentToken = sessionStorage.getItem('yocoPaymentToken');
+                const yocoPaymentId = sessionStorage.getItem('yocoPaymentId');
+                const yocoPaymentResponse = sessionStorage.getItem('yocoPaymentResponse');
+                
+                // Prepare gateway response for Yoco payments
+                let gatewayResponse = null;
+                if (paymentMethod === 'card' && yocoPaymentToken) {
+                    gatewayResponse = {
+                        token: yocoPaymentToken,
+                        id: yocoPaymentId,
+                        gateway: 'yoco',
+                        timestamp: new Date().toISOString()
+                    };
+                    // Include full response if available
+                    if (yocoPaymentResponse) {
+                        try {
+                            const fullResponse = JSON.parse(yocoPaymentResponse);
+                            gatewayResponse = { ...gatewayResponse, ...fullResponse };
+                        } catch (e) {
+                            console.warn('Could not parse Yoco payment response:', e);
+                        }
+                    }
+                }
+                
+                // Prepare passenger data if this is a passenger booking
+                let passengerDataForPayment = null;
+                if (bookingTypeFromStorage === 'passengers' && passengerData && passengerData.length > 0) {
+                    // Get the primary passenger (first one)
+                    const primaryPassenger = passengerData[0];
+                    passengerDataForPayment = {
+                        first_name: primaryPassenger.firstName,
+                        last_name: primaryPassenger.lastName,
+                        email: primaryPassenger.email || null,
+                        phone: primaryPassenger.phone || null,
+                        id_number: primaryPassenger.idNumber || null,
+                        pickup_point: pickupPoints[0] || null,
+                        dropoff_point: dropoffPoints[0] || null,
+                        next_of_kin_first_name: primaryPassenger.nextOfKin?.firstName || '',
+                        next_of_kin_last_name: primaryPassenger.nextOfKin?.lastName || '',
+                        next_of_kin_phone: primaryPassenger.nextOfKin?.phone || '',
+                        is_primary: true
+                    };
+                }
+                
                 await paymentApi.createPayment({
                     booking_id: apiBooking.id,
                     amount: totalAmount,
-                    payment_method: selectedPaymentMethodInBooking || 'EFT',
-                    payer_type: 'registered'
+                    payment_method: paymentMethod,
+                    // Include Yoco payment details if available
+                    transaction_id: yocoPaymentId || null,
+                    payment_gateway: 'yoco', // Always 'yoco' since it's the only payment gateway
+                    gateway_response: gatewayResponse,
+                    passenger_data: passengerDataForPayment // Send passenger data for passenger bookings
                 });
+                
+                // Clear Yoco payment data from session storage
+                if (yocoPaymentToken) {
+                    sessionStorage.removeItem('yocoPaymentToken');
+                }
+                if (yocoPaymentId) {
+                    sessionStorage.removeItem('yocoPaymentId');
+                }
+                if (yocoPaymentResponse) {
+                    sessionStorage.removeItem('yocoPaymentResponse');
+                }
             } catch (error) {
                 console.error('Error creating payment:', error);
             }
@@ -3541,13 +4712,13 @@ async function completePaymentInBooking() {
         booking_id: apiBooking?.id,
         reference: apiBooking?.booking_reference || 'TKS' + Date.now().toString().slice(-8),
         routeId: selectedRoute,
-        routeName: route.name,
+        routeName: routeName, // Use the routeName variable we created above
         bookingType: bookingTypeFromStorage,
         passengers: bookingTypeFromStorage === 'parcels' ? 0 : passengerCount,
         parcels: bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : 0,
         parcelData: savedParcelData,
         seatSecretCode: seatSecretCode,
-        pricePerPerson: route.price,
+        pricePerPerson: routePrice, // Use the routePrice variable we created above
         totalAmount: totalAmount,
         pickupPoints: pickupPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
         dropoffPoints: dropoffPoints.map(p => ({ address: p.address, lat: p.lat, lng: p.lng })),
@@ -3573,7 +4744,7 @@ async function completePaymentInBooking() {
         // Save trip data with all booking information
         const tripData = {
             routeId: selectedRoute,
-            routeName: route.name,
+            routeName: routeName, // Use the routeName variable we created above
             passengers: passengerCount,
             seatSecretCode: booking.seatSecretCode, // Include seat secret code
             pickupPoints: pickupPoints.map(p => ({ 
@@ -4245,7 +5416,27 @@ window.markNotificationAsRead = markNotificationAsRead;
 
 // Initialize the page
 // Update extra space display on page load
+/**
+ * Initializes payment method visibility based on configuration
+ * Hides Yoco option if not configured
+ */
+function initializePaymentMethods() {
+    // Hide Yoco payment option if not enabled
+    const yocoCard = document.querySelector('.payment-method-card[onclick*="yoco"]');
+    if (yocoCard) {
+        if (!YOCO_ENABLED) {
+            yocoCard.style.display = 'none';
+            console.log('Yoco payment option hidden - not configured');
+        } else {
+            yocoCard.style.display = 'flex';
+            console.log('Yoco payment option enabled');
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize payment methods visibility
+    initializePaymentMethods();
     populateRouteCards(); // Generate route cards dynamically from routes object
     initializeMap();
     checkActiveTrip();

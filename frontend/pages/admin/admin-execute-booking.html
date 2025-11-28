@@ -181,6 +181,12 @@
                 <option value="">-- Select a Route --</option>
               </select>
             </div>
+            <div class="form-group" id="directionGroup" style="display: none; margin-top: 1rem;">
+              <label for="directionSelect">Direction *</label>
+              <select id="directionSelect" class="form-control" required>
+                <option value="">-- Select Direction --</option>
+              </select>
+            </div>
             <button class="btn btn-primary" onclick="loadNextVehicle()" id="loadVehicleBtn" disabled>
               <i class="fas fa-search"></i> View Next Vehicle in Queue
             </button>
@@ -207,23 +213,9 @@
           </div>
           <div class="card-body">
             <form id="executeBookingForm">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                <div class="form-group">
-                  <label for="scheduledPickup">Scheduled Pickup Date & Time *</label>
-                  <input type="datetime-local" id="scheduledPickup" class="form-control" required>
-                </div>
-                <div class="form-group">
-                  <label for="passengerCount">Passenger Count</label>
-                  <input type="number" id="passengerCount" class="form-control" min="0" value="0">
-                </div>
-                <div class="form-group">
-                  <label for="parcelCount">Parcel Count</label>
-                  <input type="number" id="parcelCount" class="form-control" min="0" value="0">
-                </div>
-              </div>
-              <div class="form-group" style="margin-top: 1.5rem;">
-                <label for="specialInstructions">Special Instructions</label>
-                <textarea id="specialInstructions" class="form-control" rows="3" placeholder="Optional special instructions for this booking"></textarea>
+              <div class="form-group">
+                <label for="scheduledPickup">Scheduled Pickup Date & Time *</label>
+                <input type="datetime-local" id="scheduledPickup" class="form-control" required>
               </div>
               <div style="margin-top: 2rem;">
                 <button type="submit" class="btn btn-success btn-lg" id="executeBookingBtn">

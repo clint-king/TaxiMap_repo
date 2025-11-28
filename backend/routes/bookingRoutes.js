@@ -5,6 +5,12 @@ import authenticateUser from "../Middleware/authenticateUser.js";
 const router = express.Router();
 
 // ============================================
+// PUBLIC ROUTES (No authentication required)
+// ============================================
+// Get public pending bookings for display on booking-public page
+router.get("/public/pending", bookingController.getPublicPendingBookings);
+
+// ============================================
 // CLIENT ROUTES (Passenger/Booking Creator)
 // ============================================
 // Create a route-based booking (automatically selects next vehicle in queue)

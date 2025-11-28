@@ -13,10 +13,12 @@ export const createPayment = async (req, res) => {
         const userId = req.user.id;
         const {
             booking_id,
-            payer_profile_id,
             amount,
-            payment_method = 'EFT',
-            payer_type = 'registered'
+            payment_method = 'card', // Default to 'card' since Yoco is the only payment method
+            payment_gateway = 'yoco', // Default to 'yoco' since it's the only payment gateway
+            transaction_id: provided_transaction_id = null,
+            gateway_response = null,
+            passenger_data = null // Passenger data if this is a passenger booking
         } = req.body;
 
         if (!booking_id || !amount) {
@@ -49,35 +51,141 @@ export const createPayment = async (req, res) => {
             });
         }
 
-        // Generate transaction ID
-        const transaction_id = uuidv4();
+        // Use provided transaction_id (from Yoco) or generate a new one
+        const transaction_id = provided_transaction_id || uuidv4();
+        
+        // Determine payment status based on gateway
+        // Yoco payments are typically 'completed' when the callback is received
+        // EFT payments start as 'pending'
+        let payment_status = 'pending';
+        if (payment_gateway === 'yoco' && provided_transaction_id) {
+            payment_status = 'completed'; // Yoco payments are completed when we receive the transaction_id
+        }
 
         // Insert payment
         const [result] = await pool.execute(
             `INSERT INTO payments (
-                booking_id, user_id, payer_profile_id, amount, currency,
-                payment_method, payer_type, payment_status, transaction_id
-            ) VALUES (?, ?, ?, ?, 'ZAR', ?, ?, 'pending', ?)`,
+                booking_id, user_id, amount, currency,
+                payment_method, payment_status, transaction_id,
+                payment_gateway, gateway_response
+            ) VALUES (?, ?, ?, 'ZAR', ?, ?, ?, ?, ?)`,
             [
-                booking_id, payer_type === 'registered' ? userId : null,
-                payer_profile_id || null, amount, payment_method, payer_type, transaction_id
+                booking_id, 
+                userId, // Always use the authenticated user's ID
+                amount, 
+                payment_method, 
+                payment_status,
+                transaction_id,
+                payment_gateway,
+                gateway_response ? JSON.stringify(gateway_response) : null
             ]
         );
 
-        // Update booking payment status
+        // Update booking payment status and amounts
         const newTotalPaid = parseFloat(booking.total_amount_paid || 0) + parseFloat(amount);
-        await pool.execute(
-            `UPDATE bookings 
+        
+        // Check if this is a passenger booking (has passenger data)
+        const isPassengerBooking = passenger_data && passenger_data.first_name;
+        
+        // Prepare booking update query
+        let bookingUpdateQuery = `UPDATE bookings 
              SET total_amount_paid = ?, 
                  payment_transaction_id = ?,
                  booking_status = CASE 
                      WHEN ? >= total_amount_needed THEN 'paid'
                      WHEN booking_status = 'pending' THEN 'confirmed'
                      ELSE booking_status
-                 END
-             WHERE id = ?`,
-            [newTotalPaid, transaction_id, newTotalPaid, booking_id]
-        );
+                 END`;
+        let bookingUpdateParams = [newTotalPaid, transaction_id, newTotalPaid];
+        
+        // If passenger booking, update passenger_count and total_seats_available
+        if (isPassengerBooking) {
+            bookingUpdateQuery += `, passenger_count = passenger_count + 1,
+                 total_seats_available = GREATEST(0, total_seats_available - 1)`;
+        }
+        
+        bookingUpdateQuery += ` WHERE id = ?`;
+        bookingUpdateParams.push(booking_id);
+        
+        await pool.execute(bookingUpdateQuery, bookingUpdateParams);
+        
+        // If passenger booking, add passenger to booking_passengers table
+        let passengerResult = null;
+        if (isPassengerBooking) {
+            try {
+                // Get current passenger count for passenger_number
+                const [passengerCount] = await pool.execute(
+                    "SELECT COUNT(*) as count FROM booking_passengers WHERE booking_id = ?",
+                    [booking_id]
+                );
+                const passenger_number = passengerCount[0].count + 1;
+                
+                // Generate unique 7-character code
+                let code;
+                let codeExists = true;
+                let attempts = 0;
+                const maxAttempts = 20;
+                
+                while (codeExists && attempts < maxAttempts) {
+                    // Generate 7-character alphanumeric code
+                    code = Math.random().toString(36).substring(2, 9).toUpperCase();
+                    // Ensure it's exactly 7 characters
+                    if (code.length < 7) {
+                        code = code.padEnd(7, Math.random().toString(36).substring(2, 9).toUpperCase());
+                    }
+                    code = code.substring(0, 7);
+                    
+                    // Check if code already exists
+                    const [existingCode] = await pool.execute(
+                        "SELECT ID FROM booking_passengers WHERE code = ?",
+                        [code]
+                    );
+                    codeExists = existingCode.length > 0;
+                    attempts++;
+                }
+                
+                if (codeExists) {
+                    throw new Error('Failed to generate unique passenger code after ' + maxAttempts + ' attempts');
+                }
+                
+                // Insert passenger as registered user
+                // Note: Using JSON.stringify for pickup/dropoff points to match existing pattern in bookingController
+                const [passengerInsert] = await pool.execute(
+                    `INSERT INTO booking_passengers (
+                        booking_id, passenger_number, passenger_type, linked_user_id,
+                        first_name, last_name, email, phone, id_number,
+                        code, pickup_point, dropoff_point, is_primary,
+                        next_of_kin_first_name, next_of_kin_last_name, next_of_kin_phone
+                    ) VALUES (?, ?, 'registered', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        booking_id,
+                        passenger_number,
+                        userId, // linked_user_id for registered user
+                        passenger_data.first_name,
+                        passenger_data.last_name,
+                        passenger_data.email || null,
+                        passenger_data.phone || null,
+                        passenger_data.id_number || null,
+                        code,
+                        passenger_data.pickup_point ? JSON.stringify(passenger_data.pickup_point) : null,
+                        passenger_data.dropoff_point ? JSON.stringify(passenger_data.dropoff_point) : null,
+                        passenger_data.is_primary || false,
+                        passenger_data.next_of_kin_first_name || '',
+                        passenger_data.next_of_kin_last_name || '',
+                        passenger_data.next_of_kin_phone || ''
+                    ]
+                );
+                
+                passengerResult = {
+                    id: passengerInsert.insertId,
+                    passenger_number,
+                    code
+                };
+            } catch (error) {
+                console.error("Error adding passenger to booking:", error);
+                // Don't fail the payment if passenger addition fails, but log it
+            }
+        }
 
         res.status(201).json({
             success: true,
@@ -85,8 +193,10 @@ export const createPayment = async (req, res) => {
             payment: {
                 id: result.insertId,
                 transaction_id,
-                payment_status: 'pending'
-            }
+                payment_status: payment_status,
+                payment_gateway: payment_gateway
+            },
+            passenger: passengerResult // Include passenger info if added
         });
     } catch (error) {
         console.error("Error creating payment:", error);

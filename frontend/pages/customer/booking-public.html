@@ -3697,81 +3697,7 @@
 
                     <h2>Available Routes</h2>
             <div class="route-selection">
-                <div class="route-card" data-route="pta-tzn" onclick="selectRoute('pta-tzn')">
-                        <div class="route-info">
-                            <div class="route-details">
-                                <h3><i class="ri-taxi-line"></i>Pretoria → Tzaneen</h3>
-                                <p><i class="ri-map-pin-distance-line"></i><strong>Distance:</strong> 450 km</p>
-                                <p><i class="ri-time-line"></i><strong>Duration:</strong> ~5.5 hours</p>
-                                <p><i class="ri-calendar-line"></i><strong>Date:</strong> 2025/11/14 Friday</p>
-                                <p><i class="ri-time-line"></i><strong>Time:</strong> 10:00 am</p>
-                                <p><i class="ri-user-line"></i><strong>Capacity:</strong> 14 seats available</p>
-                                <p id="extra-space-pta-tzn" style="background: #f3e5f5; padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
-                                    <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
-                                    <strong style="color: #7b1fa2;">Available Extra Space:</strong> 
-                                    <span id="extra-space-display-pta-tzn">4 large (or 8 medium or 20 small)</span>
-                                </p>
-                            </div>
-                            <div class="route-price">R450</div>
-                            <div class="extra-space-pricing" style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border: 2px solid #FFD52F; border-radius: 10px;">
-                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; font-weight: 600;">
-                                    <i class="ri-price-tag-3-line" style="color: #FFD52F;"></i> Extra Space Pricing:
-                        </div> 
-                                <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Large:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R400</span>
-                </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Medium:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R150</span>
-                            </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Small:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R60</span>
-                        </div>
-                </div>
-                            </div>
-                        </div>
-                </div>
-
-                <div class="route-card" data-route="tzn-pta" onclick="selectRoute('tzn-pta')">
-                        <div class="route-info">
-                            <div class="route-details">
-                                <h3><i class="ri-taxi-line"></i>Tzaneen → Pretoria</h3>
-                                <p><i class="ri-map-pin-distance-line"></i><strong>Distance:</strong> 450 km</p>
-                                <p><i class="ri-time-line"></i><strong>Duration:</strong> ~5.5 hours</p>
-                                <p><i class="ri-calendar-line"></i><strong>Date:</strong> 2025/11/14 Friday</p>
-                                <p><i class="ri-time-line"></i><strong>Time:</strong> 10:00 am</p>
-                                <p><i class="ri-user-line"></i><strong>Capacity:</strong> 14 seats available</p>
-                                <p id="extra-space-tzn-pta" style="background: #f3e5f5; padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
-                                    <i class="ri-box-3-line" style="color: #7b1fa2;"></i>
-                                    <strong style="color: #7b1fa2;">Available Extra Space:</strong> 
-                                    <span id="extra-space-display-tzn-pta">4 large (or 8 medium or 20 small)</span>
-                                </p>
-                            </div>
-                            <div class="route-price">R450</div>
-                            <div class="extra-space-pricing" style="margin-top: 1rem; padding: 1rem; background: #fff9e6; border: 2px solid #FFD52F; border-radius: 10px;">
-                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; font-weight: 600;">
-                                    <i class="ri-price-tag-3-line" style="color: #FFD52F;"></i> Extra Space Pricing:
-                        </div>
-                                <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Large:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R400</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Medium:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R150</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span><strong>Small:</strong></span>
-                                        <span style="color: #01386A; font-weight: 700;">R60</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                </div>
+                <!-- Route cards will be dynamically populated from pending bookings -->
             </div>
 
                     <div class="map-container">
@@ -3821,7 +3747,7 @@
                                 <!-- Pickup Location Input -->
                                 <div class="location-input-card" style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 1.5rem;">
                                     <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #01386A;">
-                                        <i class="ri-map-pin-user-fill" style="color: #28a745;"></i> Pickup Location
+                                        <i class="ri-map-pin-user-fill" style="color: #28a745;"></i> Pickup Location <span style="color: #dc3545;">*</span>
                                     </label>
                                     <div id="pickup-geocoder-container" style="position: relative;"></div>
                                     <small id="pickup-location-hint" style="display: block; margin-top: 0.5rem; color: #666; font-style: italic;"></small>
@@ -3830,7 +3756,7 @@
                                 <!-- Dropoff Location Input -->
                                 <div class="location-input-card" style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 1.5rem;">
                                     <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #01386A;">
-                                        <i class="ri-map-pin-3-fill" style="color: #dc3545;"></i> Dropoff Location
+                                        <i class="ri-map-pin-3-fill" style="color: #dc3545;"></i> Dropoff Location <span style="color: #dc3545;">*</span>
                                     </label>
                                     <div id="dropoff-geocoder-container" style="position: relative;"></div>
                                     <small id="dropoff-location-hint" style="display: block; margin-top: 0.5rem; color: #666; font-style: italic;"></small>
@@ -3844,6 +3770,11 @@
                                     <h4 style="color: #01386A; margin: 0;">Route Map</h4>
                                 </div>
                                 <div id="location-selection-map" style="width: 100%; height: 400px; border-radius: 8px; overflow: hidden; box-sizing: border-box; margin: 0; padding: 0;"></div>
+                            </div>
+                            
+                            <!-- Location Validation Message -->
+                            <div id="location-validation-message" style="display: none; background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #dc3545;">
+                                <i class="ri-error-warning-line"></i> <strong>Required:</strong> <span id="location-validation-message-text"></span>
                             </div>
                         </div>
 
@@ -3931,11 +3862,15 @@
                 <!-- Step 3: Booking Summary -->
                 <div class="booking-content" id="booking-confirmation">
                     <h2><i class="ri-file-list-3-line"></i> Booking Summary</h2>
-                    <div class="booking-summary" id="booking-summary">
+                    <div class="booking-summary" id="booking-summary" style="min-height: 200px;">
                         <!-- Will be populated by JavaScript -->
+                        <div style="text-align: center; padding: 2rem; color: #666;">
+                            <i class="ri-loader-4-line" style="font-size: 2rem; animation: spin 1s linear infinite;"></i>
+                            <p>Loading booking summary...</p>
+                        </div>
                     </div>
 
-                    <div class="booking-actions">
+                    <div class="booking-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
                         <button class="btn btn-primary" onclick="confirmBooking()"><i class="ri-check-line"></i>Confirm Booking</button>
                         <button class="btn btn-secondary" onclick="goBack()"><i class="ri-arrow-left-line"></i>Go Back</button>
                     </div>
@@ -3955,112 +3890,35 @@
                             <div class="payment-grid">
                                 <!-- Payment Methods Section -->
                                 <div class="payment-methods-section">
-                                    <h2><i class="ri-wallet-3-line"></i> Select Payment Method</h2>
+                                    <h2><i class="ri-wallet-3-line"></i> Payment</h2>
                                     
-                                    <div class="payment-methods-grid">
-                                        <!-- Credit/Debit Card -->
-                                        <div class="payment-method-card" onclick="selectPaymentMethodInBooking('card')">
-                                            <div class="payment-method-icon">
-                                                <i class="ri-bank-card-2-line"></i>
-                                            </div>
-                                            <div class="payment-method-info">
-                                                <h3>Credit / Debit Card</h3>
-                                                <p>Visa, Mastercard, American Express</p>
-                                            </div>
+                                    <!-- Yoco Payment Gateway - Only Payment Method -->
+                                    <div class="payment-method-card selected" style="margin-bottom: 2rem;">
+                                        <div class="payment-method-icon">
+                                            <i class="ri-bank-card-2-line"></i>
                                         </div>
-
-                                        <!-- EFT / Bank Transfer -->
-                                        <div class="payment-method-card" onclick="selectPaymentMethodInBooking('eft')">
-                                            <div class="payment-method-icon">
-                                                <i class="ri-bank-line"></i>
-                                            </div>
-                                            <div class="payment-method-info">
-                                                <h3>EFT / Bank Transfer</h3>
-                                                <p>Direct bank transfer</p>
-                                            </div>
-                                        </div>
-
-                                        <!-- Mobile Payment -->
-                                        <div class="payment-method-card" onclick="selectPaymentMethodInBooking('mobile')">
-                                            <div class="payment-method-icon">
-                                                <i class="ri-smartphone-line"></i>
-                                            </div>
-                                            <div class="payment-method-info">
-                                                <h3>Mobile Payment</h3>
-                                                <p>SnapScan, Zapper, Apple Pay, Google Pay</p>
-                                            </div>
-                                        </div>
-
-                                        <!-- PayFast -->
-                                        <div class="payment-method-card" onclick="selectPaymentMethodInBooking('payfast')">
-                                            <div class="payment-method-icon">
-                                                <i class="ri-secure-payment-line"></i>
-                                            </div>
-                                            <div class="payment-method-info">
-                                                <h3>PayFast</h3>
-                                                <p>Secure online payment gateway</p>
-                                            </div>
+                                        <div class="payment-method-info">
+                                            <h3>Credit / Debit Card</h3>
+                                            <p>Visa, Mastercard, American Express (Powered by Yoco)</p>
                                         </div>
                                     </div>
 
-                                    <!-- Card Payment Form -->
-                                    <div class="payment-form" id="card-form">
-                                        <h3><i class="ri-bank-card-line"></i> Card Details</h3>
-                                        <div class="form-group">
-                                            <label>Card Number</label>
-                                            <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" id="card-number">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Cardholder Name</label>
-                                            <input type="text" placeholder="John Doe" id="card-name">
-                                        </div>
-                                        <div class="form-row">
-                                            <div class="form-group">
-                                                <label>Expiry Date</label>
-                                                <input type="text" placeholder="MM/YY" maxlength="5" id="card-expiry">
+                                    <!-- Yoco Payment Form - Always Visible -->
+                                    <div class="payment-form show" id="yoco-form">
+                                        <h3><i class="ri-bank-card-line"></i> Secure Card Payment</h3>
+                                        <p style="color: #666; margin-bottom: 1.5rem;">
+                                            Click "Pay Now" to securely process your payment through Yoco's secure payment gateway. 
+                                            Your card details will be processed securely and never stored on our servers.
+                                        </p>
+                                        <div class="yoco-payment-info">
+                                            <div class="security-badge">
+                                                <i class="ri-shield-check-line"></i>
+                                                <span>Secured by Yoco</span>
                                             </div>
-                                            <div class="form-group">
-                                                <label>CVV</label>
-                                                <input type="text" placeholder="123" maxlength="3" id="card-cvv">
-                                            </div>
+                                            <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+                                                Accepted cards: Visa, Mastercard, American Express
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    <!-- EFT Form -->
-                                    <div class="payment-form" id="eft-form">
-                                        <h3><i class="ri-bank-line"></i> Bank Transfer Details</h3>
-                                        <div class="form-group">
-                                            <label>Account Name</label>
-                                            <input type="text" value="TekSiMap (Pty) Ltd" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Bank</label>
-                                            <input type="text" value="Standard Bank" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Account Number</label>
-                                            <input type="text" value="123456789" readonly>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Reference</label>
-                                            <input type="text" id="payment-reference" readonly>
-                                        </div>
-                                    </div>
-
-                                    <!-- Mobile Payment Form -->
-                                    <div class="payment-form" id="mobile-form">
-                                        <h3><i class="ri-smartphone-line"></i> Mobile Payment</h3>
-                                        <p style="color: #666; margin-bottom: 1.5rem;">Choose your preferred mobile payment option:</p>
-                                        <div class="form-group">
-                                            <label>Mobile Number</label>
-                                            <input type="tel" placeholder="0712345678" id="mobile-number">
-                                        </div>
-                                    </div>
-
-                                    <!-- PayFast Form -->
-                                    <div class="payment-form" id="payfast-form">
-                                        <h3><i class="ri-secure-payment-line"></i> PayFast Payment</h3>
-                                        <p style="color: #666; margin-bottom: 1.5rem;">You will be redirected to PayFast's secure payment gateway.</p>
                                     </div>
 
                                     <div class="security-notice">
@@ -4128,7 +3986,7 @@
                             </div>
 
                             <div class="payment-actions">
-                                <button class="btn btn-payment" id="pay-button" onclick="processPaymentInBooking()" disabled>
+                                <button class="btn btn-payment" id="pay-button" onclick="processPaymentInBooking()">
                                     <i class="ri-bank-card-line"></i> Pay Now
                                 </button>
                                 <button class="btn btn-secondary" onclick="goBackFromPayment()">
@@ -4314,6 +4172,28 @@
         </div>
     </div>
 
+    <!-- Yoco Payment Gateway SDK - Load synchronously before other scripts -->
+    <script src="https://js.yoco.com/sdk/v1/yoco-sdk-web.js" onload="window.yocoSDKReady = true; console.log('Yoco SDK script loaded');" onerror="console.error('Failed to load Yoco SDK');"></script>
+    <script>
+        // Ensure Yoco SDK is available globally
+        window.yocoSDKReady = false;
+        
+        // Check immediately if SDK is already loaded
+        if (typeof window.YocoSDK !== 'undefined') {
+            window.yocoSDKReady = true;
+            console.log('Yoco SDK already available');
+        }
+        
+        // Also check on window load
+        window.addEventListener('load', function() {
+            if (typeof window.YocoSDK !== 'undefined') {
+                window.yocoSDKReady = true;
+                console.log('Yoco SDK loaded successfully on window load');
+            } else {
+                console.warn('Yoco SDK not found after window load');
+            }
+        });
+    </script>
     <script type="module" src="../../js/tonav.js"></script>
     <script type="module" src="../../js/customer/booking-public.js"></script>
     <script type="module" src="../../js/authentication/logout.js"></script>

@@ -1364,6 +1364,7 @@ export const executeBookingAdmin = async (req, res) => {
         
         const {
             existing_route_id,
+            direction_type, // Required: 'from_loc1' or 'from_loc2'
             vehicle_id, // Required for verification
             scheduled_pickup,
             passenger_count = 0,
@@ -1376,6 +1377,21 @@ export const executeBookingAdmin = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Missing required field: existing_route_id"
+            });
+        }
+
+        if (!direction_type) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required field: direction_type"
+            });
+        }
+
+        // Validate direction_type
+        if (!['from_loc1', 'from_loc2'].includes(direction_type)) {
+            return res.status(400).json({
+                success: false,
+                message: "direction_type must be 'from_loc1' or 'from_loc2'"
             });
         }
 
@@ -1401,21 +1417,21 @@ export const executeBookingAdmin = async (req, res) => {
 
         const route = routes[0];
 
-        // Get the next vehicle in queue (position 1) for this route
-        const nextVehicleInfo = await getNextVehicleInQueueHelper(existing_route_id);
+        // Get the next vehicle in queue that matches the requested direction
+        const nextVehicleInfo = await getNextVehicleInQueueHelper(existing_route_id, direction_type);
 
         if (!nextVehicleInfo) {
             return res.status(404).json({
                 success: false,
-                message: "No vehicle available at position 1 for this route. Please try again later."
+                message: `No vehicle available for this route with direction '${direction_type}'. Please try again later.`
             });
         }
 
-        // Verify the vehicle_id matches the one at position 1
+        // Verify the vehicle_id matches the one found
         if (nextVehicleInfo.vehicle_id !== parseInt(vehicle_id)) {
             return res.status(400).json({
                 success: false,
-                message: `Vehicle ID mismatch. Vehicle at position 1 is ${nextVehicleInfo.vehicle_id}, not ${vehicle_id}`
+                message: `Vehicle ID mismatch. Vehicle matching direction '${direction_type}' is ${nextVehicleInfo.vehicle_id}, not ${vehicle_id}`
             });
         }
 
@@ -1424,26 +1440,48 @@ export const executeBookingAdmin = async (req, res) => {
         const driverId = nextVehicleInfo.driver_id;
         const ownerId = nextVehicleInfo.owner_id;
         const totalSeatsAvailable = nextVehicleInfo.capacity;
+        const totalSeats = nextVehicleInfo.capacity; // capacity from vehicles table → total_seats in bookings table
+        const extraspaceParcelCountSp = nextVehicleInfo.extraspace_parcel_sp || 0; // extraspace_parcel_sp from vehicles table → extraspace_parcel_count_sp in bookings table
         const baseFare = parseFloat(route.base_fare);
         
         // Calculate total amount needed (base fare, can be adjusted later for passengers/parcels)
         const totalAmountNeeded = baseFare;
 
-        // Create route points from route location_1 and location_2
-        const routePoints = [
-            {
-                point_type: 'pickup',
-                point_name: route.location_1,
-                address: route.location_1,
-                expected_time: scheduled_pickup || new Date().toISOString()
-            },
-            {
-                point_type: 'dropoff',
-                point_name: route.location_2 || route.location_1,
-                address: route.location_2 || route.location_1,
-                expected_time: scheduled_pickup || new Date().toISOString()
-            }
-        ];
+        // Create route points based on direction_type
+        // from_loc1: pickup at location_1, dropoff at location_2
+        // from_loc2: pickup at location_2, dropoff at location_1
+        let routePoints = [];
+        if (direction_type === 'from_loc1') {
+            routePoints = [
+                {
+                    point_type: 'pickup',
+                    point_name: route.location_1,
+                    address: route.location_1,
+                    expected_time: scheduled_pickup || new Date().toISOString()
+                },
+                {
+                    point_type: 'dropoff',
+                    point_name: route.location_2 || route.location_1,
+                    address: route.location_2 || route.location_1,
+                    expected_time: scheduled_pickup || new Date().toISOString()
+                }
+            ];
+        } else { // from_loc2
+            routePoints = [
+                {
+                    point_type: 'pickup',
+                    point_name: route.location_2,
+                    address: route.location_2,
+                    expected_time: scheduled_pickup || new Date().toISOString()
+                },
+                {
+                    point_type: 'dropoff',
+                    point_name: route.location_1 || route.location_2,
+                    address: route.location_1 || route.location_2,
+                    expected_time: scheduled_pickup || new Date().toISOString()
+                }
+            ];
+        }
 
         // Generate unique booking reference
         const booking_reference = generateBookingReference();
@@ -1455,38 +1493,29 @@ export const executeBookingAdmin = async (req, res) => {
             // Start transaction
             await connection.beginTransaction();
 
-            // Insert booking
+            // Insert booking with direction_type
             const [result] = await connection.execute(
                 `INSERT INTO bookings (
                     booking_reference, user_id, owner_id, vehicle_id, driver_id, 
                     existing_route_id, booking_mode, booking_status, passenger_count, 
-                    parcel_count, total_seats_available, total_amount_needed, 
-                    total_amount_paid, scheduled_pickup, route_points, special_instructions
-                ) VALUES (?, ?, ?, ?, ?, ?, 'route', 'pending', ?, ?, ?, ?, 0.00, ?, ?, ?)`,
+                    seat_parcel_count, total_seats_available, total_amount_needed, 
+                    total_amount_paid, scheduled_pickup, route_points, special_instructions,
+                    direction_type, total_seats, extraspace_parcel_count_sp
+                ) VALUES (?, ?, ?, ?, ?, ?, 'route', 'pending', ?, ?, ?, ?, 0.00, ?, ?, ?, ?, ?, ?)`,
                 [
                     booking_reference, userId, ownerId, vehicleId, driverId,
                     existing_route_id, passenger_count, parcel_count, 
                     totalSeatsAvailable, totalAmountNeeded,
                     scheduled_pickup || new Date().toISOString(), 
-                    JSON.stringify(routePoints), special_instructions
+                    JSON.stringify(routePoints), special_instructions,
+                    direction_type, totalSeats, extraspaceParcelCountSp
                 ]
             );
 
             const bookingId = result.insertId;
 
-            // Insert route points
-            for (let i = 0; i < routePoints.length; i++) {
-                const point = routePoints[i];
-                await connection.execute(
-                    `INSERT INTO booking_route_points (
-                        booking_id, point_type, point_name, address, order_index, expected_time
-                    ) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [
-                        bookingId, point.point_type, point.point_name,
-                        point.address, i + 1, point.expected_time
-                    ]
-                );
-            }
+            // Note: booking_route_points table is not used in this application
+            // Route points are stored in the route_points JSON field in the bookings table
 
             // Commit transaction first
             await connection.commit();
@@ -1502,14 +1531,16 @@ export const executeBookingAdmin = async (req, res) => {
                 try {
                     await queueConnection.beginTransaction();
 
-                    // Verify vehicle is at position 1
+                    // Get the current position of the selected vehicle
                     const [queueCheck] = await queueConnection.execute(
                         `SELECT queue_position FROM vehicle_queue 
-                         WHERE existing_route_id = ? AND vehicle_id = ? AND queue_position = 1`,
+                         WHERE existing_route_id = ? AND vehicle_id = ?`,
                         [existing_route_id, vehicleId]
                     );
 
                     if (queueCheck.length > 0) {
+                        const currentPosition = queueCheck[0].queue_position;
+                        
                         // Get total count of vehicles in queue for this route (active, approved, verified drivers)
                         const [countResult] = await queueConnection.execute(
                             `SELECT COUNT(*) as total 
@@ -1527,26 +1558,29 @@ export const executeBookingAdmin = async (req, res) => {
                         const totalVehicles = countResult[0].total;
                         const newPosition = totalVehicles; // Move to last position
 
-                        // First, move all other vehicles up by 1 position (2→1, 3→2, etc.)
+                        // Efficiently renumber the queue:
+                        // 1. Move all vehicles after the selected vehicle up by 1 position
+                        //    (This fills the gap left by the selected vehicle)
                         await queueConnection.execute(
                             `UPDATE vehicle_queue vq
                              INNER JOIN vehicles v ON vq.vehicle_id = v.ID
                              LEFT JOIN driver_profiles dp ON v.driver_id = dp.user_id
                              SET vq.queue_position = vq.queue_position - 1
                              WHERE vq.existing_route_id = ? 
-                               AND vq.queue_position > 1
+                               AND vq.queue_position > ?
                                AND v.vehicle_status = 'active' 
                                AND v.admin_status = 'approve'
                                AND v.driver_id IS NOT NULL
                                AND dp.verification_status = 'verified'
                                AND dp.status = 'active'`,
-                            [existing_route_id]
+                            [existing_route_id, currentPosition]
                         );
 
-                        // Move the selected vehicle to the end and update last_selected_at
+                        // 2. Move the selected vehicle to the end
+                        // Note: updated_at will automatically update due to ON UPDATE CURRENT_TIMESTAMP
                         await queueConnection.execute(
                             `UPDATE vehicle_queue 
-                             SET last_selected_at = NOW(), queue_position = ? 
+                             SET queue_position = ? 
                              WHERE existing_route_id = ? AND vehicle_id = ?`,
                             [newPosition, existing_route_id, vehicleId]
                         );
@@ -1561,7 +1595,7 @@ export const executeBookingAdmin = async (req, res) => {
                         await queueConnection.rollback();
                         queueResult = {
                             success: false,
-                            message: "Vehicle not found at position 1 in queue"
+                            message: "Vehicle not found in queue"
                         };
                     }
                 } catch (queueError) {
@@ -1632,6 +1666,54 @@ export const executeBookingAdmin = async (req, res) => {
     }
 };
 
+/**
+ * Get public pending bookings for display on booking-public page
+ * This endpoint is public (no authentication required)
+ * Returns bookings with status 'pending' along with their route information
+ */
+export const getPublicPendingBookings = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                b.ID,
+                b.booking_reference,
+                b.booking_status,
+                b.total_seats_available,
+                b.scheduled_pickup,
+                b.extraspace_parcel_count_sp,
+                b.direction_type,
+                er.id as route_id,
+                er.location_1,
+                er.location_2,
+                er.typical_duration_hours,
+                er.base_fare,
+                er.small_parcel_price,
+                er.medium_parcel_price,
+                er.large_parcel_price
+            FROM bookings b
+            INNER JOIN existing_routes er ON b.existing_route_id = er.id
+            WHERE b.booking_status = 'pending'
+                AND b.booking_mode = 'route'
+                AND er.status = 'active'
+            ORDER BY b.scheduled_pickup ASC
+        `;
+
+        const [bookings] = await pool.execute(query);
+
+        res.json({
+            success: true,
+            bookings: bookings
+        });
+    } catch (error) {
+        console.error("Error fetching public pending bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch pending bookings",
+            error: error.message
+        });
+    }
+};
+
 export default {
     createRouteBasedBooking,
     createCustomBooking,
@@ -1652,6 +1734,7 @@ export default {
     getAllBookings,
     getBookingStatistics,
     updateBookingStatusAdmin,
-    executeBookingAdmin
+    executeBookingAdmin,
+    getPublicPendingBookings
 };
 
