@@ -1,5 +1,7 @@
 // Trip Status Page JavaScript
 
+import * as bookingApi from '../api/bookingApi.js';
+
 // Generate secret code (same function as booking-public.js)
 function generateSecretCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -37,8 +39,27 @@ const routes = {
     }
 };
 
-// Load trip data from localStorage
-function loadTripData() {
+// Load trip data from database or localStorage
+async function loadTripData() {
+    // Check for bookingId in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    
+    // If bookingId is provided, fetch from database
+    if (bookingId) {
+        try {
+            const response = await bookingApi.getBookingDetails(bookingId);
+            if (response.success && response.booking) {
+                populateTripStatusFromDatabase(response.booking);
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching booking details:', error);
+            // Fall through to localStorage handling
+        }
+    }
+    
+    // Fallback to localStorage if no bookingId or API call failed
     const activeTripData = localStorage.getItem('activeTripData');
     const currentBooking = sessionStorage.getItem('currentBooking') || localStorage.getItem('completedBooking');
     
@@ -314,6 +335,228 @@ function loadTripData() {
     displayPaymentInfo(data);
 }
 
+// Populate trip status page from database booking data
+function populateTripStatusFromDatabase(booking) {
+    const userPassenger = booking.userPassenger;
+    const passengers = booking.passengers || [];
+    
+    // ===== TRIP DETAILS CARD =====
+    // Route: Use direction_type, location_1, location_2 from bookings/existing_routes
+    let routeDisplay = '-';
+    if (booking.location_1 && booking.location_2) {
+        if (booking.direction_type === 'from_loc2') {
+            routeDisplay = `${booking.location_2} → ${booking.location_1}`;
+        } else {
+            routeDisplay = `${booking.location_1} → ${booking.location_2}`;
+        }
+    }
+    const routeDisplayEl = document.getElementById('trip-route-display');
+    if (routeDisplayEl) routeDisplayEl.textContent = routeDisplay;
+    
+    // Current Passengers: passenger_count from bookings
+    const passengerCount = booking.passenger_count || 0;
+    const currentPassengersEl = document.getElementById('trip-current-passengers');
+    if (currentPassengersEl) currentPassengersEl.textContent = passengerCount;
+    
+    // Seats Available: total_seats_available from bookings
+    const totalSeatsAvailable = booking.total_seats_available || 15;
+    const seatsAvailableEl = document.getElementById('trip-seats-available');
+    if (seatsAvailableEl) seatsAvailableEl.textContent = totalSeatsAvailable;
+    
+    // Departure Time: scheduled_pickup from bookings
+    const departureTimeEl = document.getElementById('trip-departure-time');
+    if (departureTimeEl) {
+        if (booking.scheduled_pickup) {
+            const departureDate = new Date(booking.scheduled_pickup);
+            const departureTime = departureDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            departureTimeEl.textContent = departureTime;
+        } else {
+            departureTimeEl.textContent = 'Flexible';
+        }
+    }
+    
+    // Trip Capacity: passenger_count / (passenger_count + total_seats_available)
+    const totalCapacity = passengerCount + totalSeatsAvailable;
+    const capacityPercentage = totalCapacity > 0 ? (passengerCount / totalCapacity) * 100 : 0;
+    const capacityTextEl = document.getElementById('trip-capacity-text');
+    if (capacityTextEl) capacityTextEl.textContent = `${passengerCount} / ${totalCapacity}`;
+    const capacityFillEl = document.getElementById('trip-capacity-fill');
+    if (capacityFillEl) {
+        capacityFillEl.style.width = `${capacityPercentage}%`;
+        capacityFillEl.textContent = `${Math.round(capacityPercentage)}%`;
+    }
+    
+    // Pickup and Dropoff Points: Use userPassenger pickup_point and dropoff_point for map
+    const pickupPoints = [];
+    const dropoffPoints = [];
+    
+    if (userPassenger) {
+        if (userPassenger.pickup_point) {
+            pickupPoints.push(userPassenger.pickup_point);
+        }
+        if (userPassenger.dropoff_point) {
+            dropoffPoints.push(userPassenger.dropoff_point);
+        }
+    }
+    
+    // Populate pickup/dropoff address lists
+    const pickupList = document.getElementById('trip-pickup-list');
+    const dropoffList = document.getElementById('trip-dropoff-list');
+    
+    if (pickupList) {
+        pickupList.innerHTML = '';
+        if (userPassenger && userPassenger.pickup_address) {
+            const li = document.createElement('li');
+            li.textContent = userPassenger.pickup_address;
+            pickupList.appendChild(li);
+        } else {
+            pickupList.innerHTML = '<li>No pickup point specified</li>';
+        }
+    }
+    
+    if (dropoffList) {
+        dropoffList.innerHTML = '';
+        if (userPassenger && userPassenger.dropoff_address) {
+            const li = document.createElement('li');
+            li.textContent = userPassenger.dropoff_address;
+            dropoffList.appendChild(li);
+        } else {
+            dropoffList.innerHTML = '<li>No dropoff point specified</li>';
+        }
+    }
+    
+    // Initialize map with pickup and dropoff points
+    if (pickupPoints.length > 0 || dropoffPoints.length > 0) {
+        const mapData = {
+            pickupPoints: pickupPoints,
+            dropoffPoints: dropoffPoints,
+            routeName: routeDisplay
+        };
+        initializeTripMap(mapData, null);
+    }
+    
+    // ===== YOUR BOOKING CARD =====
+    // Code: from booking_passengers.code - display in parcel-secret-code class
+    if (userPassenger && userPassenger.code) {
+        const bookingCode = userPassenger.code;
+        
+        // Set code in element with class "parcel-secret-code"
+        const secretCodeElements = document.querySelectorAll('.parcel-secret-code');
+        secretCodeElements.forEach(el => {
+            el.textContent = bookingCode;
+        });
+        
+        // Also try other possible locations
+        const bookingCodeElements = document.querySelectorAll('[data-booking-code], .booking-code, #booking-code');
+        bookingCodeElements.forEach(el => {
+            el.textContent = bookingCode;
+        });
+        
+        // Generate QR code using the code (using QR server API like existing code)
+        // The QR code should use the same code from parcel-secret-code
+        const qrContainers = document.querySelectorAll('.parcel-qr-code, #qr-code-container, .qr-code-container, .booking-qr-code');
+        qrContainers.forEach(qrContainer => {
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(bookingCode)}`;
+            qrContainer.innerHTML = `<img src="${qrCodeUrl}" alt="Booking QR Code" style="width: 100%; max-width: 250px; height: auto;">`;
+        });
+        
+        // If booking details content exists, populate it with the code and QR
+        const bookingDetailsContent = document.getElementById('booking-details-content');
+        if (bookingDetailsContent && bookingDetailsContent.children.length === 0) {
+            // Create the booking details HTML similar to displayBookingDetails for seat bookings
+            const passengerCount = booking.passenger_count || 1;
+            bookingDetailsContent.innerHTML = `
+                <div class="booking-type-seat">
+                    <i class="ri-user-line"></i>
+                    <h4>Seat Booking</h4>
+                    <p>You have booked <strong>${passengerCount}</strong> seat${passengerCount > 1 ? 's' : ''} for this trip.</p>
+                    
+                    <div class="parcel-code-section" style="margin-top: 2rem;">
+                        <h5><i class="ri-qr-code-line"></i> Booking Confirmation Code</h5>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.75rem;">Keep this code for your records. You may be asked to verify this code when boarding.</p>
+                        <div class="parcel-secret-code">${bookingCode}</div>
+                        <div class="parcel-qr-code">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(bookingCode)}" alt="Booking QR Code">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // ===== PAYMENT INFORMATION CARD =====
+    // Get the most recent payment
+    const payments = booking.payments || [];
+    
+    // Check if payment info section already exists, remove it to recreate
+    const existingPaymentInfo = document.querySelector('.payment-info-section');
+    if (existingPaymentInfo) {
+        existingPaymentInfo.remove();
+    }
+    
+    // Get the container where payment info should be added (after booking details card)
+    const bookingDetailsCard = document.getElementById('booking-details-card');
+    if (bookingDetailsCard && payments.length > 0) {
+        const payment = payments[0]; // Most recent payment (already sorted DESC)
+        
+        const paymentMethod = payment.payment_method || 'card';
+        const paymentDate = payment.created_at ? new Date(payment.created_at) : new Date();
+        const amountPaid = parseFloat(payment.amount || 0);
+        
+        // Create payment info section HTML
+        const paymentInfoHTML = `
+            <div class="trip-details-card payment-info-section" style="margin-top: 2rem;">
+                <div class="trip-card-header">
+                    <h3><i class="ri-money-dollar-circle-line"></i> Payment Information</h3>
+                </div>
+                <div class="trip-info-grid">
+                    <div class="trip-info-item">
+                        <i class="ri-bank-card-line"></i>
+                        <div>
+                            <strong>Payment Method</strong>
+                            <p>${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
+                        </div>
+                    </div>
+                    <div class="trip-info-item">
+                        <i class="ri-calendar-check-line"></i>
+                        <div>
+                            <strong>Payment Date</strong>
+                            <p>${paymentDate.toLocaleDateString()} ${paymentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                    </div>
+                    <div class="trip-info-item">
+                        <i class="ri-money-cny-circle-line"></i>
+                        <div>
+                            <strong>Amount Paid</strong>
+                            <p>R${amountPaid.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Insert payment info section after booking details card
+        bookingDetailsCard.insertAdjacentHTML('afterend', paymentInfoHTML);
+    } else if (payments.length === 0) {
+        // If no payments, we can optionally show a message or hide the section
+        console.log('No payment information available for this booking');
+    }
+    
+    // Update trip status badge
+    const statusBadge = document.getElementById('trip-status-badge');
+    if (statusBadge) {
+        if (booking.booking_status === 'paid') {
+            statusBadge.textContent = 'Paid';
+        } else if (booking.booking_status === 'pending') {
+            statusBadge.textContent = 'Pending';
+        } else if (booking.booking_status === 'confirmed') {
+            statusBadge.textContent = 'Confirmed';
+        } else {
+            statusBadge.textContent = booking.booking_status || 'Active';
+        }
+    }
+}
+
 // Generate trip share link
 function generateTripShareLink(tripData) {
     const tripId = tripData.tripId || 'TRP' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -419,6 +662,11 @@ function closeQRModal() {
 function simulatePassengersJoining(currentPassengers) {
     const joinedPassengersList = document.getElementById('joined-passengers-list');
     const joinedPassengersCard = document.getElementById('joined-passengers-card');
+    
+    // Return early if cards have been removed
+    if (!joinedPassengersList || !joinedPassengersCard) {
+        return;
+    }
     
     if (currentPassengers < 15) {
         const sampleJoiners = [
@@ -782,8 +1030,8 @@ function requestRefund(bookingId, amount) {
 }
 
 // Initialize page when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    loadTripData();
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadTripData();
     
     // Refresh trip data every 30 seconds (in production, this would be WebSocket updates)
     setInterval(() => {

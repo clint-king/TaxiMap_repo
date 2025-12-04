@@ -2663,8 +2663,31 @@ function validateAndProceed() {
         dropoffInput.style.borderColor = '#e0e0e0';
     }
     
+    // Ensure mutual exclusivity - user can only book passengers OR parcels, never both
+    if (bookingType === 'passengers' && parcelCount > 0) {
+        alert('Error: Cannot book both passengers and parcels at the same time. Please select only passenger booking.');
+        // Reset parcels
+        parcelCount = 0;
+        parcelData = {};
+        return;
+    }
+    
+    if (bookingType === 'parcels' && passengerCount > 0) {
+        alert('Error: Cannot book both passengers and parcels at the same time. Please select only parcel booking.');
+        // Reset passengers
+        passengerCount = 0;
+        return;
+    }
+    
     // Validate based on booking type
     if (PARCEL_FEATURE_ENABLED && bookingType === 'parcels') {
+        // Ensure no passengers for parcel booking
+        if (passengerCount > 0) {
+            alert('Error: Cannot book passengers when parcel booking is selected. Please select only parcel booking.');
+            passengerCount = 0;
+            return;
+        }
+        
         // Validate parcel information
         const validation = validateParcelInformation();
         if (!validation.valid) {
@@ -2679,6 +2702,14 @@ function validateAndProceed() {
             return;
         }
     } else {
+        // For passengers, ensure no parcels
+        if (parcelCount > 0) {
+            alert('Error: Cannot book parcels when passenger booking is selected. Please select only passenger booking.');
+            parcelCount = 0;
+            parcelData = {};
+            return;
+        }
+        
         // For passengers, check that at least 1 passenger is selected
         if (passengerCount < 1) {
             alert('Please select at least 1 passenger.');
@@ -2794,6 +2825,7 @@ function validateAndProceed() {
 }
 
 // Handle booking type change (passengers vs parcels)
+// Ensures mutual exclusivity - user can only book passengers OR parcels, never both
 function handleBookingTypeChange(type) {
     if (!PARCEL_FEATURE_ENABLED && type === 'parcels') {
         console.info('Parcel bookings are temporarily disabled.');
@@ -2801,15 +2833,23 @@ function handleBookingTypeChange(type) {
     }
     bookingType = type;
     
-    // Reset counts when switching
+    // Reset counts when switching - enforce mutual exclusivity
     if (type === 'passengers') {
-        // Switch to passengers - reset parcels
+        // Switch to passengers - completely reset parcels to ensure no mixing
         parcelCount = 0;
         parcelData = {};
         passengerCount = 1; // Only allow 1 passenger - others join through links
-    } else {
-        // Switch to parcels - reset passengers
+        
+        // Clear parcel data from sessionStorage
+        sessionStorage.removeItem('parcelData');
+    } else if (type === 'parcels') {
+        // Switch to parcels - completely reset passengers to ensure no mixing
         passengerCount = 0;
+        
+        // Clear passenger data from sessionStorage
+        const emptyPassengerData = [];
+        sessionStorage.setItem('passengerData', JSON.stringify(emptyPassengerData));
+        
         parcelCount = Math.max(1, parcelCount); // Ensure at least 1 parcel
         // Initialize first parcel if needed
         if (!parcelData[1]) {
@@ -4498,6 +4538,7 @@ async function completePaymentInBooking() {
     // Get route data - check selectedBooking first, then fallback to routes object
     let routeName = '';
     let routePrice = 450; // Default fallback
+    let routeTime = '10:00 am'; // Default fallback time
     
     if (selectedBooking) {
         // Use booking data from database
@@ -4509,11 +4550,23 @@ async function completePaymentInBooking() {
             routeName = `${selectedBooking.location_1} → ${selectedBooking.location_2}`;
         }
         routePrice = parseFloat(selectedBooking.base_fare) || 450;
+        // Extract time from scheduled_pickup if available
+        if (selectedBooking.scheduled_pickup) {
+            const date = new Date(selectedBooking.scheduled_pickup);
+            routeTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
     } else if (selectedRoute && routes && routes[selectedRoute]) {
         // Fallback to old routes object
         const route = routes[selectedRoute];
         routeName = route.name || 'Route not selected';
         routePrice = route.price || 450;
+        // Extract time from departure string (format: '2025/11/14 Friday 10:00 am')
+        if (route.departure) {
+            const timeMatch = route.departure.match(/(\d{1,2}:\d{2}\s*(?:am|pm))/i);
+            if (timeMatch) {
+                routeTime = timeMatch[1];
+            }
+        }
     } else {
         console.warn('No route data available. Using defaults.');
         routeName = 'Route information unavailable';
@@ -4521,12 +4574,38 @@ async function completePaymentInBooking() {
     }
     
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
+    
+    // Validate booking type - must be either 'passengers' OR 'parcels', never both
+    if (bookingTypeFromStorage !== 'passengers' && bookingTypeFromStorage !== 'parcels') {
+        console.error('Invalid booking type:', bookingTypeFromStorage);
+        alert('Error: Invalid booking type. Please select either passenger or parcel booking.');
+        return;
+    }
+    
+    // Ensure mutual exclusivity - validate that we're only processing one type
+    const hasPassengers = bookingTypeFromStorage === 'passengers' && passengerCount > 0;
+    const hasParcels = bookingTypeFromStorage === 'parcels' && parcelCount > 0;
+    
+    if (hasPassengers && hasParcels) {
+        console.error('Both passengers and parcels detected - this should not happen');
+        alert('Error: Cannot book both passengers and parcels at the same time. Please select only one booking type.');
+        return;
+    }
+    
+    if (!hasPassengers && !hasParcels) {
+        console.error('No passengers or parcels to book');
+        alert('Error: Please select at least 1 passenger or 1 parcel to book.');
+        return;
+    }
+    
     const totalAmount = bookingTypeFromStorage === 'parcels' 
         ? (parcelCount || 0) * routePrice 
         : routePrice * passengerCount;
     
-    // Get passenger data
-    const passengerData = JSON.parse(sessionStorage.getItem('passengerData') || '[]');
+    // Get passenger data (only used for passenger bookings)
+    const passengerData = bookingTypeFromStorage === 'passengers' 
+        ? JSON.parse(sessionStorage.getItem('passengerData') || '[]')
+        : [];
     
     // Prepare route points
     const routePoints = [];
@@ -4551,134 +4630,168 @@ async function completePaymentInBooking() {
         });
     });
     
-    // Create booking via API
-    let apiBooking = null;
-    try {
-        const bookingData = {
-            owner_id: selectedVehicleData.owner_id,
-            vehicle_id: selectedVehicleData.vehicle_id || selectedVehicleData.id,
-            driver_id: null, // Will be assigned by owner
-            existing_route_id: selectedRoute, // Route ID
-            booking_mode: 'route',
-            passenger_count: bookingTypeFromStorage === 'parcels' ? 0 : passengerCount,
-            parcel_count: bookingTypeFromStorage === 'parcels' ? (parcelCount || 0) : 0,
-            total_seats_available: selectedVehicleData.capacity || 15,
-            total_amount_needed: totalAmount,
-            scheduled_pickup: desiredTripDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            route_points: routePoints,
-            special_instructions: null
-        };
-
-        const response = await bookingApi.createBooking(bookingData);
-        if (response.success && response.booking) {
-            apiBooking = response.booking;
-            
-            // Note: Passengers will be added when payment is successful (in paymentController)
-            // This ensures passengers are only added after payment is confirmed
-            
-            // Add parcels to booking
-            if (bookingTypeFromStorage === 'parcels') {
-                const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
-                for (const [key, parcel] of Object.entries(parcelDataFromStorage)) {
-                    try {
-                        await bookingApi.addParcel(apiBooking.id, {
-                            size: parcel.size || 'small',
-                            weight: parcel.weight || null,
-                            description: parcel.description || null,
-                            sender_name: parcel.senderName || '',
-                            sender_phone: parcel.senderPhone || '',
-                            receiver_name: parcel.receiverName || '',
-                            receiver_phone: parcel.receiverPhone || '',
-                            images: parcel.images || [],
-                            delivery_window: null
-                        });
-                    } catch (error) {
-                        console.error('Error adding parcel:', error);
-                    }
-                }
-            }
-            
-            // Create payment
+    // Only work with existing bookings - bookings are only created by admins
+    // Passengers can only update existing bookings through payments
+    if (!selectedBooking || !selectedBooking.ID) {
+        console.error('No booking selected. A booking must be selected before payment.');
+        alert('Error: No booking selected. Please select a booking from the route selection step.');
+        return;
+    }
+    
+    // Use existing booking - payment controller will handle updating it
+    console.log('Updating existing booking:', selectedBooking.ID);
+    const apiBooking = {
+        id: selectedBooking.ID,
+        booking_reference: selectedBooking.booking_reference || selectedBooking.booking_ref || 'TKS' + Date.now().toString().slice(-8),
+        owner_id: selectedBooking.owner_id,
+        vehicle_id: selectedBooking.vehicle_id,
+        booking_status: selectedBooking.booking_status || 'pending'
+    };
+    
+    // Add parcels to existing booking ONLY if this is a parcel booking
+    // Must not process parcels for passenger bookings to ensure mutual exclusivity
+    if (bookingTypeFromStorage === 'parcels') {
+        // Validate that this is truly a parcel booking (no passengers)
+        if (passengerCount > 0) {
+            console.error('Parcel booking detected but passenger count > 0 - this should not happen');
+            throw new Error('Cannot add parcels when passengers are selected. Please select only one booking type.');
+        }
+        
+        const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
+        for (const [key, parcel] of Object.entries(parcelDataFromStorage)) {
             try {
-                // Map payment method for API
-                let paymentMethod = selectedPaymentMethodInBooking || 'EFT';
-                if (paymentMethod === 'yoco') {
-                    paymentMethod = 'card'; // Yoco processes card payments
-                }
-                
-                // Get Yoco payment data if available
-                const yocoPaymentToken = sessionStorage.getItem('yocoPaymentToken');
-                const yocoPaymentId = sessionStorage.getItem('yocoPaymentId');
-                const yocoPaymentResponse = sessionStorage.getItem('yocoPaymentResponse');
-                
-                // Prepare gateway response for Yoco payments
-                let gatewayResponse = null;
-                if (paymentMethod === 'card' && yocoPaymentToken) {
-                    gatewayResponse = {
-                        token: yocoPaymentToken,
-                        id: yocoPaymentId,
-                        gateway: 'yoco',
-                        timestamp: new Date().toISOString()
-                    };
-                    // Include full response if available
-                    if (yocoPaymentResponse) {
-                        try {
-                            const fullResponse = JSON.parse(yocoPaymentResponse);
-                            gatewayResponse = { ...gatewayResponse, ...fullResponse };
-                        } catch (e) {
-                            console.warn('Could not parse Yoco payment response:', e);
-                        }
-                    }
-                }
-                
-                // Prepare passenger data if this is a passenger booking
-                let passengerDataForPayment = null;
-                if (bookingTypeFromStorage === 'passengers' && passengerData && passengerData.length > 0) {
-                    // Get the primary passenger (first one)
-                    const primaryPassenger = passengerData[0];
-                    passengerDataForPayment = {
-                        first_name: primaryPassenger.firstName,
-                        last_name: primaryPassenger.lastName,
-                        email: primaryPassenger.email || null,
-                        phone: primaryPassenger.phone || null,
-                        id_number: primaryPassenger.idNumber || null,
-                        pickup_point: pickupPoints[0] || null,
-                        dropoff_point: dropoffPoints[0] || null,
-                        next_of_kin_first_name: primaryPassenger.nextOfKin?.firstName || '',
-                        next_of_kin_last_name: primaryPassenger.nextOfKin?.lastName || '',
-                        next_of_kin_phone: primaryPassenger.nextOfKin?.phone || '',
-                        is_primary: true
-                    };
-                }
-                
-                await paymentApi.createPayment({
-                    booking_id: apiBooking.id,
-                    amount: totalAmount,
-                    payment_method: paymentMethod,
-                    // Include Yoco payment details if available
-                    transaction_id: yocoPaymentId || null,
-                    payment_gateway: 'yoco', // Always 'yoco' since it's the only payment gateway
-                    gateway_response: gatewayResponse,
-                    passenger_data: passengerDataForPayment // Send passenger data for passenger bookings
+                await bookingApi.addParcel(apiBooking.id, {
+                    size: parcel.size || 'small',
+                    weight: parcel.weight || null,
+                    description: parcel.description || null,
+                    sender_name: parcel.senderName || '',
+                    sender_phone: parcel.senderPhone || '',
+                    receiver_name: parcel.receiverName || '',
+                    receiver_phone: parcel.receiverPhone || '',
+                    images: parcel.images || [],
+                    delivery_window: null
                 });
-                
-                // Clear Yoco payment data from session storage
-                if (yocoPaymentToken) {
-                    sessionStorage.removeItem('yocoPaymentToken');
-                }
-                if (yocoPaymentId) {
-                    sessionStorage.removeItem('yocoPaymentId');
-                }
-                if (yocoPaymentResponse) {
-                    sessionStorage.removeItem('yocoPaymentResponse');
-                }
             } catch (error) {
-                console.error('Error creating payment:', error);
+                console.error('Error adding parcel to existing booking:', error);
             }
         }
+    } else if (bookingTypeFromStorage === 'passengers') {
+        // Ensure no parcels are processed for passenger bookings
+        if (parcelCount > 0) {
+            console.error('Passenger booking detected but parcel count > 0 - this should not happen');
+            throw new Error('Cannot process passenger booking when parcels are selected. Please select only one booking type.');
+        }
+    }
+    
+    // Create payment - payment controller will update the booking
+    try {
+        // Map payment method for API
+        let paymentMethod = selectedPaymentMethodInBooking || 'EFT';
+        if (paymentMethod === 'yoco') {
+            paymentMethod = 'card'; // Yoco processes card payments
+        }
+        
+        // Get Yoco payment data if available
+        const yocoPaymentToken = sessionStorage.getItem('yocoPaymentToken');
+        const yocoPaymentId = sessionStorage.getItem('yocoPaymentId');
+        const yocoPaymentResponse = sessionStorage.getItem('yocoPaymentResponse');
+        
+        // Prepare gateway response for Yoco payments
+        let gatewayResponse = null;
+        if (paymentMethod === 'card' && yocoPaymentToken) {
+            gatewayResponse = {
+                token: yocoPaymentToken,
+                id: yocoPaymentId,
+                gateway: 'yoco',
+                timestamp: new Date().toISOString()
+            };
+            // Include full response if available
+            if (yocoPaymentResponse) {
+                try {
+                    const fullResponse = JSON.parse(yocoPaymentResponse);
+                    gatewayResponse = { ...gatewayResponse, ...fullResponse };
+                } catch (e) {
+                    console.warn('Could not parse Yoco payment response:', e);
+                }
+            }
+        }
+        
+        // Prepare passenger data ONLY if this is a passenger booking
+        // Must be null for parcel bookings to ensure mutual exclusivity
+        let passengerDataForPayment = null;
+        if (bookingTypeFromStorage === 'passengers') {
+            // Only process passenger data if booking type is passengers
+            if (parcelCount > 0) {
+                console.error('Passenger booking detected but parcels also present - this should not happen');
+                throw new Error('Cannot process passenger booking when parcels are selected. Please select only one booking type.');
+            }
+            
+            if (passengerData && passengerData.length > 0) {
+                // Get the primary passenger (first one)
+                const primaryPassenger = passengerData[0];
+                passengerDataForPayment = {
+                    first_name: primaryPassenger.firstName,
+                    last_name: primaryPassenger.lastName,
+                    email: primaryPassenger.email || null,
+                    phone: primaryPassenger.phone || null,
+                    id_number: primaryPassenger.idNumber || null,
+                    pickup_point: pickupPoints[0] || null,
+                    dropoff_point: dropoffPoints[0] || null,
+                    next_of_kin_first_name: primaryPassenger.nextOfKin?.firstName || '',
+                    next_of_kin_last_name: primaryPassenger.nextOfKin?.lastName || '',
+                    next_of_kin_phone: primaryPassenger.nextOfKin?.phone || '',
+                    is_primary: true
+                };
+            } else {
+                throw new Error('No passenger data found for passenger booking.');
+            }
+        } else if (bookingTypeFromStorage === 'parcels') {
+            // Ensure passenger data is null for parcel bookings
+            if (passengerCount > 0 || (passengerData && passengerData.length > 0)) {
+                console.error('Parcel booking detected but passengers also present - this should not happen');
+                throw new Error('Cannot process parcel booking when passengers are selected. Please select only one booking type.');
+            }
+            // passengerDataForPayment remains null for parcel bookings
+        }
+        
+        // Create payment - payment controller will update the existing booking
+        // passenger_data will be null for parcel bookings, ensuring mutual exclusivity
+        await paymentApi.createPayment({
+            booking_id: apiBooking.id,
+            amount: totalAmount,
+            payment_method: paymentMethod,
+            // Include Yoco payment details if available
+            transaction_id: yocoPaymentId || null,
+            payment_gateway: 'yoco', // Always 'yoco' since it's the only payment gateway
+            gateway_response: gatewayResponse,
+            passenger_data: passengerDataForPayment // null for parcel bookings, contains data for passenger bookings only
+        });
+        
+        // Clear Yoco payment data from session storage
+        if (yocoPaymentToken) {
+            sessionStorage.removeItem('yocoPaymentToken');
+        }
+        if (yocoPaymentId) {
+            sessionStorage.removeItem('yocoPaymentId');
+        }
+        if (yocoPaymentResponse) {
+            sessionStorage.removeItem('yocoPaymentResponse');
+        }
     } catch (error) {
-        console.error('Error creating booking via API:', error);
-        // Continue with localStorage fallback
+        console.error('Error creating payment for existing booking:', error);
+        if (error.response) {
+            console.error('Payment API Error Details:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data,
+                url: error.config?.url
+            });
+        } else if (error.request) {
+            console.error('Payment API Request Error - No response received:', error.request);
+        } else {
+            console.error('Payment API Error:', error.message);
+        }
+        throw error; // Re-throw to prevent continuing with localStorage fallback
     }
     
     // Save parcel data if parcels were booked
@@ -4763,7 +4876,7 @@ async function completePaymentInBooking() {
             paymentMethod: booking.paymentMethod,
             paymentDate: booking.paymentDate,
             status: 'paid',
-            tripTime: desiredTripDate || route.departure?.time || '10:00 am'
+            tripTime: desiredTripDate || routeTime
         };
         
         localStorage.setItem('activeTripData', JSON.stringify(tripData));
@@ -4897,36 +5010,26 @@ window.showQRCode = showQRCode;
 window.closeQRModal = closeQRModal;
 
 // Check for active trip on page load
+// Note: Active trip banner is now shown within each upcoming booking item, not as a standalone banner
 function checkActiveTrip() {
+    // The active trip information is now displayed within each upcoming booking item
+    // This function is kept for compatibility but no longer displays a standalone banner
     const activeTrip = localStorage.getItem('activeTripData');
     
     if (activeTrip) {
         try {
             const tripData = JSON.parse(activeTrip);
             
-            // Only show if trip is not full
-            if (tripData.passengers < 15) {
-                displayActiveTripBanner(tripData);
-            } else {
-                // Trip is full, remove from localStorage
+            // If trip is full, remove from localStorage
+            if (tripData.passengers >= 15) {
                 localStorage.removeItem('activeTripData');
             }
+            // Active trip info will be shown in the booking item itself via createBookingItemHTML
         } catch (error) {
             console.error('Error parsing active trip data:', error);
             localStorage.removeItem('activeTripData');
         }
     }
-}
-
-function displayActiveTripBanner(tripData) {
-    const banner = document.getElementById('active-trip-banner');
-    const seatsAvailable = 15 - tripData.passengers;
-    
-    document.getElementById('active-trip-route').textContent = tripData.routeName;
-    document.getElementById('active-trip-passengers').textContent = tripData.passengers;
-    document.getElementById('active-trip-seats').textContent = seatsAvailable;
-    
-    banner.style.display = 'block';
 }
 
 function viewActiveTrip() {
@@ -4965,45 +5068,141 @@ function saveActiveTripToStorage() {
 // ============================================
 
 /**
- * Loads and displays user's bookings from localStorage
+ * Loads and displays user's bookings from the database
+ * Fetches bookings where user is a passenger (via booking_passengers table)
  * Separates bookings into upcoming and history categories
  * 
  * Process:
- * 1. Retrieves bookings from localStorage
- * 2. Separates into upcoming (future paid trips) and history (past/completed trips)
- * 3. Updates count displays
- * 4. Displays bookings in appropriate tabs
- * 5. Shows bookings section if bookings exist
+ * 1. Fetches bookings from API where user is a passenger or booking owner
+ * 2. Filters for status 'paid' or 'pending' for upcoming
+ * 3. Separates into upcoming (future trips with paid/pending status) and history
+ * 4. Updates count displays
+ * 5. Displays bookings in appropriate tabs
+ * 6. Shows bookings section if bookings exist
  * 
  * Categories:
- * - Upcoming: Paid trips with trip date in the future
+ * - Upcoming: Bookings with status 'paid' or 'pending' with trip date in the future
  * - History: Completed trips or trips with date in the past
  * 
  * Usage: Called on page load to display user's existing bookings
  */
-function loadUserBookings() {
-    const userBookings = JSON.parse(localStorage.getItem('userBookings') || '[]');
-    
-    if (userBookings.length === 0) {
-        return; // Don't show the section if no bookings
+async function loadUserBookings() {
+    try {
+        // Fetch bookings from API
+        const response = await bookingApi.getMyBookings();
+        
+        if (!response.success || !response.bookings || response.bookings.length === 0) {
+            // Don't show the section if no bookings
+            return;
+        }
+
+        const now = new Date();
+        const bookings = response.bookings;
+        
+        // Map database fields to frontend format
+        const mappedBookings = bookings.map(booking => {
+            // Determine route name
+            let routeName = booking.route_name;
+            if (!routeName && booking.location_1 && booking.location_2) {
+                if (booking.direction_type === 'from_loc2') {
+                    routeName = `${booking.location_2} → ${booking.location_1}`;
+                } else {
+                    routeName = `${booking.location_1} → ${booking.location_2}`;
+                }
+            }
+            
+            // Parse route_points if it exists
+            let pickupPoints = [];
+            let dropoffPoints = [];
+            if (booking.route_points) {
+                try {
+                    const routePoints = typeof booking.route_points === 'string' 
+                        ? JSON.parse(booking.route_points) 
+                        : booking.route_points;
+                    
+                    if (Array.isArray(routePoints)) {
+                        routePoints.forEach(point => {
+                            if (point.point_type === 'pickup') {
+                                pickupPoints.push({
+                                    address: point.address || point.point_name,
+                                    lat: point.coordinates?.lat || null,
+                                    lng: point.coordinates?.lng || null
+                                });
+                            } else if (point.point_type === 'dropoff') {
+                                dropoffPoints.push({
+                                    address: point.address || point.point_name,
+                                    lat: point.coordinates?.lat || null,
+                                    lng: point.coordinates?.lng || null
+                                });
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error parsing route_points:', e);
+                }
+            }
+            
+            // Add passenger-specific pickup/dropoff if available
+            if (booking.pickup_point && !pickupPoints.length) {
+                pickupPoints.push({
+                    address: booking.pickup_address || 'Pickup location',
+                    lat: booking.pickup_point.lat,
+                    lng: booking.pickup_point.lng
+                });
+            }
+            if (booking.dropoff_point && !dropoffPoints.length) {
+                dropoffPoints.push({
+                    address: booking.dropoff_address || 'Dropoff location',
+                    lat: booking.dropoff_point.lat,
+                    lng: booking.dropoff_point.lng
+                });
+            }
+            
+            return {
+                id: booking.ID,
+                reference: booking.booking_reference,
+                routeName: routeName || 'Unknown Route',
+                status: booking.booking_status, // 'pending', 'confirmed', 'paid', 'cancelled', 'completed', 'refunded'
+                passengers: booking.passenger_count || 0,
+                parcels: booking.parcel_count || 0,
+                totalAmount: parseFloat(booking.total_amount_paid || booking.total_amount_needed || 0),
+                pricePerPerson: booking.base_fare ? parseFloat(booking.base_fare) : (booking.total_amount_needed ? parseFloat(booking.total_amount_needed) / Math.max(booking.passenger_count || 1, 1) : 0),
+                tripDate: booking.scheduled_pickup,
+                bookingDate: booking.created_at,
+                pickupPoints: pickupPoints,
+                dropoffPoints: dropoffPoints
+            };
+        });
+
+        // Filter for upcoming: status 'paid' or 'pending'
+        // Show all paid/pending bookings as upcoming regardless of date
+        const upcoming = mappedBookings.filter(b => 
+            b.status === 'paid' || b.status === 'pending'
+        );
+        
+        // History: completed, cancelled, refunded, or confirmed (if not in upcoming)
+        const history = mappedBookings.filter(b => 
+            (b.status === 'completed' || 
+             b.status === 'cancelled' || 
+             b.status === 'refunded' ||
+             b.status === 'confirmed') &&
+            !(b.status === 'paid' || b.status === 'pending')
+        );
+
+        // Update counts
+        document.getElementById('upcoming-count').textContent = upcoming.length;
+        document.getElementById('history-count').textContent = history.length;
+
+        // Display bookings
+        displayBookingsInTab('upcoming-bookings', upcoming, 'upcoming');
+        displayBookingsInTab('history-bookings', history, 'history');
+
+        // Show the bookings section
+        document.getElementById('your-bookings-section').style.display = 'block';
+    } catch (error) {
+        console.error('Error loading user bookings:', error);
+        // Silently fail - don't show bookings section if there's an error
     }
-
-    const now = new Date();
-    const upcoming = userBookings.filter(b => b.status === 'paid' && new Date(b.tripDate) > now);
-    const history = userBookings.filter(b => 
-        (b.status === 'paid' && new Date(b.tripDate) <= now) || b.status === 'completed'
-    );
-
-    // Update counts
-    document.getElementById('upcoming-count').textContent = upcoming.length;
-    document.getElementById('history-count').textContent = history.length;
-
-    // Display bookings
-    displayBookingsInTab('upcoming-bookings', upcoming, 'upcoming');
-    displayBookingsInTab('history-bookings', history, 'history');
-
-    // Show the bookings section
-    document.getElementById('your-bookings-section').style.display = 'block';
 }
 
 function displayBookingsInTab(containerId, bookings, type) {
@@ -5054,8 +5253,35 @@ function createBookingItemHTML(booking, type) {
     const tripDateDisplay = isNaN(tripDate.getTime()) ? 'Date not set' : 
         `${tripDate.toLocaleDateString()} ${tripDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
+    // Check if this is an active trip (for upcoming bookings only)
+    // Show active trip banner for ALL upcoming items (paid or pending status)
+    const isActiveTrip = type === 'upcoming' && (booking.status === 'paid' || booking.status === 'pending');
+    const seatsAvailable = isActiveTrip ? Math.max(0, (15 - (booking.passengers || 0))) : 0;
+
     return `
         <div class="booking-item ${statusClass}">
+            ${isActiveTrip ? `
+            <div class="active-trip-banner" style="margin-bottom: 1rem;">
+                <div class="active-trip-content">
+                    <div class="active-trip-icon">
+                        <i class="ri-time-line"></i>
+                    </div>
+                    <div class="active-trip-info">
+                        <h3><i class="ri-information-line"></i> You Have an Active Trip</h3>
+                        <p>Your trip from <strong>${booking.routeName || 'N/A'}</strong> ${booking.status === 'pending' ? 'is pending confirmation.' : 'is active.'}</p>
+                        <div class="active-trip-stats">
+                            <span><i class="ri-user-line"></i> <strong>${booking.passengers || 0}</strong> passengers</span>
+                            ${seatsAvailable > 0 ? `<span><i class="ri-user-add-line"></i> <strong>${seatsAvailable}</strong> seats available</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="active-trip-actions">
+                        <button class="btn-view-trip" onclick="window.location.href='trip-status.html?bookingId=${booking.id}'">
+                            <i class="ri-eye-line"></i> View Trip Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
             <div class="booking-item-header" onclick="toggleBookingDetailsView('${booking.id}')">
                 <div class="booking-item-title">
                     <h3><i class="ri-taxi-line"></i> ${booking.routeName || 'Taxi Booking'}</h3>
@@ -5164,11 +5390,14 @@ function createBookingLocationsHTML(booking) {
 function createBookingActionsHTML(booking, type) {
     let actions = '';
     
+    // Don't show action buttons for upcoming items
+    if (type !== 'upcoming') {
         actions += `
             <button class="booking-action-btn secondary" onclick="viewBookingOnMap('${booking.id}')">
                 <i class="ri-map-pin-line"></i> View on Map
             </button>
         `;
+    }
     
     return actions;
 }

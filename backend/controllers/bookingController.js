@@ -85,8 +85,35 @@ export const createRouteBasedBooking = async (req, res) => {
 
         // Extract information from queue and route
         const vehicleId = nextVehicleInfo.vehicle_id;
-        const driverId = nextVehicleInfo.driver_id;
-        const ownerId = nextVehicleInfo.owner_id;
+        // Convert user IDs to profile IDs
+        // vehicle.owner_id and vehicle.driver_id are user IDs, but bookings.owner_id and bookings.driver_id are profile IDs
+        const vehicleOwnerUserId = nextVehicleInfo.owner_id;
+        const vehicleDriverUserId = nextVehicleInfo.driver_id;
+        
+        // Get owner profile ID
+        let ownerId = null;
+        if (vehicleOwnerUserId) {
+            const [ownerProfiles] = await pool.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [vehicleOwnerUserId]
+            );
+            if (ownerProfiles.length > 0) {
+                ownerId = ownerProfiles[0].ID;
+            }
+        }
+        
+        // Get driver profile ID
+        let driverId = null;
+        if (vehicleDriverUserId) {
+            const [driverProfiles] = await pool.execute(
+                "SELECT ID FROM driver_profiles WHERE user_id = ?",
+                [vehicleDriverUserId]
+            );
+            if (driverProfiles.length > 0) {
+                driverId = driverProfiles[0].ID;
+            }
+        }
+        
         const totalSeatsAvailable = nextVehicleInfo.capacity;
         const baseFare = parseFloat(route.base_fare);
         
@@ -313,23 +340,41 @@ export const createCustomBooking = async (req, res) => {
 };
 
 // Get user's bookings
+// This includes bookings where user is a passenger (via booking_passengers table)
+// Uses only: booking_passengers, bookings, existing_routes tables
 export const getMyBookings = async (req, res) => {
     try {
         const userId = req.user.id;
         const { status, limit = 50, offset = 0 } = req.query;
 
+        // Parse limit and offset to integers (required for MySQL LIMIT/OFFSET)
+        const limitInt = parseInt(limit, 10) || 50;
+        const offsetInt = parseInt(offset, 10) || 0;
+
+        // Query using only booking_passengers, bookings, and existing_routes tables
+        // 1. Start with booking_passengers filtered by linked_user_id
+        // 2. Join bookings using booking_id
+        // 3. Join existing_routes using existing_route_id from bookings
         let query = `
-            SELECT b.*, 
-                   v.registration_number, v.make, v.model, v.capacity,
-                   u_owner.name as owner_name, u_owner.email as owner_email,
-                   u_driver.name as driver_name, u_driver.email as driver_email,
-                   er.route_name, er.location_1, er.location_2
-            FROM bookings b
-            LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN users u_owner ON b.owner_id = u_owner.id
-            LEFT JOIN users u_driver ON b.driver_id = u_driver.id
+            SELECT DISTINCT 
+                   b.ID, b.booking_reference, b.owner_id, b.vehicle_id, b.driver_id,
+                   b.existing_route_id, b.booking_mode, b.booking_status,
+                   b.passenger_count, b.seat_parcel_count, b.total_seats_available,
+                   b.total_amount_needed, b.total_amount_paid,
+                   b.scheduled_pickup, b.route_points, b.special_instructions,
+                   b.total_seats, b.extraspace_parcel_count_sp, b.direction_type,
+                   b.created_at, b.updated_at,
+                   er.id as route_id, er.route_name, er.location_1, er.location_2,
+                   er.distance_km, er.typical_duration_hours, er.base_fare,
+                   er.small_parcel_price, er.medium_parcel_price, er.large_parcel_price,
+                   bp.ID as passenger_record_id, bp.passenger_number,
+                   bp.pickup_address, bp.dropoff_address,
+                   ST_X(bp.pickup_point) as pickup_lng, ST_Y(bp.pickup_point) as pickup_lat,
+                   ST_X(bp.dropoff_point) as dropoff_lng, ST_Y(bp.dropoff_point) as dropoff_lat
+            FROM booking_passengers bp
+            INNER JOIN bookings b ON bp.booking_id = b.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
-            WHERE b.user_id = ?
+            WHERE bp.linked_user_id = ?
         `;
         const params = [userId];
 
@@ -338,23 +383,36 @@ export const getMyBookings = async (req, res) => {
             params.push(status);
         }
 
-        query += ` ORDER BY b.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), parseInt(offset));
+        // LIMIT and OFFSET cannot use placeholders in MySQL prepared statements, so we use string interpolation
+        // after validating the values are safe integers
+        query += ` ORDER BY b.created_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
         const [bookings] = await pool.execute(query, params);
 
-        // Get passenger and parcel counts
+        // Get passenger and parcel counts for each booking
         for (let booking of bookings) {
             const [passengers] = await pool.execute(
                 "SELECT COUNT(*) as count FROM booking_passengers WHERE booking_id = ?",
-                [booking.id]
+                [booking.ID]
             );
-            const [parcels] = await pool.execute(
-                "SELECT COUNT(*) as count FROM booking_parcels WHERE booking_id = ?",
-                [booking.id]
-            );
+            
             booking.passenger_count = passengers[0].count;
-            booking.parcel_count = parcels[0].count;
+            
+            // Add passenger-specific pickup/dropoff point data
+            if (booking.pickup_lat && booking.pickup_lng) {
+                booking.pickup_point = {
+                    lat: parseFloat(booking.pickup_lat),
+                    lng: parseFloat(booking.pickup_lng),
+                    address: booking.pickup_address
+                };
+            }
+            if (booking.dropoff_lat && booking.dropoff_lng) {
+                booking.dropoff_point = {
+                    lat: parseFloat(booking.dropoff_lat),
+                    lng: parseFloat(booking.dropoff_lng),
+                    address: booking.dropoff_address
+                };
+            }
         }
 
         res.json({
@@ -386,10 +444,12 @@ export const getBookingDetails = async (req, res) => {
                     er.route_name, er.location_1, er.location_2
              FROM bookings b
              LEFT JOIN vehicles v ON b.vehicle_id = v.id
-             LEFT JOIN users u_owner ON b.owner_id = u_owner.id
-             LEFT JOIN users u_driver ON b.driver_id = u_driver.id
+             LEFT JOIN owner_profiles op ON b.owner_id = op.ID
+             LEFT JOIN users u_owner ON op.user_id = u_owner.ID
+             LEFT JOIN driver_profiles dp ON b.driver_id = dp.ID
+             LEFT JOIN users u_driver ON dp.user_id = u_driver.ID
              LEFT JOIN existing_routes er ON b.existing_route_id = er.id
-             WHERE b.id = ?`,
+             WHERE b.ID = ?`,
             [bookingId]
         );
 
@@ -402,10 +462,44 @@ export const getBookingDetails = async (req, res) => {
 
         const booking = bookings[0];
 
-        // Check access (user must be client, owner, driver, or admin)
-        if (booking.user_id !== userId && 
-            booking.owner_id !== userId && 
-            booking.driver_id !== userId && 
+        // Check access (user must be passenger, owner, driver, or admin)
+        // Get user's owner and driver profile IDs for comparison
+        let userOwnerProfileId = null;
+        let userDriverProfileId = null;
+        
+        if (req.user.user_type === 'owner') {
+            const [ownerProfiles] = await pool.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [userId]
+            );
+            if (ownerProfiles.length > 0) {
+                userOwnerProfileId = ownerProfiles[0].ID;
+            }
+        }
+        
+        if (req.user.user_type === 'driver') {
+            const [driverProfiles] = await pool.execute(
+                "SELECT ID FROM driver_profiles WHERE user_id = ?",
+                [userId]
+            );
+            if (driverProfiles.length > 0) {
+                userDriverProfileId = driverProfiles[0].ID;
+            }
+        }
+        
+        // Check if user is a passenger in this booking
+        const [userPassengerRecord] = await pool.execute(
+            `SELECT ID FROM booking_passengers WHERE booking_id = ? AND linked_user_id = ?`,
+            [bookingId, userId]
+        );
+        const isPassenger = userPassengerRecord.length > 0;
+        
+        const isOwner = userOwnerProfileId !== null && booking.owner_id === userOwnerProfileId;
+        const isDriver = userDriverProfileId !== null && booking.driver_id === userDriverProfileId;
+        
+        if (!isPassenger && 
+            !isOwner && 
+            !isDriver && 
             req.user.user_type !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -413,23 +507,55 @@ export const getBookingDetails = async (req, res) => {
             });
         }
 
-        // Get passengers
+        // Get passengers with POINT data extraction
         const [passengers] = await pool.execute(
-            `SELECT * FROM booking_passengers WHERE booking_id = ? ORDER BY passenger_number`,
+            `SELECT ID, booking_id, passenger_number, passenger_type, linked_user_id,
+                    passenger_profile_id, first_name, last_name, email, phone, id_number,
+                    code, booking_passenger_status, booking_passenger_cancelled_at,
+                    cancellation_reason, is_primary, next_of_kin_first_name,
+                    next_of_kin_last_name, next_of_kin_phone, joined_via_link,
+                    created_at, pickup_address, dropoff_address,
+                    ST_X(pickup_point) as pickup_lng, ST_Y(pickup_point) as pickup_lat,
+                    ST_X(dropoff_point) as dropoff_lng, ST_Y(dropoff_point) as dropoff_lat
+             FROM booking_passengers 
+             WHERE booking_id = ? 
+             ORDER BY passenger_number`,
             [bookingId]
         );
+        
+        // Transform passengers to include pickup/dropoff point objects
+        const transformedPassengers = passengers.map(p => ({
+            ...p,
+            pickup_point: (p.pickup_lat && p.pickup_lng) ? {
+                lat: parseFloat(p.pickup_lat),
+                lng: parseFloat(p.pickup_lng),
+                address: p.pickup_address
+            } : null,
+            dropoff_point: (p.dropoff_lat && p.dropoff_lng) ? {
+                lat: parseFloat(p.dropoff_lat),
+                lng: parseFloat(p.dropoff_lng),
+                address: p.dropoff_address
+            } : null
+        }));
 
         // Get parcels
         const [parcels] = await pool.execute(
-            `SELECT * FROM booking_parcels WHERE booking_id = ? ORDER BY parcel_number`,
+            `SELECT * FROM booking_parcels WHERE booking_id = ? ORDER BY ID`,
             [bookingId]
         );
 
-        // Get route points
-        const [routePoints] = await pool.execute(
-            `SELECT * FROM booking_route_points WHERE booking_id = ? ORDER BY order_index`,
-            [bookingId]
-        );
+        // Parse route_points from bookings table (stored as JSON)
+        let routePoints = [];
+        if (booking.route_points) {
+            try {
+                routePoints = typeof booking.route_points === 'string' 
+                    ? JSON.parse(booking.route_points) 
+                    : booking.route_points;
+            } catch (error) {
+                console.error('Error parsing route_points:', error);
+                routePoints = [];
+            }
+        }
 
         // Get payments
         const [payments] = await pool.execute(
@@ -443,11 +569,18 @@ export const getBookingDetails = async (req, res) => {
             [bookingId]
         );
 
+        // Get user's specific passenger record if they are a passenger
+        let userPassenger = null;
+        if (isPassenger && userPassengerRecord.length > 0) {
+            userPassenger = transformedPassengers.find(p => p.linked_user_id === userId);
+        }
+
         res.json({
             success: true,
             booking: {
                 ...booking,
-                passengers,
+                passengers: transformedPassengers,
+                userPassenger, // The specific passenger record for the current user
                 parcels,
                 route_points: routePoints,
                 payments,
@@ -487,8 +620,22 @@ export const cancelBooking = async (req, res) => {
         const booking = bookings[0];
 
         // Check access
+        // Get user's owner profile ID if user is owner
+        let userOwnerProfileId = null;
+        if (req.user.user_type === 'owner') {
+            const [ownerProfiles] = await pool.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [userId]
+            );
+            if (ownerProfiles.length > 0) {
+                userOwnerProfileId = ownerProfiles[0].ID;
+            }
+        }
+        
+        const isOwner = userOwnerProfileId !== null && booking.owner_id === userOwnerProfileId;
+        
         if (booking.user_id !== userId && 
-            booking.owner_id !== userId && 
+            !isOwner && 
             req.user.user_type !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -516,6 +663,9 @@ export const cancelBooking = async (req, res) => {
         );
 
         // Create cancellation record
+        const cancellationType = booking.user_id === userId ? 'passenger' : 
+                                (userOwnerProfileId !== null && booking.owner_id === userOwnerProfileId) ? 'owner' : 'system';
+        
         await pool.execute(
             `INSERT INTO cancellations (
                 booking_id, cancelled_by, cancellation_type, reason
@@ -523,8 +673,7 @@ export const cancelBooking = async (req, res) => {
             [
                 bookingId, 
                 userId, 
-                booking.user_id === userId ? 'passenger' : 
-                booking.owner_id === userId ? 'owner' : 'system',
+                cancellationType,
                 cancellation_reason || null
             ]
         );
@@ -559,6 +708,8 @@ export const addPassenger = async (req, res) => {
             id_number,
             pickup_point,
             dropoff_point,
+            pickup_address,
+            dropoff_address,
             next_of_kin_first_name,
             next_of_kin_last_name,
             next_of_kin_phone,
@@ -598,19 +749,28 @@ export const addPassenger = async (req, res) => {
         // Generate passenger code
         const code = Math.random().toString(36).substr(2, 7).toUpperCase();
 
+        // Extract addresses from pickup_point and dropoff_point objects
+        const pickupAddress = pickup_address || 
+                             (pickup_point?.address || (typeof pickup_point === 'string' ? pickup_point : null)) || 
+                             null;
+        const dropoffAddress = dropoff_address || 
+                              (dropoff_point?.address || (typeof dropoff_point === 'string' ? dropoff_point : null)) || 
+                              null;
+        
         // Insert passenger
         const [result] = await pool.execute(
             `INSERT INTO booking_passengers (
                 booking_id, passenger_number, passenger_type, linked_user_id,
                 passenger_profile_id, first_name, last_name, email, phone, id_number,
-                code, pickup_point, dropoff_point, is_primary,
+                code, pickup_point, dropoff_point, pickup_address, dropoff_address, is_primary,
                 next_of_kin_first_name, next_of_kin_last_name, next_of_kin_phone
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 bookingId, passenger_number, passenger_type || 'guest',
                 linked_user_id || null, passenger_profile_id || null,
                 first_name, last_name, email || null, phone || null, id_number || null,
                 code, JSON.stringify(pickup_point || null), JSON.stringify(dropoff_point || null),
+                pickupAddress, dropoffAddress,
                 is_primary, next_of_kin_first_name, next_of_kin_last_name, next_of_kin_phone
             ]
         );
@@ -913,6 +1073,21 @@ export const getDriverBookings = async (req, res) => {
 
         const { status, limit = 50, offset = 0 } = req.query;
 
+        // Get user's driver profile ID
+        const [driverProfiles] = await pool.execute(
+            "SELECT ID FROM driver_profiles WHERE user_id = ?",
+            [userId]
+        );
+        
+        if (driverProfiles.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "User does not have a driver profile"
+            });
+        }
+        
+        const driverProfileId = driverProfiles[0].ID;
+        
         let query = `
             SELECT b.*, 
                    v.registration_number, v.make, v.model,
@@ -920,11 +1095,11 @@ export const getDriverBookings = async (req, res) => {
                    er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN users u_client ON b.user_id = u_client.id
+            LEFT JOIN users u_client ON b.user_id = u_client.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
             WHERE b.driver_id = ?
         `;
-        const params = [userId];
+        const params = [driverProfileId];
 
         if (status) {
             query += ` AND b.booking_status = ?`;
@@ -958,10 +1133,25 @@ export const updateBookingStatusDriver = async (req, res) => {
         const { bookingId } = req.params;
         const { booking_status } = req.body;
 
+        // Get user's driver profile ID
+        const [driverProfiles] = await pool.execute(
+            "SELECT ID FROM driver_profiles WHERE user_id = ?",
+            [userId]
+        );
+        
+        if (driverProfiles.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "User does not have a driver profile"
+            });
+        }
+        
+        const driverProfileId = driverProfiles[0].ID;
+        
         // Get booking
         const [bookings] = await pool.execute(
             "SELECT * FROM bookings WHERE id = ? AND driver_id = ?",
-            [bookingId, userId]
+            [bookingId, driverProfileId]
         );
 
         if (bookings.length === 0) {
@@ -998,10 +1188,25 @@ export const completeRoutePoint = async (req, res) => {
         checkUserType(req.user, ['driver', 'admin']);
         const { bookingId, pointId } = req.params;
 
+        // Get user's driver profile ID
+        const [driverProfiles] = await pool.execute(
+            "SELECT ID FROM driver_profiles WHERE user_id = ?",
+            [userId]
+        );
+        
+        if (driverProfiles.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "User does not have a driver profile"
+            });
+        }
+        
+        const driverProfileId = driverProfiles[0].ID;
+        
         // Get booking
         const [bookings] = await pool.execute(
             "SELECT * FROM bookings WHERE id = ? AND driver_id = ?",
-            [bookingId, userId]
+            [bookingId, driverProfileId]
         );
 
         if (bookings.length === 0) {
@@ -1045,6 +1250,21 @@ export const getOwnerBookings = async (req, res) => {
 
         const { status, limit = 50, offset = 0 } = req.query;
 
+        // Get user's owner profile ID
+        const [ownerProfiles] = await pool.execute(
+            "SELECT ID FROM owner_profiles WHERE user_id = ?",
+            [userId]
+        );
+        
+        if (ownerProfiles.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "User does not have an owner profile"
+            });
+        }
+        
+        const ownerProfileId = ownerProfiles[0].ID;
+        
         let query = `
             SELECT b.*, 
                    v.registration_number, v.make, v.model,
@@ -1053,12 +1273,13 @@ export const getOwnerBookings = async (req, res) => {
                    er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN users u_client ON b.user_id = u_client.id
-            LEFT JOIN users u_driver ON b.driver_id = u_driver.id
+            LEFT JOIN users u_client ON b.user_id = u_client.ID
+            LEFT JOIN driver_profiles dp ON b.driver_id = dp.ID
+            LEFT JOIN users u_driver ON dp.user_id = u_driver.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
             WHERE b.owner_id = ?
         `;
-        const params = [userId];
+        const params = [ownerProfileId];
 
         if (status) {
             query += ` AND b.booking_status = ?`;
@@ -1240,9 +1461,11 @@ export const getAllBookings = async (req, res) => {
                    er.route_name, er.location_1, er.location_2
             FROM bookings b
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN users u_client ON b.user_id = u_client.id
-            LEFT JOIN users u_owner ON b.owner_id = u_owner.id
-            LEFT JOIN users u_driver ON b.driver_id = u_driver.id
+            LEFT JOIN users u_client ON b.user_id = u_client.ID
+            LEFT JOIN owner_profiles op ON b.owner_id = op.ID
+            LEFT JOIN users u_owner ON op.user_id = u_owner.ID
+            LEFT JOIN driver_profiles dp ON b.driver_id = dp.ID
+            LEFT JOIN users u_driver ON dp.user_id = u_driver.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
             WHERE 1=1
         `;
@@ -1437,8 +1660,35 @@ export const executeBookingAdmin = async (req, res) => {
 
         // Extract information from queue and route
         const vehicleId = nextVehicleInfo.vehicle_id;
-        const driverId = nextVehicleInfo.driver_id;
-        const ownerId = nextVehicleInfo.owner_id;
+        // Convert user IDs to profile IDs
+        // vehicle.owner_id and vehicle.driver_id are user IDs, but bookings.owner_id and bookings.driver_id are profile IDs
+        const vehicleOwnerUserId = nextVehicleInfo.owner_id;
+        const vehicleDriverUserId = nextVehicleInfo.driver_id;
+        
+        // Get owner profile ID
+        let ownerId = null;
+        if (vehicleOwnerUserId) {
+            const [ownerProfiles] = await pool.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [vehicleOwnerUserId]
+            );
+            if (ownerProfiles.length > 0) {
+                ownerId = ownerProfiles[0].ID;
+            }
+        }
+        
+        // Get driver profile ID
+        let driverId = null;
+        if (vehicleDriverUserId) {
+            const [driverProfiles] = await pool.execute(
+                "SELECT ID FROM driver_profiles WHERE user_id = ?",
+                [vehicleDriverUserId]
+            );
+            if (driverProfiles.length > 0) {
+                driverId = driverProfiles[0].ID;
+            }
+        }
+        
         const totalSeatsAvailable = nextVehicleInfo.capacity;
         const totalSeats = nextVehicleInfo.capacity; // capacity from vehicles table → total_seats in bookings table
         const extraspaceParcelCountSp = nextVehicleInfo.extraspace_parcel_sp || 0; // extraspace_parcel_sp from vehicles table → extraspace_parcel_count_sp in bookings table

@@ -1486,58 +1486,6 @@
                         </div>
                     </div>
 
-                    <!-- Share Trip Link Section -->
-                    <div class="share-trip-card">
-                        <div class="share-trip-header">
-                            <h3><i class="ri-share-line"></i> Share Your Trip</h3>
-                            <p>Share this link with others so they can join your trip directly. Only logged-in users can join.</p>
-                        </div>
-                        
-                        <div class="share-link-container">
-                            <div class="share-link-input-wrapper">
-                                <input type="text" id="trip-share-link" readonly class="share-link-input" value="">
-                                <button class="btn-copy-link" onclick="copyTripLink()" title="Copy link">
-                                    <i class="ri-file-copy-line"></i>
-                                </button>
-                            </div>
-                            <div class="copy-feedback" id="copy-feedback" style="display: none;">
-                                <i class="ri-check-line"></i> Link copied to clipboard!
-                            </div>
-                        </div>
-                        
-                        <div class="share-options">
-                            <button class="share-btn whatsapp" onclick="shareViaWhatsApp()">
-                                <i class="ri-whatsapp-line"></i> WhatsApp
-                            </button>
-                            <button class="share-btn email" onclick="shareViaEmail()">
-                                <i class="ri-mail-line"></i> Email
-                            </button>
-                            <button class="share-btn sms" onclick="shareViaSMS()">
-                                <i class="ri-message-3-line"></i> SMS
-                            </button>
-                            <button class="share-btn qr" onclick="showQRCode()">
-                                <i class="ri-qr-code-line"></i> QR Code
-                            </button>
-                        </div>
-                        
-                        <!-- QR Code Modal -->
-                        <div class="qr-modal" id="qr-modal" style="display: none;">
-                            <div class="qr-modal-content">
-                                <button class="qr-close-btn" onclick="closeQRModal()">
-                                    <i class="ri-close-line"></i>
-                                </button>
-                                <h3>Scan to Join Trip</h3>
-                                <div id="qr-code-container"></div>
-                                <p>Scan this QR code to join the trip</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Passengers Who Joined -->
-                    <div class="joined-passengers-card" id="joined-passengers-card" style="display: none;">
-                        <h3><i class="ri-group-line"></i> Passengers Who Joined Your Trip</h3>
-                        <div id="joined-passengers-list"></div>
-                    </div>
                 </div>
             </div>
         </div>

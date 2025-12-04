@@ -11,6 +11,7 @@ const checkUserType = (user, allowedTypes) => {
 export const createPayment = async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log("The user id is: ", userId);
         const {
             booking_id,
             amount,
@@ -44,10 +45,26 @@ export const createPayment = async (req, res) => {
         const booking = bookings[0];
 
         // Check access
-        if (booking.user_id !== userId && req.user.user_type !== 'admin') {
+        // Only clients (regular users) can make payments, not admins or owners
+        const userType = req.user.user_type;
+        const isClient = userType === 'client' || userType === 'customer';
+        const isAdmin = userType === 'admin';
+        const isOwner = userType === 'owner';
+        const isRouteBasedBooking = booking.booking_mode === 'route';
+        
+        // Deny payment if user is admin or owner
+        if (isAdmin || isOwner) {
             return res.status(403).json({
                 success: false,
-                message: "Access denied"
+                message: "Access denied. Only clients can make payments. Admins and owners are not allowed to pay."
+            });
+        }
+        
+        // Allow payment only for clients on route-based bookings
+        if (!isClient || !isRouteBasedBooking) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Only clients can pay for route-based bookings."
             });
         }
 
@@ -88,15 +105,11 @@ export const createPayment = async (req, res) => {
         const isPassengerBooking = passenger_data && passenger_data.first_name;
         
         // Prepare booking update query
+        // Note: payment_id column has been removed from bookings table
+        // Note: Booking status should not be changed here - leave it as 'pending' or whatever it currently is
         let bookingUpdateQuery = `UPDATE bookings 
-             SET total_amount_paid = ?, 
-                 payment_transaction_id = ?,
-                 booking_status = CASE 
-                     WHEN ? >= total_amount_needed THEN 'paid'
-                     WHEN booking_status = 'pending' THEN 'confirmed'
-                     ELSE booking_status
-                 END`;
-        let bookingUpdateParams = [newTotalPaid, transaction_id, newTotalPaid];
+             SET total_amount_paid = ?`;
+        let bookingUpdateParams = [newTotalPaid];
         
         // If passenger booking, update passenger_count and total_seats_available
         if (isPassengerBooking) {
@@ -148,15 +161,65 @@ export const createPayment = async (req, res) => {
                     throw new Error('Failed to generate unique passenger code after ' + maxAttempts + ' attempts');
                 }
                 
-                // Insert passenger as registered user
-                // Note: Using JSON.stringify for pickup/dropoff points to match existing pattern in bookingController
+                // Helper function to extract coordinates from point data
+                const extractCoordinates = (pointData) => {
+                    if (!pointData) return null;
+                    
+                    // Handle different coordinate formats
+                    let lat, lng;
+                    
+                    if (pointData.coordinates) {
+                        lat = pointData.coordinates.lat || pointData.coordinates.latitude;
+                        lng = pointData.coordinates.lng || pointData.coordinates.longitude;
+                    } else if (pointData.lat && pointData.lng) {
+                        lat = pointData.lat;
+                        lng = pointData.lng;
+                    } else if (pointData.latitude && pointData.longitude) {
+                        lat = pointData.latitude;
+                        lng = pointData.longitude;
+                    }
+                    
+                    // Return coordinates if valid, otherwise null
+                    if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+                        return { lat: parseFloat(lat), lng: parseFloat(lng) };
+                    }
+                    
+                    return null;
+                };
+                
+                // Extract coordinates for pickup and dropoff points
+                const pickupCoords = extractCoordinates(passenger_data.pickup_point);
+                const dropoffCoords = extractCoordinates(passenger_data.dropoff_point);
+                
+                // Build SQL with POINT geometry functions
+                // Use ST_GeomFromText for POINT geometry: POINT(longitude latitude) - MySQL uses longitude first
+                let pickupPointSQL = 'NULL';
+                let dropoffPointSQL = 'NULL';
+                
+                if (pickupCoords) {
+                    pickupPointSQL = `ST_GeomFromText('POINT(${pickupCoords.lng} ${pickupCoords.lat})', 4326)`;
+                }
+                
+                if (dropoffCoords) {
+                    dropoffPointSQL = `ST_GeomFromText('POINT(${dropoffCoords.lng} ${dropoffCoords.lat})', 4326)`;
+                }
+                
+                // Extract addresses from pickup_point and dropoff_point objects
+                const pickupAddress = passenger_data.pickup_point?.address || 
+                                     (typeof passenger_data.pickup_point === 'string' ? passenger_data.pickup_point : null) ||
+                                     passenger_data.pickup_address || null;
+                const dropoffAddress = passenger_data.dropoff_point?.address || 
+                                      (typeof passenger_data.dropoff_point === 'string' ? passenger_data.dropoff_point : null) ||
+                                      passenger_data.dropoff_address || null;
+                
+                // Insert passenger as registered user with POINT geometry
                 const [passengerInsert] = await pool.execute(
                     `INSERT INTO booking_passengers (
                         booking_id, passenger_number, passenger_type, linked_user_id,
                         first_name, last_name, email, phone, id_number,
-                        code, pickup_point, dropoff_point, is_primary,
+                        code, pickup_point, dropoff_point, pickup_address, dropoff_address, is_primary,
                         next_of_kin_first_name, next_of_kin_last_name, next_of_kin_phone
-                    ) VALUES (?, ?, 'registered', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    ) VALUES (?, ?, 'registered', ?, ?, ?, ?, ?, ?, ?, ${pickupPointSQL}, ${dropoffPointSQL}, ?, ?, ?, ?, ?, ?)`,
                     [
                         booking_id,
                         passenger_number,
@@ -167,8 +230,8 @@ export const createPayment = async (req, res) => {
                         passenger_data.phone || null,
                         passenger_data.id_number || null,
                         code,
-                        passenger_data.pickup_point ? JSON.stringify(passenger_data.pickup_point) : null,
-                        passenger_data.dropoff_point ? JSON.stringify(passenger_data.dropoff_point) : null,
+                        pickupAddress,
+                        dropoffAddress,
                         passenger_data.is_primary || false,
                         passenger_data.next_of_kin_first_name || '',
                         passenger_data.next_of_kin_last_name || '',
@@ -271,8 +334,22 @@ export const getPaymentDetails = async (req, res) => {
         const payment = payments[0];
 
         // Check access
+        // Get user's owner profile ID if user is owner
+        let userOwnerProfileId = null;
+        if (req.user.user_type === 'owner' && payment.booking?.owner_id) {
+            const [ownerProfiles] = await pool.execute(
+                "SELECT ID FROM owner_profiles WHERE user_id = ?",
+                [userId]
+            );
+            if (ownerProfiles.length > 0) {
+                userOwnerProfileId = ownerProfiles[0].ID;
+            }
+        }
+        
+        const isOwner = userOwnerProfileId !== null && payment.booking?.owner_id === userOwnerProfileId;
+        
         if (payment.user_id !== userId && 
-            payment.booking?.owner_id !== userId && 
+            !isOwner && 
             req.user.user_type !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -375,6 +452,21 @@ export const getOwnerPayments = async (req, res) => {
 
         const { limit = 50, offset = 0 } = req.query;
 
+        // Get user's owner profile ID
+        const [ownerProfiles] = await pool.execute(
+            "SELECT ID FROM owner_profiles WHERE user_id = ?",
+            [userId]
+        );
+        
+        if (ownerProfiles.length === 0) {
+            return res.status(403).json({
+                success: false,
+                message: "User does not have an owner profile"
+            });
+        }
+        
+        const ownerProfileId = ownerProfiles[0].ID;
+        
         const [payments] = await pool.execute(
             `SELECT p.*, b.booking_reference, b.scheduled_pickup
              FROM payments p
@@ -382,7 +474,7 @@ export const getOwnerPayments = async (req, res) => {
              WHERE b.owner_id = ?
              ORDER BY p.created_at DESC
              LIMIT ? OFFSET ?`,
-            [userId, parseInt(limit), parseInt(offset)]
+            [ownerProfileId, parseInt(limit), parseInt(offset)]
         );
 
         res.json({

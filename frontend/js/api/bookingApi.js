@@ -10,11 +10,32 @@ axios.defaults.withCredentials = true;
 
 /**
  * Create a new booking
+ * Uses route-based endpoint if existing_route_id is provided, otherwise uses custom endpoint
  */
 export const createBooking = async (bookingData) => {
     try {
-        const response = await axios.post(`${BASE_URL}/api/bookings`, bookingData);
-        return response.data;
+        // Determine which endpoint to use based on booking data
+        let endpoint = '/api/bookings/custom';
+        
+        // If existing_route_id is provided and booking_mode is 'route', use route-based endpoint
+        if (bookingData.existing_route_id && bookingData.booking_mode === 'route') {
+            endpoint = '/api/bookings/route-based';
+            // Route-based booking only needs existing_route_id and optional fields
+            // Backend will automatically select vehicle and populate other fields
+            const routeBasedData = {
+                existing_route_id: bookingData.existing_route_id,
+                scheduled_pickup: bookingData.scheduled_pickup,
+                passenger_count: bookingData.passenger_count || 0,
+                parcel_count: bookingData.parcel_count || 0,
+                special_instructions: bookingData.special_instructions
+            };
+            const response = await axios.post(`${BASE_URL}${endpoint}`, routeBasedData);
+            return response.data;
+        } else {
+            // Custom booking requires all fields
+            const response = await axios.post(`${BASE_URL}${endpoint}`, bookingData);
+            return response.data;
+        }
     } catch (error) {
         console.error('Error creating booking:', error);
         throw error;

@@ -2844,14 +2844,35 @@
         }
 
         /* Active Trip Banner */
+        /* Note: This banner is now shown within booking items, not as a standalone banner */
         .active-trip-banner {
             background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
             border: 3px solid #FFD52F;
             border-radius: 18px;
-            padding: 2rem;
-            margin-bottom: 3rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
             box-shadow: 0 10px 30px rgba(255, 213, 47, 0.3);
             animation: slideDown 0.5s ease;
+        }
+        
+        /* When inside a booking item, make it more compact */
+        .booking-item .active-trip-banner {
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .booking-item .active-trip-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 2rem;
+        }
+        
+        .booking-item .active-trip-info h3 {
+            font-size: 1.3rem;
+        }
+        
+        .booking-item .active-trip-info p {
+            font-size: 0.95rem;
         }
 
         @keyframes slideDown {
@@ -3336,7 +3357,12 @@
         @media (max-width: 768px) {
             .active-trip-banner {
                 padding: 1.5rem;
-                margin-bottom: 2rem;
+                margin-bottom: 1rem;
+            }
+            
+            .booking-item .active-trip-banner {
+                padding: 1.25rem;
+                margin-bottom: 1rem;
             }
 
             .active-trip-content {
@@ -3633,28 +3659,6 @@
 
                 <!-- Step 1: Route Selection -->
                 <div class="booking-content active" id="route-selection">
-                    <!-- Active Trip Banner -->
-                    <div class="active-trip-banner" id="active-trip-banner" style="display: none;">
-                        <div class="active-trip-content">
-                            <div class="active-trip-icon">
-                                <i class="ri-time-line"></i>
-                            </div>
-                            <div class="active-trip-info">
-                                <h3><i class="ri-information-line"></i> You Have an Active Trip</h3>
-                                <p>Your trip from <strong id="active-trip-route">-</strong> is waiting for passengers.</p>
-                                <div class="active-trip-stats">
-                                    <span><i class="ri-user-line"></i> <strong id="active-trip-passengers">0</strong> passengers</span>
-                                    <span><i class="ri-user-add-line"></i> <strong id="active-trip-seats">0</strong> seats available</span>
-                                </div>
-                            </div>
-                            <div class="active-trip-actions">
-                                <button class="btn-view-trip" onclick="viewActiveTrip()">
-                                    <i class="ri-eye-line"></i> View Trip Status
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Your Bookings Section -->
                     <div class="your-bookings-section" id="your-bookings-section" style="display: none;">
                         <div class="bookings-overview">
