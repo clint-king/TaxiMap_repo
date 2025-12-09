@@ -423,19 +423,30 @@ export const getMyBookings = async (req, res) => {
 
         // Get passenger and parcel counts, and payment amounts for each booking
         for (let booking of allBookings) {
-            // Get passenger count
+            // Get passenger count for this booking (total across all passengers in the booking)
             const [passengers] = await pool.execute(
                 "SELECT COUNT(*) as count FROM booking_passengers WHERE booking_id = ?",
                 [booking.ID]
             );
             booking.passenger_count = passengers[0].count;
             
-            // Get parcel count for this booking
-            const [parcels] = await pool.execute(
-                "SELECT COUNT(*) as count FROM parcel p INNER JOIN booking_parcels bp ON p.booking_parcels_id = bp.ID WHERE bp.booking_id = ?",
-                [booking.ID]
-            );
-            booking.parcel_count = parcels[0]?.count || 0;
+            // Get parcel count - this depends on booking type
+            if (booking.booking_type === 'parcel' && booking.parcel_record_id) {
+                // For parcel bookings: count only parcels for this specific parcel booking record
+                // Since a user can have multiple parcel bookings for the same ride, each card should show only its parcels
+                const [parcels] = await pool.execute(
+                    "SELECT COUNT(*) as count FROM parcel WHERE booking_parcels_id = ?",
+                    [booking.parcel_record_id]
+                );
+                booking.parcel_count = parcels[0]?.count || 0;
+            } else {
+                // For passenger bookings: show total parcel count for the booking (informational)
+                const [parcels] = await pool.execute(
+                    "SELECT COUNT(*) as count FROM parcel p INNER JOIN booking_parcels bp ON p.booking_parcels_id = bp.ID WHERE bp.booking_id = ?",
+                    [booking.ID]
+                );
+                booking.parcel_count = parcels[0]?.count || 0;
+            }
             
             // Get payment amount based on booking type
             // For passenger bookings: match booking_id AND booking_passenger_id = passenger_record_id
@@ -521,6 +532,10 @@ export const getBookingDetails = async (req, res) => {
     try {
         const userId = req.user.id;
         const { bookingId } = req.params;
+        // Get query parameters to differentiate between passenger and parcel bookings
+        const passengerRecordId = req.query.passengerRecordId;
+        const parcelRecordId = req.query.parcelRecordId;
+        const bookingType = req.query.bookingType; // 'passenger' or 'parcel'
 
         // Get booking
         const [bookings] = await pool.execute(
@@ -575,16 +590,58 @@ export const getBookingDetails = async (req, res) => {
         }
         
         // Check if user is a passenger in this booking
-        const [userPassengerRecord] = await pool.execute(
-            `SELECT ID FROM booking_passengers WHERE booking_id = ? AND linked_user_id = ?`,
-            [bookingId, userId]
-        );
+        // If passengerRecordId is provided, use it to find the specific passenger record
+        let userPassengerRecord = [];
+        if (passengerRecordId) {
+            // User explicitly requested a passenger booking - verify it belongs to them
+            [userPassengerRecord] = await pool.execute(
+                `SELECT ID FROM booking_passengers WHERE ID = ? AND booking_id = ? AND linked_user_id = ?`,
+                [passengerRecordId, bookingId, userId]
+            );
+        } else {
+            // Find any passenger record for this user in this booking
+            [userPassengerRecord] = await pool.execute(
+                `SELECT ID FROM booking_passengers WHERE booking_id = ? AND linked_user_id = ?`,
+                [bookingId, userId]
+            );
+        }
         const isPassenger = userPassengerRecord.length > 0;
+        
+        // Check if user has a parcel booking in this booking
+        // If parcelRecordId is provided, use it to find the specific parcel record
+        let userParcelRecord = [];
+        if (parcelRecordId) {
+            // User explicitly requested a parcel booking - verify it belongs to them
+            [userParcelRecord] = await pool.execute(
+                `SELECT ID FROM booking_parcels WHERE ID = ? AND booking_id = ? AND user_id = ?`,
+                [parcelRecordId, bookingId, userId]
+            );
+        } else {
+            // Find any parcel record for this user in this booking
+            [userParcelRecord] = await pool.execute(
+                `SELECT ID FROM booking_parcels WHERE booking_id = ? AND user_id = ?`,
+                [bookingId, userId]
+            );
+        }
+        const hasParcel = userParcelRecord.length > 0;
+        
+        // If bookingType is explicitly provided, prioritize it when user has both passenger and parcel bookings
+        // This ensures the correct booking type is shown when user has both
+        let shouldShowPassenger = isPassenger;
+        let shouldShowParcel = hasParcel;
+        
+        if (bookingType === 'passenger' && isPassenger) {
+            shouldShowParcel = false; // Explicitly requested passenger, don't show parcel
+        } else if (bookingType === 'parcel' && hasParcel) {
+            shouldShowPassenger = false; // Explicitly requested parcel, don't show passenger
+        }
         
         const isOwner = userOwnerProfileId !== null && booking.owner_id === userOwnerProfileId;
         const isDriver = userDriverProfileId !== null && booking.driver_id === userDriverProfileId;
         
-        if (!isPassenger && 
+        // Check access - user must have at least one valid booking record, be owner, driver, or admin
+        if (!shouldShowPassenger && 
+            !shouldShowParcel &&
             !isOwner && 
             !isDriver && 
             req.user.user_type !== 'admin') {
@@ -625,11 +682,41 @@ export const getBookingDetails = async (req, res) => {
             } : null
         }));
 
-        // Get parcels
+        // Get parcels with POINT data extraction
         const [parcels] = await pool.execute(
-            `SELECT * FROM booking_parcels WHERE booking_id = ? ORDER BY ID`,
+            `SELECT ID, booking_id, user_id, sender_name, sender_phone,
+                    receiver_name, receiver_phone, status, sender_code, receiver_code,
+                    booking_passenger_cancelled_at, cancellation_reason,
+                    created_at, updated_at, pickup_address, dropoff_address,
+                    ST_X(pickup_point) as pickup_lng, ST_Y(pickup_point) as pickup_lat,
+                    ST_X(dropoff_point) as dropoff_lng, ST_Y(dropoff_point) as dropoff_lat
+             FROM booking_parcels WHERE booking_id = ? ORDER BY ID`,
             [bookingId]
         );
+        
+        // Transform parcels to include pickup/dropoff point objects
+        const transformedParcels = parcels.map(p => ({
+            ...p,
+            pickup_point: (p.pickup_lat && p.pickup_lng) ? {
+                lat: parseFloat(p.pickup_lat),
+                lng: parseFloat(p.pickup_lng),
+                address: p.pickup_address
+            } : null,
+            dropoff_point: (p.dropoff_lat && p.dropoff_lng) ? {
+                lat: parseFloat(p.dropoff_lat),
+                lng: parseFloat(p.dropoff_lng),
+                address: p.dropoff_address
+            } : null
+        }));
+        
+        // Get individual parcels from parcel table for each booking_parcels record
+        for (let parcelBooking of transformedParcels) {
+            const [individualParcels] = await pool.execute(
+                `SELECT * FROM parcel WHERE booking_parcels_id = ? ORDER BY parcel_number`,
+                [parcelBooking.ID]
+            );
+            parcelBooking.parcels = individualParcels || [];
+        }
 
         // Parse route_points from bookings table (stored as JSON)
         let routePoints = [];
@@ -658,17 +745,47 @@ export const getBookingDetails = async (req, res) => {
 
         // Get user's specific passenger record if they are a passenger
         let userPassenger = null;
-        if (isPassenger && userPassengerRecord.length > 0) {
-            userPassenger = transformedPassengers.find(p => p.linked_user_id === userId);
+        if (shouldShowPassenger && userPassengerRecord.length > 0) {
+            // If passengerRecordId was provided, find that specific record; otherwise find any matching record
+            if (passengerRecordId) {
+                userPassenger = transformedPassengers.find(p => p.ID == passengerRecordId && p.linked_user_id === userId);
+            } else {
+                userPassenger = transformedPassengers.find(p => p.linked_user_id === userId);
+            }
+        }
+        
+        // Get user's specific parcel booking record if they have a parcel booking
+        let userParcel = null;
+        if (shouldShowParcel && userParcelRecord.length > 0) {
+            // If parcelRecordId was provided, find that specific record; otherwise find any matching record
+            if (parcelRecordId) {
+                userParcel = transformedParcels.find(p => p.ID == parcelRecordId && p.user_id === userId);
+            } else {
+                userParcel = transformedParcels.find(p => p.user_id === userId);
+            }
+        }
+        
+        // Determine booking type for the current user
+        // Prioritize explicit bookingType parameter, then check what records exist
+        let userBookingType = null;
+        if (bookingType) {
+            // Use the explicitly provided booking type
+            userBookingType = bookingType;
+        } else if (shouldShowPassenger && userPassenger) {
+            userBookingType = 'passenger';
+        } else if (shouldShowParcel && userParcel) {
+            userBookingType = 'parcel';
         }
 
         res.json({
             success: true,
-            booking: {
+                booking: {
                 ...booking,
                 passengers: transformedPassengers,
                 userPassenger, // The specific passenger record for the current user
-                parcels,
+                parcels: transformedParcels, // All parcel bookings for this booking
+                userParcel, // The specific parcel booking record for the current user (includes individual parcels)
+                userBookingType, // 'passenger' or 'parcel' - indicates what the user booked
                 route_points: routePoints,
                 payments,
                 ratings

@@ -44,11 +44,14 @@ async function loadTripData() {
     // Check for bookingId in URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('bookingId');
+    const passengerRecordId = urlParams.get('passengerRecordId');
+    const parcelRecordId = urlParams.get('parcelRecordId');
+    const urlBookingType = urlParams.get('bookingType'); // 'passenger' or 'parcel'
     
     // If bookingId is provided, fetch from database
     if (bookingId) {
         try {
-            const response = await bookingApi.getBookingDetails(bookingId);
+            const response = await bookingApi.getBookingDetails(bookingId, passengerRecordId, parcelRecordId, urlBookingType);
             if (response.success && response.booking) {
                 populateTripStatusFromDatabase(response.booking);
                 return;
@@ -338,7 +341,61 @@ async function loadTripData() {
 // Populate trip status page from database booking data
 function populateTripStatusFromDatabase(booking) {
     const userPassenger = booking.userPassenger;
+    const userParcel = booking.userParcel;
     const passengers = booking.passengers || [];
+    const parcels = booking.parcels || [];
+    
+    // Determine booking type - prioritize userBookingType from API, then check if user has parcel or passenger
+    const bookingType = booking.userBookingType || (userParcel ? 'parcel' : (userPassenger ? 'passenger' : (parcels.length > 0 ? 'parcel' : 'passenger')));
+    
+    // Show/hide appropriate banners based on booking type
+    const passengerBanner = document.getElementById('active-passenger-trip-banner');
+    const parcelBanner = document.getElementById('active-parcel-trip-banner');
+    
+    if (bookingType === 'parcel' && userParcel) {
+        // Show parcel banner, hide passenger banner
+        if (passengerBanner) passengerBanner.style.display = 'none';
+        if (parcelBanner) {
+            parcelBanner.style.display = 'block';
+            const routeDisplay = booking.location_1 && booking.location_2 
+                ? (booking.direction_type === 'from_loc2' 
+                    ? `${booking.location_2} → ${booking.location_1}` 
+                    : `${booking.location_1} → ${booking.location_2}`)
+                : (booking.route_name || '-');
+            const parcelCount = userParcel.parcels ? userParcel.parcels.length : 0;
+            if (document.getElementById('active-parcel-trip-route')) {
+                document.getElementById('active-parcel-trip-route').textContent = routeDisplay;
+            }
+            if (document.getElementById('active-parcel-trip-count')) {
+                document.getElementById('active-parcel-trip-count').textContent = parcelCount;
+            }
+            if (document.getElementById('active-parcel-trip-route-name')) {
+                document.getElementById('active-parcel-trip-route-name').textContent = routeDisplay;
+            }
+        }
+    } else {
+        // Show passenger banner, hide parcel banner
+        if (parcelBanner) parcelBanner.style.display = 'none';
+        if (passengerBanner) {
+            passengerBanner.style.display = 'block';
+            const routeDisplay = booking.location_1 && booking.location_2 
+                ? (booking.direction_type === 'from_loc2' 
+                    ? `${booking.location_2} → ${booking.location_1}` 
+                    : `${booking.location_1} → ${booking.location_2}`)
+                : (booking.route_name || '-');
+            const passengerCount = booking.passenger_count || 0;
+            const seatsAvailable = Math.max(15 - passengerCount, 0);
+            if (document.getElementById('active-passenger-trip-route')) {
+                document.getElementById('active-passenger-trip-route').textContent = routeDisplay;
+            }
+            if (document.getElementById('active-passenger-trip-passengers')) {
+                document.getElementById('active-passenger-trip-passengers').textContent = passengerCount;
+            }
+            if (document.getElementById('active-passenger-trip-seats')) {
+                document.getElementById('active-passenger-trip-seats').textContent = seatsAvailable;
+            }
+        }
+    }
     
     // ===== TRIP DETAILS CARD =====
     // Route: Use direction_type, location_1, location_2 from bookings/existing_routes
@@ -353,15 +410,35 @@ function populateTripStatusFromDatabase(booking) {
     const routeDisplayEl = document.getElementById('trip-route-display');
     if (routeDisplayEl) routeDisplayEl.textContent = routeDisplay;
     
-    // Current Passengers: passenger_count from bookings
+    // Current Passengers: passenger_count from bookings (only for passenger bookings)
     const passengerCount = booking.passenger_count || 0;
     const currentPassengersEl = document.getElementById('trip-current-passengers');
-    if (currentPassengersEl) currentPassengersEl.textContent = passengerCount;
+    if (currentPassengersEl) {
+        if (bookingType === 'parcel') {
+            // For parcel bookings, hide or update this section
+            const passengerSection = currentPassengersEl.closest('.trip-info-item, .trip-detail, [data-passenger-info]');
+            if (passengerSection) {
+                passengerSection.style.display = 'none';
+            }
+        } else {
+            currentPassengersEl.textContent = passengerCount;
+        }
+    }
     
-    // Seats Available: total_seats_available from bookings
+    // Seats Available: total_seats_available from bookings (only for passenger bookings)
     const totalSeatsAvailable = booking.total_seats_available || 15;
     const seatsAvailableEl = document.getElementById('trip-seats-available');
-    if (seatsAvailableEl) seatsAvailableEl.textContent = totalSeatsAvailable;
+    if (seatsAvailableEl) {
+        if (bookingType === 'parcel') {
+            // For parcel bookings, hide or update this section
+            const seatsSection = seatsAvailableEl.closest('.trip-info-item, .trip-detail, [data-seats-info]');
+            if (seatsSection) {
+                seatsSection.style.display = 'none';
+            }
+        } else {
+            seatsAvailableEl.textContent = totalSeatsAvailable;
+        }
+    }
     
     // Departure Time: scheduled_pickup from bookings
     const departureTimeEl = document.getElementById('trip-departure-time');
@@ -375,22 +452,39 @@ function populateTripStatusFromDatabase(booking) {
         }
     }
     
-    // Trip Capacity: passenger_count / (passenger_count + total_seats_available)
-    const totalCapacity = passengerCount + totalSeatsAvailable;
-    const capacityPercentage = totalCapacity > 0 ? (passengerCount / totalCapacity) * 100 : 0;
-    const capacityTextEl = document.getElementById('trip-capacity-text');
-    if (capacityTextEl) capacityTextEl.textContent = `${passengerCount} / ${totalCapacity}`;
-    const capacityFillEl = document.getElementById('trip-capacity-fill');
-    if (capacityFillEl) {
-        capacityFillEl.style.width = `${capacityPercentage}%`;
-        capacityFillEl.textContent = `${Math.round(capacityPercentage)}%`;
+    // Trip Capacity: passenger_count / (passenger_count + total_seats_available) (only for passenger bookings)
+    if (bookingType !== 'parcel') {
+        const totalCapacity = passengerCount + totalSeatsAvailable;
+        const capacityPercentage = totalCapacity > 0 ? (passengerCount / totalCapacity) * 100 : 0;
+        const capacityTextEl = document.getElementById('trip-capacity-text');
+        if (capacityTextEl) capacityTextEl.textContent = `${passengerCount} / ${totalCapacity}`;
+        const capacityFillEl = document.getElementById('trip-capacity-fill');
+        if (capacityFillEl) {
+            capacityFillEl.style.width = `${capacityPercentage}%`;
+            capacityFillEl.textContent = `${Math.round(capacityPercentage)}%`;
+        }
+    } else {
+        // Hide capacity section for parcel bookings
+        const capacitySection = document.querySelector('[data-capacity-section], #trip-capacity-text')?.closest('.trip-info-item, .trip-detail');
+        if (capacitySection) {
+            capacitySection.style.display = 'none';
+        }
     }
     
-    // Pickup and Dropoff Points: Use userPassenger pickup_point and dropoff_point for map
+    // Pickup and Dropoff Points: Use userPassenger or userParcel pickup_point and dropoff_point for map
     const pickupPoints = [];
     const dropoffPoints = [];
     
-    if (userPassenger) {
+    if (bookingType === 'parcel' && userParcel) {
+        // Use parcel booking pickup/dropoff points
+        if (userParcel.pickup_point) {
+            pickupPoints.push(userParcel.pickup_point);
+        }
+        if (userParcel.dropoff_point) {
+            dropoffPoints.push(userParcel.dropoff_point);
+        }
+    } else if (userPassenger) {
+        // Use passenger pickup/dropoff points
         if (userPassenger.pickup_point) {
             pickupPoints.push(userPassenger.pickup_point);
         }
@@ -405,9 +499,13 @@ function populateTripStatusFromDatabase(booking) {
     
     if (pickupList) {
         pickupList.innerHTML = '';
-        if (userPassenger && userPassenger.pickup_address) {
+        const pickupAddress = (bookingType === 'parcel' && userParcel) 
+            ? userParcel.pickup_address 
+            : (userPassenger ? userPassenger.pickup_address : null);
+        
+        if (pickupAddress) {
             const li = document.createElement('li');
-            li.textContent = userPassenger.pickup_address;
+            li.textContent = pickupAddress;
             pickupList.appendChild(li);
         } else {
             pickupList.innerHTML = '<li>No pickup point specified</li>';
@@ -416,9 +514,13 @@ function populateTripStatusFromDatabase(booking) {
     
     if (dropoffList) {
         dropoffList.innerHTML = '';
-        if (userPassenger && userPassenger.dropoff_address) {
+        const dropoffAddress = (bookingType === 'parcel' && userParcel) 
+            ? userParcel.dropoff_address 
+            : (userPassenger ? userPassenger.dropoff_address : null);
+        
+        if (dropoffAddress) {
             const li = document.createElement('li');
-            li.textContent = userPassenger.dropoff_address;
+            li.textContent = dropoffAddress;
             dropoffList.appendChild(li);
         } else {
             dropoffList.innerHTML = '<li>No dropoff point specified</li>';
@@ -436,8 +538,112 @@ function populateTripStatusFromDatabase(booking) {
     }
     
     // ===== YOUR BOOKING CARD =====
-    // Code: from booking_passengers.code - display in parcel-secret-code class
-    if (userPassenger && userPassenger.code) {
+    const bookingDetailsContent = document.getElementById('booking-details-content');
+    
+    if (bookingType === 'parcel' && userParcel) {
+        // Display parcel booking information
+        const senderCode = userParcel.sender_code || '';
+        const receiverCode = userParcel.receiver_code || '';
+        const individualParcels = userParcel.parcels || [];
+        const parcelCount = individualParcels.length;
+        
+        // Set sender and receiver codes
+        const senderCodeElements = document.querySelectorAll('.parcel-sender-code, [data-sender-code]');
+        senderCodeElements.forEach(el => {
+            el.textContent = senderCode;
+        });
+        
+        const receiverCodeElements = document.querySelectorAll('.parcel-receiver-code, [data-receiver-code]');
+        receiverCodeElements.forEach(el => {
+            el.textContent = receiverCode;
+        });
+        
+        // Generate QR codes for sender and receiver codes
+        const senderQrContainers = document.querySelectorAll('.parcel-sender-qr, [data-sender-qr]');
+        senderQrContainers.forEach(qrContainer => {
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(senderCode)}`;
+            qrContainer.innerHTML = `<img src="${qrCodeUrl}" alt="Sender QR Code" style="width: 100%; max-width: 250px; height: auto;">`;
+        });
+        
+        const receiverQrContainers = document.querySelectorAll('.parcel-receiver-qr, [data-receiver-qr]');
+        receiverQrContainers.forEach(qrContainer => {
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(receiverCode)}`;
+            qrContainer.innerHTML = `<img src="${qrCodeUrl}" alt="Receiver QR Code" style="width: 100%; max-width: 250px; height: auto;">`;
+        });
+        
+        // Populate booking details content with parcel information
+        if (bookingDetailsContent) {
+            let parcelsHTML = '<div class="parcel-details-grid">';
+            
+            individualParcels.forEach((parcel, index) => {
+                const parcelNum = index + 1;
+                parcelsHTML += `
+                    <div class="parcel-card-status">
+                        <div class="parcel-header-status">
+                            <h4><i class="ri-box-3-line"></i> Parcel ${parcelNum}</h4>
+                        </div>
+                        <div class="parcel-info-status">
+                            <div class="parcel-detail-status">
+                                <span class="parcel-label-status">Parcel Number:</span>
+                                <span class="parcel-value-status">${parcel.parcel_number || '-'}</span>
+                            </div>
+                            <div class="parcel-detail-status">
+                                <span class="parcel-label-status">Size:</span>
+                                <span class="parcel-value-status">${(parcel.size || 'small').charAt(0).toUpperCase() + (parcel.size || 'small').slice(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            parcelsHTML += '</div>';
+            
+            bookingDetailsContent.innerHTML = `
+                <div class="booking-type-parcel">
+                    <i class="ri-box-3-line"></i>
+                    <h4>Parcel Booking</h4>
+                    <p>You have booked <strong>${parcelCount}</strong> parcel${parcelCount !== 1 ? 's' : ''} for this trip.</p>
+                    
+                    <div style="margin-top: 2rem;">
+                        <h5><i class="ri-user-line"></i> Sender Information</h5>
+                        <p><strong>${userParcel.sender_name || '-'}</strong></p>
+                        <p>${userParcel.sender_phone || '-'}</p>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem;">
+                        <h5><i class="ri-user-line"></i> Receiver Information</h5>
+                        <p><strong>${userParcel.receiver_name || '-'}</strong></p>
+                        <p>${userParcel.receiver_phone || '-'}</p>
+                    </div>
+                    
+                    <div class="parcel-code-section" style="margin-top: 2rem;">
+                        <h5><i class="ri-qr-code-line"></i> Verification Codes</h5>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Keep these codes for verification when sending and receiving parcels.</p>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                            <div>
+                                <strong>Sender Code:</strong>
+                                <div class="parcel-secret-code" style="font-size: 1.2rem; letter-spacing: 2px; margin-top: 0.5rem;">${senderCode}</div>
+                                <div class="parcel-qr-code" style="margin-top: 1rem;">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(senderCode)}" alt="Sender QR Code">
+                                </div>
+                            </div>
+                            <div>
+                                <strong>Receiver Code:</strong>
+                                <div class="parcel-secret-code" style="font-size: 1.2rem; letter-spacing: 2px; margin-top: 0.5rem;">${receiverCode}</div>
+                                <div class="parcel-qr-code" style="margin-top: 1rem;">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(receiverCode)}" alt="Receiver QR Code">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${parcelsHTML}
+                </div>
+            `;
+        }
+    } else if (userPassenger && userPassenger.code) {
+        // Display passenger booking information
         const bookingCode = userPassenger.code;
         
         // Set code in element with class "parcel-secret-code"

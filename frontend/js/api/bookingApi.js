@@ -60,10 +60,31 @@ export const getMyBookings = async (status = null, limit = 50, offset = 0) => {
 
 /**
  * Get booking details
+ * @param {string} bookingId - The booking ID
+ * @param {string} [passengerRecordId] - Optional passenger record ID to differentiate between passenger and parcel bookings
+ * @param {string} [parcelRecordId] - Optional parcel record ID to differentiate between passenger and parcel bookings
+ * @param {string} [bookingType] - Optional booking type ('passenger' or 'parcel') to help identify which booking to show
  */
-export const getBookingDetails = async (bookingId) => {
+export const getBookingDetails = async (bookingId, passengerRecordId = null, parcelRecordId = null, bookingType = null) => {
     try {
-        const response = await axios.get(`${BASE_URL}/api/bookings/${bookingId}`);
+        let url = `${BASE_URL}/api/bookings/${bookingId}`;
+        const params = new URLSearchParams();
+        
+        if (passengerRecordId) {
+            params.append('passengerRecordId', passengerRecordId);
+        }
+        if (parcelRecordId) {
+            params.append('parcelRecordId', parcelRecordId);
+        }
+        if (bookingType) {
+            params.append('bookingType', bookingType);
+        }
+        
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+        
+        const response = await axios.get(url);
         return response.data;
     } catch (error) {
         console.error('Error fetching booking details:', error);

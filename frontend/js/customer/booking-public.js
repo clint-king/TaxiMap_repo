@@ -5997,6 +5997,9 @@ async function loadUserBookings() {
                 bookingDate: booking.created_at,
                 pickupPoints: pickupPoints,
                 dropoffPoints: dropoffPoints,
+                // Record IDs for differentiating between passenger and parcel bookings from the same booking
+                passengerRecordId: booking.passenger_record_id || null,
+                parcelRecordId: booking.parcel_record_id || null,
                 // Parcel-specific fields
                 sender_name: booking.sender_name || null,
                 sender_phone: booking.sender_phone || null,
@@ -6120,7 +6123,7 @@ function createBookingItemHTML(booking, type) {
                         </div>
                     </div>
                     <div class="active-trip-actions">
-                        <button class="btn-view-trip" onclick="window.location.href='trip-status.html?bookingId=${booking.bookingId || booking.id}'">
+                        <button class="btn-view-trip" onclick="window.location.href='trip-status.html?bookingId=${booking.bookingId}${booking.passengerRecordId ? `&passengerRecordId=${booking.passengerRecordId}` : ''}${booking.parcelRecordId ? `&parcelRecordId=${booking.parcelRecordId}` : ''}&bookingType=${bookingType}'">
                             <i class="ri-eye-line"></i> View ${isParcelBooking ? 'Parcel' : 'Trip'} Status
                         </button>
                     </div>
