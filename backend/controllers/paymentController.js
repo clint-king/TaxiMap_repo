@@ -19,7 +19,8 @@ export const createPayment = async (req, res) => {
             payment_gateway = 'yoco', // Default to 'yoco' since it's the only payment gateway
             transaction_id: provided_transaction_id = null,
             gateway_response = null,
-            passenger_data = null // Passenger data if this is a passenger booking
+            passenger_data = null, // Passenger data if this is a passenger booking
+            parcel_data = null // Parcel data if this is a parcel booking
         } = req.body;
 
         if (!booking_id || !amount) {
@@ -79,51 +80,24 @@ export const createPayment = async (req, res) => {
             payment_status = 'completed'; // Yoco payments are completed when we receive the transaction_id
         }
 
-        // Insert payment
-        const [result] = await pool.execute(
-            `INSERT INTO payments (
-                booking_id, user_id, amount, currency,
-                payment_method, payment_status, transaction_id,
-                payment_gateway, gateway_response
-            ) VALUES (?, ?, ?, 'ZAR', ?, ?, ?, ?, ?)`,
-            [
-                booking_id, 
-                userId, // Always use the authenticated user's ID
-                amount, 
-                payment_method, 
-                payment_status,
-                transaction_id,
-                payment_gateway,
-                gateway_response ? JSON.stringify(gateway_response) : null
-            ]
-        );
-
-        // Update booking payment status and amounts
-        const newTotalPaid = parseFloat(booking.total_amount_paid || 0) + parseFloat(amount);
-        
-        // Check if this is a passenger booking (has passenger data)
+        // Check if this is a passenger booking or parcel booking
         const isPassengerBooking = passenger_data && passenger_data.first_name;
+        const isParcelBooking = parcel_data && parcel_data.parcels && Array.isArray(parcel_data.parcels) && parcel_data.parcels.length > 0;
         
-        // Prepare booking update query
-        // Note: payment_id column has been removed from bookings table
-        // Note: Booking status should not be changed here - leave it as 'pending' or whatever it currently is
-        let bookingUpdateQuery = `UPDATE bookings 
-             SET total_amount_paid = ?`;
-        let bookingUpdateParams = [newTotalPaid];
-        
-        // If passenger booking, update passenger_count and total_seats_available
-        if (isPassengerBooking) {
-            bookingUpdateQuery += `, passenger_count = passenger_count + 1,
-                 total_seats_available = GREATEST(0, total_seats_available - 1)`;
+        // Ensure mutual exclusivity
+        if (isPassengerBooking && isParcelBooking) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot process both passenger and parcel bookings in the same payment"
+            });
         }
         
-        bookingUpdateQuery += ` WHERE id = ?`;
-        bookingUpdateParams.push(booking_id);
+        // Variables to store passenger/parcel IDs for payment insertion
+        let bookingPassengerId = null;
+        let bookingParcelId = null;
+        let passengerResult = null; // Initialize passenger result
         
-        await pool.execute(bookingUpdateQuery, bookingUpdateParams);
-        
-        // If passenger booking, add passenger to booking_passengers table
-        let passengerResult = null;
+        // If passenger booking, insert passenger FIRST to get the ID
         if (isPassengerBooking) {
             try {
                 // Get current passenger count for passenger_number
@@ -239,14 +213,365 @@ export const createPayment = async (req, res) => {
                     ]
                 );
                 
-                passengerResult = {
-                    id: passengerInsert.insertId,
-                    passenger_number,
-                    code
-                };
+                bookingPassengerId = passengerInsert.insertId;
             } catch (error) {
                 console.error("Error adding passenger to booking:", error);
-                // Don't fail the payment if passenger addition fails, but log it
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to add passenger to booking",
+                    error: error.message
+                });
+            }
+        }
+        
+        // If parcel booking, insert booking_parcels FIRST to get the ID
+        if (isParcelBooking) {
+            try {
+                // Generate unique sender_code and receiver_code
+                const generateUniqueCode = async (tableName, codeColumn, length = 10) => {
+                    let code;
+                    let codeExists = true;
+                    let attempts = 0;
+                    const maxAttempts = 20;
+                    
+                    while (codeExists && attempts < maxAttempts) {
+                        // Generate alphanumeric code
+                        code = Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+                        // Ensure it's exactly the right length
+                        if (code.length < length) {
+                            code = code.padEnd(length, Math.random().toString(36).substring(2, 2 + length).toUpperCase());
+                        }
+                        code = code.substring(0, length);
+                        
+                        // Check if code already exists in booking_parcels table
+                        const [existingCode] = await pool.execute(
+                            `SELECT ID FROM ${tableName} WHERE ${codeColumn} = ?`,
+                            [code]
+                        );
+                        codeExists = existingCode.length > 0;
+                        attempts++;
+                    }
+                    
+                    if (codeExists) {
+                        throw new Error(`Failed to generate unique ${codeColumn} after ${maxAttempts} attempts`);
+                    }
+                    
+                    return code;
+                };
+                
+                const senderCode = await generateUniqueCode('booking_parcels', 'sender_code');
+                const receiverCode = await generateUniqueCode('booking_parcels', 'receiver_code');
+                
+                // Helper function to extract coordinates from point data (same as for passengers)
+                const extractCoordinates = (pointData) => {
+                    if (!pointData) return null;
+                    
+                    // Handle different coordinate formats
+                    let lat, lng;
+                    
+                    if (pointData.coordinates) {
+                        // Check if coordinates is an array [lng, lat] (Mapbox/GeoJSON format)
+                        if (Array.isArray(pointData.coordinates) && pointData.coordinates.length >= 2) {
+                            lng = pointData.coordinates[0];
+                            lat = pointData.coordinates[1];
+                        } else if (typeof pointData.coordinates === 'object') {
+                            // Object format: { lat, lng } or { latitude, longitude }
+                            lat = pointData.coordinates.lat || pointData.coordinates.latitude;
+                            lng = pointData.coordinates.lng || pointData.coordinates.longitude;
+                        }
+                    } else if (pointData.lat != null && pointData.lng != null) {
+                        // Direct lat/lng properties
+                        lat = pointData.lat;
+                        lng = pointData.lng;
+                    } else if (pointData.latitude != null && pointData.longitude != null) {
+                        // latitude/longitude properties
+                        lat = pointData.latitude;
+                        lng = pointData.longitude;
+                    }
+                    
+                    // Return coordinates if valid, otherwise null
+                    if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+                        return { lat: parseFloat(lat), lng: parseFloat(lng) };
+                    }
+                    
+                    return null;
+                };
+                
+                // Extract coordinates for pickup and dropoff points
+                const pickupCoords = extractCoordinates(parcel_data.pickup_point);
+                const dropoffCoords = extractCoordinates(parcel_data.dropoff_point);
+                
+                // Build SQL with POINT geometry functions
+                // Use ST_GeomFromText for POINT geometry: POINT(longitude latitude) - MySQL uses longitude first
+                let pickupPointSQL = 'NULL';
+                let dropoffPointSQL = 'NULL';
+                
+                if (pickupCoords) {
+                    pickupPointSQL = `ST_GeomFromText('POINT(${pickupCoords.lng} ${pickupCoords.lat})', 4326)`;
+                }
+                
+                if (dropoffCoords) {
+                    dropoffPointSQL = `ST_GeomFromText('POINT(${dropoffCoords.lng} ${dropoffCoords.lat})', 4326)`;
+                }
+                
+                // Extract addresses from pickup_point and dropoff_point objects
+                const pickupAddress = parcel_data.pickup_address || 
+                                     parcel_data.pickup_point?.address || 
+                                     (typeof parcel_data.pickup_point === 'string' ? parcel_data.pickup_point : null) ||
+                                     null;
+                const dropoffAddress = parcel_data.dropoff_address || 
+                                      parcel_data.dropoff_point?.address || 
+                                      (typeof parcel_data.dropoff_point === 'string' ? parcel_data.dropoff_point : null) ||
+                                      null;
+                
+                // Insert into booking_parcels table (one record per parcel booking)
+                const [bookingParcelsInsert] = await pool.execute(
+                    `INSERT INTO booking_parcels (
+                        booking_id, user_id, sender_name, sender_phone,
+                        receiver_name, receiver_phone, status, sender_code, receiver_code,
+                        pickup_point, dropoff_point, pickup_address, dropoff_address,
+                        booking_passenger_cancelled_at, cancellation_reason
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ${pickupPointSQL}, ${dropoffPointSQL}, ?, ?, ?, ?)`,
+                    [
+                        booking_id,
+                        userId,
+                        parcel_data.sender_name || '',
+                        parcel_data.sender_phone || '',
+                        parcel_data.receiver_name || '',
+                        parcel_data.receiver_phone || '',
+                        senderCode,
+                        receiverCode,
+                        pickupAddress,
+                        dropoffAddress,
+                        null, // booking_passenger_cancelled_at - NULL initially
+                        null  // cancellation_reason - NULL initially
+                    ]
+                );
+                
+                bookingParcelId = bookingParcelsInsert.insertId;
+            } catch (error) {
+                console.error("Error adding booking_parcels:", error);
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to add parcel booking",
+                    error: error.message
+                });
+            }
+        }
+
+        // Insert payment with booking_passenger_id or booking_parcel_id
+        const [result] = await pool.execute(
+            `INSERT INTO payments (
+                booking_id, user_id, amount, currency,
+                payment_method, payment_status, transaction_id,
+                payment_gateway, gateway_response,
+                booking_passenger_id, booking_parcel_id
+            ) VALUES (?, ?, ?, 'ZAR', ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                booking_id, 
+                userId, // Always use the authenticated user's ID
+                amount, 
+                payment_method, 
+                payment_status,
+                transaction_id,
+                payment_gateway,
+                gateway_response ? JSON.stringify(gateway_response) : null,
+                bookingPassengerId, // NULL if parcel booking
+                bookingParcelId     // NULL if passenger booking
+            ]
+        );
+
+        // Update booking payment status and amounts
+        const newTotalPaid = parseFloat(booking.total_amount_paid || 0) + parseFloat(amount);
+        
+        // Prepare booking update query
+        // Note: payment_id column has been removed from bookings table
+        // Note: Booking status should not be changed here - leave it as 'pending' or whatever it currently is
+        let bookingUpdateQuery = `UPDATE bookings 
+             SET total_amount_paid = ?`;
+        let bookingUpdateParams = [newTotalPaid];
+        
+        // If passenger booking, update passenger_count and total_seats_available
+        if (isPassengerBooking) {
+            bookingUpdateQuery += `, passenger_count = passenger_count + 1,
+                 total_seats_available = GREATEST(0, total_seats_available - 1)`;
+        }
+        
+        // If parcel booking, update parcel-related fields
+        if (isParcelBooking) {
+            // Calculate parcel metrics
+            let seatParcelCount = 0; // Number of seats bought for parcels (each parcel that is a seat parcel counts as 1)
+            let extraspaceCount = 0; // Number of individual parcels (total parcels)
+            let extraspaceParcelCountSp = 0; // Total small parcel equivalents to reduce from extraspace_parcel_count_sp
+            
+            // Helper function to get quantity compared to small parcel
+            const getQuantityInSmallParcels = (size) => {
+                switch(size) {
+                    case 'large': return 4;
+                    case 'medium': return 2;
+                    case 'small': return 1;
+                    default: return 1;
+                }
+            };
+            
+            // Process each parcel
+            parcel_data.parcels.forEach(parcel => {
+                extraspaceCount++; // Each parcel is counted (total number of individual parcels)
+                const quantitySp = getQuantityInSmallParcels(parcel.size);
+                
+                if (parcel.isSeatParcel) {
+                    seatParcelCount++; // Each seat parcel counts as 1 seat
+                    // Seat parcels use seats, not extra space, so don't reduce extraspace_parcel_count_sp
+                } else {
+                    // Only extra space parcels reduce extraspace_parcel_count_sp
+                    extraspaceParcelCountSp += quantitySp;
+                }
+            });
+            
+            // Update booking with parcel information
+            // extraspace_occupied_sp: add the values removed from extraspace_parcel_count_sp
+            bookingUpdateQuery += `, 
+                 seat_parcel_count = seat_parcel_count + ?,
+                 extraspace_count = extraspace_count + ?,
+                 extraspace_parcel_count_sp = GREATEST(0, extraspace_parcel_count_sp - ?),
+                 extraspace_occupied_sp = extraspace_occupied_sp + ?,
+                 total_seats_available = GREATEST(0, total_seats_available - ?)`;
+            
+            bookingUpdateParams.push(
+                seatParcelCount,
+                extraspaceCount,
+                extraspaceParcelCountSp,
+                extraspaceParcelCountSp, // Add to extraspace_occupied_sp the same amount removed from extraspace_parcel_count_sp
+                seatParcelCount // Reduce seats by the number of seat parcels
+            );
+        }
+        
+        bookingUpdateQuery += ` WHERE id = ?`;
+        bookingUpdateParams.push(booking_id);
+        
+        await pool.execute(bookingUpdateQuery, bookingUpdateParams);
+        
+        // If parcel booking, add individual parcels to parcel table (booking_parcels already inserted above)
+        let parcelResult = null;
+        if (isParcelBooking && bookingParcelId) {
+            try {
+                // Get sender_code and receiver_code from the booking_parcels record we just created
+                const [bookingParcelsRecord] = await pool.execute(
+                    "SELECT sender_code, receiver_code FROM booking_parcels WHERE ID = ?",
+                    [bookingParcelId]
+                );
+                
+                const senderCode = bookingParcelsRecord[0]?.sender_code || '';
+                const receiverCode = bookingParcelsRecord[0]?.receiver_code || '';
+                
+                // Generate unique parcel numbers for each parcel (must be globally unique)
+                // Get the maximum parcel_number globally to ensure uniqueness
+                const [maxParcelNumber] = await pool.execute(
+                    "SELECT MAX(parcel_number) as max_num FROM parcel"
+                );
+                let nextParcelNumber = (maxParcelNumber[0].max_num || 0) + 1;
+                
+                // Helper function to generate unique parcel_number globally
+                const generateUniqueParcelNumber = async () => {
+                    let parcelNumber;
+                    let numberExists = true;
+                    let attempts = 0;
+                    const maxAttempts = 50;
+                    
+                    while (numberExists && attempts < maxAttempts) {
+                        // Start from nextParcelNumber and increment if needed
+                        parcelNumber = nextParcelNumber;
+                        
+                        // Check if this parcel_number exists globally (must be unique)
+                        const [existingNumber] = await pool.execute(
+                            "SELECT ID FROM parcel WHERE parcel_number = ?",
+                            [parcelNumber]
+                        );
+                        numberExists = existingNumber.length > 0;
+                        
+                        if (numberExists) {
+                            nextParcelNumber++;
+                        }
+                        attempts++;
+                    }
+                    
+                    if (numberExists) {
+                        throw new Error(`Failed to generate unique parcel_number after ${maxAttempts} attempts`);
+                    }
+                    
+                    nextParcelNumber++; // Increment for next parcel
+                    return parcelNumber;
+                };
+                
+                // Helper function to get quantity compared to small parcel
+                const getQuantityInSmallParcels = (size) => {
+                    switch(size) {
+                        case 'large': return 4;
+                        case 'medium': return 2;
+                        case 'small': return 1;
+                        default: return 1;
+                    }
+                };
+                
+                // Insert each individual parcel into parcel table
+                const insertedParcels = [];
+                for (const parcel of parcel_data.parcels) {
+                    const parcelNumber = await generateUniqueParcelNumber();
+                    const quantitySp = getQuantityInSmallParcels(parcel.size);
+                    
+                    // Insert parcel
+                    const [parcelInsert] = await pool.execute(
+                        `INSERT INTO parcel (
+                            booking_parcels_id, parcel_number, size, 
+                            quantity_compared_to_sp, images
+                        ) VALUES (?, ?, ?, ?, ?)`,
+                        [
+                            bookingParcelId,
+                            parcelNumber,
+                            parcel.size || 'small',
+                            quantitySp,
+                            JSON.stringify(parcel.images || [])
+                        ]
+                    );
+                    
+                    insertedParcels.push({
+                        id: parcelInsert.insertId,
+                        parcel_number: parcelNumber,
+                        size: parcel.size,
+                        quantity_compared_to_sp: quantitySp
+                    });
+                }
+                
+                parcelResult = {
+                    booking_parcels_id: bookingParcelId,
+                    sender_code: senderCode,
+                    receiver_code: receiverCode,
+                    parcels: insertedParcels
+                };
+            } catch (error) {
+                console.error("Error adding individual parcels to parcel table:", error);
+                // Don't fail the payment if parcel addition fails, but log it
+            }
+        }
+        
+        // Prepare passenger result (already inserted before payment above)
+        if (isPassengerBooking && bookingPassengerId) {
+            try {
+                // Get passenger details from the record we already created
+                const [passengerRecord] = await pool.execute(
+                    "SELECT passenger_number, code FROM booking_passengers WHERE ID = ?",
+                    [bookingPassengerId]
+                );
+                
+                if (passengerRecord.length > 0) {
+                    passengerResult = {
+                        id: bookingPassengerId,
+                        passenger_number: passengerRecord[0].passenger_number,
+                        code: passengerRecord[0].code
+                    };
+                }
+            } catch (error) {
+                console.error("Error retrieving passenger result:", error);
             }
         }
 
@@ -259,7 +584,8 @@ export const createPayment = async (req, res) => {
                 payment_status: payment_status,
                 payment_gateway: payment_gateway
             },
-            passenger: passengerResult // Include passenger info if added
+            passenger: passengerResult, // Include passenger info if added
+            parcel: parcelResult // Include parcel info if added
         });
     } catch (error) {
         console.error("Error creating payment:", error);

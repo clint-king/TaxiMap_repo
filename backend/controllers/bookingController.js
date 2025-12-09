@@ -341,7 +341,8 @@ export const createCustomBooking = async (req, res) => {
 
 // Get user's bookings
 // This includes bookings where user is a passenger (via booking_passengers table)
-// Uses only: booking_passengers, bookings, existing_routes tables
+// AND bookings where user has parcels (via booking_parcels table)
+// Uses: booking_passengers, booking_parcels, bookings, existing_routes tables
 export const getMyBookings = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -351,11 +352,8 @@ export const getMyBookings = async (req, res) => {
         const limitInt = parseInt(limit, 10) || 50;
         const offsetInt = parseInt(offset, 10) || 0;
 
-        // Query using only booking_passengers, bookings, and existing_routes tables
-        // 1. Start with booking_passengers filtered by linked_user_id
-        // 2. Join bookings using booking_id
-        // 3. Join existing_routes using existing_route_id from bookings
-        let query = `
+        // Query 1: Fetch bookings where user is a passenger (via booking_passengers table)
+        let passengerQuery = `
             SELECT DISTINCT 
                    b.ID, b.booking_reference, b.owner_id, b.vehicle_id, b.driver_id,
                    b.existing_route_id, b.booking_mode, b.booking_status,
@@ -370,54 +368,143 @@ export const getMyBookings = async (req, res) => {
                    bp.ID as passenger_record_id, bp.passenger_number,
                    bp.pickup_address, bp.dropoff_address,
                    ST_X(bp.pickup_point) as pickup_lng, ST_Y(bp.pickup_point) as pickup_lat,
-                   ST_X(bp.dropoff_point) as dropoff_lng, ST_Y(bp.dropoff_point) as dropoff_lat
+                   ST_X(bp.dropoff_point) as dropoff_lng, ST_Y(bp.dropoff_point) as dropoff_lat,
+                   'passenger' as booking_type
             FROM booking_passengers bp
             INNER JOIN bookings b ON bp.booking_id = b.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
             WHERE bp.linked_user_id = ?
         `;
-        const params = [userId];
+        const passengerParams = [userId];
 
         if (status) {
-            query += ` AND b.booking_status = ?`;
-            params.push(status);
+            passengerQuery += ` AND b.booking_status = ?`;
+            passengerParams.push(status);
         }
 
-        // LIMIT and OFFSET cannot use placeholders in MySQL prepared statements, so we use string interpolation
-        // after validating the values are safe integers
-        query += ` ORDER BY b.created_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`;
+        const [passengerBookings] = await pool.execute(passengerQuery, passengerParams);
 
-        const [bookings] = await pool.execute(query, params);
+        // Query 2: Fetch bookings where user has parcels (via booking_parcels table)
+        let parcelQuery = `
+            SELECT DISTINCT 
+                   b.ID, b.booking_reference, b.owner_id, b.vehicle_id, b.driver_id,
+                   b.existing_route_id, b.booking_mode, b.booking_status,
+                   b.passenger_count, b.seat_parcel_count, b.total_seats_available,
+                   b.total_amount_needed, b.total_amount_paid,
+                   b.scheduled_pickup, b.route_points, b.special_instructions,
+                   b.total_seats, b.extraspace_parcel_count_sp, b.direction_type,
+                   b.created_at, b.updated_at,
+                   er.id as route_id, er.route_name, er.location_1, er.location_2,
+                   er.distance_km, er.typical_duration_hours, er.base_fare,
+                   er.small_parcel_price, er.medium_parcel_price, er.large_parcel_price,
+                   bp.ID as parcel_record_id, bp.sender_name, bp.sender_phone,
+                   bp.receiver_name, bp.receiver_phone, bp.sender_code, bp.receiver_code,
+                   bp.status as parcel_status,
+                   bp.pickup_address, bp.dropoff_address,
+                   ST_X(bp.pickup_point) as pickup_lng, ST_Y(bp.pickup_point) as pickup_lat,
+                   ST_X(bp.dropoff_point) as dropoff_lng, ST_Y(bp.dropoff_point) as dropoff_lat,
+                   'parcel' as booking_type
+            FROM booking_parcels bp
+            INNER JOIN bookings b ON bp.booking_id = b.ID
+            LEFT JOIN existing_routes er ON b.existing_route_id = er.id
+            WHERE bp.user_id = ?
+        `;
+        const parcelParams = [userId];
 
-        // Get passenger and parcel counts for each booking
-        for (let booking of bookings) {
+        if (status) {
+            parcelQuery += ` AND b.booking_status = ?`;
+            parcelParams.push(status);
+        }
+
+        const [parcelBookings] = await pool.execute(parcelQuery, parcelParams);
+
+        // Combine both results
+        let allBookings = [...passengerBookings, ...parcelBookings];
+
+        // Get passenger and parcel counts, and payment amounts for each booking
+        for (let booking of allBookings) {
+            // Get passenger count
             const [passengers] = await pool.execute(
                 "SELECT COUNT(*) as count FROM booking_passengers WHERE booking_id = ?",
                 [booking.ID]
             );
-            
             booking.passenger_count = passengers[0].count;
             
-            // Add passenger-specific pickup/dropoff point data
-            if (booking.pickup_lat && booking.pickup_lng) {
-                booking.pickup_point = {
-                    lat: parseFloat(booking.pickup_lat),
-                    lng: parseFloat(booking.pickup_lng),
-                    address: booking.pickup_address
-                };
+            // Get parcel count for this booking
+            const [parcels] = await pool.execute(
+                "SELECT COUNT(*) as count FROM parcel p INNER JOIN booking_parcels bp ON p.booking_parcels_id = bp.ID WHERE bp.booking_id = ?",
+                [booking.ID]
+            );
+            booking.parcel_count = parcels[0]?.count || 0;
+            
+            // Get payment amount based on booking type
+            // For passenger bookings: match booking_id AND booking_passenger_id = passenger_record_id
+            // For parcel bookings: match booking_id AND booking_parcel_id = parcel_record_id
+            let paymentAmount = null;
+            if (booking.booking_type === 'passenger' && booking.passenger_record_id) {
+                const [payments] = await pool.execute(
+                    "SELECT amount FROM payments WHERE booking_id = ? AND booking_passenger_id = ? ORDER BY created_at DESC LIMIT 1",
+                    [booking.ID, booking.passenger_record_id]
+                );
+                if (payments.length > 0) {
+                    paymentAmount = parseFloat(payments[0].amount) || 0;
+                }
+            } else if (booking.booking_type === 'parcel' && booking.parcel_record_id) {
+                const [payments] = await pool.execute(
+                    "SELECT amount FROM payments WHERE booking_id = ? AND booking_parcel_id = ? ORDER BY created_at DESC LIMIT 1",
+                    [booking.ID, booking.parcel_record_id]
+                );
+                if (payments.length > 0) {
+                    paymentAmount = parseFloat(payments[0].amount) || 0;
+                }
             }
-            if (booking.dropoff_lat && booking.dropoff_lng) {
-                booking.dropoff_point = {
-                    lat: parseFloat(booking.dropoff_lat),
-                    lng: parseFloat(booking.dropoff_lng),
-                    address: booking.dropoff_address
-                };
+            
+            // Set payment_amount (use payment amount if found, otherwise fallback to booking total_amount_paid)
+            booking.payment_amount = paymentAmount !== null ? paymentAmount : parseFloat(booking.total_amount_paid || 0);
+            
+            // Add pickup/dropoff point data based on booking type
+            if (booking.booking_type === 'passenger') {
+                // Passenger-specific pickup/dropoff points
+                if (booking.pickup_lat && booking.pickup_lng) {
+                    booking.pickup_point = {
+                        lat: parseFloat(booking.pickup_lat),
+                        lng: parseFloat(booking.pickup_lng),
+                        address: booking.pickup_address
+                    };
+                }
+                if (booking.dropoff_lat && booking.dropoff_lng) {
+                    booking.dropoff_point = {
+                        lat: parseFloat(booking.dropoff_lat),
+                        lng: parseFloat(booking.dropoff_lng),
+                        address: booking.dropoff_address
+                    };
+                }
+            } else if (booking.booking_type === 'parcel') {
+                // Parcel-specific pickup/dropoff points
+                if (booking.pickup_lat && booking.pickup_lng) {
+                    booking.pickup_point = {
+                        lat: parseFloat(booking.pickup_lat),
+                        lng: parseFloat(booking.pickup_lng),
+                        address: booking.pickup_address
+                    };
+                }
+                if (booking.dropoff_lat && booking.dropoff_lng) {
+                    booking.dropoff_point = {
+                        lat: parseFloat(booking.dropoff_lat),
+                        lng: parseFloat(booking.dropoff_lng),
+                        address: booking.dropoff_address
+                    };
+                }
             }
         }
 
+        // Sort by created_at DESC and apply limit/offset
+        allBookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const paginatedBookings = allBookings.slice(offsetInt, offsetInt + limitInt);
+
         res.json({
             success: true,
-            bookings
+            bookings: paginatedBookings
         });
     } catch (error) {
         console.error("Error fetching bookings:", error);

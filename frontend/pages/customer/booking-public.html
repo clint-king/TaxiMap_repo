@@ -3107,10 +3107,31 @@
             cursor: pointer;
             padding-bottom: 1rem;
             border-bottom: 2px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+
+        .booking-item-header:hover {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 0.5rem -0.5rem 1rem -0.5rem;
         }
 
         .booking-item-title {
             flex: 1;
+        }
+
+        .booking-expand-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #01386A;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .booking-expand-icon i {
+            transition: transform 0.3s ease;
         }
 
         .booking-item-title h3 {
@@ -3183,11 +3204,11 @@
             padding-top: 1.5rem;
             border-top: 2px solid #f0f0f0;
             margin-top: 1rem;
-            animation: expandDown 0.3s ease;
         }
 
         .booking-item-details.show {
-            display: block;
+            display: block !important;
+            animation: expandDown 0.3s ease;
         }
 
         @keyframes expandDown {
@@ -3976,10 +3997,6 @@
                                         <div class="summary-item">
                                             <span>Passengers:</span>
                                             <strong id="summary-passengers">-</strong>
-                                        </div>
-                                        <div class="summary-item">
-                                            <span>Price per person:</span>
-                                            <strong id="summary-price-per">-</strong>
                                         </div>
                                         <div class="summary-item">
                                             <span><strong>Total Amount:</strong></span>

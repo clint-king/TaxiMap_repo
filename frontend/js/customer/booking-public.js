@@ -171,10 +171,22 @@ let dropoffCounter = 1;
 
 /**
  * Object storing parcel data by unique parcel ID
- * Structure: { parcelId: { size, senderName, receiverName, images, etc. } }
+ * Structure: { parcelId: { size, images, etc. } }
  * Used to store all parcel information before booking submission
+ * Note: senderName, senderPhone, receiverName, receiverPhone are now shared across all parcels
  */
 let parcelData = {}; // Store parcel data by unique ID
+
+// Shared sender and receiver information for all parcels
+let sharedSenderInfo = {
+    senderName: '',
+    senderPhone: ''
+};
+
+let sharedReceiverInfo = {
+    receiverName: '',
+    receiverPhone: ''
+};
 
 // ============================================
 // UTILITY FUNCTIONS - Data Sanitization
@@ -1535,6 +1547,20 @@ function selectRoute(routeId) {
         if (bookingId && window.pendingBookings) {
             // Find and store the selected booking data
             selectedBooking = window.pendingBookings.find(b => b.ID == bookingId);
+            
+            // Log selected booking with parcel prices for debugging
+            if (selectedBooking) {
+                console.log('Selected booking with prices:', {
+                    bookingId: selectedBooking.ID,
+                    base_fare: selectedBooking.base_fare,
+                    small_parcel_price: selectedBooking.small_parcel_price,
+                    medium_parcel_price: selectedBooking.medium_parcel_price,
+                    large_parcel_price: selectedBooking.large_parcel_price
+                });
+            }
+            
+            // Update booking type options based on availability
+            updateBookingTypeOptionsBasedOnAvailability();
         }
     }
 
@@ -1545,6 +1571,89 @@ function selectRoute(routeId) {
     setTimeout(() => {
         nextStep();
     }, 500);
+}
+
+/**
+ * Updates booking type options (passengers vs parcels) based on availability
+ * - Hides passenger option if no seats available (total_seats_available <= 0)
+ * - Hides parcel option if no extra parcel space available (extraspace_parcel_count_sp <= 0)
+ */
+function updateBookingTypeOptionsBasedOnAvailability() {
+    if (!selectedBooking) {
+        // Reset visibility if no booking selected
+        const passengerOption = document.getElementById('booking-type-passengers');
+        const parcelOption = document.getElementById('booking-type-parcels');
+        const passengerLabel = passengerOption ? passengerOption.closest('label') : null;
+        const parcelLabel = parcelOption ? parcelOption.closest('label') : null;
+        
+        if (passengerLabel) passengerLabel.style.display = 'block';
+        if (parcelLabel) parcelLabel.style.display = 'block';
+        if (passengerOption) passengerOption.disabled = false;
+        if (parcelOption) parcelOption.disabled = false;
+        return;
+    }
+    
+    const seatsAvailable = selectedBooking.total_seats_available || 0;
+    const extraParcelSpace = selectedBooking.extraspace_parcel_count_sp || 0;
+    
+    // Get booking type option elements
+    const passengerOption = document.getElementById('booking-type-passengers');
+    const parcelOption = document.getElementById('booking-type-parcels');
+    const passengerLabel = passengerOption ? passengerOption.closest('label') : null;
+    const parcelLabel = parcelOption ? parcelOption.closest('label') : null;
+    
+    // Hide/show passenger option based on seat availability
+    if (seatsAvailable <= 0) {
+        // No seats available - hide and disable passenger option
+        if (passengerLabel) {
+            passengerLabel.style.display = 'none';
+        }
+        if (passengerOption) {
+            passengerOption.disabled = true;
+        }
+        // If passenger was selected, switch to parcels if available
+        if (bookingType === 'passengers' && extraParcelSpace > 0) {
+            bookingType = 'parcels';
+            if (parcelOption) {
+                parcelOption.checked = true;
+                parcelOption.disabled = false;
+            }
+            handleBookingTypeChange('parcels');
+        } else if (bookingType === 'passengers' && extraParcelSpace <= 0) {
+            // Neither available - keep current but show warning
+            console.warn('No seats or parcel space available for this route');
+        }
+    } else {
+        // Seats available - show and enable passenger option
+        if (passengerLabel) {
+            passengerLabel.style.display = 'block';
+        }
+        if (passengerOption) {
+            passengerOption.disabled = false;
+        }
+    }
+    
+    // Always show parcel option (unless both seats and extra space are full)
+    // Parcels can use extra space, and if seats are available, they can also use seat parcels
+    // Only hide if BOTH seats and extra space are unavailable
+    if (extraParcelSpace <= 0 && seatsAvailable <= 0) {
+        // No space available at all - hide and disable parcel option
+        if (parcelLabel) {
+            parcelLabel.style.display = 'none';
+        }
+        if (parcelOption) {
+            parcelOption.disabled = true;
+        }
+        console.warn('No seats or parcel space available for this route');
+    } else {
+        // Parcel option available - show and enable
+        if (parcelLabel) {
+            parcelLabel.style.display = 'block';
+        }
+        if (parcelOption) {
+            parcelOption.disabled = false;
+        }
+    }
 }
 
 
@@ -1614,10 +1723,14 @@ function nextStep() {
         }
         
         if (currentStep === 2) {
-            // Location Selection step
+            // Location Selection / Booking Details step
             const passengerContent = document.getElementById('passenger-selection');
             if (passengerContent) {
                 passengerContent.classList.add('active');
+                
+                // Update booking type options based on availability
+                updateBookingTypeOptionsBasedOnAvailability();
+                
                 // Ensure location selection section is visible
                 const locationSection = passengerContent.querySelector('.location-selection-section');
                 if (locationSection) {
@@ -2283,6 +2396,50 @@ function validatePhoneInputPublic(input) {
  * Usage: Called when user clicks "Continue" from parcel information step
  */
 function validateParcelInformation() {
+    // First validate shared sender/receiver information
+    if (!sharedSenderInfo.senderName || sharedSenderInfo.senderName.trim() === '') {
+        return {
+            valid: false,
+            message: 'Please enter the sender\'s name.'
+        };
+    }
+    
+    if (!sharedSenderInfo.senderPhone || sharedSenderInfo.senderPhone.trim() === '') {
+        return {
+            valid: false,
+            message: 'Please enter the sender\'s phone number.'
+        };
+    }
+    
+    if (!validateSAPhoneNumber(sharedSenderInfo.senderPhone)) {
+        return {
+            valid: false,
+            message: 'Sender\'s phone number is invalid. Please enter a valid South African phone number (e.g., 071 234 5678 or +27 71 234 5678).'
+        };
+    }
+    
+    if (!sharedReceiverInfo.receiverName || sharedReceiverInfo.receiverName.trim() === '') {
+        return {
+            valid: false,
+            message: 'Please enter the receiver\'s name.'
+        };
+    }
+    
+    if (!sharedReceiverInfo.receiverPhone || sharedReceiverInfo.receiverPhone.trim() === '') {
+        return {
+            valid: false,
+            message: 'Please enter the receiver\'s phone number.'
+        };
+    }
+    
+    if (!validateSAPhoneNumber(sharedReceiverInfo.receiverPhone)) {
+        return {
+            valid: false,
+            message: 'Receiver\'s phone number is invalid. Please enter a valid South African phone number (e.g., 082 123 4567 or +27 82 123 4567).'
+        };
+    }
+    
+    // Then validate individual parcel information
     for (let i = 1; i <= parcelCount; i++) {
         const parcel = parcelData[i];
         
@@ -2290,48 +2447,6 @@ function validateParcelInformation() {
             return {
                 valid: false,
                 message: `Parcel ${i}: Missing parcel information. Please provide details for all parcels.`
-            };
-        }
-        
-        if (!parcel.senderName || parcel.senderName.trim() === '') {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Please enter the sender's name.`
-            };
-        }
-        
-        if (!parcel.senderPhone || parcel.senderPhone.trim() === '') {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Please enter the sender's phone number.`
-            };
-        }
-        
-        if (!validateSAPhoneNumber(parcel.senderPhone)) {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Sender's phone number is invalid. Please enter a valid South African phone number (e.g., 071 234 5678 or +27 71 234 5678).`
-            };
-        }
-        
-        if (!parcel.receiverName || parcel.receiverName.trim() === '') {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Please enter the receiver's name.`
-            };
-        }
-        
-        if (!parcel.receiverPhone || parcel.receiverPhone.trim() === '') {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Please enter the receiver's phone number.`
-            };
-        }
-        
-        if (!validateSAPhoneNumber(parcel.receiverPhone)) {
-            return {
-                valid: false,
-                message: `Parcel ${i}: Receiver's phone number is invalid. Please enter a valid South African phone number (e.g., 082 123 4567 or +27 82 123 4567).`
             };
         }
         
@@ -2510,28 +2625,104 @@ function updateCapacityDisplay() {
     if (capacityInfoSection) capacityInfoSection.style.display = 'block';
     if (matchingStatus) matchingStatus.style.display = 'block';
 
-    const capacityPercentage = Math.min((parcelCount / MAX_TOTAL_CAPACITY) * 100, 100);
-    const remaining = Math.max(MAX_TOTAL_CAPACITY - parcelCount, 0);
+    // Use new capacity calculation system based on small equivalents
+    const availableCapacity = getAvailableParcelCapacity(); // in small equivalents
+    const capacityInfo = calculateTotalParcelCapacityUsed(); // Returns object with total, extraSpace, seatParcels, seatParcelCount
+    const extraSpaceRemaining = Math.max(availableCapacity - capacityInfo.extraSpace, 0);
+    
+    // Get available seats for seat parcels
+    const seatsAvailable = selectedBooking ? (selectedBooking.total_seats_available || 0) : 15;
+    const seatParcelsRemaining = Math.max(seatsAvailable - capacityInfo.seatParcelCount, 0);
+    
+    // Calculate percentage based on extra space usage (seat parcels don't count towards extra space percentage)
+    const capacityPercentage = availableCapacity > 0 
+        ? Math.min((capacityInfo.extraSpace / availableCapacity) * 100, 100) 
+        : 0;
 
     if (capacityFill) {
         capacityFill.style.width = `${capacityPercentage}%`;
         capacityFill.textContent = `${Math.round(capacityPercentage)}%`;
     }
-        
-        if (totalDisplay) {
-            totalDisplay.textContent = parcelCount;
+    
+    // Display capacity information
+    if (totalDisplay) {
+        // Show extra space usage
+        let displayText = `${capacityInfo.extraSpace} / ${availableCapacity} extra space used`;
+        if (capacityInfo.seatParcelCount > 0) {
+            displayText += `, ${capacityInfo.seatParcelCount} seat parcel${capacityInfo.seatParcelCount !== 1 ? 's' : ''}`;
         }
+        totalDisplay.textContent = displayText;
+    }
 
-        if (capacityText) {
-        capacityText.innerHTML = `<i class="ri-box-3-line"></i>${parcelCount} / ${MAX_TOTAL_CAPACITY} parcels selected`;
-        }
+    if (capacityText) {
+        // Show breakdown of parcels by size and type (extra space vs seat parcels)
+        let extraSpaceLarge = 0, extraSpaceMedium = 0, extraSpaceSmall = 0;
+        let seatParcelLarge = 0, seatParcelMedium = 0, seatParcelSmall = 0;
         
-        if (matchingStatus) {
-            const timerElement = matchingStatus.querySelector('.matching-timer');
-            if (timerElement) {
-            timerElement.innerHTML = `<i class="ri-information-line"></i> You can add up to ${remaining} more parcel${remaining === 1 ? '' : 's'}.`;
+        for (let i = 1; i <= parcelCount; i++) {
+            if (parcelData[i] && parcelData[i].size) {
+                if (parcelData[i].isSeatParcel) {
+                    // Seat parcel
+                    if (parcelData[i].size === 'large') seatParcelLarge++;
+                    else if (parcelData[i].size === 'medium') seatParcelMedium++;
+                    else if (parcelData[i].size === 'small') seatParcelSmall++;
+                } else {
+                    // Extra space parcel
+                    if (parcelData[i].size === 'large') extraSpaceLarge++;
+                    else if (parcelData[i].size === 'medium') extraSpaceMedium++;
+                    else if (parcelData[i].size === 'small') extraSpaceSmall++;
+                }
             }
         }
+        
+        const extraSpaceBreakdown = [];
+        if (extraSpaceLarge > 0) extraSpaceBreakdown.push(`${extraSpaceLarge} large`);
+        if (extraSpaceMedium > 0) extraSpaceBreakdown.push(`${extraSpaceMedium} medium`);
+        if (extraSpaceSmall > 0) extraSpaceBreakdown.push(`${extraSpaceSmall} small`);
+        
+        const seatParcelBreakdown = [];
+        if (seatParcelLarge > 0) seatParcelBreakdown.push(`${seatParcelLarge} large`);
+        if (seatParcelMedium > 0) seatParcelBreakdown.push(`${seatParcelMedium} medium`);
+        if (seatParcelSmall > 0) seatParcelBreakdown.push(`${seatParcelSmall} small`);
+        
+        let displayText = `<i class="ri-box-3-line"></i>${parcelCount} parcel${parcelCount !== 1 ? 's' : ''} selected`;
+        
+        if (extraSpaceBreakdown.length > 0) {
+            displayText += ` - Extra Space: ${extraSpaceBreakdown.join(', ')}`;
+        }
+        if (seatParcelBreakdown.length > 0) {
+            displayText += ` - Seat Parcels: ${seatParcelBreakdown.join(', ')} (at seat price)`;
+        }
+        
+        capacityText.innerHTML = displayText;
+    }
+    
+    if (matchingStatus) {
+        const timerElement = matchingStatus.querySelector('.matching-timer');
+        if (timerElement) {
+            let statusMessage = '';
+            
+            if (extraSpaceRemaining > 0) {
+                statusMessage += `<i class="ri-information-line"></i> ${extraSpaceRemaining} extra space remaining`;
+            } else if (capacityInfo.extraSpace > 0) {
+                statusMessage += `<i class="ri-checkbox-circle-line" style="color: #28a745;"></i> Extra space full`;
+            }
+            
+            if (seatParcelsRemaining > 0) {
+                if (statusMessage) statusMessage += ' | ';
+                statusMessage += `${seatParcelsRemaining} seat${seatParcelsRemaining !== 1 ? 's' : ''} available for seat parcels`;
+            } else if (capacityInfo.seatParcelCount > 0) {
+                if (statusMessage) statusMessage += ' | ';
+                statusMessage += `All seats used for parcels`;
+            }
+            
+            if (!statusMessage) {
+                statusMessage = `<i class="ri-error-warning-line" style="color: #dc3545;"></i> No more space available`;
+            }
+            
+            timerElement.innerHTML = statusMessage;
+        }
+    }
 }
 
 function updateContinueButtonState() {
@@ -2854,14 +3045,27 @@ function handleBookingTypeChange(type) {
         // Initialize first parcel if needed
         if (!parcelData[1]) {
             parcelData[1] = {
-                senderName: '',
-                senderPhone: '',
-                receiverName: '',
-                receiverPhone: '',
                 secretCode: generateSecretCode(),
                 images: [],
                 size: 'small' // default parcel size
             };
+        }
+        
+        // Ensure all existing parcels have a default size of 'small' if not set
+        for (let i = 1; i <= parcelCount; i++) {
+            if (parcelData[i] && !parcelData[i].size) {
+                parcelData[i].size = 'small';
+            }
+        }
+        
+        // Load shared sender/receiver info from sessionStorage if available
+        const savedSharedSenderInfo = sessionStorage.getItem('sharedSenderInfo');
+        const savedSharedReceiverInfo = sessionStorage.getItem('sharedReceiverInfo');
+        if (savedSharedSenderInfo) {
+            sharedSenderInfo = JSON.parse(savedSharedSenderInfo);
+        }
+        if (savedSharedReceiverInfo) {
+            sharedReceiverInfo = JSON.parse(savedSharedReceiverInfo);
         }
     }
     
@@ -2923,22 +3127,67 @@ function incrementParcelsPublic() {
     if (!PARCEL_FEATURE_ENABLED) return;
     if (bookingType !== 'parcels') return;
     
-    if (parcelCount < MAX_TOTAL_CAPACITY) {
+    // Check available seats for seat parcels
+    const seatsAvailable = selectedBooking ? (selectedBooking.total_seats_available || 0) : 15;
+    const capacityInfo = calculateTotalParcelCapacityUsed();
+    const seatParcelsCount = capacityInfo.seatParcelCount || 0;
+    
+    // Check if we can add more parcels
+    const availableCapacity = getAvailableParcelCapacity();
+    const extraSpaceRemaining = Math.max(availableCapacity - capacityInfo.extraSpace, 0);
+    
+    // Allow adding parcels if:
+    // 1. There's extra space available, OR
+    // 2. There are seats available for seat parcels (only if seats are not fully occupied)
+    if (extraSpaceRemaining > 0 || (seatsAvailable > 0 && seatParcelsCount < seatsAvailable)) {
         parcelCount++;
         if (!parcelData[parcelCount]) {
+            const availableExtraSpace = getAvailableParcelCapacity();
+            const currentCapacity = calculateTotalParcelCapacityUsed();
+            
+            // Determine if this should be a seat parcel
+            // Can only be seat parcel if: extra space is full AND seats are available
+            const isSeatParcel = currentCapacity.extraSpace >= availableExtraSpace && seatsAvailable > 0;
+            
             parcelData[parcelCount] = {
-                senderName: '',
-                senderPhone: '',
-                receiverName: '',
-                receiverPhone: '',
                 secretCode: generateSecretCode(),
                 images: [],
-                size: '' // 'small', 'medium', 'large'
+                size: 'small', // Default to small size
+                isSeatParcel: isSeatParcel // Mark if it's a seat parcel
             };
         }
         generateParcelForms();
         updateCounterDisplays();
         updateCapacityDisplay();
+    } else {
+        // Show notification that capacity is full
+        const notification = document.createElement('div');
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 1rem 1.5rem; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; max-width: 300px;';
+        
+        let message = '';
+        if (extraSpaceRemaining <= 0 && seatsAvailable <= 0) {
+            message = 'No more parcel space or seats available for this route.';
+        } else if (extraSpaceRemaining <= 0) {
+            message = 'Extra parcel space is full. Seat parcels are not available as all seats are occupied.';
+        } else {
+            message = 'Cannot add more parcels at this time.';
+        }
+        
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="ri-error-warning-line" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>Capacity Full</strong>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">${message}</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 }
 
@@ -3306,24 +3555,134 @@ function generateParcelForms() {
     
     formsContainer.innerHTML = '';
     
+    // Get user profile to prefill sender information
+    const userProfileString = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+    let userProfile = null;
+
+    if (userProfileString) {
+        try {
+            userProfile = JSON.parse(userProfileString);
+        } catch (e) {
+            console.error('Error parsing user profile:', e);
+        }
+    }
+
+    // Prefill sender information with user's information if not already set
+    if (!sharedSenderInfo.senderName || sharedSenderInfo.senderName.trim() === '') {
+        // Try to get full name from userProfile
+        let userName = '';
+        if (userProfile) {
+            if (userProfile.firstName && userProfile.lastName) {
+                userName = `${userProfile.firstName} ${userProfile.lastName}`.trim();
+            } else if (userProfile.name) {
+                userName = userProfile.name;
+            } else if (userProfile.firstName) {
+                userName = userProfile.firstName;
+            }
+        }
+        sharedSenderInfo.senderName = sanitizeFieldValue(userName);
+    }
+
+    if (!sharedSenderInfo.senderPhone || sharedSenderInfo.senderPhone.trim() === '') {
+        const userPhone = userProfile?.phone || userProfile?.phoneNumber || '';
+        sharedSenderInfo.senderPhone = sanitizeFieldValue(userPhone);
+    }
+    
+    // Add shared sender and receiver information section at the top (only once)
+    const sharedInfoHTML = `
+        <div class="passenger-form-card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #e7f3ff 0%, #d1e7ff 100%); border: 2px solid #01386A;">
+            <div class="passenger-form-header">
+                <h5 style="color: #01386A;"><i class="ri-information-line"></i> Shared Sender & Receiver Information</h5>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">This information will be used for all parcels</p>
+            </div>
+            
+            <h5 style="color: #01386A; margin-bottom: 1rem; font-size: 1.1rem; margin-top: 1.5rem;"><i class="ri-user-fill"></i> Sender Information</h5>
+            <div class="passenger-form-grid" style="margin-bottom: 1.5rem;">
+                <div class="passenger-form-group">
+                    <label><i class="ri-user-3-line"></i> Sender Name <span style="color: #dc3545;">*</span></label>
+                    <input type="text" id="sharedSenderNamePublic" 
+                        value="${sharedSenderInfo.senderName || ''}" 
+                        onchange="updateSharedSenderInfo('senderName', this.value)"
+                        placeholder="Enter sender's full name">
+                </div>
+                <div class="passenger-form-group">
+                    <label><i class="ri-phone-line"></i> Sender Phone <span style="color: #dc3545;">*</span></label>
+                    <input type="tel" id="sharedSenderPhonePublic" 
+                        value="${sharedSenderInfo.senderPhone || ''}" 
+                        onchange="updateSharedSenderInfo('senderPhone', this.value)"
+                        oninput="validatePhoneInputPublic(this)"
+                        placeholder="e.g., 071 234 5678">
+                    <small style="color: #6c757d; font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 071 234 5678 or +27 71 234 5678</small>
+                </div>
+            </div>
+            
+            <h5 style="color: #01386A; margin-bottom: 1rem; font-size: 1.1rem;"><i class="ri-user-received-line"></i> Receiver Information</h5>
+            <div class="passenger-form-grid" style="margin-bottom: 1.5rem;">
+                <div class="passenger-form-group">
+                    <label><i class="ri-user-3-line"></i> Receiver Name <span style="color: #dc3545;">*</span></label>
+                    <input type="text" id="sharedReceiverNamePublic" 
+                        value="${sharedReceiverInfo.receiverName || ''}" 
+                        onchange="updateSharedReceiverInfo('receiverName', this.value)"
+                        placeholder="Enter receiver's full name">
+                </div>
+                <div class="passenger-form-group">
+                    <label><i class="ri-phone-line"></i> Receiver Phone <span style="color: #dc3545;">*</span></label>
+                    <input type="tel" id="sharedReceiverPhonePublic" 
+                        value="${sharedReceiverInfo.receiverPhone || ''}" 
+                        onchange="updateSharedReceiverInfo('receiverPhone', this.value)"
+                        oninput="validatePhoneInputPublic(this)"
+                        placeholder="e.g., 071 234 5678">
+                    <small style="color: #6c757d; font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 071 234 5678 or +27 71 234 5678</small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    formsContainer.innerHTML = sharedInfoHTML;
+    
+    // Recalculate capacity to properly assign parcels
+    const capacityInfo = calculateTotalParcelCapacityUsed();
+    const availableExtraSpace = getAvailableParcelCapacity();
+    
     for (let i = 1; i <= parcelCount; i++) {
         if (!parcelData[i]) {
+            // Determine if this should be a seat parcel based on current capacity
+            const currentExtraSpaceUsed = capacityInfo.extraSpace || 0;
+            const seatsAvailable = selectedBooking ? (selectedBooking.total_seats_available || 0) : 15;
+            
+            // Can only be seat parcel if seats are available
+            const isSeatParcel = currentExtraSpaceUsed >= availableExtraSpace && seatsAvailable > 0;
+            
             parcelData[i] = {
-                senderName: '',
-                senderPhone: '',
-                receiverName: '',
-                receiverPhone: '',
                 secretCode: generateSecretCode(),
                 images: [],
-                size: 'small'
+                size: 'small',
+                isSeatParcel: isSeatParcel
             };
+        } else {
+            // Ensure existing parcels have isSeatParcel flag set correctly
+            if (parcelData[i].size && parcelData[i].isSeatParcel === undefined) {
+                // Recalculate to determine if it should be a seat parcel
+                const currentExtraSpaceUsed = capacityInfo.extraSpace || 0;
+                const seatsAvailable = selectedBooking ? (selectedBooking.total_seats_available || 0) : 15;
+                parcelData[i].isSeatParcel = currentExtraSpaceUsed >= availableExtraSpace && seatsAvailable > 0;
+            }
         }
         
+        // Check if this is a seat parcel
+        const isSeatParcel = parcelData[i].isSeatParcel || false;
+        const seatParcelBadge = isSeatParcel 
+            ? '<div style="background: #FFD52F; color: #01386A; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.85rem; font-weight: 700; margin-left: 0.5rem;"><i class="ri-seat-line"></i> Seat Parcel (Seat Price)</div>'
+            : '';
+        
         const formHTML = `
-            <div class="parcel-card-public">
+            <div class="parcel-card-public" ${isSeatParcel ? 'style="border: 2px solid #FFD52F; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);"' : ''}>
                 <div class="passenger-form-header">
                     <h5><i class="ri-box-3-line"></i> Parcel ${i}</h5>
-                    <div style="background: #01386A; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.9rem; font-weight: 600;">#${i}</div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="background: #01386A; color: white; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.9rem; font-weight: 600;">#${i}</div>
+                        ${seatParcelBadge}
+                    </div>
                 </div>
                 
                 <div class="passenger-form-grid" style="margin-bottom: 1.5rem;">
@@ -3351,46 +3710,6 @@ function generateParcelForms() {
                         </select>
                     </div>
                 </div>
-
-                <h5 style="color: #01386A; margin-bottom: 1rem; font-size: 1.1rem;"><i class="ri-user-fill"></i> Sender Information</h5>
-                <div class="passenger-form-grid" style="margin-bottom: 1.5rem;">
-                    <div class="passenger-form-group">
-                        <label><i class="ri-user-3-line"></i> Sender Name <span style="color: #dc3545;">*</span></label>
-                        <input type="text" id="senderName${i}Public" 
-                            value="${parcelData[i].senderName}" 
-                            onchange="updateParcelFieldPublic(${i}, 'senderName', this.value)"
-                            placeholder="Enter sender's full name">
-                    </div>
-                    <div class="passenger-form-group">
-                        <label><i class="ri-phone-line"></i> Sender Phone <span style="color: #dc3545;">*</span></label>
-                        <input type="tel" id="senderPhone${i}Public" 
-                            value="${parcelData[i].senderPhone}" 
-                            onchange="updateParcelFieldPublic(${i}, 'senderPhone', this.value)"
-                            oninput="validatePhoneInputPublic(this)"
-                            placeholder="e.g., 071 234 5678">
-                        <small style="color: #6c757d; font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 071 234 5678 or +27 71 234 5678</small>
-                    </div>
-                </div>
-                
-                <h5 style="color: #01386A; margin-bottom: 1rem; font-size: 1.1rem;"><i class="ri-user-received-line"></i> Receiver Information</h5>
-                <div class="passenger-form-grid" style="margin-bottom: 1.5rem;">
-                    <div class="passenger-form-group">
-                        <label><i class="ri-user-3-line"></i> Receiver Name <span style="color: #dc3545;">*</span></label>
-                        <input type="text" id="receiverName${i}Public" 
-                            value="${parcelData[i].receiverName}" 
-                            onchange="updateParcelFieldPublic(${i}, 'receiverName', this.value)"
-                            placeholder="Enter receiver's full name">
-                    </div>
-                    <div class="passenger-form-group">
-                        <label><i class="ri-phone-line"></i> Receiver Phone <span style="color: #dc3545;">*</span></label>
-                        <input type="tel" id="receiverPhone${i}Public" 
-                            value="${parcelData[i].receiverPhone}" 
-                            onchange="updateParcelFieldPublic(${i}, 'receiverPhone', this.value)"
-                            oninput="validatePhoneInputPublic(this)"
-                            placeholder="e.g., 071 234 5678">
-                        <small style="color: #6c757d; font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 071 234 5678 or +27 71 234 5678</small>
-                    </div>
-                </div>
             </div>
         `;
         
@@ -3398,10 +3717,205 @@ function generateParcelForms() {
     }
 }
 
+// Functions to update shared sender/receiver information
+function updateSharedSenderInfo(field, value) {
+    if (field === 'senderName') {
+        sharedSenderInfo.senderName = value;
+    } else if (field === 'senderPhone') {
+        sharedSenderInfo.senderPhone = value;
+    }
+    updateContinueButtonState();
+}
+
+function updateSharedReceiverInfo(field, value) {
+    if (field === 'receiverName') {
+        sharedReceiverInfo.receiverName = value;
+    } else if (field === 'receiverPhone') {
+        sharedReceiverInfo.receiverPhone = value;
+    }
+    updateContinueButtonState();
+}
+
+// Make functions globally accessible
+window.updateSharedSenderInfo = updateSharedSenderInfo;
+window.updateSharedReceiverInfo = updateSharedReceiverInfo;
+
+/**
+ * Converts parcel size to small equivalents
+ * 1 large = 4 small, 1 medium = 2 small, 1 small = 1 small
+ */
+function getParcelSizeInSmallEquivalents(size) {
+    switch(size) {
+        case 'large': return 4;
+        case 'medium': return 2;
+        case 'small': return 1;
+        default: return 1; // Default to small if unknown
+    }
+}
+
+/**
+ * Calculates total capacity used by all parcels in small equivalents
+ * Separates extra space parcels from seat parcels
+ * @returns {Object} - { total: number, extraSpace: number, seatParcels: number, seatParcelCount: number }
+ */
+function calculateTotalParcelCapacityUsed() {
+    const availableExtraSpace = getAvailableParcelCapacity();
+    const seatsAvailable = selectedBooking ? (selectedBooking.total_seats_available || 0) : 15;
+    let extraSpaceUsed = 0;
+    let seatParcelCount = 0;
+    let seatParcelsTotal = 0;
+    
+    // First pass: Try to fill extra space first, then mark remaining as seat parcels (only if seats available)
+    for (let i = 1; i <= parcelCount; i++) {
+        if (parcelData[i] && parcelData[i].size) {
+            const parcelSize = getParcelSizeInSmallEquivalents(parcelData[i].size);
+            
+            // If already marked as seat parcel, verify seats are still available
+            if (parcelData[i].isSeatParcel) {
+                // If seats are now full, can't be seat parcel - try to fit in extra space
+                if (seatParcelCount >= seatsAvailable) {
+                    // Seats are full, try extra space
+                    if (extraSpaceUsed + parcelSize <= availableExtraSpace) {
+                        parcelData[i].isSeatParcel = false;
+                        extraSpaceUsed += parcelSize;
+                    } else {
+                        // Can't fit anywhere - keep as seat parcel but we'll show warning
+                        seatParcelCount++;
+                        seatParcelsTotal += parcelSize;
+                    }
+                } else {
+                    seatParcelCount++;
+                    seatParcelsTotal += parcelSize;
+                }
+            } else {
+                // Try to fit in extra space first
+                if (extraSpaceUsed + parcelSize <= availableExtraSpace) {
+                    // Can fit in extra space
+                    parcelData[i].isSeatParcel = false;
+                    extraSpaceUsed += parcelSize;
+                } else {
+                    // Extra space full - can be seat parcel only if seats are available
+                    if (seatParcelCount < seatsAvailable) {
+                        parcelData[i].isSeatParcel = true;
+                        seatParcelCount++;
+                        seatParcelsTotal += parcelSize;
+                    } else {
+                        // No space available - can't assign (shouldn't happen if validation is correct)
+                        parcelData[i].isSeatParcel = false;
+                    }
+                }
+            }
+        }
+    }
+    
+    return {
+        total: extraSpaceUsed + seatParcelsTotal,
+        extraSpace: extraSpaceUsed,
+        seatParcels: seatParcelsTotal,
+        seatParcelCount: seatParcelCount
+    };
+}
+
+/**
+ * Gets available parcel capacity from selected booking
+ * Returns capacity in small equivalents
+ */
+function getAvailableParcelCapacity() {
+    if (!selectedBooking) {
+        // Default capacity if no booking selected
+        return 12; // Default to 12 small parcels
+    }
+    // extraspace_parcel_count_sp is already in small equivalents
+    return selectedBooking.extraspace_parcel_count_sp || 0;
+}
+
+/**
+ * Removes excess parcels when extra space capacity is exceeded
+ * Only removes parcels that exceed extra space - seat parcels are allowed
+ * Removes parcels starting from the highest numbered ones
+ */
+function removeExcessParcels() {
+    const availableCapacity = getAvailableParcelCapacity();
+    
+    // Recalculate and mark parcels as seat parcels if needed
+    let extraSpaceUsed = 0;
+    for (let i = 1; i <= parcelCount; i++) {
+        if (parcelData[i] && parcelData[i].size) {
+            const parcelSize = getParcelSizeInSmallEquivalents(parcelData[i].size);
+            
+            if (extraSpaceUsed + parcelSize <= availableCapacity) {
+                // Can fit in extra space
+                parcelData[i].isSeatParcel = false;
+                extraSpaceUsed += parcelSize;
+            } else {
+                // Must be a seat parcel
+                parcelData[i].isSeatParcel = true;
+            }
+        }
+    }
+    
+    // No need to remove parcels - seat parcels are allowed
+    // Just regenerate forms to update the display
+    generateParcelForms();
+    updateCounterDisplays();
+    updateCapacityDisplay();
+}
+
 function updateParcelFieldPublic(parcelNumber, field, value) {
     if (!PARCEL_FEATURE_ENABLED) return;
     if (parcelData[parcelNumber]) {
+        const oldValue = parcelData[parcelNumber][field];
         parcelData[parcelNumber][field] = value;
+        
+        // Special handling for size changes - recalculate parcel assignments
+        if (field === 'size' && oldValue !== value) {
+            const availableCapacity = getAvailableParcelCapacity();
+            const capacityInfo = calculateTotalParcelCapacityUsed();
+            
+            // Check if extra space is exceeded - if so, mark excess parcels as seat parcels
+            if (capacityInfo.extraSpace > availableCapacity) {
+                // Reassign parcels - extra space parcels first, then seat parcels
+                let extraSpaceUsed = 0;
+                for (let i = 1; i <= parcelCount; i++) {
+                    if (parcelData[i] && parcelData[i].size) {
+                        const parcelSize = getParcelSizeInSmallEquivalents(parcelData[i].size);
+                        
+                        if (extraSpaceUsed + parcelSize <= availableCapacity) {
+                            // Can fit in extra space
+                            parcelData[i].isSeatParcel = false;
+                            extraSpaceUsed += parcelSize;
+                        } else {
+                            // Must be a seat parcel
+                            parcelData[i].isSeatParcel = true;
+                        }
+                    }
+                }
+                
+                // Show notification to user about seat parcels
+                const notification = document.createElement('div');
+                notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ffc107; color: #000; padding: 1rem 1.5rem; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; max-width: 300px;';
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="ri-information-line" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>Extra Space Full</strong>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Some parcels will use seat space at seat price.</p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                // Remove notification after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+            
+            // Update display
+            generateParcelForms();
+            updateCapacityDisplay();
+        }
+        
         // Update button state after field change
         updateContinueButtonState();
     }
@@ -3549,6 +4063,26 @@ function updateBookingSummary() {
     const bookingTypeFromStorage = sessionStorage.getItem('bookingType') || bookingType;
     const passengerCountFromStorage = parseInt(sessionStorage.getItem('passengerCount') || passengerCount) || passengerCount;
     
+    // Load shared sender/receiver info from sessionStorage if available (for parcel bookings)
+    if (bookingTypeFromStorage === 'parcels') {
+        const savedSharedSenderInfo = sessionStorage.getItem('sharedSenderInfo');
+        const savedSharedReceiverInfo = sessionStorage.getItem('sharedReceiverInfo');
+        if (savedSharedSenderInfo) {
+            try {
+                sharedSenderInfo = JSON.parse(savedSharedSenderInfo);
+            } catch (e) {
+                console.warn('Error parsing shared sender info:', e);
+            }
+        }
+        if (savedSharedReceiverInfo) {
+            try {
+                sharedReceiverInfo = JSON.parse(savedSharedReceiverInfo);
+            } catch (e) {
+                console.warn('Error parsing shared receiver info:', e);
+            }
+        }
+    }
+    
     let summaryHTML = '';
     
     // Handle parcel bookings
@@ -3556,10 +4090,49 @@ function updateBookingSummary() {
         const savedParcelCount = parseInt(sessionStorage.getItem('parcelCount') || parcelCount) || parcelCount;
         const savedParcelData = JSON.parse(sessionStorage.getItem('parcelData') || JSON.stringify(parcelData)) || parcelData;
         
-        // Calculate pricing (placeholder - in real app, this would be calculated based on parcel sizes and space usage)
-        // For now, assume parcels use extra space pricing
-        const baseParcelPrice = routePrice * 0.6; // Parcels in extra space cost less
-        const estimatedTotal = baseParcelPrice * savedParcelCount;
+        // Calculate pricing based on parcel types (extra space vs seat parcels)
+        // Get pricing from selected booking (from route card) - ensure they are numbers
+        // These prices come from the booking that was clicked in the route selection step
+        const smallPrice = selectedBooking?.small_parcel_price != null 
+            ? parseFloat(selectedBooking.small_parcel_price) 
+            : EXTRA_SPACE_PRICING.small;
+        const mediumPrice = selectedBooking?.medium_parcel_price != null 
+            ? parseFloat(selectedBooking.medium_parcel_price) 
+            : EXTRA_SPACE_PRICING.medium;
+        const largePrice = selectedBooking?.large_parcel_price != null 
+            ? parseFloat(selectedBooking.large_parcel_price) 
+            : EXTRA_SPACE_PRICING.large;
+        const routePriceNum = parseFloat(routePrice) || 0;
+        
+        let extraSpaceTotal = 0;
+        let seatParcelTotal = 0;
+        let extraSpaceCount = 0;
+        let seatParcelCount = 0;
+        
+        for (let i = 1; i <= savedParcelCount; i++) {
+            if (savedParcelData[i] && savedParcelData[i].size) {
+                if (savedParcelData[i].isSeatParcel) {
+                    // Seat parcels cost the same as a passenger seat regardless of size
+                    seatParcelTotal += routePriceNum;
+                    seatParcelCount++;
+                } else {
+                    // Extra space parcels use size-based pricing
+                    if (savedParcelData[i].size === 'large') {
+                        extraSpaceTotal += largePrice;
+                    } else if (savedParcelData[i].size === 'medium') {
+                        extraSpaceTotal += mediumPrice;
+                    } else if (savedParcelData[i].size === 'small') {
+                        extraSpaceTotal += smallPrice;
+                    }
+                    extraSpaceCount++;
+                }
+            }
+        }
+        
+        // Ensure totals are numbers
+        extraSpaceTotal = parseFloat(extraSpaceTotal) || 0;
+        seatParcelTotal = parseFloat(seatParcelTotal) || 0;
+        const estimatedTotal = extraSpaceTotal + seatParcelTotal;
         
         summaryHTML = `
             <div class="summary-row">
@@ -3572,8 +4145,16 @@ function updateBookingSummary() {
             </div>
             <div class="summary-row">
                 <span>Number of Parcels:</span>
-                <span>${savedParcelCount} parcel(s)</span>
+                <span>${savedParcelCount} parcel(s)${seatParcelCount > 0 ? ` (${extraSpaceCount} extra space, ${seatParcelCount} seat parcel${seatParcelCount !== 1 ? 's' : ''})` : ''}</span>
             </div>
+            ${seatParcelCount > 0 ? `<div class="summary-row" style="color: #FFD52F; font-weight: 600;">
+                <span><i class="ri-seat-line"></i> Seat Parcels:</span>
+                <span>${seatParcelCount} × R${routePriceNum.toFixed(2)} = R${seatParcelTotal.toFixed(2)}</span>
+            </div>` : ''}
+            ${extraSpaceCount > 0 ? `<div class="summary-row">
+                <span>Extra Space Parcels:</span>
+                <span>R${extraSpaceTotal.toFixed(2)}</span>
+            </div>` : ''}
             ${routeDistance > 0 ? `<div class="summary-row">
                 <span>Distance:</span>
                 <span>${routeDistance} km</span>
@@ -3584,7 +4165,22 @@ function updateBookingSummary() {
             </div>
         `;
         
-        // Add parcel details if available
+        // Add shared sender/receiver information
+        summaryHTML += `<div class="summary-row" style="grid-column: 1 / -1; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
+            <span><strong>Sender & Receiver Information:</strong></span>
+        </div>`;
+        summaryHTML += `
+            <div class="summary-row" style="grid-column: 1 / -1; padding-left: 2rem;">
+                <span>Sender:</span>
+                <span>${sharedSenderInfo.senderName || 'Not specified'} - ${sharedSenderInfo.senderPhone || 'Not specified'}</span>
+            </div>
+            <div class="summary-row" style="grid-column: 1 / -1; padding-left: 2rem;">
+                <span>Receiver:</span>
+                <span>${sharedReceiverInfo.receiverName || 'Not specified'} - ${sharedReceiverInfo.receiverPhone || 'Not specified'}</span>
+            </div>
+        `;
+        
+        // Add parcel details if available (without individual verification codes)
         if (savedParcelData && Object.keys(savedParcelData).length > 0) {
             summaryHTML += `<div class="summary-row" style="grid-column: 1 / -1; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
                 <span><strong>Parcel Details:</strong></span>
@@ -3601,34 +4197,57 @@ function updateBookingSummary() {
                             <span>Size:</span>
                             <span>${parcel.size || 'Not specified'}</span>
                         </div>
-                        <div class="summary-row" style="grid-column: 1 / -1; padding-left: 4rem;">
-                            <span>Sender:</span>
-                            <span>${parcel.senderName || 'Not specified'}</span>
-                        </div>
-                        <div class="summary-row" style="grid-column: 1 / -1; padding-left: 4rem;">
-                            <span>Receiver:</span>
-                            <span>${parcel.receiverName || 'Not specified'}</span>
-                        </div>
-                        <div class="summary-row" style="grid-column: 1 / -1; padding-left: 4rem;">
-                            <span>Verification Code:</span>
-                            <span><strong>${parcel.secretCode || 'N/A'}</strong></span>
-                        </div>
                     `;
                 }
             });
         }
         
+        // Add verification codes (one sender code and one receiver code for the entire booking)
+        // Try to get codes from sessionStorage (set after payment) or from payment response
+        const parcelCodes = JSON.parse(sessionStorage.getItem('parcelCodes') || '{}');
+        const senderCode = parcelCodes.sender_code || null;
+        const receiverCode = parcelCodes.receiver_code || null;
+        
+        if (senderCode || receiverCode) {
+            summaryHTML += `<div class="summary-row" style="grid-column: 1 / -1; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
+                <span><strong>Verification Codes:</strong></span>
+            </div>`;
+            if (senderCode) {
+                summaryHTML += `
+                    <div class="summary-row" style="grid-column: 1 / -1; padding-left: 2rem;">
+                        <span>Sender Code (for pickup verification):</span>
+                        <span><strong style="color: #01386A; font-size: 1.1rem;">${senderCode}</strong></span>
+                    </div>
+                `;
+            }
+            if (receiverCode) {
+                summaryHTML += `
+                    <div class="summary-row" style="grid-column: 1 / -1; padding-left: 2rem;">
+                        <span>Receiver Code (for delivery verification):</span>
+                        <span><strong style="color: #01386A; font-size: 1.1rem;">${receiverCode}</strong></span>
+                    </div>
+                `;
+            }
+        }
+        
+        // Calculate average parcel price for display - ensure it's a number
+        let avgParcelPrice = 0;
+        if (extraSpaceCount > 0 && extraSpaceTotal > 0) {
+            avgParcelPrice = parseFloat(extraSpaceTotal) / parseFloat(extraSpaceCount);
+            avgParcelPrice = isNaN(avgParcelPrice) ? 0 : avgParcelPrice;
+        }
+        
+        // Ensure estimatedTotal is a number
+        const estimatedTotalNum = parseFloat(estimatedTotal) || 0;
+        
         summaryHTML += `
-            <div class="summary-row" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
-                <span>Estimated Price per Parcel (Extra Space):</span>
-                <span>R${baseParcelPrice.toFixed(2)}</span>
-            </div>
-            <div class="summary-row">
-                <span><strong>Estimated Total Amount:</strong></span>
-                <span><strong>R${estimatedTotal.toFixed(2)}</strong></span>
-            </div>
-            <div class="summary-row" style="grid-column: 1 / -1; margin-top: 0.5rem; padding: 0.75rem; background: #fff3cd; border-radius: 8px; color: #856404; font-size: 0.9rem;">
-                <span><i class="ri-information-line"></i> Final pricing will be confirmed after admin review and space allocation.</span>
+            ${extraSpaceCount > 0 ? `<div class="summary-row" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
+                <span>Average Price per Extra Space Parcel:</span>
+                <span>R${avgParcelPrice.toFixed(2)}</span>
+            </div>` : ''}
+            <div class="summary-row" style="margin-top: ${extraSpaceCount > 0 ? '0.5rem' : '1rem'}; padding-top: ${extraSpaceCount > 0 ? '0.5rem' : '1rem'}; border-top: ${extraSpaceCount > 0 ? 'none' : '2px solid #e0e0e0'};">
+                <span><strong>Total Amount:</strong></span>
+                <span><strong>R${estimatedTotalNum.toFixed(2)}</strong></span>
             </div>
         `;
     } else {
@@ -3699,10 +4318,6 @@ function updateBookingSummary() {
         `;
 
         summaryHTML += `
-            <div class="summary-row">
-                <span>Price per person:</span>
-                <span>R${routePrice.toFixed(2)}</span>
-            </div>
             <div class="summary-row">
                 <span><strong>Total Amount:</strong></span>
                 <span><strong>R${totalPrice.toFixed(2)}</strong></span>
@@ -4237,28 +4852,98 @@ function updatePaymentBookingSummary() {
     const passengerCountFromStorage = parseInt(sessionStorage.getItem('passengerCount') || passengerCount) || passengerCount;
     const parcelCountFromStorage = parseInt(sessionStorage.getItem('parcelCount') || parcelCount) || parcelCount;
     
-    const pricePerPerson = routePrice;
-    const passengers = bookingTypeFromStorage === 'parcels' ? parcelCountFromStorage : passengerCountFromStorage;
-    const totalAmount = bookingTypeFromStorage === 'parcels' 
-        ? parcelCountFromStorage * routePrice 
-        : routePrice * passengerCountFromStorage;
+    // Calculate total amount based on booking type - ensure all prices are numbers
+    const routePriceNum = parseFloat(routePrice) || 0;
+    let totalAmount = 0;
+    
+    if (bookingTypeFromStorage === 'parcels') {
+        // Get parcel data from storage
+        const savedParcelData = JSON.parse(sessionStorage.getItem('parcelData') || JSON.stringify(parcelData)) || parcelData;
+        
+        // Get pricing from selected booking (from route card) - ensure they are numbers
+        // These prices come from the booking that was clicked in the route selection step
+        const smallPrice = selectedBooking?.small_parcel_price != null 
+            ? parseFloat(selectedBooking.small_parcel_price) 
+            : EXTRA_SPACE_PRICING.small;
+        const mediumPrice = selectedBooking?.medium_parcel_price != null 
+            ? parseFloat(selectedBooking.medium_parcel_price) 
+            : EXTRA_SPACE_PRICING.medium;
+        const largePrice = selectedBooking?.large_parcel_price != null 
+            ? parseFloat(selectedBooking.large_parcel_price) 
+            : EXTRA_SPACE_PRICING.large;
+        
+        console.log('Payment summary - Using parcel prices from selected booking:', {
+            small: smallPrice,
+            medium: mediumPrice,
+            large: largePrice,
+            seatPrice: routePriceNum
+        });
+        
+        // Calculate parcel pricing: extra space parcels use size-based pricing, seat parcels use seat price
+        for (let i = 1; i <= parcelCountFromStorage; i++) {
+            if (savedParcelData[i] && savedParcelData[i].size) {
+                if (savedParcelData[i].isSeatParcel) {
+                    // Seat parcels cost the same as a passenger seat regardless of size
+                    totalAmount += routePriceNum;
+                } else {
+                    // Extra space parcels use size-based pricing
+                    if (savedParcelData[i].size === 'large') {
+                        totalAmount += largePrice;
+                    } else if (savedParcelData[i].size === 'medium') {
+                        totalAmount += mediumPrice;
+                    } else if (savedParcelData[i].size === 'small') {
+                        totalAmount += smallPrice;
+                    }
+                }
+            }
+        }
+        
+        // Ensure totalAmount is a number
+        totalAmount = parseFloat(totalAmount) || 0;
+    } else {
+        totalAmount = routePriceNum * passengerCountFromStorage;
+    }
     
     // Update summary using the same structure as booking-payment.js
     const summaryRoute = document.getElementById('summary-route');
     const summaryPassengers = document.getElementById('summary-passengers');
-    const summaryPricePer = document.getElementById('summary-price-per');
     const summaryTotal = document.getElementById('summary-total');
     
+    // Find parent container to update labels dynamically
+    const summaryCard = summaryRoute?.closest('.booking-summary-card');
+    
     if (summaryRoute) summaryRoute.textContent = routeName || '-';
+    
+    // Update passengers/parcels label and count
     if (summaryPassengers) {
-        if (bookingTypeFromStorage === 'parcels') {
-            summaryPassengers.textContent = parcelCountFromStorage || 0;
+        // Find the label element (the span before summaryPassengers)
+        const passengersLabel = summaryPassengers.parentElement?.querySelector('span:first-child');
+        if (passengersLabel) {
+            if (bookingTypeFromStorage === 'parcels') {
+                passengersLabel.textContent = 'Parcels:';
+                summaryPassengers.textContent = parcelCountFromStorage || 0;
+            } else {
+                passengersLabel.textContent = 'Passengers:';
+                summaryPassengers.textContent = passengerCountFromStorage;
+            }
         } else {
-            summaryPassengers.textContent = passengerCountFromStorage;
+            // Fallback if label not found
+            if (bookingTypeFromStorage === 'parcels') {
+                summaryPassengers.textContent = parcelCountFromStorage || 0;
+            } else {
+                summaryPassengers.textContent = passengerCountFromStorage;
+            }
         }
     }
-    if (summaryPricePer) summaryPricePer.textContent = `R${pricePerPerson.toFixed(2)}`;
-    if (summaryTotal) summaryTotal.textContent = `R${totalAmount.toFixed(2)}`;
+    
+    
+    // Update total amount - this is the most important for payment processing
+    if (summaryTotal) {
+        // Ensure totalAmount is properly formatted as a number
+        const finalTotal = parseFloat(totalAmount) || 0;
+        summaryTotal.textContent = `R${finalTotal.toFixed(2)}`;
+        console.log('Payment summary - Total amount for ' + bookingTypeFromStorage + ':', finalTotal);
+    }
     
     // Generate payment reference for EFT
     const reference = 'TKS' + Date.now().toString().slice(-8);
@@ -4328,8 +5013,16 @@ function processYocoPayment() {
     const amountInRands = parseFloat(amountText);
     const amountInCents = Math.round(amountInRands * 100);
     
-    if (!amountInCents || amountInCents <= 0) {
-        alert('Invalid payment amount. Please try again.');
+    console.log('Yoco Payment - Amount extraction:', {
+        summaryText: summaryTotal.textContent,
+        amountText: amountText,
+        amountInRands: amountInRands,
+        amountInCents: amountInCents
+    });
+    
+    if (!amountInCents || amountInCents <= 0 || isNaN(amountInCents)) {
+        alert('Invalid payment amount: R' + amountInRands + '. Please check your booking and try again.');
+        console.error('Invalid payment amount detected:', { amountInRands, amountInCents });
         return;
     }
     
@@ -4598,9 +5291,55 @@ async function completePaymentInBooking() {
         return;
     }
     
-    const totalAmount = bookingTypeFromStorage === 'parcels' 
-        ? (parcelCount || 0) * routePrice 
-        : routePrice * passengerCount;
+    // Calculate total amount based on booking type - ensure all prices are numbers for consistency
+    const routePriceNum = parseFloat(routePrice) || 0;
+    let totalAmount = 0;
+    
+    if (bookingTypeFromStorage === 'parcels') {
+        // Calculate parcel pricing: extra space parcels use size-based pricing, seat parcels use seat price
+        // Get pricing from selected booking (from route card) - ensure they are numbers
+        // These prices come from the booking that was clicked in the route selection step
+        const smallPrice = selectedBooking?.small_parcel_price != null 
+            ? parseFloat(selectedBooking.small_parcel_price) 
+            : EXTRA_SPACE_PRICING.small;
+        const mediumPrice = selectedBooking?.medium_parcel_price != null 
+            ? parseFloat(selectedBooking.medium_parcel_price) 
+            : EXTRA_SPACE_PRICING.medium;
+        const largePrice = selectedBooking?.large_parcel_price != null 
+            ? parseFloat(selectedBooking.large_parcel_price) 
+            : EXTRA_SPACE_PRICING.large;
+        
+        console.log('Payment completion - Using parcel prices from selected booking:', {
+            small: smallPrice,
+            medium: mediumPrice,
+            large: largePrice,
+            seatPrice: routePriceNum,
+            selectedBookingId: selectedBooking?.ID
+        });
+        
+        for (let i = 1; i <= parcelCount; i++) {
+            if (parcelData[i] && parcelData[i].size) {
+                if (parcelData[i].isSeatParcel) {
+                    // Seat parcels cost the same as a passenger seat regardless of size
+                    totalAmount += routePriceNum;
+                } else {
+                    // Extra space parcels use size-based pricing
+                    if (parcelData[i].size === 'large') {
+                        totalAmount += largePrice;
+                    } else if (parcelData[i].size === 'medium') {
+                        totalAmount += mediumPrice;
+                    } else if (parcelData[i].size === 'small') {
+                        totalAmount += smallPrice;
+                    }
+                }
+            }
+        }
+        
+        // Ensure totalAmount is a number
+        totalAmount = parseFloat(totalAmount) || 0;
+    } else {
+        totalAmount = routePriceNum * passengerCount;
+    }
     
     // Get passenger data (only used for passenger bookings)
     const passengerData = bookingTypeFromStorage === 'passengers' 
@@ -4648,8 +5387,9 @@ async function completePaymentInBooking() {
         booking_status: selectedBooking.booking_status || 'pending'
     };
     
-    // Add parcels to existing booking ONLY if this is a parcel booking
+    // Prepare parcel data for payment controller (parcel bookings will be handled in payment controller)
     // Must not process parcels for passenger bookings to ensure mutual exclusivity
+    let parcelDataForPayment = null;
     if (bookingTypeFromStorage === 'parcels') {
         // Validate that this is truly a parcel booking (no passengers)
         if (passengerCount > 0) {
@@ -4658,23 +5398,60 @@ async function completePaymentInBooking() {
         }
         
         const parcelDataFromStorage = JSON.parse(sessionStorage.getItem('parcelData') || '{}');
-        for (const [key, parcel] of Object.entries(parcelDataFromStorage)) {
-            try {
-                await bookingApi.addParcel(apiBooking.id, {
+        
+        // Prepare parcel data array with all parcel information
+        const parcelsArray = [];
+        for (let i = 1; i <= parcelCount; i++) {
+            const parcel = parcelDataFromStorage[i];
+            if (parcel && parcel.size) {
+                parcelsArray.push({
                     size: parcel.size || 'small',
                     weight: parcel.weight || null,
-                    description: parcel.description || null,
-                    sender_name: parcel.senderName || '',
-                    sender_phone: parcel.senderPhone || '',
-                    receiver_name: parcel.receiverName || '',
-                    receiver_phone: parcel.receiverPhone || '',
                     images: parcel.images || [],
-                    delivery_window: null
+                    isSeatParcel: parcel.isSeatParcel || false
                 });
-            } catch (error) {
-                console.error('Error adding parcel to existing booking:', error);
             }
         }
+        
+        // Prepare route points for pickup/dropoff (same for all parcels in the booking)
+        // Use the first pickup and dropoff points
+        const pickupPoint = pickupPoints.length > 0 ? pickupPoints[0] : null;
+        const dropoffPoint = dropoffPoints.length > 0 ? dropoffPoints[0] : null;
+        
+        // Format pickup point with coordinates (convert array [lng, lat] to object if needed)
+        let formattedPickupPoint = null;
+        if (pickupPoint) {
+            formattedPickupPoint = {
+                address: pickupPoint.address || null,
+                lat: pickupPoint.lat || (pickupPoint.coordinates && Array.isArray(pickupPoint.coordinates) ? pickupPoint.coordinates[1] : null),
+                lng: pickupPoint.lng || (pickupPoint.coordinates && Array.isArray(pickupPoint.coordinates) ? pickupPoint.coordinates[0] : null),
+                coordinates: pickupPoint.coordinates || (pickupPoint.lat && pickupPoint.lng ? [pickupPoint.lng, pickupPoint.lat] : null)
+            };
+        }
+        
+        // Format dropoff point with coordinates
+        let formattedDropoffPoint = null;
+        if (dropoffPoint) {
+            formattedDropoffPoint = {
+                address: dropoffPoint.address || null,
+                lat: dropoffPoint.lat || (dropoffPoint.coordinates && Array.isArray(dropoffPoint.coordinates) ? dropoffPoint.coordinates[1] : null),
+                lng: dropoffPoint.lng || (dropoffPoint.coordinates && Array.isArray(dropoffPoint.coordinates) ? dropoffPoint.coordinates[0] : null),
+                coordinates: dropoffPoint.coordinates || (dropoffPoint.lat && dropoffPoint.lng ? [dropoffPoint.lng, dropoffPoint.lat] : null)
+            };
+        }
+        
+        // Prepare parcel data object with sender/receiver info, parcels array, and pickup/dropoff points
+        parcelDataForPayment = {
+            sender_name: sharedSenderInfo.senderName || '',
+            sender_phone: sharedSenderInfo.senderPhone || '',
+            receiver_name: sharedReceiverInfo.receiverName || '',
+            receiver_phone: sharedReceiverInfo.receiverPhone || '',
+            parcels: parcelsArray,
+            pickup_point: formattedPickupPoint,
+            dropoff_point: formattedDropoffPoint,
+            pickup_address: formattedPickupPoint?.address || null,
+            dropoff_address: formattedDropoffPoint?.address || null
+        };
     } else if (bookingTypeFromStorage === 'passengers') {
         // Ensure no parcels are processed for passenger bookings
         if (parcelCount > 0) {
@@ -4755,8 +5532,8 @@ async function completePaymentInBooking() {
         }
         
         // Create payment - payment controller will update the existing booking
-        // passenger_data will be null for parcel bookings, ensuring mutual exclusivity
-        await paymentApi.createPayment({
+        // passenger_data will be null for parcel bookings, parcel_data will be null for passenger bookings
+        const paymentResponse = await paymentApi.createPayment({
             booking_id: apiBooking.id,
             amount: totalAmount,
             payment_method: paymentMethod,
@@ -4764,8 +5541,24 @@ async function completePaymentInBooking() {
             transaction_id: yocoPaymentId || null,
             payment_gateway: 'yoco', // Always 'yoco' since it's the only payment gateway
             gateway_response: gatewayResponse,
-            passenger_data: passengerDataForPayment // null for parcel bookings, contains data for passenger bookings only
+            passenger_data: passengerDataForPayment, // null for parcel bookings, contains data for passenger bookings only
+            parcel_data: parcelDataForPayment // null for passenger bookings, contains data for parcel bookings only
         });
+        
+        // Store sender_code and receiver_code from payment response for parcel bookings
+        // Payment API response structure: { success, message, payment, parcel: { sender_code, receiver_code, ... } }
+        if (bookingTypeFromStorage === 'parcels' && paymentResponse) {
+            // Handle both direct response and axios-wrapped response
+            const parcelData = paymentResponse.data?.parcel || paymentResponse.parcel;
+            if (parcelData && (parcelData.sender_code || parcelData.receiver_code)) {
+                const parcelCodes = {
+                    sender_code: parcelData.sender_code || null,
+                    receiver_code: parcelData.receiver_code || null
+                };
+                sessionStorage.setItem('parcelCodes', JSON.stringify(parcelCodes));
+                console.log('Stored parcel verification codes:', parcelCodes);
+            }
+        }
         
         // Clear Yoco payment data from session storage
         if (yocoPaymentToken) {
@@ -4802,15 +5595,15 @@ async function completePaymentInBooking() {
         Object.keys(parcelDataFromStorage).forEach(key => {
             const parcel = parcelDataFromStorage[key];
             savedParcelData[key] = {
-                senderName: parcel.senderName || '',
-                senderPhone: parcel.senderPhone || '',
-                receiverName: parcel.receiverName || '',
-                receiverPhone: parcel.receiverPhone || '',
-                secretCode: parcel.secretCode || generateSecretCode(),
                 size: parcel.size || 'small',
                 images: parcel.images || []
+                // Note: No individual secretCode - verification codes are per booking (sender_code and receiver_code), not per parcel
             };
         });
+        
+        // Save shared sender/receiver info to sessionStorage
+        sessionStorage.setItem('sharedSenderInfo', JSON.stringify(sharedSenderInfo));
+        sessionStorage.setItem('sharedReceiverInfo', JSON.stringify(sharedReceiverInfo));
     }
     
     // Generate secret code for seat bookings
@@ -5142,7 +5935,7 @@ async function loadUserBookings() {
                 }
             }
             
-            // Add passenger-specific pickup/dropoff if available
+            // Add pickup/dropoff points if available (works for both passenger and parcel bookings)
             if (booking.pickup_point && !pickupPoints.length) {
                 pickupPoints.push({
                     address: booking.pickup_address || 'Pickup location',
@@ -5158,19 +5951,60 @@ async function loadUserBookings() {
                 });
             }
             
+            // Determine booking type (passenger or parcel)
+            const bookingType = booking.booking_type || (booking.passenger_count > 0 ? 'passenger' : 'parcel');
+            
+            // Calculate price per unit (person for passengers, parcel for parcels)
+            let pricePerUnit = 0;
+            if (bookingType === 'passenger') {
+                pricePerUnit = booking.base_fare ? parseFloat(booking.base_fare) : (booking.total_amount_needed ? parseFloat(booking.total_amount_needed) / Math.max(booking.passenger_count || 1, 1) : 0);
+            } else {
+                // For parcels, calculate average price per parcel
+                const parcelCount = booking.parcel_count || 0;
+                if (parcelCount > 0) {
+                    pricePerUnit = parseFloat(booking.total_amount_paid || booking.total_amount_needed || 0) / parcelCount;
+                }
+            }
+            
+            // Create unique ID by combining booking ID with booking type and record ID
+            // This ensures passenger and parcel bookings from the same booking have different IDs
+            let uniqueId;
+            if (bookingType === 'passenger') {
+                // Use passenger_record_id if available, otherwise combine booking ID with type
+                uniqueId = booking.passenger_record_id 
+                    ? `passenger-${booking.ID}-${booking.passenger_record_id}` 
+                    : `passenger-${booking.ID}`;
+            } else {
+                // Use parcel_record_id if available, otherwise combine booking ID with type
+                uniqueId = booking.parcel_record_id 
+                    ? `parcel-${booking.ID}-${booking.parcel_record_id}` 
+                    : `parcel-${booking.ID}`;
+            }
+            
             return {
-                id: booking.ID,
+                id: uniqueId,
+                bookingId: booking.ID, // Keep original booking ID for reference
                 reference: booking.booking_reference,
                 routeName: routeName || 'Unknown Route',
                 status: booking.booking_status, // 'pending', 'confirmed', 'paid', 'cancelled', 'completed', 'refunded'
+                bookingType: bookingType, // 'passenger' or 'parcel'
                 passengers: booking.passenger_count || 0,
                 parcels: booking.parcel_count || 0,
-                totalAmount: parseFloat(booking.total_amount_paid || booking.total_amount_needed || 0),
-                pricePerPerson: booking.base_fare ? parseFloat(booking.base_fare) : (booking.total_amount_needed ? parseFloat(booking.total_amount_needed) / Math.max(booking.passenger_count || 1, 1) : 0),
+                // Use payment_amount from payments table if available, otherwise fallback to booking total_amount_paid
+                totalAmount: parseFloat(booking.payment_amount !== undefined ? booking.payment_amount : (booking.total_amount_paid || booking.total_amount_needed || 0)),
+                pricePerPerson: pricePerUnit,
                 tripDate: booking.scheduled_pickup,
                 bookingDate: booking.created_at,
                 pickupPoints: pickupPoints,
-                dropoffPoints: dropoffPoints
+                dropoffPoints: dropoffPoints,
+                // Parcel-specific fields
+                sender_name: booking.sender_name || null,
+                sender_phone: booking.sender_phone || null,
+                receiver_name: booking.receiver_name || null,
+                receiver_phone: booking.receiver_phone || null,
+                sender_code: booking.sender_code || null,
+                receiver_code: booking.receiver_code || null,
+                parcel_status: booking.parcel_status || null
             };
         });
 
@@ -5214,7 +6048,7 @@ function displayBookingsInTab(containerId, bookings, type) {
         container.innerHTML = getEmptyBookingsHTML(type);
         return;
     }
-
+    
     container.innerHTML = bookings.map(booking => createBookingItemHTML(booking, type)).join('');
 }
 
@@ -5246,6 +6080,10 @@ function createBookingItemHTML(booking, type) {
     const statusClass = booking.status === 'paid' ? 'paid' : 'completed';
     const statusText = booking.status === 'paid' ? 'PAID' : 'COMPLETED';
     
+    // Determine booking type (passenger or parcel)
+    const bookingType = booking.bookingType || (booking.passengers > 0 ? 'passenger' : 'parcel');
+    const isParcelBooking = bookingType === 'parcel';
+    
     const tripDate = new Date(booking.tripDate);
     const bookingDate = new Date(booking.bookingDate);
     
@@ -5256,10 +6094,14 @@ function createBookingItemHTML(booking, type) {
     // Check if this is an active trip (for upcoming bookings only)
     // Show active trip banner for ALL upcoming items (paid or pending status)
     const isActiveTrip = type === 'upcoming' && (booking.status === 'paid' || booking.status === 'pending');
-    const seatsAvailable = isActiveTrip ? Math.max(0, (15 - (booking.passengers || 0))) : 0;
+    const seatsAvailable = isActiveTrip && !isParcelBooking ? Math.max(0, (15 - (booking.passengers || 0))) : 0;
+
+    // Icon and title based on booking type
+    const bookingIcon = isParcelBooking ? 'ri-box-3-line' : 'ri-taxi-line';
+    const bookingTypeLabel = isParcelBooking ? 'Parcel Booking' : 'Taxi Booking';
 
     return `
-        <div class="booking-item ${statusClass}">
+        <div class="booking-item ${statusClass} ${isParcelBooking ? 'parcel-booking' : 'passenger-booking'}">
             ${isActiveTrip ? `
             <div class="active-trip-banner" style="margin-bottom: 1rem;">
                 <div class="active-trip-content">
@@ -5267,25 +6109,31 @@ function createBookingItemHTML(booking, type) {
                         <i class="ri-time-line"></i>
                     </div>
                     <div class="active-trip-info">
-                        <h3><i class="ri-information-line"></i> You Have an Active Trip</h3>
-                        <p>Your trip from <strong>${booking.routeName || 'N/A'}</strong> ${booking.status === 'pending' ? 'is pending confirmation.' : 'is active.'}</p>
+                        <h3><i class="ri-information-line"></i> You Have an Active ${isParcelBooking ? 'Parcel' : 'Trip'}</h3>
+                        <p>Your ${isParcelBooking ? 'parcel booking' : 'trip'} from <strong>${booking.routeName || 'N/A'}</strong> ${booking.status === 'pending' ? 'is pending confirmation.' : 'is active.'}</p>
                         <div class="active-trip-stats">
-                            <span><i class="ri-user-line"></i> <strong>${booking.passengers || 0}</strong> passengers</span>
+                            ${isParcelBooking ? 
+                                `<span><i class="ri-box-3-line"></i> <strong>${booking.parcels || 0}</strong> parcel${(booking.parcels || 0) !== 1 ? 's' : ''}</span>` :
+                                `<span><i class="ri-user-line"></i> <strong>${booking.passengers || 0}</strong> passenger${(booking.passengers || 0) !== 1 ? 's' : ''}</span>`
+                            }
                             ${seatsAvailable > 0 ? `<span><i class="ri-user-add-line"></i> <strong>${seatsAvailable}</strong> seats available</span>` : ''}
                         </div>
                     </div>
                     <div class="active-trip-actions">
-                        <button class="btn-view-trip" onclick="window.location.href='trip-status.html?bookingId=${booking.id}'">
-                            <i class="ri-eye-line"></i> View Trip Status
+                        <button class="btn-view-trip" onclick="window.location.href='trip-status.html?bookingId=${booking.bookingId || booking.id}'">
+                            <i class="ri-eye-line"></i> View ${isParcelBooking ? 'Parcel' : 'Trip'} Status
                         </button>
                     </div>
                 </div>
             </div>
             ` : ''}
-            <div class="booking-item-header" onclick="toggleBookingDetailsView('${booking.id}')">
+            <div class="booking-item-header" data-booking-id="${String(booking.id)}" onclick="window.toggleBookingDetailsView && window.toggleBookingDetailsView('${String(booking.id)}'); return false;">
                 <div class="booking-item-title">
-                    <h3><i class="ri-taxi-line"></i> ${booking.routeName || 'Taxi Booking'}</h3>
+                    <h3><i class="${bookingIcon}"></i> ${booking.routeName || bookingTypeLabel} ${isParcelBooking ? '<span style="background: #7b1fa2; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; margin-left: 0.5rem;">PARCEL</span>' : ''}</h3>
                     <div class="booking-reference">Ref: ${booking.reference}</div>
+                </div>
+                <div class="booking-expand-icon" id="expand-icon-${String(booking.id)}">
+                    <i class="ri-arrow-down-s-line"></i>
                 </div>
             </div>
             
@@ -5295,16 +6143,16 @@ function createBookingItemHTML(booking, type) {
                     <span>${tripDate.toLocaleDateString()}</span>
                 </div>
                 <div class="quick-info-item">
-                    <i class="ri-group-line"></i>
-                    <strong>${booking.passengers}</strong> ${booking.passengers === 1 ? 'person' : 'people'}
+                    <i class="${isParcelBooking ? 'ri-box-3-line' : 'ri-group-line'}"></i>
+                    <strong>${isParcelBooking ? (booking.parcels || 0) : booking.passengers}</strong> ${isParcelBooking ? ((booking.parcels || 0) === 1 ? 'parcel' : 'parcels') : (booking.passengers === 1 ? 'person' : 'people')}
                 </div>
                 <div class="quick-info-item">
                     <i class="ri-money-dollar-circle-line"></i>
-                    <strong>R${booking.totalAmount}</strong>
+                    <strong>R${parseFloat(booking.totalAmount).toFixed(2)}</strong>
                 </div>
             </div>
             
-            <div class="booking-item-details" id="booking-details-${booking.id}">
+            <div class="booking-item-details" id="booking-details-${String(booking.id)}">
                 <div class="booking-details-grid">
                     <div class="booking-detail">
                         <div class="booking-detail-label">Trip Date & Time</div>
@@ -5313,6 +6161,15 @@ function createBookingItemHTML(booking, type) {
                             ${tripDateDisplay}
                         </div>
                     </div>
+                    ${isParcelBooking ? `
+                    <div class="booking-detail">
+                        <div class="booking-detail-label">Number of Parcels</div>
+                        <div class="booking-detail-value">
+                            <i class="ri-box-3-line"></i>
+                            ${booking.parcels || 0} ${(booking.parcels || 0) === 1 ? 'parcel' : 'parcels'}
+                        </div>
+                    </div>
+                    ` : `
                     <div class="booking-detail">
                         <div class="booking-detail-label">Number of Passengers</div>
                         <div class="booking-detail-value">
@@ -5320,18 +6177,12 @@ function createBookingItemHTML(booking, type) {
                             ${booking.passengers} ${booking.passengers === 1 ? 'person' : 'people'}
                         </div>
                     </div>
+                    `}
                     <div class="booking-detail">
                         <div class="booking-detail-label">Total Amount</div>
                         <div class="booking-detail-value">
                             <i class="ri-money-dollar-circle-line"></i>
-                            R${booking.totalAmount}
-                        </div>
-                    </div>
-                    <div class="booking-detail">
-                        <div class="booking-detail-label">Price per Person</div>
-                        <div class="booking-detail-value">
-                            <i class="ri-user-line"></i>
-                            R${booking.pricePerPerson}
+                            R${parseFloat(booking.totalAmount).toFixed(2)}
                         </div>
                     </div>
                     <div class="booking-detail">
@@ -5341,6 +6192,42 @@ function createBookingItemHTML(booking, type) {
                             ${bookingDate.toLocaleDateString()}
                         </div>
                     </div>
+                    ${isParcelBooking && booking.sender_code ? `
+                    <div class="booking-detail">
+                        <div class="booking-detail-label">Sender Code</div>
+                        <div class="booking-detail-value">
+                            <i class="ri-qr-code-line"></i>
+                            <strong style="font-size: 1.1rem; letter-spacing: 2px;">${booking.sender_code}</strong>
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${isParcelBooking && booking.receiver_code ? `
+                    <div class="booking-detail">
+                        <div class="booking-detail-label">Receiver Code</div>
+                        <div class="booking-detail-value">
+                            <i class="ri-qr-code-line"></i>
+                            <strong style="font-size: 1.1rem; letter-spacing: 2px;">${booking.receiver_code}</strong>
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${isParcelBooking && booking.sender_name ? `
+                    <div class="booking-detail">
+                        <div class="booking-detail-label">Sender</div>
+                        <div class="booking-detail-value">
+                            <i class="ri-user-line"></i>
+                            ${booking.sender_name}${booking.sender_phone ? ` (${booking.sender_phone})` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${isParcelBooking && booking.receiver_name ? `
+                    <div class="booking-detail">
+                        <div class="booking-detail-label">Receiver</div>
+                        <div class="booking-detail-value">
+                            <i class="ri-user-line"></i>
+                            ${booking.receiver_name}${booking.receiver_phone ? ` (${booking.receiver_phone})` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
                 
                 ${createBookingLocationsHTML(booking)}
@@ -5425,9 +6312,25 @@ function setupBookingsTabs() {
 }
 
 function toggleBookingDetailsView(bookingId) {
-    const details = document.getElementById(`booking-details-${bookingId}`);
+    // Convert bookingId to string to ensure consistent ID matching
+    const id = String(bookingId);
+    const details = document.getElementById(`booking-details-${id}`);
+    const expandIcon = document.getElementById(`expand-icon-${id}`);
+    
     if (details) {
-        details.classList.toggle('show');
+        const isExpanded = details.classList.toggle('show');
+        
+        // Rotate the expand icon to indicate expanded/collapsed state
+        if (expandIcon) {
+            const iconElement = expandIcon.querySelector('i');
+            if (iconElement) {
+                if (isExpanded) {
+                    iconElement.style.transform = 'rotate(180deg)';
+                } else {
+                    iconElement.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
     }
 }
 
@@ -5487,7 +6390,7 @@ function viewBookingOnMap(bookingId) {
           `In a future update, this will show the route on an interactive map.`);
 }
 
-// Make new functions globally accessible
+// Make new functions globally accessible - MUST be in global scope for onclick handlers
 window.viewActiveTrip = viewActiveTrip;
 window.toggleBookingDetailsView = toggleBookingDetailsView;
 window.payForExistingBooking = payForExistingBooking;
