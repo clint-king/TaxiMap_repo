@@ -451,6 +451,16 @@ export const createPayment = async (req, res) => {
         
         await pool.execute(bookingUpdateQuery, bookingUpdateParams);
         
+        // Check if payment equals or exceeds expected payment
+        const totalAmountNeeded = parseFloat(booking.total_amount_needed || 0);
+        if (newTotalPaid >= totalAmountNeeded && totalAmountNeeded > 0) {
+            // The status change will be here
+            await pool.execute(
+                "UPDATE bookings SET booking_status = 'fully_paid' WHERE id = ?",
+                [booking_id]
+            );
+        }
+        
         // If parcel booking, add individual parcels to parcel table (booking_parcels already inserted above)
         let parcelResult = null;
         if (isParcelBooking && bookingParcelId) {

@@ -2,6 +2,8 @@ import pool from "../config/db.js";
 import { v4 as uuidv4 } from 'uuid';
 import { getNextVehicleInQueueHelper } from "./vehicleController.js";
 import vehicleController from "./vehicleController.js";
+import bookingQueue from "../config/queue/bookingQueue.js"
+
 
 // ============================================
 // HELPER FUNCTIONS
@@ -162,7 +164,7 @@ export const createRouteBasedBooking = async (req, res) => {
 
             const bookingId = result.insertId;
 
-            // Insert route points
+            // Insert route points [NEEDS FIXING]
             for (let i = 0; i < routePoints.length; i++) {
                 const point = routePoints[i];
                 await pool.execute(
@@ -175,6 +177,10 @@ export const createRouteBasedBooking = async (req, res) => {
                     ]
                 );
             }
+
+
+            //create a scheduled execution 
+            scheduleBookingJob(bookingId, scheduled_pickup)
 
             await pool.execute('COMMIT');
 
@@ -224,6 +230,16 @@ export const createRouteBasedBooking = async (req, res) => {
         });
     }
 };
+
+
+//scheduled booking
+function scheduleBookingJob(bookingId, runAt) {
+  const delay = new Date(runAt) - new Date();
+  if (delay < 0) return;
+
+  bookingQueue.add({ bookingId }, { delay }); // THIS is where job.data is set
+  console.log("Scheduled booking:", bookingId, "to run at:", runAt);
+}
 
 /**
  * Create a custom booking
@@ -2039,6 +2055,9 @@ export const executeBookingAdmin = async (req, res) => {
                             [newPosition, existing_route_id, vehicleId]
                         );
 
+                        //Add to the server queue
+                        const bookingQueue = new ServerQueue('bookingQueue', 'redis://127.0.0.1:6379');
+
                         await queueConnection.commit();
                         queueResult = {
                             success: true,
@@ -2123,7 +2142,7 @@ export const executeBookingAdmin = async (req, res) => {
 /**
  * Get public pending bookings for display on booking-public page
  * This endpoint is public (no authentication required)
- * Returns bookings with status 'pending' along with their route information
+ * Returns bookings with status 'pending' or 'fully_paid' along with their route information
  */
 export const getPublicPendingBookings = async (req, res) => {
     try {
@@ -2146,7 +2165,7 @@ export const getPublicPendingBookings = async (req, res) => {
                 er.large_parcel_price
             FROM bookings b
             INNER JOIN existing_routes er ON b.existing_route_id = er.id
-            WHERE b.booking_status = 'pending'
+            WHERE b.booking_status IN ('pending', 'fully_paid')
                 AND b.booking_mode = 'route'
                 AND er.status = 'active'
             ORDER BY b.scheduled_pickup ASC
@@ -2167,6 +2186,37 @@ export const getPublicPendingBookings = async (req, res) => {
         });
     }
 };
+
+export const getExistingRouteDetails = async (req, res) => { 
+    
+    const bookingID = req.body.bookingID;
+    try{
+  const [routes] = await pool.execute(
+        `SELECT er.* , b.direction_type AS direction_type FROM 
+        bookings b
+        INNER JOIN existing_routes er ON b.existing_route_id = er.ID
+        WHERE b.id = ?`,
+        [bookingID]
+    );
+
+    if (routes.length === 0) {
+        console.error("No existing route found for booking ID:", bookingID);
+    }
+
+    return res.status(200).json({
+        success: true,
+        route: routes[0] || null
+    });
+}catch(error){
+    console.error("Error fetching existing route details for booking ID:", bookingID, error);   
+    return res.status(500).json({
+        success: false,
+        message: "Failed to fetch existing route details",
+        error: error.message
+    });
+}
+
+}
 
 export default {
     createRouteBasedBooking,
@@ -2189,6 +2239,7 @@ export default {
     getBookingStatistics,
     updateBookingStatusAdmin,
     executeBookingAdmin,
-    getPublicPendingBookings
+    getPublicPendingBookings,
+    getExistingRouteDetails
 };
 

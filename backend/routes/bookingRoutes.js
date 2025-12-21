@@ -55,6 +55,8 @@ router.put("/:bookingId/driver/status", authenticateUser, bookingController.upda
 // Mark route point as completed
 router.put("/:bookingId/route-points/:pointId/complete", authenticateUser, bookingController.completeRoutePoint);
 
+router.get("/existing-route-details", authenticateUser, bookingController.getExistingRouteDetails);
+
 // ============================================
 // OWNER ROUTES
 // ============================================

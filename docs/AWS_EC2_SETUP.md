@@ -1,6 +1,6 @@
 # AWS EC2 Setup Guide for TeksiMap
 
-This guide walks you through setting up an AWS EC2 instance for deploying your TeksiMap backend using Docker.
+This guide walks you through setting up an AWS EC2 instance for deploying TeksiMap backend using Docker.
 
 ## 🚀 Step 1: Launch EC2 Instance
 

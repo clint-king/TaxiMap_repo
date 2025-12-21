@@ -52,6 +52,12 @@ const config = {
     environment: process.env.YOCO_ENVIRONMENT || "test" // 'test' or 'live'
   },
 
+  //redis
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT
+  },
+
   
   // Social Authentication Credentials
   social: {

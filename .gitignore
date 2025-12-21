@@ -4,6 +4,15 @@ docker-compose.dev.yml
 docker-compose.prod.yml
 
 # Backend environment files
-backend/.env.development
-backend/.env.production
+config/.env.development
+config/.env.production
 
+#md files
+docs/AWS_EC2_SETUP.md
+docs/DATABASE_EXTENSIONS_GUIDE.md
+docs/DEVELOPER_GUIDE.md
+docs/DOCKER_DEPLOYMENT.md
+docs/RDS_SETUP_GUIDE.md
+docs/README_DOCKER.md
+docs/USER_ARCHITECTURE_EXPLANATION.md
+docs/WHATSAPP_BOT_INTEGRATION.md

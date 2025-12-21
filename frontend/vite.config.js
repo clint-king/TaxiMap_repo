@@ -24,7 +24,6 @@ export default defineConfig({
         feedback: resolve(__dirname, 'pages/customer/feedback.html'),
         'booking-trip-info': resolve(__dirname, 'pages/customer/booking-trip-info.html'),
         'booking-select-transport': resolve(__dirname, 'pages/customer/booking-select-transport.html'),
-        'booking-confirmation': resolve(__dirname, 'pages/customer/booking-confirmation.html'),
         'booking-edit-locations': resolve(__dirname, 'pages/customer/booking-edit-locations.html'),
         'booking-passenger-info': resolve(__dirname, 'pages/customer/booking-passenger-info.html'),
         'booking-passenger-management': resolve(__dirname, 'pages/customer/booking-passenger-management.html'),
@@ -45,10 +44,9 @@ export default defineConfig({
         'owner-dashboard': resolve(__dirname, 'pages/Owner/owner-dashboard.html'),
         'owner-vehicle-post': resolve(__dirname, 'pages/Owner/owner-vehicle-post.html'),
         'owner-portal': resolve(__dirname, 'pages/Owner/owner-portal.html'),
-        'owner-booking-notification': resolve(__dirname, 'pages/Owner/owner-booking-notification.html'),
         
         // Other pages
-        popup: resolve(__dirname, 'popup.html'),
+        popup: resolve(__dirname, 'pages/popup.html'),
         contributors: resolve(__dirname, 'pages/home/contributors.html'),
         terms: resolve(__dirname, 'pages/home/terms.html'),
         privacy: resolve(__dirname, 'pages/home/privacy.html'),

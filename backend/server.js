@@ -11,12 +11,14 @@ import driverRoutes from './routes/driverRoutes.js';
 import ownerRoutes from './routes/ownerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
+import trackingRoutes from './routes/trackingRoutes.js';
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
 import config from "./config/configurations.js"; 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import "./config/jobs/bookingJob.js"
 
 
 const port = config.port || 3000 ;
@@ -60,6 +62,7 @@ app.use("/api/drivers", driverRoutes);
 app.use("/api/owners", ownerRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/tracking", trackingRoutes);
 
 
 

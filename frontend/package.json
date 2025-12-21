@@ -12,6 +12,10 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@turf/turf": "^7.2.0",
     "axios": "^1.7.9",
     "jsts": "^2.12.1"
