@@ -1,9 +1,5 @@
 // Driver Navigation JavaScript
-import {
-  showSuccessMessage,
-  showErrorMessage,
-} from "../common/notifications.js";
-import trackingAPi from "../api/trackingAPi.js";
+import * as trackingAPi from "../api/trackingAPi.js";
 let map;
 let directionsService;
 let directionsRenderer;

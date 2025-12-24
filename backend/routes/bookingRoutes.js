@@ -57,6 +57,8 @@ router.put("/:bookingId/route-points/:pointId/complete", authenticateUser, booki
 
 router.get("/existing-route-details", authenticateUser, bookingController.getExistingRouteDetails);
 
+router.get("/driver/upcoming-trips", authenticateUser, bookingController.listOfUpcomingTrips);
+
 // ============================================
 // OWNER ROUTES
 // ============================================

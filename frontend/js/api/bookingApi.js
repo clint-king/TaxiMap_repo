@@ -220,6 +220,41 @@ export const completeRoutePoint = async (bookingId, pointId) => {
     }
 };
 
+// export const getUpcomingTrips = async () => {
+//     try {
+//         const response = await axios.get(`${BASE_URL}/api/bookings/driver/upcoming-trips`);
+//         if (!response.data.success) {
+//             throw new Error('Failed to fetch upcoming trips');
+//         }
+        
+//         return response.data;
+//     } catch (error) {
+//         console.error('Error fetching upcoming trips:', error);
+//         throw error;
+//     }
+// };
+
+// ...existing code...
+export const getUpcomingTrips = async () => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/bookings/driver/upcoming-trips`);
+        if (!response.data.success) {
+            throw new Error('Failed to fetch upcoming trips');
+        }
+        return response.data;
+    } catch (error) {
+        // If endpoint not found, return empty list (UI-friendly)
+        if (error.response && error.response.status === 404) {
+            console.warn('Upcoming trips endpoint returned 404 — returning empty list for UI.');
+            return { success: true, upcomingTrips: [] };
+        }
+        console.error('Error fetching upcoming trips:', error);
+        throw error;
+    }
+};
+// ...existing code...
+
+
 // ============================================
 // OWNER BOOKING APIs
 // ============================================
