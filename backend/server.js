@@ -12,6 +12,7 @@ import ownerRoutes from './routes/ownerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import trackingRoutes from './routes/trackingRoutes.js';
+import paymentController from "./controllers/paymentController.js";
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
@@ -23,6 +24,9 @@ import "./config/jobs/bookingJob.js"
 
 const port = config.port || 3000 ;
 const app = express();
+
+//webhook endpoint
+app.post('/api/payments/yoco/webhook', express.raw({ type: 'application/json' }), paymentController.handleYocoWebhook);
 
 //middleware
 app.use(bodyParser.json({ limit: '50mb' }));

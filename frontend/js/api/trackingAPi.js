@@ -5,23 +5,21 @@ axios.defaults.withCredentials = true;
 
 const geocoder = new google.maps.Geocoder();
  const BookingStatus = {
-    PENDING: 'pending',
-    CONFIRMED: 'confirmed',
-    IN_TRANSIT: 'in_transit',
-    DROPPED_OFF: 'dropped-off',
-    CANCELLED: 'cancelled'
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
+    IN_TRANSIT: "in_transit",
+    DROPPED_OFF: "dropped-off",
+    CANCELLED: "cancelled"
 };
 
 const BookingDirectionType = {
-    FROM_LOC1: 'from_loc1',
-    FROM_LOC2: 'from_loc2'
+    FROM_LOC1: "from_loc1",
+    FROM_LOC2: "from_loc2"
 };
 
 export const getBookingWaypoints = async (bookingID) => {
     try {
-        const response = await axios.get(`${BASE_URL}/api/tracking/waypoints`, {
-           booking_id: bookingID 
-        });
+        const response = await axios.get(`${BASE_URL}/api/tracking/${bookingID}/waypoints`);
 
         //structure the returned data as needed
         //way point with current structure
@@ -42,8 +40,8 @@ export const getBookingWaypoints = async (bookingID) => {
 
             return {
                 position: {
-                    lat: waypoint.lat,
-                    lng: waypoint.lng
+                    lat: waypoint.position.lat,
+                    lng: waypoint.position.lng
                 },
                 stopOverValue: stopOverValue
             };
@@ -53,13 +51,13 @@ export const getBookingWaypoints = async (bookingID) => {
         const dropoff_coordinatesOnly = fullInfo_dropoff_Waypoints.map(waypoint => {
             let stopOverValue = false;
 
-            if(waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT ){
+            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT ){
                 stopOverValue = true;
             }
             return {
                 position: {
-                    lat: waypoint.lat,
-                    lng: waypoint.lng
+                    lat: waypoint.position.lat,
+                    lng: waypoint.position.lng
                 },
                 stopOverValue: stopOverValue
             };
@@ -84,27 +82,32 @@ export const getBookingWaypoints = async (bookingID) => {
 
 export const getDefaultSourceAndDestCoords = async (bookingID) => {
     try {
-        const existingRouteDetails = await axios.get(`${BASE_URL}/api/bookings/existing-route-details`, { 
-            booking_id: bookingID
+        const existingRouteDetails = await axios.post(`${BASE_URL}/api/bookings/existing-route-details`, { 
+             bookingID: bookingID
         });
 
         if(!existingRouteDetails.data.success){
             throw new Error("Could not fetch existing route details");
         }
+        const existingRouteData = existingRouteDetails.data.route;
         let sourceLocationName;
         let destinationLocationName;
 
-        if(existingRouteDetails.data.direction_type == BookingDirectionType.FROM_LOC1){
-            sourceLocationName = existingRouteDetails.data.location_1;
-            destinationLocationName = existingRouteDetails.data.location_2;
+        if(existingRouteData.direction_type == BookingDirectionType.FROM_LOC1){
+            sourceLocationName = existingRouteData.location_1;
+            destinationLocationName = existingRouteData.location_2;
         }else{
-            sourceLocationName = existingRouteDetails.data.location_2;
-            destinationLocationName = existingRouteDetails.data.location_1;
+            sourceLocationName = existingRouteData.location_2;
+            destinationLocationName = existingRouteData.location_1;
         }
-
-
+        console.log("existingRouteDetails result: ", existingRouteDetails.data);
+        console.log("in [getDefaultSourceAndDestCoords] Source Name: ", sourceLocationName);
+        console.log("in [getDefaultSourceAndDestCoords] Destination Name: ", destinationLocationName);
         const sourceCoords =  await getSourceInSouthAfrica(sourceLocationName);
         const destCoords =  await getSourceInSouthAfrica(destinationLocationName);
+
+        console.log("in [getDefaultSourceAndDestCoords] result Source Coords: ", sourceCoords);
+        console.log("in [getDefaultSourceAndDestCoords] result Destination Coords: ", destCoords);
 
         return {
             source: sourceCoords,

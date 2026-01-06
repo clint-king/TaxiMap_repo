@@ -44,6 +44,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize map
   initMap();
 
+  // Draw route for current trip if exists
+  const params = new URLSearchParams(window.location.search);
+  const bookingId = Number(params.get("bookingId"));
+  if (bookingId) {
+    (async () => {
+      try {
+        await drawRoute(
+          bookingId,
+          null,
+          null
+        );
+      } catch (error) {
+        console.error("Error drawing route for booking:", error);
+      }
+    })();
+  }
+
   // Load current trip
   loadCurrentTrip();
 
@@ -335,121 +352,258 @@ function displayTrip(trip) {
  * @param {Object} driverDestCoords  This is the driver's destination coordinates in the format {lat: xx.xxxx , lng: yy.yyyyy}
  * @returns 
  */
-async function drawRoute(bookingID , driverSourceCoords , driverDestCoords){
+// async function drawRoute(bookingID , driverSourceCoords , driverDestCoords){
+//   try {
+//     const waypointResult = await trackingAPi.getBookingWaypoints(bookingID);
+//     const defaultCoords = await trackingAPi.getDefaultSourceAndDestCoords(
+//       bookingID
+//     );
+//     // Process the waypoints to draw the route on the map
+//     // This is a placeholder - actual implementation will depend on the API response structure
+//     console.log("Waypoints for route drawing:", waypointResult);
+
+//     //pick up waypoints
+//     const pickupWaypoints = waypointResult.pickup.coordinatesOnly;
+//     const dropoffWaypoints = waypointResult.dropoff.coordinatesOnly;
+//     let orderedPickupWaypoints = [];
+//     let defaultsourcePosition ={};
+//     let defaultdestinationPosition ={};
+
+//     if (driverSourceCoords) {
+//       defaultsourcePosition = driverSourceCoords;
+//     }else{
+//         defaultsourcePosition = defaultCoords.source.position;
+//     }
+
+//     if (driverDestCoords) {
+//       defaultdestinationPosition = driverDestCoords;
+//     }else{
+//         defaultdestinationPosition = defaultCoords.destination.position;
+//     }
+
+//     directionsService.route(
+//       {
+//         origin: defaultsourcePosition,
+//         destination: dropoffWaypoints[0].position,
+//         waypoints: pickupWaypoints.map((p) => ({
+//           location: p.position,
+//           stopover: p.stopOverValue,
+//         })),
+//         optimizeWaypoints: true,
+//         travelMode: "DRIVING",
+//       },
+//       (result, status) => {
+//         if (status === "OK") {
+//           //   const pickupOrder = result.routes[0].waypoint_order;
+//           //   console.log("Optimized pickup order:", pickupOrder);
+
+//           const route = result.routes[0];
+//           const legs = route.legs;
+
+//           // Build polyline path EXCLUDING last leg
+//           const path = [];
+
+//           for (let i = 0; i < legs.length - 1; i++) {
+//             legs[i].steps.forEach((step) => {
+//               step.path.forEach((p) => path.push(p));
+//             });
+//           }
+
+//           new google.maps.Polyline({
+//             path,
+//             map,
+//             strokeColor: "#4285F4",
+//             strokeOpacity: 1,
+//             strokeWeight: 5,
+//           });
+
+//           console.log("Optimized pickup order:", route.waypoint_order);
+//           orderedPickupWaypoints = route.waypoint_order.map(
+//             (index) => pickupWaypoints[index]
+//           );
+          
+//         }
+//       }
+//     );
+
+//     // Then send another request for drop-offs from last pickup to Tzaneen
+//     //drop off waypoints
+
+//     directionsService.route(
+//       {
+//         origin:
+//           orderedPickupWaypoints.length > 0
+//             ? orderedPickupWaypoints[orderedPickupWaypoints.length - 1]
+//                 .position
+//             : defaultsourcePosition,
+//         destination: defaultdestinationPosition,
+//         waypoints: dropoffWaypoints.map((p) => ({
+//           location: p.position,
+//           stopover: p.stopOverValue,
+//         })),
+//         optimizeWaypoints: true,
+//         travelMode: "DRIVING",
+//       },
+//       (result, status) => {
+//         if (status === "OK") {
+//           const route = result.routes[0];
+//           const legs = route.legs;
+          
+//           // Build polyline path
+//           const path = [];
+//             for (let i = 0; i < legs.length -1; i++) {
+//                 legs[i].steps.forEach((step) => {
+//                     step.path.forEach((p) => path.push(p));
+//                 });
+//             }
+
+//           new google.maps.Polyline({
+//             path,
+//             map,
+//             strokeColor: "#4285F4",
+//             strokeOpacity: 1,
+//             strokeWeight: 5,
+//           });
+//         }
+//       }
+//     );
+
+//     return true;
+//   } catch (error) {
+//     console.error("Error drawing route:", error);
+//     return false;
+//   }
+// }
+
+function routeAsync(request) {
+  return new Promise((resolve, reject) => {
+    directionsService.route(request, (result, status) => {
+      if (status === "OK") resolve(result);
+      else reject(status);
+    });
+  });
+}
+
+// Make a anum of origin , pickup , dropoff and destination
+const markerType = {
+  ORIGIN: "origin",
+  PICKUP: "pickup",
+  DROPOFF: "dropoff",
+  DESTINATION: "destination"
+};
+
+async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
   try {
     const waypointResult = await trackingAPi.getBookingWaypoints(bookingID);
     const defaultCoords = await trackingAPi.getDefaultSourceAndDestCoords(
       bookingID
     );
-    // Process the waypoints to draw the route on the map
-    // This is a placeholder - actual implementation will depend on the API response structure
-    console.log("Waypoints for route drawing:", waypointResult);
 
-    //pick up waypoints
+    console.log("Default : " , defaultCoords);
+
     const pickupWaypoints = waypointResult.pickup.coordinatesOnly;
     const dropoffWaypoints = waypointResult.dropoff.coordinatesOnly;
-    let orderedPickupWaypoints = [];
-    let defaultsourcePosition ={};
-    let defaultdestinationPosition ={};
 
-    if (driverSourceCoords) {
-      defaultsourcePosition = driverSourceCoords;
-    }else{
-        defaultsourcePosition = defaultCoords.source.position;
+    const defaultsourcePosition =
+      driverSourceCoords ?? defaultCoords.source.position;
+
+    const defaultdestinationPosition =
+      driverDestCoords ?? defaultCoords.destination.position;
+
+    // clear previous polylines if you store them globally
+    if (window.activePolylines) {
+      window.activePolylines.forEach(p => p.setMap(null));
+    }
+    window.activePolylines = [];
+
+    /* ---------------- PICKUP ROUTE ---------------- */
+
+    const pickupResult = await routeAsync({
+      origin: defaultsourcePosition,
+      destination: dropoffWaypoints[0].position,
+      waypoints: pickupWaypoints.map(p => ({
+        location: p.position,
+        stopover: p.stopOverValue,
+      })),
+      optimizeWaypoints: true,
+      travelMode: google.maps.TravelMode.DRIVING,
+    });
+
+    const pickupRoute = pickupResult.routes[0];
+    const pickupLegs = pickupRoute.legs;
+
+    const pickupPath = [];
+    for (let i = 0; i < pickupLegs.length - 1; i++) {
+      pickupLegs[i].steps.forEach(step =>
+        step.path.forEach(p => pickupPath.push(p))
+      );
     }
 
-    if (driverDestCoords) {
-      defaultdestinationPosition = driverDestCoords;
-    }else{
-        defaultdestinationPosition = defaultCoords.destination.position;
+    window.activePolylines.push(
+      new google.maps.Polyline({
+        path: pickupPath,
+        map,
+        strokeOpacity: 1,
+        strokeWeight: 5,
+      })
+    );
+
+    const orderedPickupWaypoints =
+      pickupRoute.waypoint_order.map(index => pickupWaypoints[index]);
+
+    const lastPickupPosition =
+      orderedPickupWaypoints.length > 0
+        ? orderedPickupWaypoints[orderedPickupWaypoints.length - 1].position
+        : defaultsourcePosition;
+
+    /* ---------------- DROPOFF ROUTE ---------------- */
+
+    const dropoffResult = await routeAsync({
+      origin: lastPickupPosition,
+      destination: defaultdestinationPosition,
+      waypoints: dropoffWaypoints.map(p => ({
+        location: p.position,
+        stopover: p.stopOverValue,
+      })),
+      optimizeWaypoints: true,
+      travelMode: google.maps.TravelMode.DRIVING,
+    });
+
+    const dropoffRoute = dropoffResult.routes[0];
+    const dropoffLegs = dropoffRoute.legs;
+
+    const dropoffPath = [];
+    for (let i = 0; i < dropoffLegs.length - 1; i++) {
+      dropoffLegs[i].steps.forEach(step =>
+        step.path.forEach(p => dropoffPath.push(p))
+      );
     }
 
-    directionsService.route(
-      {
-        origin: defaultsourcePosition,
-        destination: dropoffWaypoints[0].position,
-        waypoints: pickupWaypoints.map((p) => ({
-          location: p.position,
-          stopover: p.stopOverValue,
-        })),
-        optimizeWaypoints: true,
-        travelMode: "DRIVING",
-      },
-      (result, status) => {
-        if (status === "OK") {
-          //   const pickupOrder = result.routes[0].waypoint_order;
-          //   console.log("Optimized pickup order:", pickupOrder);
-
-          const route = result.routes[0];
-          const legs = route.legs;
-
-          // Build polyline path EXCLUDING last leg
-          const path = [];
-
-          for (let i = 0; i < legs.length - 1; i++) {
-            legs[i].steps.forEach((step) => {
-              step.path.forEach((p) => path.push(p));
-            });
-          }
-
-          new google.maps.Polyline({
-            path,
-            map,
-            strokeColor: "#4285F4",
-            strokeOpacity: 1,
-            strokeWeight: 5,
-          });
-
-          console.log("Optimized pickup order:", route.waypoint_order);
-          orderedPickupWaypoints = route.waypoint_order.map(
-            (index) => pickupWaypoints[index]
-          );
-          
-        }
-      }
+    window.activePolylines.push(
+      new google.maps.Polyline({
+        path: dropoffPath,
+        map,
+        strokeOpacity: 1,
+        strokeWeight: 5,
+      })
     );
 
-    // Then send another request for drop-offs from last pickup to Tzaneen
-    //drop off waypoints
+    const orderedDropoffWaypoints =
+      dropoffRoute.waypoint_order.map(index => dropoffWaypoints[index]);
 
-    directionsService.route(
-      {
-        origin:
-          orderedPickupWaypoints.length > 0
-            ? orderedPickupWaypoints[orderedPickupWaypoints.length - 1]
-                .position
-            : defaultsourcePosition,
-        destination: defaultdestinationPosition,
-        waypoints: dropoffWaypoints.map((p) => ({
-          location: p.position,
-          stopover: p.stopOverValue,
-        })),
-        optimizeWaypoints: true,
-        travelMode: "DRIVING",
-      },
-      (result, status) => {
-        if (status === "OK") {
-          const route = result.routes[0];
-          const legs = route.legs;
-          
-          // Build polyline path
-          const path = [];
-            for (let i = 0; i < legs.length -1; i++) {
-                legs[i].steps.forEach((step) => {
-                    step.path.forEach((p) => path.push(p));
-                });
-            }
 
-          new google.maps.Polyline({
-            path,
-            map,
-            strokeColor: "#4285F4",
-            strokeOpacity: 1,
-            strokeWeight: 5,
-          });
-        }
-      }
-    );
+   //draw markers
+
+      orderedPickupWaypoints.forEach((waypoint, index) => {
+        createMarker(waypoint.position, `W${index + 1}`, markerType.PICKUP);
+      });
+
+      orderedDropoffWaypoints.forEach((waypoint, index) => {
+        createMarker(waypoint.position, `W${orderedPickupWaypoints.length + index }`, markerType.DROPOFF);
+      });
+
+    createMarker(defaultsourcePosition, "S" , markerType.ORIGIN);
+    createMarker(defaultdestinationPosition, "D" , markerType.DESTINATION);
 
     return true;
   } catch (error) {
@@ -458,6 +612,44 @@ async function drawRoute(bookingID , driverSourceCoords , driverDestCoords){
   }
 }
 
+function createMarker(position, label, type) {
+
+  let iconColor = "purple";
+  if(type === markerType.ORIGIN){
+    iconColor = "blue";
+  } else if(type === markerType.PICKUP){
+    iconColor = "green";
+  } else if(type === markerType.DROPOFF){
+    iconColor = "yellow";
+  } else if(type === markerType.DESTINATION){
+    iconColor = "red";
+  }
+
+  return new google.maps.Marker({
+    position,
+    map,
+     label: {
+      text: label,
+      color: "white",
+      fontWeight: "bold",
+    },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 20,
+      fillColor: iconColor,
+      fillOpacity: 1,
+      strokeColor: "#0D47A1",
+      strokeWeight: 2,
+    },
+  });
+}
+
+
+function clearExistingMarkers() {
+  if (window.activeMarkers) {
+    window.activeMarkers.forEach(marker => marker.setMap(null));
+  }
+}
 
 function calculateRoute() {
   if (!currentTrip || !directionsService || !directionsRenderer) return;

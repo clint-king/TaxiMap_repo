@@ -43,10 +43,12 @@ const config = {
     url: process.env.FRONTEND_URL || "http://localhost:5173"
   },
 
+ 
   // Yoco Payment Gateway Configuration
   yoco: {
-    publicKey: process.env.YOCO_PUBLIC_KEY || "pk_test_ed3c54a6gOol69qa7f45",
+    publicKey: process.env.YOCO_PUBLIC_KEY || 'pk_test_660c6ab0kwjeRzEb28d4',
     secretKey: process.env.YOCO_SECRET_KEY || "sk_test_960bfde0VBaD1dQb6",
+    webhookSecret: process.env.YOCO_WEBHOOK_SECRET ,
     // Use test keys by default, replace with live keys in production
     // Live keys should be set via environment variables
     environment: process.env.YOCO_ENVIRONMENT || "test" // 'test' or 'live'

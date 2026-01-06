@@ -50,6 +50,22 @@ export const getPaymentDetails = async (paymentId) => {
     }
 };
 
+
+export const checkPaymentStatus = async (paymentId, bookingId) => {
+    try {
+        //check inputs 
+        if(!paymentId || !bookingId){
+            throw new Error("Payment ID and Booking ID are required");
+        }
+
+        //request to backend
+        const res = await axios.post(`${BASE_URL}/api/payments/paymentstatus`, { paymentId, bookingId });
+        return res.data; // Expect  {success: true, status, amount, currency}
+    } catch (error) {
+        console.error("Error in checkPaymentStatus:", error);
+        throw error;
+    }
+};
 // ============================================
 // OWNER PAYMENT APIs
 // ============================================
@@ -119,3 +135,22 @@ export const processPaymentCallback = async (callbackData) => {
     }
 };
 
+// export const initiateYocoCheckout = async (checkoutData) => {
+//     try {
+//         const response = await axios.post(`${BASE_URL}/api/payments/yoco/checkout`, checkoutData);
+//         return response.data;
+//     } catch (error) {
+//         console.error('Error initiating Yoco checkout:', error);
+//         throw error;
+//     }
+// };
+
+export const initiateYocoCheckout= async (paymentData) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/payments/yoco/checkout`,paymentData);
+        return response.data;
+    } catch (error) {
+        console.error('Error initiating Yoco checkout:', error);
+        throw error;
+    }
+};

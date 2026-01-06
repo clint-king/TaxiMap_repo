@@ -72,11 +72,13 @@ async function loadCurrentTrip() {
       return;
     }
 
-    latestTrip = result.upcomingTrips[0];
+    latestTrip =result.upcomingTrips[0];
   } catch (error) {
     console.error("Error loading recent trips:", error);
   }
 
+  let latestTripObj = null;
+  if(latestTrip.length != 0 && latestTrip != null){
   //choose the starting and dest location
   let startingLocation;
   let destinationLocation;
@@ -89,7 +91,7 @@ async function loadCurrentTrip() {
   }
 
   // Create a fake active trip for testing
-  const latestTripObj = {
+   latestTripObj = {
     id: latestTrip.ID,
     bookingReference: latestTrip.booking_reference || latestTrip.ID,
     status: latestTrip.booking_status || "pending",
@@ -110,6 +112,8 @@ async function loadCurrentTrip() {
     amountPaid: latestTrip.total_amount_paid || 0,
     amountNeeded: latestTrip.total_amount_needed || 100.0,
   };
+
+}
   // currentTrip = JSON.stringify(latestTripObj);
   // const trip = JSON.parse(currentTrip);
   displayCurrentTrip(latestTripObj);
@@ -121,13 +125,19 @@ function displayCurrentTrip(trip) {
   const currentTripCard = document.getElementById("currentTripCard");
   if (!currentTripCard) return;
 
+  //if trip is null or undefined , hide the card and return
+  if (!trip) {
+    currentTripCard.style.display = "none";
+    return;
+  }
+
   // Update trip details
   document.getElementById("pickupLocation").textContent =
-    trip.pickupLocation || "Pickup Location";
+    trip.pickupLocation;
   document.getElementById("dropoffLocation").textContent =
-    trip.dropoffLocation || "Dropoff Location";
+    trip.dropoffLocation ;
   document.getElementById("estimatedTime").textContent = `Scheduled time: ${
-    trip.scheduledAt || "15 min"
+    trip.scheduledAt
   }`;
   document.getElementById("passengerCount").textContent = `${
     trip.seatCount || 1
@@ -173,15 +183,12 @@ function displayCurrentTrip(trip) {
     }`;
   }
 
+
     // Ensure a navigate button exists and send booking id when clicked
-  let navBtn = document.getElementById("navigateBtn");
+  let navBtn = document.querySelector(".trip-actions-container");
   if (!navBtn) {
-    navBtn = document.createElement("button");
-    navBtn.id = "navigateBtn";
-    navBtn.className = "btn btn-primary navigate-btn";
-    navBtn.textContent = "Navigate";
-    // Append the button into the current trip card (adjust position if needed)
-    currentTripCard.appendChild(navBtn);
+    console.warn("Navigation button not found");
+    return;
   }
   navBtn.onclick = () => {
     const bookingId = trip.id ;
@@ -203,20 +210,8 @@ function sendBookingIdForNavigation(bookingId) {
     // Persist id so navigation page can pick it up
     localStorage.setItem("navigationBookingId", bookingId);
 
-    // Non-blocking notify backend (optional, ignored on failure)
-    if (typeof BASE_URL !== "undefined" && navigator && navigator.sendBeacon) {
-      try {
-        navigator.sendBeacon(
-          `${BASE_URL}/api/bookings/${encodeURIComponent(bookingId)}/navigation-start`,
-          JSON.stringify({ ts: new Date().toISOString() })
-        );
-      } catch (e) {
-        // ignore
-      }
-    }
-
     // Navigate to navigation UI, include bookingId as query param for convenience
-    window.location.href = `/pages/driver/navigation.html?bookingId=${encodeURIComponent(
+    window.location.href = `/pages/driver/driver-navigation.html?bookingId=${encodeURIComponent(
       bookingId
     )}`;
   } catch (e) {

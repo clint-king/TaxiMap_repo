@@ -8,7 +8,7 @@ const router = express.Router();
 // CLIENT ROUTES
 // ============================================
 // Create payment
-router.post("/", authenticateUser, paymentController.createPayment);
+// router.post("/", authenticateUser, paymentController.createPayment);
 
 // Get user's payments
 router.get("/my-payments", authenticateUser, paymentController.getMyPayments);
@@ -18,6 +18,14 @@ router.get("/:paymentId", authenticateUser, paymentController.getPaymentDetails)
 
 // Process payment callback (from payment gateway)
 router.post("/callback", paymentController.processPaymentCallback);
+
+// Get payment status
+router.post("/paymentstatus", authenticateUser, paymentController.getPaymentStatus);
+
+//initiale yoco checkout
+router.post("/yoco/checkout", authenticateUser, paymentController.initiateYocoCheckout);
+
+
 
 // ============================================
 // OWNER ROUTES

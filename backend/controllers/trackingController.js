@@ -10,9 +10,21 @@ const checkUserType = (user, allowedTypes) => {
 //sending pickup and dropoff coordinates (from passengers and parcels)
 export const getBookingWaypoints = async(req,res) =>{
      checkUserType(req.user , ['driver', 'client' , 'admin']);
-        const {booking_id} = req.body;
+        const {bookingId} = req.params;
+
+
+    //check if bookingID exists
+        if(!bookingId){
+            return res.status(400).json(
+                {
+                    success:false,
+                    message:"booking_id is required"
+                }
+            );
+        }
+
      //check the status of the booking (fullypaid and active)
-      const [bookingActive] = await pool.execute("SELECT booking_status FROM bookings WHERE ID =?" , [booking_id]);
+      const [bookingActive] = await pool.execute("SELECT booking_status , owner_id , driver_id FROM bookings WHERE ID =?" , [bookingId]);
 
     if(bookingActive.length === 0){
         return res.status(404).json({
@@ -30,12 +42,25 @@ export const getBookingWaypoints = async(req,res) =>{
         )
     }
 
+    //check wether the driver is assigned to the booking (if user is driver)
+            //check if the user is supposed to acess the particular 
+        if(req.user.user_type === 'driver'){
+            if(req.user.id != bookingActive[0].driver_id){
+                return res.status(400).json(
+            {
+                success:false,
+                message:"user is not permitted"
+            }
+        )
+            }
+        }
+
     let pickup_points = [];
     let dropoff_points = [];
      //get from booking_parcels with parcls table
      const [bookingParcels] = await pool.execute(`SELECT ID , ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat,
          pickup_address, ST_X(dropoff_point) AS dropoff_lng, ST_Y(dropoff_point) AS dropoff_lat, dropoff_address , status FROM booking_parcels
-          WHERE booking_id = ?`, [booking_id]);
+          WHERE booking_id = ?`, [bookingId]);
 
 
           if(bookingParcels.length > 0){
@@ -70,7 +95,7 @@ export const getBookingWaypoints = async(req,res) =>{
      //get from booking_passengers
      const [bookingPassengers] = await pool.execute(`SELECT ID , ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat,
          pickup_address, ST_X(dropoff_point) AS dropoff_lng, ST_Y(dropoff_point) AS dropoff_lat, dropoff_address, booking_passenger_status FROM booking_passengers
-          WHERE booking_id = ?`, [booking_id]);
+          WHERE booking_id = ?`, [bookingId]);
 
             if(bookingPassengers.length > 0){
 

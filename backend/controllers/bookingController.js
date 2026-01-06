@@ -197,8 +197,7 @@ export const createRouteBasedBooking = async (req, res) => {
         );
       }
 
-      //create a scheduled execution
-      scheduleBookingJob(bookingId, scheduled_pickup);
+      
 
       await pool.execute("COMMIT");
 
@@ -249,13 +248,52 @@ export const createRouteBasedBooking = async (req, res) => {
   }
 };
 
-//scheduled booking
-function scheduleBookingJob(bookingId, runAt) {
-  const delay = new Date(runAt) - new Date();
-  if (delay < 0) return;
+// //scheduled booking
+// function scheduleBookingJob(bookingId, runAt) {
+//   const delay = new Date(runAt) - new Date();
+//   if (delay < 0) return;
 
-  bookingQueue.add({ bookingId }, { delay }); // THIS is where job.data is set
-  console.log("Scheduled booking:", bookingId, "to run at:", runAt);
+//   bookingQueue.add({ bookingId }, { delay }); // THIS is where job.data is set
+//   console.log("Scheduled booking:", bookingId, "to run at:", runAt);
+// }
+
+
+function scheduleBookingJob(bookingId, runAt) {
+  try {
+    if (!runAt) {
+      console.log("scheduleBookingJob: no runAt provided, skipping scheduling for booking", bookingId);
+      return;
+    }
+
+    const runDate = new Date(runAt);
+    if (isNaN(runDate.getTime())) {
+      console.warn("scheduleBookingJob: invalid runAt date, skipping scheduling", bookingId, runAt);
+      return;
+    }
+
+    const delay = runDate.getTime() - Date.now();
+    if (delay <= 0) {
+      console.log("scheduleBookingJob: runAt is in the past or immediate, skipping scheduling", bookingId, runAt);
+      return;
+    }
+
+    if (!bookingQueue || typeof bookingQueue.add !== "function") {
+      console.warn("scheduleBookingJob: bookingQueue not available or missing add(), skipping scheduling", bookingId);
+      return;
+    }
+
+    // Add job with sensible defaults: attempts and removeOnComplete
+    bookingQueue.add(
+      { bookingId },
+      { delay, removeOnComplete: true, attempts: 3 }
+    ).then((job) => {
+      console.log("Scheduled booking job:", bookingId, "delay(ms):", delay, "jobId:", job?.id || "(unknown)");
+    }).catch((err) => {
+      console.error("Failed to schedule booking job for", bookingId, err);
+    });
+  } catch (err) {
+    console.error("scheduleBookingJob error:", err);
+  }
 }
 
 /**
@@ -1610,7 +1648,7 @@ ORDER BY b.scheduled_pickup ASC;
     );
 
     //get a list of bookings with driver ID and statuses = 'pending','fully_paid','active', 'refund_pending','cancelled','refunded'
-     const [allTrips] = await pool.execute(
+    const [allTrips] = await pool.execute(
       `SELECT b.* , location_1, location_2, route_name
 FROM bookings b
 INNER JOIN existing_routes er 
@@ -1629,7 +1667,12 @@ ORDER BY b.scheduled_pickup ASC;
       [driverProfileId]
     );
 
-    console.log("upcoming  trips fetched: ", upcomingTrips , "all trips fetched : ", allTrips);
+    console.log(
+      "upcoming  trips fetched: ",
+      upcomingTrips,
+      "all trips fetched : ",
+      allTrips
+    );
     return res.json({
       success: true,
       upcomingTrips,
@@ -2162,15 +2205,14 @@ export const executeBookingAdmin = async (req, res) => {
       // Insert booking with direction_type
       const [result] = await connection.execute(
         `INSERT INTO bookings (
-                    booking_reference, user_id, owner_id, vehicle_id, driver_id, 
+                    booking_reference, owner_id, vehicle_id, driver_id, 
                     existing_route_id, booking_mode, booking_status, passenger_count, 
                     seat_parcel_count, total_seats_available, total_amount_needed, 
                     total_amount_paid, scheduled_pickup, route_points, special_instructions,
                     direction_type, total_seats, extraspace_parcel_count_sp
-                ) VALUES (?, ?, ?, ?, ?, ?, 'route', 'pending', ?, ?, ?, ?, 0.00, ?, ?, ?, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, 'route', 'pending', ?, ?, ?, ?, 0.00, ?, ?, ?, ?, ?, ?)`,
         [
           booking_reference,
-          userId,
           ownerId,
           vehicleId,
           driverId,
@@ -2261,11 +2303,14 @@ export const executeBookingAdmin = async (req, res) => {
               [newPosition, existing_route_id, vehicleId]
             );
 
-            //Add to the server queue
-            const bookingQueue = new ServerQueue(
-              "bookingQueue",
-              "redis://127.0.0.1:6379"
-            );
+            // //Add to the server queue
+            // const bookingQueue = new ServerQueue(
+            //   "bookingQueue",
+            //   "redis://127.0.0.1:6379"
+            // );
+
+            //create a scheduled execution
+            scheduleBookingJob(bookingId, scheduled_pickup);
 
             await queueConnection.commit();
             queueResult = {
@@ -2413,6 +2458,10 @@ export const getExistingRouteDetails = async (req, res) => {
 
     if (routes.length === 0) {
       console.error("No existing route found for booking ID:", bookingID);
+      return res.status(404).json({
+        success: false,
+        message: "No existing route found for the provided booking ID",
+      });
     }
 
     return res.status(200).json({
@@ -2456,5 +2505,5 @@ export default {
   executeBookingAdmin,
   getPublicPendingBookings,
   getExistingRouteDetails,
-  listOfUpcomingTrips
-}; 
+  listOfUpcomingTrips,
+};

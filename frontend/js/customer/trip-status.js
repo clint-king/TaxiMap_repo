@@ -53,6 +53,7 @@ async function loadTripData() {
         try {
             const response = await bookingApi.getBookingDetails(bookingId, passengerRecordId, parcelRecordId, urlBookingType);
             if (response.success && response.booking) {
+                console.log("Fetched booking details from API:", response);
                 populateTripStatusFromDatabase(response.booking);
                 return;
             }
@@ -775,7 +776,7 @@ function generateTripShareLink(tripData) {
     }
 }
 
-// Copy trip link to clipboard
+// Copy trip link to clip board
 function copyTripLink() {
     const linkInput = document.getElementById('trip-share-link');
     const feedback = document.getElementById('copy-feedback');
