@@ -416,21 +416,24 @@ export const processRefund = async (req, res) => {
         PASSENGER: "passenger",
         PARCEL:"parcel"
     }
-//Yoco checkout initiation
+
+
+    // ...existing code...
+
 export const initiateYocoCheckout = async (req, res) => {
+  let connection;
   try {
     const userId = req.user.id;
     const userType = req.user.user_type;
-    console.log("The user id is: ", userId);
     const {
       booking_id,
       amount,
       amountInCents,
-      payment_method = "card", // Default to 'card' since Yoco is the only payment method
-      payment_gateway = "yoco", // Default to 'yoco' since it's the only payment gateway
+      payment_method = "card",
+      payment_gateway = "yoco",
       gateway_response = null,
-      passenger_data = null, // Passenger data if this is a passenger booking
-      parcel_data = null, // Parcel data if this is a parcel booking
+      passenger_data = null,
+      parcel_data = null,
     } = req.body;
 
     if (!amountInCents || amountInCents <= 0) {
@@ -439,7 +442,11 @@ export const initiateYocoCheckout = async (req, res) => {
         .json({ success: false, message: "Invalid amount" });
     }
 
-    //create payment to get payment ID for metadata
+    // Use a single DB transaction for createPayment + checkout creation + payment update
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Pass the transaction connection into createPayment
     const resultP = await createPayment(
       userId,
       userType,
@@ -449,39 +456,36 @@ export const initiateYocoCheckout = async (req, res) => {
       payment_gateway,
       gateway_response,
       passenger_data,
-      parcel_data
+      parcel_data,
+      connection // <<<< pass connection so createPayment does NOT commit by itself
     );
+
     if (!resultP.success) {
-      console.log("The payment creation failed: ", resultP.message);
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: resultP.message || "Payment processing error",
-        });
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: resultP.message || "Payment processing error",
+        error: resultP.error || null,
+      });
     }
 
-    console.log("The payment creation result: ", resultP);  
     const paymentId = resultP.payment.paymentID;
     if (!paymentId) {
-      console.error("Missing payment id returned from createPayment", resultP);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Payment processing error: missing payment id",
-        });
+      await connection.rollback();
+      return res.status(500).json({
+        success: false,
+        message: "Payment processing error: missing payment id",
+      });
     }
 
-         
-
+    // Create Yoco checkout; if this fails, we'll rollback the DB transaction
     const response = await axios.post(
       "https://payments.yoco.com/api/checkouts",
       {
         amount: amountInCents,
         currency: "ZAR",
-        successUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id :""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
-        cancelUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id :""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
+        successUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id : ""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
+        cancelUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id : ""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
         metadata: {
           bookingId: booking_id,
           parcelInfo_fromCreation: resultP.parcel || null,
@@ -499,20 +503,749 @@ export const initiateYocoCheckout = async (req, res) => {
       }
     );
 
-    console.log("Yoco checkout response:", response.data);
+    // Update the payment record using the same transaction connection
+    await connection.execute("UPDATE payments SET checkout_id = ? WHERE ID = ?", [
+      response.data.id,
+      paymentId,
+    ]);
+
+    // Commit the whole transaction
+    await connection.commit();
+
     res.json({
       success: true,
       redirectUrl: response.data.redirectUrl,
       checkoutId: response.data.id,
     });
   } catch (err) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (e) {
+        console.error("Rollback failed:", e);
+      }
+    }
     console.error("Yoco checkout error:", err.response?.data || err.message);
     res.status(500).json({ success: false, message: "Payment init failed" });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
+// ...existing code...
+
 // Create payment
 async function createPayment(
+  userId,
+  userType,
+  booking_id,
+  amount,
+  payment_method = "card",
+  payment_gateway = "yoco",
+  gateway_response = null,
+  passenger_data = null,
+  parcel_data = null,
+  connection = null // optional transaction connection - when provided, do not commit/close it here
+) {
+  let ownConnection = false;
+  try {
+    if (!connection) {
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+      ownConnection = true;
+    }
+
+    // Validate input
+    if (!booking_id || !amount) {
+      if (ownConnection) await connection.rollback();
+      return {
+        success: false,
+        message: "booking_id and amount are required",
+      };
+    }
+
+    // Get booking using provided connection
+    const [bookings] = await connection.execute(
+      "SELECT * FROM bookings WHERE id = ?",
+      [booking_id]
+    );
+
+    if (bookings.length === 0) {
+      if (ownConnection) await connection.rollback();
+      return {
+        success: false,
+        message: "Booking not found",
+      };
+    }
+
+    const booking = bookings[0];
+
+    // Check access
+    const isClient = userType === "client" || userType === "customer";
+    const isAdmin = userType === "admin";
+    const isOwner = userType === "owner";
+    const isRouteBasedBooking = booking.booking_mode === "route";
+
+    if (isAdmin || isOwner) {
+      if (ownConnection) await connection.rollback();
+      return {
+        success: false,
+        message:
+          "Access denied. Only clients can make payments. Admins and owners are not allowed to pay.",
+      };
+    }
+
+    if (!isClient || !isRouteBasedBooking) {
+      if (ownConnection) await connection.rollback();
+      return {
+        success: false,
+        message:
+          "Access denied. Only clients can pay for route-based bookings.",
+      };
+    }
+
+    // Determine payment status
+    let payment_status = "pending";
+
+    // Check booking type
+    const isPassengerBooking = passenger_data && passenger_data.first_name;
+    const isParcelBooking =
+      parcel_data &&
+      parcel_data.parcels &&
+      Array.isArray(parcel_data.parcels) &&
+      parcel_data.parcels.length > 0;
+
+    if (isPassengerBooking && isParcelBooking) {
+      if (ownConnection) await connection.rollback();
+      return {
+        success: false,
+        message:
+          "Cannot process both passenger and parcel bookings in the same payment",
+      };
+    }
+
+    // Variables to store passenger/parcel IDs for payment insertion
+    let bookingPassengerId = null;
+    let bookingParcelId = null;
+    let passengerResult = null;
+    let parcelResult = null;
+
+    // Insert passenger if needed (errors return without committing when caller provided connection)
+    if (isPassengerBooking) {
+      try {
+        // ...existing passenger insert logic unchanged...
+        // (kept as-is but use the provided 'connection' variable)
+                // Get current passenger count for passenger_number
+        const [passengerCount] = await connection.execute(
+          "SELECT COUNT(*) as count FROM booking_passengers WHERE booking_id = ?",
+          [booking_id]
+        );
+        const passenger_number = passengerCount[0].count + 1;
+
+        // Generate unique 7-character code
+        let code;
+        let codeExists = true;
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        while (codeExists && attempts < maxAttempts) {
+          // Generate 7-character alphanumeric code
+          code = Math.random().toString(36).substring(2, 9).toUpperCase();
+          // Ensure it's exactly 7 characters
+          if (code.length < 7) {
+            code = code.padEnd(
+              7,
+              Math.random().toString(36).substring(2, 9).toUpperCase()
+            );
+          }
+          code = code.substring(0, 7);
+
+          // Check if code already exists
+          const [existingCode] = await connection.execute(
+            "SELECT ID FROM booking_passengers WHERE code = ?",
+            [code]
+          );
+          codeExists = existingCode.length > 0;
+          attempts++;
+        }
+
+        if (codeExists) {
+          throw new Error(
+            "Failed to generate unique passenger code after " +
+              maxAttempts +
+              " attempts"
+          );
+        }
+
+        // Helper function to extract coordinates from point data
+        const extractCoordinates = (pointData) => {
+          if (!pointData) return null;
+
+          // Handle different coordinate formats
+          let lat, lng;
+
+          if (pointData.coordinates) {
+            lat = pointData.coordinates.lat || pointData.coordinates.latitude;
+            lng = pointData.coordinates.lng || pointData.coordinates.longitude;
+          } else if (pointData.lat && pointData.lng) {
+            lat = pointData.lat;
+            lng = pointData.lng;
+          } else if (pointData.latitude && pointData.longitude) {
+            lat = pointData.latitude;
+            lng = pointData.longitude;
+          }
+
+          // Return coordinates if valid, otherwise null
+          if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+            return { lat: parseFloat(lat), lng: parseFloat(lng) };
+          }
+
+          return null;
+        };
+
+        // Extract coordinates for pickup and dropoff points
+        const pickupCoords = extractCoordinates(passenger_data.pickup_point);
+        const dropoffCoords = extractCoordinates(passenger_data.dropoff_point);
+
+        // Build SQL with POINT geometry functions
+        // Use ST_GeomFromText for POINT geometry: POINT(longitude latitude) - MySQL uses longitude first
+        let pickupPointSQL = "NULL";
+        let dropoffPointSQL = "NULL";
+
+        if (pickupCoords) {
+          pickupPointSQL = `ST_GeomFromText('POINT(${pickupCoords.lng} ${pickupCoords.lat})', 4326)`;
+        }
+
+        if (dropoffCoords) {
+          dropoffPointSQL = `ST_GeomFromText('POINT(${dropoffCoords.lng} ${dropoffCoords.lat})', 4326)`;
+        }
+
+        // Extract addresses from pickup_point and dropoff_point objects
+        const pickupAddress =
+          passenger_data.pickup_point?.address ||
+          (typeof passenger_data.pickup_point === "string"
+            ? passenger_data.pickup_point
+            : null) ||
+          passenger_data.pickup_address ||
+          null;
+        const dropoffAddress =
+          passenger_data.dropoff_point?.address ||
+          (typeof passenger_data.dropoff_point === "string"
+            ? passenger_data.dropoff_point
+            : null) ||
+          passenger_data.dropoff_address ||
+          null;
+
+        // Insert passenger as registered user with POINT geometry
+        const [passengerInsert] = await connection.execute(
+          `INSERT INTO booking_passengers (
+                        booking_id, passenger_number, passenger_type, linked_user_id,
+                        first_name, last_name, email, phone, id_number,
+                        code, pickup_point, dropoff_point, pickup_address, dropoff_address, is_primary,
+                        next_of_kin_first_name, next_of_kin_last_name, next_of_kin_phone
+                    ) VALUES (?, ?, 'registered', ?, ?, ?, ?, ?, ?, ?, ${pickupPointSQL}, ${dropoffPointSQL}, ?, ?, ?, ?, ?, ?)`,
+          [
+            booking_id,
+            passenger_number,
+            userId, // linked_user_id for registered user
+            passenger_data.first_name,
+            passenger_data.last_name,
+            passenger_data.email || null,
+            passenger_data.phone || null,
+            passenger_data.id_number || null,
+            code,
+            pickupAddress,
+            dropoffAddress,
+            passenger_data.is_primary || false,
+            passenger_data.next_of_kin_first_name || "",
+            passenger_data.next_of_kin_last_name || "",
+            passenger_data.next_of_kin_phone || "",
+          ]
+        );
+
+        bookingPassengerId = passengerInsert.insertId;
+      } catch (error) {
+        console.error("Error adding passenger to booking:", error);
+        if (ownConnection) await connection.rollback();
+        return {
+          success: false,
+          message: "Failed to add passenger to booking",
+          error: error.message,
+        };
+      }
+    }
+
+    // Insert booking_parcels if needed (similar handling)
+    if (isParcelBooking) {
+      try {
+        // ...existing parcel insert logic unchanged...
+                // Generate unique sender_code and receiver_code
+        const generateUniqueCode = async (
+          tableName,
+          codeColumn,
+          length = 10
+        ) => {
+          let code;
+          let codeExists = true;
+          let attempts = 0;
+          const maxAttempts = 20;
+
+          while (codeExists && attempts < maxAttempts) {
+            // Generate alphanumeric code
+            code = Math.random()
+              .toString(36)
+              .substring(2, 2 + length)
+              .toUpperCase();
+            // Ensure it's exactly the right length
+            if (code.length < length) {
+              code = code.padEnd(
+                length,
+                Math.random()
+                  .toString(36)
+                  .substring(2, 2 + length)
+                  .toUpperCase()
+              );
+            }
+            code = code.substring(0, length);
+
+            // Check if code already exists in booking_parcels table
+            const [existingCode] = await connection.execute(
+              `SELECT ID FROM ${tableName} WHERE ${codeColumn} = ?`,
+              [code]
+            );
+            codeExists = existingCode.length > 0;
+            attempts++;
+          }
+
+          if (codeExists) {
+            throw new Error(
+              `Failed to generate unique ${codeColumn} after ${maxAttempts} attempts`
+            );
+          }
+
+          return code;
+        };
+
+        const senderCode = await generateUniqueCode(
+          "booking_parcels",
+          "sender_code"
+        );
+        const receiverCode = await generateUniqueCode(
+          "booking_parcels",
+          "receiver_code"
+        );
+
+        // Helper function to extract coordinates from point data (same as for passengers)
+        const extractCoordinates = (pointData) => {
+          if (!pointData) return null;
+
+          // Handle different coordinate formats
+          let lat, lng;
+
+          if (pointData.coordinates) {
+            // Check if coordinates is an array [lng, lat] (Mapbox/GeoJSON format)
+            if (
+              Array.isArray(pointData.coordinates) &&
+              pointData.coordinates.length >= 2
+            ) {
+              lng = pointData.coordinates[0];
+              lat = pointData.coordinates[1];
+            } else if (typeof pointData.coordinates === "object") {
+              // Object format: { lat, lng } or { latitude, longitude }
+              lat = pointData.coordinates.lat || pointData.coordinates.latitude;
+              lng =
+                pointData.coordinates.lng || pointData.coordinates.longitude;
+            }
+          } else if (pointData.lat != null && pointData.lng != null) {
+            // Direct lat/lng properties
+            lat = pointData.lat;
+            lng = pointData.lng;
+          } else if (
+            pointData.latitude != null &&
+            pointData.longitude != null
+          ) {
+            // latitude/longitude properties
+            lat = pointData.latitude;
+            lng = pointData.longitude;
+          }
+
+          // Return coordinates if valid, otherwise null
+          if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+            return { lat: parseFloat(lat), lng: parseFloat(lng) };
+          }
+
+          return null;
+        };
+
+        // Extract coordinates for pickup and dropoff points
+        const pickupCoords = extractCoordinates(parcel_data.pickup_point);
+        const dropoffCoords = extractCoordinates(parcel_data.dropoff_point);
+
+        // Build SQL with POINT geometry functions
+        // Use ST_GeomFromText for POINT geometry: POINT(longitude latitude) - MySQL uses longitude first
+        let pickupPointSQL = "NULL";
+        let dropoffPointSQL = "NULL";
+
+        if (pickupCoords) {
+          pickupPointSQL = `ST_GeomFromText('POINT(${pickupCoords.lng} ${pickupCoords.lat})', 4326)`;
+        }
+
+        if (dropoffCoords) {
+          dropoffPointSQL = `ST_GeomFromText('POINT(${dropoffCoords.lng} ${dropoffCoords.lat})', 4326)`;
+        }
+
+        // Extract addresses from pickup_point and dropoff_point objects
+        const pickupAddress =
+          parcel_data.pickup_address ||
+          parcel_data.pickup_point?.address ||
+          (typeof parcel_data.pickup_point === "string"
+            ? parcel_data.pickup_point
+            : null) ||
+          null;
+        const dropoffAddress =
+          parcel_data.dropoff_address ||
+          parcel_data.dropoff_point?.address ||
+          (typeof parcel_data.dropoff_point === "string"
+            ? parcel_data.dropoff_point
+            : null) ||
+          null;
+
+        // Insert into booking_parcels table (one record per parcel booking)
+        const [bookingParcelsInsert] = await connection.execute(
+          `INSERT INTO booking_parcels (
+                        booking_id, user_id, sender_name, sender_phone,
+                        receiver_name, receiver_phone, status, sender_code, receiver_code,
+                        pickup_point, dropoff_point, pickup_address, dropoff_address,
+                        booking_passenger_cancelled_at, cancellation_reason
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ${pickupPointSQL}, ${dropoffPointSQL}, ?, ?, ?, ?)`,
+          [
+            booking_id,
+            userId,
+            parcel_data.sender_name || "",
+            parcel_data.sender_phone || "",
+            parcel_data.receiver_name || "",
+            parcel_data.receiver_phone || "",
+            senderCode,
+            receiverCode,
+            pickupAddress,
+            dropoffAddress,
+            null, // booking_passenger_cancelled_at - NULL initially
+            null, // cancellation_reason - NULL initially
+          ]
+        );
+
+        bookingParcelId = bookingParcelsInsert.insertId;
+      } catch (error) {
+        console.error("Error adding booking_parcels:", error);
+        if (ownConnection) await connection.rollback();
+        return {
+          success: false,
+          message: "Failed to add parcel booking",
+          error: error.message,
+        };
+      }
+    }
+
+    // Insert payment
+    const [result] = await connection.execute(
+      `INSERT INTO payments (
+                booking_id, user_id, amount, currency,
+                payment_method, payment_status,
+                payment_gateway, gateway_response,
+                booking_passenger_id, booking_parcel_id
+            ) VALUES (?, ?, ?, 'ZAR', ?, ?, ?, ?, ?, ?)`,
+      [
+        booking_id,
+        userId,
+        amount,
+        payment_method,
+        payment_status,
+        payment_gateway,
+        gateway_response ? JSON.stringify(gateway_response) : null,
+        bookingPassengerId,
+        bookingParcelId,
+      ]
+    );
+
+        // If parcel booking, add individual parcels to parcel table (booking_parcels already inserted above)
+    if (isParcelBooking && bookingParcelId) {
+      try {
+        // Get sender_code and receiver_code from the booking_parcels record we just created
+        const [bookingParcelsRecord] = await connection.execute(
+          "SELECT sender_code, receiver_code FROM booking_parcels WHERE ID = ?",
+          [bookingParcelId]
+        );
+
+        const senderCode = bookingParcelsRecord[0]?.sender_code || "";
+        const receiverCode = bookingParcelsRecord[0]?.receiver_code || "";
+
+        // Generate unique parcel numbers for each parcel (must be globally unique)
+        // Get the maximum parcel_number globally to ensure uniqueness
+        const [maxParcelNumber] = await connection.execute(
+          "SELECT MAX(parcel_number) as max_num FROM parcel"
+        );
+        let nextParcelNumber = (maxParcelNumber[0].max_num || 0) + 1;
+
+        // Helper function to generate unique parcel_number globally
+        const generateUniqueParcelNumber = async () => {
+          let parcelNumber;
+          let numberExists = true;
+          let attempts = 0;
+          const maxAttempts = 50;
+
+          while (numberExists && attempts < maxAttempts) {
+            // Start from nextParcelNumber and increment if needed
+            parcelNumber = nextParcelNumber;
+
+            // Check if this parcel_number exists globally (must be unique)
+            const [existingNumber] = await connection.execute(
+              "SELECT ID FROM parcel WHERE parcel_number = ?",
+              [parcelNumber]
+            );
+            numberExists = existingNumber.length > 0;
+
+            if (numberExists) {
+              nextParcelNumber++;
+            }
+            attempts++;
+          }
+
+          if (numberExists) {
+            throw new Error(
+              `Failed to generate unique parcel_number after ${maxAttempts} attempts`
+            );
+          }
+
+          nextParcelNumber++; // Increment for next parcel
+          return parcelNumber;
+        };
+
+        // Helper function to get quantity compared to small parcel
+        const getQuantityInSmallParcels = (size) => {
+          switch (size) {
+            case "large":
+              return 4;
+            case "medium":
+              return 2;
+            case "small":
+              return 1;
+            default:
+              return 1;
+          }
+        };
+
+        // Insert each individual parcel into parcel table
+        const insertedParcels = [];
+        for (const parcel of parcel_data.parcels) {
+          const parcelNumber = await generateUniqueParcelNumber();
+          const quantitySp = getQuantityInSmallParcels(parcel.size);
+
+          // Insert parcel
+          const [parcelInsert] = await connection.execute(
+            `INSERT INTO parcel (
+                            booking_parcels_id, parcel_number, size, 
+                            quantity_compared_to_sp, images
+                        ) VALUES (?, ?, ?, ?, ?)`,
+            [
+              bookingParcelId,
+              parcelNumber,
+              parcel.size || "small",
+              quantitySp,
+              JSON.stringify(parcel.images || []),
+            ]
+          );
+
+          insertedParcels.push({
+            id: parcelInsert.insertId,
+            parcel_number: parcelNumber,
+            size: parcel.size,
+            quantity_compared_to_sp: quantitySp,
+          });
+        }
+
+        parcelResult = {
+          booking_parcels_id: bookingParcelId,
+          sender_code: senderCode,
+          receiver_code: receiverCode,
+          parcels: insertedParcels,
+        };
+      } catch (error) {
+        console.error(
+          "Error adding individual parcels to parcel table:",
+          error
+        );
+        // Don't fail the payment if parcel addition fails, but log it
+      }
+    }
+
+    // Prepare passenger result (already inserted before payment above)
+    if (isPassengerBooking && bookingPassengerId) {
+      try {
+        // Get passenger details from the record we already created
+        const [passengerRecord] = await connection.execute(
+          "SELECT passenger_number, code FROM booking_passengers WHERE ID = ?",
+          [bookingPassengerId]
+        );
+
+        if (passengerRecord.length > 0) {
+          passengerResult = {
+            id: bookingPassengerId,
+            passenger_number: passengerRecord[0].passenger_number,
+            code: passengerRecord[0].code,
+          };
+        }
+      } catch (error) {
+        console.error("Error retrieving passenger result:", error);
+      }
+    }
+
+    // (keep the rest of the earlier logic that adds parcels to parcel table, prepares passengerResult etc.)
+    // Ensure we do NOT commit here if a connection was provided by caller
+    if (ownConnection) {
+      await connection.commit();
+    }
+
+    let bookingtype = isPassengerBooking ? bookingtypes.PASSENGER : bookingtypes.PARCEL;
+
+    return {
+      success: true,
+      message: "Payment created successfully",
+      payment: {
+        id: result.insertId,
+        paymentID: result.insertId,
+        payment_status: payment_status,
+        payment_gateway: payment_gateway,
+      },
+      passenger: passengerResult,
+      parcel: parcelResult,
+      bookingType: bookingtype,
+    };
+  } catch (error) {
+    console.error("Error creating payment:", error);
+    try {
+      if (ownConnection && connection) await connection.rollback();
+    } catch (e) {
+      console.error("Rollback failed in createPayment:", e);
+    }
+    return {
+      success: false,
+      message: "Failed to create payment",
+      error: error.message,
+    };
+  } finally {
+    if (ownConnection && connection) {
+      connection.release();
+    }
+  }
+}
+
+// ...existing code...
+
+//Yoco checkout initiation
+// export const initiateYocoCheckout = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const userType = req.user.user_type;
+//     console.log("The user id is: ", userId);
+//     const {
+//       booking_id,
+//       amount,
+//       amountInCents,
+//       payment_method = "card", // Default to 'card' since Yoco is the only payment method
+//       payment_gateway = "yoco", // Default to 'yoco' since it's the only payment gateway
+//       gateway_response = null,
+//       passenger_data = null, // Passenger data if this is a passenger booking
+//       parcel_data = null, // Parcel data if this is a parcel booking
+//     } = req.body;
+
+//     if (!amountInCents || amountInCents <= 0) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Invalid amount" });
+//     }
+
+//     //create payment to get payment ID for metadata
+//     const resultP = await createPayment(
+//       userId,
+//       userType,
+//       booking_id,
+//       amount,
+//       payment_method,
+//       payment_gateway,
+//       gateway_response,
+//       passenger_data,
+//       parcel_data
+//     );
+//     if (!resultP.success) {
+//       console.log("The payment creation failed: ", resultP.message);
+//       return res
+//         .status(400)
+//         .json({
+//           success: false,
+//           message: resultP.message || "Payment processing error",
+//         });
+//     }
+
+//     console.log("The payment creation result: ", resultP);  
+//     const paymentId = resultP.payment.paymentID;
+//     if (!paymentId) {
+//       console.error("Missing payment id returned from createPayment", resultP);
+//       return res
+//         .status(500)
+//         .json({
+//           success: false,
+//           message: "Payment processing error: missing payment id",
+//         });
+//     }
+
+         
+
+//     const response = await axios.post(
+//       "https://payments.yoco.com/api/checkouts",
+//       {
+//         amount: amountInCents,
+//         currency: "ZAR",
+//         successUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id :""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
+//         cancelUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id :""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
+//         metadata: {
+//           bookingId: booking_id,
+//           parcelInfo_fromCreation: resultP.parcel || null,
+//           parcel_data: parcel_data || null,
+//           paymentId: paymentId,
+//           isPassengerBooking: resultP.bookingType === bookingtypes.PASSENGER ? true : false,
+//           passengerInfo_fromCreation: resultP.passenger || null,
+//         },
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${configurations.yoco.secretKey}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+
+//     console.log("Yoco checkout response:", response.data);
+
+//     //update the payment with checkout id
+//     await pool.execute("UPDATE payments SET checkout_id = ? WHERE ID = ?", [
+//       response.data.id,
+//       paymentId
+//     ]);
+
+
+//     res.json({
+//       success: true,
+//       redirectUrl: response.data.redirectUrl,
+//       checkoutId: response.data.id,
+//     });
+//   } catch (err) {
+//     console.error("Yoco checkout error:", err.response?.data || err.message);
+//     res.status(500).json({ success: false, message: "Payment init failed" });
+//   }
+// };
+
+// // Create payment
+async function OldcreatePayment(
   userId,
   userType,
   booking_id,
@@ -1190,150 +1923,7 @@ async function createPayment(
   }
 }
 
-// // in router include the following: router.post("/webhook", express.raw({ type: "application/json" }),
-// export const handleYocoWebhook = (req, res) => {
-//   const signature = req.headers["yoco-signature"];
-//   const payload = req.body;
 
-//   console.log("Received Yoco webhook:", payload);
-//   const expected = crypto
-//     .createHmac("sha256", configurations.yoco.secretKey)
-//     .update(payload)
-//     .digest("hex");
-
-//   if (signature !== expected) {
-//     return res.status(400).send("Invalid signature");
-//   }
-
-//   const event = JSON.parse(payload.toString());
-
-//   console.log("Yoco webhook event:", event);
-//   if (event.type === "checkout.completed") {
-//     const bookingId = event.data.metadata.bookingId;
-//     // mark booking as PAID in DB
-//     // store transaction reference
-//   }
-
-//   res.sendStatus(200);
-// };
-
-// ...existing code...
-// export const handleYocoWebhook = (req, res) => {
-//   try {
-//     const secret = configurations.yoco.secretKey;
-//     if (!secret) {
-//       console.error("YOCO_WEBHOOK_SECRET is not configured");
-//       return res.status(500).send("Webhook secret not configured");
-//     }
-
-//     const signature = req.headers["x-yoco-signature"];
-//     if (!signature) {
-//       console.warn("Missing Yoco signature header");
-//       return res.status(400).send("Missing signature");
-//     }
-
-//     // Ensure we compute HMAC over the raw bytes. Prefer raw body (express.raw) if available.
-//     let rawPayload;
-//     if (Buffer.isBuffer(req.body)) {
-//       rawPayload = req.body;
-//     } else if (typeof req.body === "string") {
-//       rawPayload = Buffer.from(req.body);
-//     } else {
-//       // fallback if body was parsed to an object (less ideal - prefer express.raw middleware on the route)
-//       rawPayload = Buffer.from(JSON.stringify(req.body));
-//     }
-
-//     const expectedHex = crypto.createHmac("sha256", secret).update(rawPayload).digest("hex");
-
-//     // timing-safe compare
-//     const sigBuf = Buffer.from(String(signature), "utf8");
-//     const expBuf = Buffer.from(String(expectedHex), "utf8");
-//     let valid = false;
-//     if (sigBuf.length === expBuf.length) {
-//       valid = crypto.timingSafeEqual(sigBuf, expBuf);
-//     }
-
-//     if (!valid) {
-//       console.warn("Invalid Yoco signature");
-//       return res.status(400).send("Invalid signature");
-//     }
-
-//     // parse event from rawPayload if needed
-//     let event;
-//     try {
-//       event = typeof req.body === "object" ? req.body : JSON.parse(rawPayload.toString());
-//     } catch (err) {
-//       console.error("Failed to parse webhook payload:", err);
-//       return res.status(400).send("Invalid payload");
-//     }
-
-//     console.log("Yoco webhook event:", event);
-//      const isPassengerBooking = event.data?.metadata?.isPassengerBooking;
-//     if (event.type === "payment.succeeded") {
-//       const bookingId = event.data?.metadata?.bookingId || event.data?.metadata?.booking_id;
-//       const amount = (parseInt(event.data.amount) / 100).toFixed(2);
-//       const parcel_data = event.data?.metadata?.parcel_data || null;
-//       const paymentId = event.data?.metadata?.paymentId;
-//       // call updateBookingforPayment or mark payment complete here
-//       // updateBookingforPayment(bookingId, ... )  // consider async handling
-//       updateBookingforPayment( bookingId, amount, isPassengerBooking, parcel_data, paymentId );
-
-//       //Update the payment status to succeeded
-//       if(paymentId){
-//           pool.execute(
-//               "UPDATE payments SET payment_status = 'completed' WHERE ID = ?",
-//               [paymentId]
-//           );
-//       }
-
-//           if(isPassengerBooking == true){
-//             // Handle other passenger booking related events if needed
-//             pool.execute(
-//                 "UPDATE booking_passengers SET booking_passenger_status = 'confirmed' WHERE ID = ?",
-//                 [event.data?.metadata?.passengerInfo_fromCreation?.id]
-//             );
-//         }else{
-//             // Handle other parcel booking related events if needed
-//             pool.execute(
-//                 "UPDATE booking_parcels SET status = 'confirmed' WHERE ID = ?",
-//                 [event.data?.metadata?.parcelInfo_fromCreation?.booking_parcels_id]
-//             );
-//         }
-
-//     }else{
-
-//         //Update the payment status to failed
-//         if(event.type === "payment.failed"){
-//             const paymentId = event.data?.metadata?.paymentId;
-//             if(paymentId){
-//                 pool.execute(
-//                     "UPDATE payments SET payment_status = 'failed' WHERE ID = ?",
-//                     [paymentId]
-//                 );
-//             }
-//         }
-
-//         if(isPassengerBooking == true){
-//             // Handle other passenger booking related events if needed
-//             pool.execute(
-//                 "UPDATE booking_passengers SET booking_passenger_status = 'failed' WHERE ID = ?",
-//                 [event.data?.metadata?.passengerInfo_fromCreation?.id]
-//             );
-//         }else{
-//             // Handle other parcel booking related events if needed
-//             pool.execute(
-//                 "UPDATE booking_parcels SET status = 'failed' WHERE ID = ?",
-//                 [event.data?.metadata?.parcelInfo_fromCreation?.booking_parcels_id]
-//             );
-//         }
-//     }
-
-//     res.sendStatus(200);
-//   } catch (err) {
-//     console.error("Error handling Yoco webhook:", err);
-//     res.sendStatus(500);
-//   }
-// };
 
 
 
@@ -1409,8 +1999,13 @@ export const handleYocoWebhook = async (req, res) => {
 
       if (paymentId) {
         await connection.execute(
-          "UPDATE payments SET payment_status = 'completed' WHERE ID = ?",
-          [paymentId]
+          "UPDATE payments SET payment_status = 'completed' , transaction_id = ? WHERE ID = ?",
+          [event.payload.id, paymentId]
+        );
+      }else{
+          await connection.execute(
+          "UPDATE payments SET payment_status = 'completed' , transaction_id = ? WHERE checkout_id = ?",
+          [event.payload.id, metadata.checkoutId]
         );
       }
 
@@ -1430,8 +2025,13 @@ export const handleYocoWebhook = async (req, res) => {
     if (isFailure) {
       if (paymentId) {
         await connection.execute(
-          "UPDATE payments SET payment_status = 'failed' WHERE ID = ?",
-          [paymentId]
+          "UPDATE payments SET payment_status = 'failed' , transaction_id = ?  WHERE ID = ?",
+          [ event.payload.id, paymentId]
+        );
+      }else{
+          await connection.execute(
+          "UPDATE payments SET payment_status = 'failed', transaction_id = ? WHERE checkout_id = ?",
+          [event.payload.id, metadata.checkoutId]
         );
       }
 

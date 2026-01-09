@@ -599,7 +599,7 @@ async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
       });
 
       orderedDropoffWaypoints.forEach((waypoint, index) => {
-        createMarker(waypoint.position, `W${orderedPickupWaypoints.length + index }`, markerType.DROPOFF);
+        createMarker(waypoint.position, `DP${orderedPickupWaypoints.length + index }`, markerType.DROPOFF);
       });
 
     createMarker(defaultsourcePosition, "S" , markerType.ORIGIN);

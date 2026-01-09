@@ -42,10 +42,20 @@ export const getBookingWaypoints = async(req,res) =>{
         )
     }
 
+    //get driver ID from 
+    const [driveResponse] = await pool.execute("SELECT ID FROM driver_profiles WHERE user_id = ?" , [req.user.id]);
+
+    if(driveResponse.length === 0){
+        return res.status(404).json({
+                success: false,
+                message: "driver profile not found"
+            })
+    }
+
     //check wether the driver is assigned to the booking (if user is driver)
             //check if the user is supposed to acess the particular 
         if(req.user.user_type === 'driver'){
-            if(req.user.id != bookingActive[0].driver_id){
+            if(driveResponse[0].ID != bookingActive[0].driver_id){
                 return res.status(400).json(
             {
                 success:false,

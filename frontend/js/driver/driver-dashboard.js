@@ -82,7 +82,7 @@ async function loadCurrentTrip() {
   //choose the starting and dest location
   let startingLocation;
   let destinationLocation;
-  if (latestTrip.direction_type == "FROM_LOC1") {
+  if (latestTrip.direction_type.toLowerCase() == "from_loc1") {
     startingLocation = latestTrip.location_1 || "Unknown Pickup";
     destinationLocation = latestTrip.location_2 || "Unknown Dropoff";
   } else {

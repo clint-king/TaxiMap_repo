@@ -3684,12 +3684,15 @@ function updateStepIndicator() {
  *
  * Usage: Called when passenger count changes or booking type is set to 'passengers'
  */
-function generatePassengerForms() {
+async function generatePassengerForms() {
   const formsContainer = document.getElementById("passenger-forms");
   if (!formsContainer) return;
 
   formsContainer.innerHTML = "";
 
+  //load user profile from localStorage/sessionStorage
+  //await getUserInfo();
+  
   const userProfileString =
     localStorage.getItem("userProfile") ||
     sessionStorage.getItem("userProfile");
@@ -4127,6 +4130,47 @@ function generateParcelForms() {
     formsContainer.innerHTML += formHTML;
   }
 }
+
+async function getUserInfo() {
+        try {
+            // Try to get user data from backend first
+            const response = await axios.get(`${BASE_URL}/auth/profile`);
+            if (response.data.success) {
+                this.currentUser = response.data.user;
+                localStorage.setItem('userProfile', JSON.stringify(this.currentUser));
+            } else {
+                const savedUser = localStorage.getItem('userProfile');
+                if (savedUser) {
+                    this.currentUser = JSON.parse(savedUser);
+                } else {
+                    // No user data found, redirect to home page
+                    window.location.href = '/index.html';
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            
+            // Check if it's an authentication error (401 or 403)
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                console.log('Session expired, redirecting to home page');
+                localStorage.removeItem('userProfile');
+                return;
+            }
+            
+            // Fallback to localStorage
+            const savedUser = localStorage.getItem('userProfile');
+            if (savedUser) {
+                this.currentUser = JSON.parse(savedUser);
+                console.log("this.currentUser:", this.currentUser);
+            } else {
+                return;
+            }
+        }
+        
+    }
+
+
 
 // Functions to update shared sender/receiver information
 function updateSharedSenderInfo(field, value) {
@@ -7034,7 +7078,7 @@ async function loadUserBookings() {
     // Filter for upcoming: status 'paid' or 'pending'
     // Show all paid/pending bookings as upcoming regardless of date
     const upcoming = mappedBookings.filter(
-      (b) => b.status === "paid" || b.status === "pending"
+      (b) => b.status === "fully_paid" || b.status === "pending"
     );
 
     // History: completed, cancelled, refunded, or confirmed (if not in upcoming)
@@ -7044,7 +7088,7 @@ async function loadUserBookings() {
           b.status === "cancelled" ||
           b.status === "refunded" ||
           b.status === "confirmed") &&
-        !(b.status === "paid" || b.status === "pending")
+        !(b.status === "fully_paid" || b.status === "pending")
     );
 
     // Update counts
@@ -7126,7 +7170,7 @@ function createBookingItemHTML(booking, type) {
   // Show active trip banner for ALL upcoming items (paid or pending status)
   const isActiveTrip =
     type === "upcoming" &&
-    (booking.status === "paid" || booking.status === "pending");
+    (booking.status === "fully_paid" || booking.status === "pending");
   const seatsAvailable =
     isActiveTrip && !isParcelBooking
       ? Math.max(0, 15 - (booking.passengers || 0))
