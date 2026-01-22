@@ -59,6 +59,28 @@ export const getMyBookings = async (status = null, limit = 50, offset = 0) => {
 };
 
 /**
+ * Verify passenger or parcel pickup code
+ */
+export const verifyPassengerOrParcelPickUpCode = async (bookingId, code) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/bookings/driver/verify-code`, {
+            booking_id: bookingId,
+            code_inserted: code
+        });
+
+        if (!response.data.success) {
+            throw new Error('Failed to verify code');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('Error verifying code:', error);
+        throw error;
+    }
+};
+
+
+/**
  * Get booking details
  * @param {string} bookingId - The booking ID
  * @param {string} [passengerRecordId] - Optional passenger record ID to differentiate between passenger and parcel bookings
@@ -220,19 +242,21 @@ export const completeRoutePoint = async (bookingId, pointId) => {
     }
 };
 
-// export const getUpcomingTrips = async () => {
-//     try {
-//         const response = await axios.get(`${BASE_URL}/api/bookings/driver/upcoming-trips`);
-//         if (!response.data.success) {
-//             throw new Error('Failed to fetch upcoming trips');
-//         }
-        
-//         return response.data;
-//     } catch (error) {
-//         console.error('Error fetching upcoming trips:', error);
-//         throw error;
-//     }
-// };
+/**
+ * Verify passenger or parcel pickup code
+ */
+export const verifyPassengerOrParcelCode = async (bookingId, code) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/bookings/driver/verify-code`, {
+            booking_id: bookingId,
+            code_inserted: code
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error verifying code:', error);
+        throw error;
+    }
+};
 
 // ...existing code...
 export const getUpcomingTrips = async () => {

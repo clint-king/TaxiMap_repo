@@ -2882,15 +2882,11 @@
 
             let routeInfoHTML = '';
             if (booking.type === 'route-based') {
-                // Route-Based: Show trip name and collection/delivery
-                const collectionDeliveryBadge = booking.collectionDelivery === 'collection' 
-                    ? '<span class="collection-delivery-badge badge-collection" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">Collection</span>'
-                    : '<span class="collection-delivery-badge badge-delivery" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">Delivery</span>';
-                
+                // Route-Based: Show trip name
                 routeInfoHTML = `
                     <div class="recent-booking-route-item">
                         <i class="fas fa-route"></i>
-                        <strong>Trip:</strong> ${escapeHtml(booking.tripName || booking.from + ' - ' + booking.to)} ${collectionDeliveryBadge}
+                        <strong>Trip:</strong> ${escapeHtml(booking.tripName || booking.from + ' - ' + booking.to)}
                     </div>
                     <div class="recent-booking-route-item">
                         <i class="fas fa-calendar"></i>
@@ -2935,15 +2931,12 @@
                         ${routeInfoHTML}
                     </div>
                     <div class="recent-booking-info">
-                        <div class="recent-booking-info-item">
-                            <strong>Customer:</strong> ${escapeHtml(typeof booking.customer === 'string' ? booking.customer : (booking.customer?.name || 'N/A'))}
-                        </div>
                         ${booking.type === 'route-based' ? `
                         <div class="recent-booking-info-item">
                             <strong>Distance:</strong> ${escapeHtml(booking.distance || 'N/A')}
                         </div>
                         <div class="recent-booking-info-item">
-                            <strong>Passengers:</strong> ${booking.passengers || 0}
+                            <strong>Passengers:</strong> ${getPassengerCount(booking.passengers)}
                         </div>
                         <div class="recent-booking-info-item">
                             <strong>Parcels:</strong> ${booking.parcels || 0}
@@ -2953,7 +2946,7 @@
                             <strong>Date:</strong> ${escapeHtml(booking.departureDate || booking.date || 'N/A')}
                         </div>
                         <div class="recent-booking-info-item">
-                            <strong>Passengers:</strong> ${booking.passengers || 0}
+                            <strong>Passengers:</strong> ${getPassengerCount(booking.passengers)}
                         </div>
                         <div class="recent-booking-info-item">
                             <strong>Distance:</strong> ${escapeHtml(booking.distance || 'N/A')}
@@ -2965,6 +2958,27 @@
                     </div>
                 </div>
             `;
+        }
+
+        function getPassengerCount(passengers) {
+            if (!passengers) return 0;
+            
+            // If it's already a number, return it
+            if (typeof passengers === 'number') {
+                return passengers;
+            }
+            
+            // If it's a string like "3 adults, 2 children" or "2 adults", extract numbers
+            if (typeof passengers === 'string') {
+                // Extract all numbers from the string
+                const numbers = passengers.match(/\d+/g);
+                if (numbers && numbers.length > 0) {
+                    // Sum all numbers found
+                    return numbers.reduce((sum, num) => sum + parseInt(num, 10), 0);
+                }
+            }
+            
+            return 0;
         }
 
         function escapeHtml(text) {

@@ -269,10 +269,14 @@
         width: 100%;
         box-sizing: border-box;
         margin-top: 1rem;
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
       }
 
       .trip-actions-container .action-btn {
-        width: 100%;
+        flex: 1 1 220px;
         max-width: 100%;
       }
 
@@ -309,6 +313,15 @@
         .current-trip {
           padding: 1rem;
           margin-bottom: 1rem;
+        }
+
+        .trip-actions-container {
+          flex-direction: column;
+        }
+
+        .trip-actions-container .action-btn {
+          width: 100%;
+          flex: 1 1 auto;
         }
       }
 
@@ -443,11 +456,6 @@
           <i class="fas fa-list"></i>
           View Trips
         </a>
-
-        <a href="driver-verification.html" class="action-btn secondary">
-          <i class="fas fa-qrcode"></i>
-          Verify Passenger
-        </a>
       </div>
 
       <!-- Current Trip -->
@@ -503,13 +511,17 @@
         </div>
 
         <div class="trip-actions-container">
-          <a  class="action-btn">
+          <a href="#" id="continueNavigationBtn" class="action-btn">
             <i class="fas fa-directions"></i>
             Continue Navigation
           </a>
+          <a href="#" id="verifyPassengerBtn" class="action-btn secondary">
+            <i class="fas fa-qrcode"></i>
+            Verify Passenger
+          </a>
         </div>
       </div>
-
+ 
       <!-- Recent Trips -->
       <div class="current-trip">
         <h3>Other Upcoming Trips</h3>

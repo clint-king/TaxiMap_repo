@@ -249,26 +249,11 @@
         
         .verification-content {
             display: none;
-            overflow-y: auto;
-            max-height: 70vh;
+            overflow: visible;
         }
         
         .verification-content.active {
             display: block;
-        }
-        
-        @media (max-width: 768px) {
-            .verification-content {
-                max-height: 60vh;
-                overflow-y: auto;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .verification-content {
-                max-height: 50vh;
-                overflow-y: auto;
-            }
         }
         
         .verification-card {
@@ -430,6 +415,63 @@
             border: 1px solid #f5c6cb;
         }
         
+        .verification-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .verification-details h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #01386A;
+            font-size: 1.2rem;
+        }
+        
+        .verification-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .verification-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .verification-detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .verification-detail-value {
+            color: #212529;
+            font-size: 1rem;
+        }
+        
+        .parcel-group {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #01386A;
+        }
+        
+        .parcel-group h4 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            color: #01386A;
+            font-size: 1.1rem;
+        }
+        
+        .parcel-info {
+            margin-bottom: 1rem;
+        }
+        
         .package-photos {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -552,13 +594,9 @@
             
             <!-- Verification Tabs -->
             <div class="verification-tabs">
-                <div class="verification-tab active" data-tab="passenger" onclick="switchTab('passenger')">
-                    <i class="fas fa-user"></i>
-                    Passenger Verification
-                </div>
-                <div class="verification-tab" data-tab="package" onclick="switchTab('package')">
-                    <i class="fas fa-box"></i>
-                    Package Verification
+                <div class="verification-tab active" data-tab="verification" onclick="switchTab('verification')">
+                    <i class="fas fa-qrcode"></i>
+                    Verification
                 </div>
                 <div class="verification-tab" data-tab="tripCode" onclick="switchTab('tripCode')">
                     <i class="fas fa-route"></i>
@@ -570,25 +608,25 @@
                 </div>
             </div>
             
-            <!-- Passenger Verification -->
-            <div id="passengerVerification" class="verification-content active">
+            <!-- Unified Verification -->
+            <div id="verification" class="verification-content active">
                 <div class="verification-card">
-                    <h3>Verify Passenger</h3>
-                    <p>Scan the passenger's QR code or enter their verification code</p>
+                    <h3>Verify Passenger or Package</h3>
+                    <p>Scan the QR code or enter the verification code. The system will identify whether it is a passenger or a package.</p>
                     
                     <div class="qr-container">
                         <div class="qr-section">
                             <h4>Scan QR Code</h4>
-                            <div class="qr-scanner" id="passengerScanner">
+                            <div class="qr-scanner" id="unifiedScanner">
                                 <div class="scanner-overlay"></div>
-                                <video id="passengerVideo" style="display: none;"></video>
-                                <canvas id="passengerCanvas" style="display: none;"></canvas>
-                                <div id="scannerPlaceholder">
+                                <video id="unifiedVideo" style="display: none;"></video>
+                                <canvas id="unifiedCanvas" style="display: none;"></canvas>
+                                <div id="unifiedPlaceholder">
                                     <i class="fas fa-qrcode" style="font-size: 3rem; color: #ddd;"></i>
                                     <p>Click to start scanning</p>
                                 </div>
                             </div>
-                            <button class="btn btn-primary" onclick="startPassengerScan()">
+                            <button class="btn btn-primary" onclick="startUnifiedScan()">
                                 <i class="fas fa-camera"></i>
                                 Start Scanning
                             </button>
@@ -598,10 +636,13 @@
                             <h4>Or Enter Code Manually</h4>
                             <div class="verification-form">
                                 <div class="form-group">
-                                    <label for="passengerCode">Passenger Code:</label>
-                                    <input type="text" id="passengerCode" placeholder="Enter passenger code" />
+                                    <label for="unifiedCode">Verification Code:</label>
+                                    <input type="text" id="unifiedCode" placeholder="Enter verification code" />
+                                    <small style="display: block; margin-top: 0.5rem; color: #6c757d; font-style: italic;">
+                                        <i class="fas fa-info-circle"></i> Demo codes: <strong>SIM-PASS-001</strong> (Passenger) or <strong>SIM-PARCEL-001</strong> (Parcel)
+                                    </small>
                                 </div>
-                                <button class="btn btn-primary" onclick="verifyPassengerCode()">
+                                <button class="btn btn-primary" onclick="verifyUnifiedCode()">
                                     <i class="fas fa-check"></i>
                                     Verify Code
                                 </button>
@@ -609,54 +650,9 @@
                         </div>
                     </div>
                     
-                    <div id="passengerResult" class="verification-result" style="display: none;"></div>
-                </div>
-            </div>
-            
-            <!-- Package Verification -->
-            <div id="packageVerification" class="verification-content">
-                <div class="verification-card">
-                    <h3>Verify Package</h3>
-                    <p>View package photos and verify with the receiver</p>
-                    
-                    <div id="packagePhotos" class="package-photos">
-                        <!-- Package photos will be loaded here -->
-                    </div>
-                    
-                    <div class="qr-container">
-                        <div class="qr-section">
-                            <h4>Scan Receiver QR Code</h4>
-                            <div class="qr-scanner" id="packageScanner">
-                                <div class="scanner-overlay"></div>
-                                <video id="packageVideo" style="display: none;"></video>
-                                <canvas id="packageCanvas" style="display: none;"></canvas>
-                                <div id="packageScannerPlaceholder">
-                                    <i class="fas fa-qrcode" style="font-size: 3rem; color: #ddd;"></i>
-                                    <p>Click to start scanning</p>
-                                </div>
-                            </div>
-                            <button class="btn btn-primary" onclick="startPackageScan()">
-                                <i class="fas fa-camera"></i>
-                                Start Scanning
-                            </button>
-                        </div>
-                        
-                        <div class="qr-section">
-                            <h4>Or Enter Receiver Code</h4>
-                            <div class="verification-form">
-                                <div class="form-group">
-                                    <label for="receiverCode">Receiver Code:</label>
-                                    <input type="text" id="receiverCode" placeholder="Enter receiver code" />
-                                </div>
-                                <button class="btn btn-primary" onclick="verifyReceiverCode()">
-                                    <i class="fas fa-check"></i>
-                                    Verify Code
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="packageResult" class="verification-result" style="display: none;"></div>
+                    <div id="unifiedResult" class="verification-result" style="display: none;"></div>
+                    <div id="unifiedDetails" class="verification-details" style="display: none;"></div>
+                    <div id="unifiedImages" class="package-photos" style="display: none;"></div>
                 </div>
             </div>
             
@@ -741,10 +737,8 @@
             
             // Handle different tab content IDs
             let contentId;
-            if (tabName === 'passenger') {
-                contentId = 'passengerVerification';
-            } else if (tabName === 'package') {
-                contentId = 'packageVerification';
+            if (tabName === 'verification') {
+                contentId = 'verification';
             } else if (tabName === 'tripCode') {
                 contentId = 'tripCode';
             } else if (tabName === 'driverCode') {

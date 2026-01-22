@@ -3,7 +3,14 @@ import { BASE_URL } from '../AddressSelection.js';
 
 axios.defaults.withCredentials = true;
 
-const geocoder = new google.maps.Geocoder();
+// Lazy initialization of geocoder - only create when needed and google is available
+let geocoder = null;
+function getGeocoder() {
+    if (!geocoder && typeof google !== 'undefined' && google.maps) {
+        geocoder = new google.maps.Geocoder();
+    }
+    return geocoder;
+}
  const BookingStatus = {
     PENDING: "pending",
     CONFIRMED: "confirmed",
@@ -34,7 +41,7 @@ export const getBookingWaypoints = async (bookingID) => {
         const pickup_coordinatesOnly = fullInfo_pickup_Waypoints.map(waypoint => {
             let stopOverValue = false;
 
-            if(waypoint.status == BookingStatus.PENDING ){
+            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT){
                 stopOverValue = true;
             }
 
@@ -124,7 +131,13 @@ export const getDefaultSourceAndDestCoords = async (bookingID) => {
 
 function getSourceInSouthAfrica(text) {
   return new Promise((resolve, reject) => {
-    geocoder.geocode(
+    const geocoderInstance = getGeocoder();
+    if (!geocoderInstance) {
+      reject("Google Maps API is not loaded");
+      return;
+    }
+    
+    geocoderInstance.geocode(
       {
         address: text,
         componentRestrictions: {
@@ -149,4 +162,58 @@ function getSourceInSouthAfrica(text) {
       }
     );
   });
+}
+
+/**
+ * Get calculated distance between vehicle and passenger/parcel pickup location
+ * @param {number} bookingId - The booking ID
+ * @param {number} passengerId - Passenger ID (if bookingType is 'passenger')
+ * @param {number} parcelId - Parcel ID (if bookingType is 'parcel')
+ * @param {string} bookingType - 'passenger' or 'parcel'
+ * @returns {Promise<Object>} Response with percentage, remainingDistance, hasPassed, etc.
+ */
+export const getCalculatedDistance = async (bookingId, passengerId, parcelId, bookingType) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/tracking/${bookingId}/distance`,
+            {
+                passengerId: passengerId || null,
+                parcelId: parcelId || null,
+                bookingType: bookingType
+            }
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Could not calculate distance");
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching calculated distance:", error);
+        throw error;
+    }
+};
+
+export const getBookingDetails = async (bookingId) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/bookings/driver/booking-details`, { 
+            bookingId: bookingId
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching booking details:", error);
+        throw error;
+    }
+}
+
+export const getPickupDropoffInfo = async (bookingId) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/bookings/driver/pickup-dropoff-info`, { 
+            bookingId: bookingId
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching pickup dropoff info:", error);
+        throw error;
+    }
 }

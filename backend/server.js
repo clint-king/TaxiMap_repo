@@ -68,12 +68,22 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/tracking", trackingRoutes);
 
+// Create HTTP server (needed for Socket.io)
+import { createServer } from 'http';
+const httpServer = createServer(app);
 
+// Initialize Socket.io WebSocket server
+import { initSocket } from './config/socket.js';
+initSocket(httpServer);
 
-app.listen(port , ()=>{
+// Initialize Redis connection
+import './config/redis.js';
+
+httpServer.listen(port , ()=>{
     console.log(`🚀 Server running on port ${port}`);
     console.log(`🌍 Environment: ${config.env}`);
     console.log(`🔗 Frontend URL: ${config.frontend.url}`);
     console.log(`📊 Database: ${config.database.host}:${config.database.port}/${config.database.name}`);
     console.log('✅ Server is ready to handle requests!');
+    console.log('🔌 WebSocket server is ready!');
 })

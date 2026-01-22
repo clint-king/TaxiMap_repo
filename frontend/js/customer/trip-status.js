@@ -1,6 +1,8 @@
 // Trip Status Page JavaScript
 
 import * as bookingApi from '../api/bookingApi.js';
+import * as trackingApi from '../api/trackingAPi.js';
+import * as socketService from '../api/socketService.js';
 
 // Generate secret code (same function as booking-public.js)
 function generateSecretCode() {
@@ -762,6 +764,11 @@ function populateTripStatusFromDatabase(booking) {
             statusBadge.textContent = booking.booking_status || 'Active';
         }
     }
+    
+    // Update driver proximity after populating trip status
+    setTimeout(() => {
+        updateDriverProximity();
+    }, 500);
 }
 
 // Generate trip share link
@@ -1236,13 +1243,237 @@ function requestRefund(bookingId, amount) {
     console.log('Refund requested for booking:', bookingId, 'Amount:', amount);
 }
 
+
+// Show demo proximity data (for UI preview)
+function showDemoProximityData() {
+    const proximityCard = document.getElementById('driver-proximity-card');
+    if (!proximityCard) return;
+    
+    // Always show the card for demo purposes
+    proximityCard.style.display = 'block';
+    
+    // Demo data - showing 65% progress
+    const demoPercentage = 65;
+    const demoRemainingDistance = 2.5; // km
+    const demoHasPassed = false;
+    
+    const progressFill = document.getElementById('proximity-progress-fill');
+    const progressPercentage = document.getElementById('proximity-percentage');
+    const remainingDistance = document.getElementById('remaining-distance');
+    const proximityMessage = document.getElementById('proximity-message');
+    
+    if (progressFill) {
+        progressFill.style.width = `${demoPercentage}%`;
+        const progressText = progressFill.querySelector('.progress-text');
+        if (progressText) {
+            progressText.textContent = `${demoPercentage}%`;
+        }
+        
+        if (demoHasPassed) {
+            progressFill.classList.add('has-passed');
+        } else {
+            progressFill.classList.remove('has-passed');
+        }
+    }
+    
+    if (progressPercentage) {
+        progressPercentage.textContent = `${demoPercentage}%`;
+    }
+    
+    if (remainingDistance) {
+        remainingDistance.textContent = demoRemainingDistance.toFixed(2);
+    }
+    
+    if (proximityMessage) {
+        const distanceMeters = Math.round(demoRemainingDistance * 1000);
+        proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location`;
+        proximityMessage.style.color = '#666';
+    }
+}
+
+// Update UI with proximity data
+function updateProximityUI(response) {
+    const proximityCard = document.getElementById('driver-proximity-card');
+    if (!proximityCard) return;
+    
+    proximityCard.style.display = 'block';
+    
+    const percentage = response.percentage || 0;
+    const progressFill = document.getElementById('proximity-progress-fill');
+    const progressPercentage = document.getElementById('proximity-percentage');
+    const remainingDistance = document.getElementById('remaining-distance');
+    const proximityMessage = document.getElementById('proximity-message');
+    
+    if (progressFill) {
+        progressFill.style.width = `${percentage}%`;
+        const progressText = progressFill.querySelector('.progress-text');
+        if (progressText) {
+            progressText.textContent = `${Math.round(percentage)}%`;
+        }
+        
+        if (response.hasPassed) {
+            progressFill.classList.add('has-passed');
+        } else {
+            progressFill.classList.remove('has-passed');
+        }
+    }
+    
+    if (progressPercentage) {
+        progressPercentage.textContent = `${Math.round(percentage)}%`;
+    }
+    
+    if (remainingDistance) {
+        const distance = response.remainingDistance || 0;
+        if (response.hasPassed) {
+            remainingDistance.textContent = '0';
+        } else {
+            remainingDistance.textContent = distance.toFixed(2);
+        }
+    }
+    
+    if (proximityMessage) {
+        if (response.hasPassed) {
+            proximityMessage.textContent = "Vehicle has passed your pickup location";
+            proximityMessage.style.color = '#dc3545';
+        } else {
+            const distanceMeters = Math.round((response.remainingDistance || 0) * 1000);
+            proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location`;
+            proximityMessage.style.color = '#666';
+        }
+    }
+}
+
+// Update driver proximity progress bar
+async function updateDriverProximity() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    const passengerRecordId = urlParams.get('passengerRecordId');
+    const parcelRecordId = urlParams.get('parcelRecordId');
+    const urlBookingType = urlParams.get('bookingType'); // 'passenger' or 'parcel'
+    
+    const proximityCard = document.getElementById('driver-proximity-card');
+    if (!proximityCard) return;
+    
+    // Show demo data if no bookingId or bookingType (for UI preview)
+    if (!bookingId || !urlBookingType) {
+        showDemoProximityData();
+        return;
+    }
+    
+    // Determine IDs based on booking type
+    const passengerId = urlBookingType === 'passenger' ? passengerRecordId : null;
+    const parcelId = urlBookingType === 'parcel' ? parcelRecordId : null;
+    
+    try {
+        const response = await trackingApi.getCalculatedDistance(
+            bookingId,
+            passengerId,
+            parcelId,
+            urlBookingType
+        );
+        
+        if (response.success) {
+            updateProximityUI(response);
+        } else {
+            // Show demo data if API call failed
+            showDemoProximityData();
+        }
+    } catch (error) {
+        console.error('Error updating driver proximity:', error);
+        // Show demo data on error so user can see the UI
+        showDemoProximityData();
+    }
+}
+
+// Setup WebSocket listeners for real-time updates
+function setupWebSocketListeners(bookingId) {
+    if (!bookingId) {
+        console.log('No bookingId, skipping WebSocket setup');
+        return;
+    }
+
+    // Initialize socket connection
+    socketService.initSocket();
+
+    // Join booking room
+    socketService.joinBookingRoom(bookingId, (response) => {
+        console.log('Joined booking room for real-time updates');
+    });
+
+    // Listen for distance updates via WebSocket (real-time)
+    socketService.onDistanceUpdate((data) => {
+        if (data.bookingId === bookingId && data.success) {
+            console.log('Received real-time distance update:', data);
+            updateProximityUI(data);
+        }
+    });
+
+    // Listen for vehicle position updates
+    socketService.onVehiclePositionUpdate((data) => {
+        if (data.bookingId === bookingId) {
+            console.log('Received vehicle position update:', data);
+            // Trigger distance recalculation by calling API
+            // The API will broadcast the result via WebSocket
+            const urlParams = new URLSearchParams(window.location.search);
+            const passengerRecordId = urlParams.get('passengerRecordId');
+            const parcelRecordId = urlParams.get('parcelRecordId');
+            const urlBookingType = urlParams.get('bookingType');
+            
+            const passengerId = urlBookingType === 'passenger' ? passengerRecordId : null;
+            const parcelId = urlBookingType === 'parcel' ? parcelRecordId : null;
+            
+            // Request distance update (it will be broadcasted via WebSocket)
+            trackingApi.getCalculatedDistance(bookingId, passengerId, parcelId, urlBookingType)
+                .catch(error => console.error('Error requesting distance update:', error));
+        }
+    });
+}
+
+// Cleanup WebSocket on page unload
+window.addEventListener('beforeunload', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    if (bookingId) {
+        socketService.leaveBookingRoom(bookingId);
+    }
+    socketService.disconnectSocket();
+});
+
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
+    // Show demo proximity card immediately for UI preview
+    showDemoProximityData();
+    
     await loadTripData();
     
-    // Refresh trip data every 30 seconds (in production, this would be WebSocket updates)
+    // Get booking ID for WebSocket setup
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    const urlBookingType = urlParams.get('bookingType');
+    
+    // Setup WebSocket for real-time updates if we have bookingId
+    if (bookingId && urlBookingType) {
+        setupWebSocketListeners(bookingId);
+        
+        // Initial distance calculation (subsequent updates via WebSocket)
+        await updateDriverProximity();
+    } else {
+        // No booking ID, keep showing demo data
+        showDemoProximityData();
+    }
+    
+    // Fallback: Refresh trip data every 30 seconds (WebSocket is primary)
     setInterval(() => {
         loadTripData();
+    }, 30000);
+    
+    // Fallback: Refresh driver proximity every 30 seconds if WebSocket fails
+    // (WebSocket should handle real-time updates)
+    setInterval(() => {
+        if (bookingId && urlBookingType && !socketService.isSocketConnected()) {
+            console.warn('WebSocket disconnected, using polling fallback');
+            updateDriverProximity();
+        }
     }, 30000);
 });
 

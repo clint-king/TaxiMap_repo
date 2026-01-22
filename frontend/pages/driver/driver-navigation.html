@@ -454,6 +454,105 @@
         color: #ddd;
       }
 
+      .start-trip-btn {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .start-trip-btn:hover {
+        background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+      }
+
+      .start-trip-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+      }
+
+      .start-trip-btn i {
+        font-size: 1.3rem;
+      }
+
+      .start-trip-btn.active {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      }
+
+      .start-trip-btn.active:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+      }
+
+      /* Navigation Instruction Panel (like Uber) */
+      .navigation-instruction-panel {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 2000;
+        min-width: 300px;
+        max-width: 90%;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 2px solid #01386a;
+      }
+
+      .nav-instruction-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+      }
+
+      .nav-maneuver-icon {
+        font-size: 2rem;
+        color: #01386a;
+        min-width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .nav-instruction-text {
+        flex: 1;
+      }
+
+      .nav-instruction-main {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+        line-height: 1.4;
+      }
+
+      .nav-instruction-distance {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+      }
+
       @media (max-width: 768px) {
         .navigation-controls {
           top: 80px;
@@ -466,6 +565,26 @@
           right: 10px;
           max-height: 60vh;
           min-height: 150px;
+        }
+
+        .navigation-instruction-panel {
+          top: 70px;
+          padding: 1rem 1.25rem;
+          min-width: 280px;
+          max-width: 95%;
+        }
+
+        .nav-maneuver-icon {
+          font-size: 1.5rem;
+          min-width: 35px;
+        }
+
+        .nav-instruction-main {
+          font-size: 0.9rem;
+        }
+
+        .nav-instruction-distance {
+          font-size: 0.8rem;
         }
 
         .trip-summary {
@@ -481,6 +600,16 @@
 
         .detail-item {
           font-size: 0.8rem;
+        }
+
+        .start-trip-btn {
+          padding: 1.25rem 1.5rem;
+          font-size: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .start-trip-btn i {
+          font-size: 1.2rem;
         }
       }
     </style>
@@ -569,6 +698,16 @@
 
       <!-- Navigation Info -->
       <div class="navigation-info" id="navigationInfo">
+        <!-- Start Trip Button -->
+        <button class="start-trip-btn" id="startTripBtn" onclick="startTrip()">
+          <i class="fas fa-play-circle"></i>
+          <span>Start Trip</span>
+        </button>
+        <!-- Verify Passenger Button -->
+        <a href="#" id="verifyPassengerBtnStatic" class="action-btn secondary" style="margin-bottom: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          <i class="fas fa-qrcode"></i>
+          Verify Passenger
+        </a>
         <!-- Content will be loaded here -->
       </div>
     </div>
@@ -642,6 +781,12 @@
       function refreshRoute() {
         if (window.refreshCurrentRoute) {
           window.refreshCurrentRoute();
+        }
+      }
+
+      function startTrip() {
+        if (window.startTripNavigation) {
+          window.startTripNavigation();
         }
       }
     </script>

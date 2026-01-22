@@ -469,7 +469,7 @@ export const createDriver = async (req, res) => {
                 `INSERT INTO driver_profiles (
                     user_id, owner_id, license_number, license_expiry, id_number,
                     status, verification_status
-                ) VALUES (?, ?, ?, ?, ?, 'pending', 'pending')`,
+                ) VALUES (?, ?, ?, ?, ?, 'inactive', 'pending')`,
                 [userId, ownerProfileId, license_number, license_expiry, id_number]
             );
 

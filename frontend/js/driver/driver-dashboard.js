@@ -184,20 +184,36 @@ function displayCurrentTrip(trip) {
   }
 
 
-    // Ensure a navigate button exists and send booking id when clicked
-  let navBtn = document.querySelector(".trip-actions-container");
-  if (!navBtn) {
-    console.warn("Navigation button not found");
-    return;
+    // Set up Continue Navigation button click handler
+  const continueNavBtn = document.getElementById("continueNavigationBtn");
+  if (continueNavBtn) {
+    continueNavBtn.onclick = (e) => {
+      e.preventDefault(); // Prevent default link behavior
+      e.stopPropagation(); // Stop event from bubbling
+      const bookingId = trip.id;
+      if (bookingId) {
+        sendBookingIdForNavigation(bookingId);
+      } else {
+        console.warn("No booking id available to navigate.");
+      }
+    };
   }
-  navBtn.onclick = () => {
-    const bookingId = trip.id ;
-    if (bookingId) {
-      sendBookingIdForNavigation(bookingId);
-    } else {
-      console.warn("No booking id available to navigate.");
-    }
-  };
+
+  // Set up Verify Passenger button click handler
+  const verifyPassengerBtn = document.getElementById("verifyPassengerBtn");
+  if (verifyPassengerBtn) {
+    verifyPassengerBtn.onclick = (e) => {
+      e.preventDefault(); // Prevent default link behavior
+      e.stopPropagation(); // Stop event from bubbling to parent container
+      const bookingId = trip.id;
+      if (bookingId) {
+        sendBookingIdForVerification(bookingId);
+      } else {
+        console.warn("No booking id available for verification.");
+        alert("No booking ID available for verification.");
+      }
+    };
+  }
 
   // Show the card
   currentTripCard.style.display = "block";
@@ -216,6 +232,18 @@ function sendBookingIdForNavigation(bookingId) {
     )}`;
   } catch (e) {
     console.error("Error initiating navigation:", e);
+  }
+}
+
+function sendBookingIdForVerification(bookingId) {
+  try {
+    if (!bookingId) return;
+    // Persist id so verification page can pick it up
+    window.location.href = `/pages/driver/driver-verification.html?bookingId=${encodeURIComponent(
+      bookingId
+    )}`;
+  } catch (e) {
+    console.error("Error initiating verification:", e);
   }
 }
 

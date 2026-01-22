@@ -10,7 +10,7 @@ const searchForCode = async(bookingID , code) =>{
             JOIN 
              bookings b ON bp.booking_id = b.ID
              WHERE
-              b.ID = ? AND bp.code = ? 
+             b.booking_status IN ('active' , 'fully_paid') AND b.ID = ? AND bp.code = ? 
             ` , [ bookingID , code]);
 
             return rows[0];

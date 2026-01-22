@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getNextVehicleInQueueHelper } from "./vehicleController.js";
 import vehicleController from "./vehicleController.js";
 import bookingQueue from "../config/queue/bookingQueue.js";
+import bookingModel from "../models/bookingModel.js";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -1690,6 +1691,144 @@ ORDER BY b.scheduled_pickup ASC;
   }
 };
 
+// Shold return true if there is a link and false if there is no link
+const verifyDriverAndBookingLink = async (driver_user_id , booking_id)=>{
+    const sql = "SELECT driver_id FROM bookings WHERE ID =?";
+    const [booking_driverID] = await pool.execute(sql , [booking_id]);
+
+     if(booking_driverID.length === 0){
+        console.log( "booking  was not found [In verifyDriverAndBookingLink]")
+        return false;
+    }
+
+    //get the driver_id from the driver_profiles table
+    const [driver_profile] = await pool.execute("SELECT ID FROM driver_profiles WHERE user_id =?" , [driver_user_id]);
+    if(driver_profile.length === 0){
+        console.log( "driver profile was not found [In verifyDriverAndBookingLink]")
+        return false;
+    }
+    const driver_profile_id = driver_profile[0].ID;
+
+    if( parseInt(booking_driverID[0].driver_id) === parseInt(driver_profile_id)){
+        return true;
+    }
+
+    return false;
+}
+
+//list vehicle , exsting route , booking  informatiom
+export const getBookingDetailsByBookingId = async (req, res) => {
+
+  checkUserType(req.user, ["driver"]);
+
+  try{
+  //get booking id
+  const {bookingId} = req.body;
+  const driver_user_id = req.user.id;
+  
+  //check booking_id is a valid booking id
+  if(bookingId == null || bookingId == undefined || bookingId == "" || typeof bookingId !== "number"){
+    return res.status(400).json(
+      {
+        success:false,
+        message:"booking id is required and must be a number"
+      }
+    )
+  }
+
+  //check if the driver is linked to the booking id
+  const chechLink = await verifyDriverAndBookingLink(driver_user_id ,bookingId); //returns true or false
+  if(chechLink == false){
+    return res.status(400).json(
+      {
+        success:false,
+        message:"the driver is not linked to this booking"
+      }
+    )
+  }
+
+  //get booking details
+  const bookingDetails = await bookingModel.getDriverBookingDetails(bookingId);
+  if(bookingDetails == null || bookingDetails.length === 0){
+    return res.status(400).json(
+      {
+        success:false,
+        message:"booking details were not found"
+      }
+    )
+  }
+
+  return res.json({
+    success:true,
+    bookingDetails
+  })
+} catch (error) {
+  console.error("Error fetching booking details:", error);
+  res.status(500).json({
+    success: false,
+    message: "Failed to fetch booking details",
+    error: error.message,
+  });
+}
+}
+
+export const listPickupDropoffInfo = async (req, res) => {
+
+  checkUserType(req.user, ["driver"]);
+
+  try{
+    const {bookingId} = req.body;
+    const driver_user_id = req.user.id;
+
+    //check booking_id is a valid booking id
+    if(bookingId == null || bookingId == undefined || bookingId == "" || typeof bookingId !== "number"){
+      return res.status(400).json(
+        {
+          success:false,
+          message:"booking id is required and must be a number"
+        }
+      )
+    }
+    
+    //check if the driver is linked to the booking id
+    const chechLink = await verifyDriverAndBookingLink(driver_user_id ,bookingId); //returns true or false
+    if(chechLink == false){
+      return res.status(400).json(
+        {
+          success:false,
+          message:"the driver is not linked to this booking"
+        }
+      )
+    }
+
+    //get pickup dropoff info
+    const pickupDropoffInfo = await bookingModel.getPickupDropoffInfo(bookingId);
+    if(pickupDropoffInfo == null || pickupDropoffInfo.length === 0){
+      return res.status(400).json(
+        {
+          success:false,
+          message:"pickup dropoff info was not found"
+        }
+      )
+    }
+
+    return res.json({
+      success:true,
+      pickupDropoffInfo
+    })
+
+  } catch (error) {
+    console.error("Error fetching pickup dropoff info:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch pickup dropoff info",
+      error: error.message,
+    });
+  }
+}
+
+
+
 // ============================================
 // OWNER ROUTES
 // ============================================
@@ -2506,4 +2645,6 @@ export default {
   getPublicPendingBookings,
   getExistingRouteDetails,
   listOfUpcomingTrips,
+  listPickupDropoffInfo,
+  getBookingDetailsByBookingId
 };

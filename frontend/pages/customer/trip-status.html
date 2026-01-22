@@ -819,6 +819,100 @@
             flex-shrink: 0;
         }
 
+        /* Driver Proximity Card Styles */
+        .driver-proximity-content {
+            padding: 1rem 0;
+        }
+
+        .proximity-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .proximity-message {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .proximity-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .proximity-stat {
+            color: #01386A;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .proximity-stat i {
+            color: #FFD52F;
+            font-size: 1.3rem;
+        }
+
+        .proximity-stat strong {
+            color: #01386A;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .proximity-progress-container {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+        }
+
+        .proximity-progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            color: #01386A;
+            font-size: 1.1rem;
+        }
+
+        .proximity-progress-bar {
+            width: 100%;
+            height: 40px;
+            background: #dee2e6;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 3px solid #01386A;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .proximity-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #20c997 50%, #FFD52F 100%);
+            transition: width 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            color: #01386A;
+            font-weight: 700;
+            font-size: 1rem;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .proximity-progress-fill .progress-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .proximity-progress-fill.has-passed {
+            background: linear-gradient(90deg, #FFD52F 0%, #FFC107 50%, #dc3545 100%);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
         .btn-view-trip {
             background: #FFD52F;
             color: #01386A;
@@ -1147,6 +1241,31 @@
                 width: 120px;
                 height: 120px;
             }
+
+            .driver-proximity-content {
+                padding: 0.75rem 0;
+            }
+
+            .proximity-message {
+                font-size: 1rem;
+            }
+
+            .proximity-progress-container {
+                padding: 1rem;
+            }
+
+            .proximity-progress-header {
+                font-size: 1rem;
+            }
+
+            .proximity-progress-bar {
+                height: 35px;
+            }
+
+            .proximity-progress-fill {
+                font-size: 0.9rem;
+                padding-right: 0.75rem;
+            }
         }
 
         /* Small phones */
@@ -1472,6 +1591,34 @@
                             <div class="locations-summary-section">
                                 <h4><i class="ri-map-pin-3-fill"></i> Drop-off Points</h4>
                                 <ul id="trip-dropoff-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Driver Proximity Card -->
+                    <div class="trip-details-card" id="driver-proximity-card" style="display: none;">
+                        <div class="trip-card-header">
+                            <h3><i class="ri-roadster-line"></i> Driver Proximity</h3>
+                        </div>
+                        <div class="driver-proximity-content">
+                            <div class="proximity-info">
+                                <p id="proximity-message" class="proximity-message">Calculating driver distance...</p>
+                                <div class="proximity-stats">
+                                    <span id="proximity-distance" class="proximity-stat">
+                                        <i class="ri-map-pin-line"></i> <strong id="remaining-distance">-</strong> km remaining
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="proximity-progress-container">
+                                <div class="proximity-progress-header">
+                                    <span>Distance to Pickup</span>
+                                    <span id="proximity-percentage">0%</span>
+                                </div>
+                                <div class="proximity-progress-bar">
+                                    <div class="proximity-progress-fill" id="proximity-progress-fill" style="width: 0%">
+                                        <span class="progress-text">0%</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

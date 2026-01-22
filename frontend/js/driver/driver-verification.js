@@ -1,18 +1,32 @@
 // Driver Verification JavaScript
+import { verifyPassengerOrParcelCode } from '../api/bookingApi.js';
+import { BASE_URL } from '../AddressSelection.js';
+import * as trackingAPi from '../api/trackingAPi.js';
 
 let currentStream = null;
 let scanningInterval = null;
 let currentTrip = null;
+let currentBookingId = null; // Store bookingId from URL parameter
 
 document.addEventListener('DOMContentLoaded', function() {
     // Check driver authentication
     checkDriverAuthentication();
     
+    // Get bookingId from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    
+    if (bookingId) {
+        currentBookingId = Number(bookingId);
+        console.log('Booking ID from URL:', currentBookingId);
+    }
+    
     // Load current trip
     loadCurrentTrip();
     
     // Set up periodic refresh of verification codes
-    setInterval(refreshVerificationCodes, 30000); // Check every 30 seconds
+    //setInterval(refreshVerificationCodes, 30000); // Check every 30 seconds
+   refreshVerificationCodes
 });
 
 function checkDriverAuthentication() {
@@ -38,7 +52,25 @@ function checkDriverAuthentication() {
 }
 
 function loadCurrentTrip() {
-    // Get trip ID from URL parameters
+    // If bookingId is in URL, use it directly
+    if (currentBookingId) {
+        // Create a trip object from bookingId for compatibility
+        currentTrip = {
+            id: currentBookingId,
+            status: 'active',
+            bookingId: currentBookingId
+        };
+        
+        // Update trip info display
+        updateTripInfo();
+        
+        // Generate trip-specific verification codes
+        generateTripVerificationCodes();
+        
+        return;
+    }
+    
+    // Get trip ID from URL parameters (legacy support)
     const urlParams = new URLSearchParams(window.location.search);
     const tripId = urlParams.get('trip');
     
@@ -104,16 +136,11 @@ function openPhotoModal(imageSrc) {
     }
 }
 
-function startQRScan(type) {
-    const scannerId = type === 'passenger' ? 'passengerScanner' : 'packageScanner';
-    const videoId = type === 'passenger' ? 'passengerVideo' : 'packageVideo';
-    const canvasId = type === 'passenger' ? 'passengerCanvas' : 'packageCanvas';
-    const placeholderId = type === 'passenger' ? 'scannerPlaceholder' : 'packageScannerPlaceholder';
-    
-    const scanner = document.getElementById(scannerId);
-    const video = document.getElementById(videoId);
-    const canvas = document.getElementById(canvasId);
-    const placeholder = document.getElementById(placeholderId);
+function startQRScan() {
+    const scanner = document.getElementById('unifiedScanner');
+    const video = document.getElementById('unifiedVideo');
+    const canvas = document.getElementById('unifiedCanvas');
+    const placeholder = document.getElementById('unifiedPlaceholder');
     
     if (!scanner || !video || !canvas || !placeholder) return;
     
@@ -135,7 +162,7 @@ function startQRScan(type) {
         video.play();
         
         // Start scanning for QR codes
-        startQRCodeDetection(video, canvas, type);
+        startQRCodeDetection(video, canvas);
     })
     .catch(function(error) {
         console.error('Error accessing camera:', error);
@@ -144,7 +171,7 @@ function startQRScan(type) {
     });
 }
 
-function startQRCodeDetection(video, canvas, type) {
+function startQRCodeDetection(video, canvas) {
     const context = canvas.getContext('2d');
     
     scanningInterval = setInterval(function() {
@@ -158,23 +185,19 @@ function startQRCodeDetection(video, canvas, type) {
             
             if (code) {
                 console.log('QR Code detected:', code.data);
-                handleQRCodeDetected(code.data, type);
+                handleQRCodeDetected(code.data);
             }
         }
     }, 100);
 }
 
-function handleQRCodeDetected(data, type) {
+function handleQRCodeDetected(data) {
     stopScanning();
     
     // Parse QR code data (assuming it contains verification code)
     const verificationCode = data;
     
-    if (type === 'passenger') {
-        verifyPassengerCode(verificationCode);
-    } else if (type === 'package') {
-        verifyReceiverCode(verificationCode);
-    }
+    verifyUnifiedCode(verificationCode);
 }
 
 function stopScanning() {
@@ -202,89 +225,337 @@ function stopScanning() {
     });
 }
 
-function verifyCode(type, code) {
-    if (type === 'passenger') {
-        verifyPassengerCode(code);
-    } else if (type === 'package') {
-        verifyReceiverCode(code);
+async function verifyUnifiedCode(code) {
+    const resultDiv = document.getElementById('unifiedResult');
+    const detailsDiv = document.getElementById('unifiedDetails');
+    const imagesDiv = document.getElementById('unifiedImages');
+    if (!resultDiv || !detailsDiv || !imagesDiv) return;
+    
+    // Get code from input if not provided
+    if (!code) {
+        const codeInput = document.getElementById('unifiedCode');
+        if (codeInput) {
+            code = codeInput.value.trim();
+        }
     }
-}
+    
+    if (!code) {
+        showErrorMessage('Please enter a verification code');
+        return;
+    }
+    
+    // Allow simulations even without active trip
+    const isSimulation = code === 'SIM-PASS-001' || code === 'DEMO-PASSENGER' || 
+                         code === 'SIM-PARCEL-001' || code === 'DEMO-PARCEL';
+    
+    // Get booking ID - prioritize URL parameter, then currentTrip
+    let bookingId = currentBookingId || (currentTrip && currentTrip.id) || (currentTrip && currentTrip.bookingId);
+    
+    // Get booking ID from current trip (not required for simulations)
+    if (!isSimulation && !bookingId) {
+        showErrorMessage('No active trip found. Please provide a bookingId in the URL or start a trip.');
+        return;
+    }
+    
+    // Reset UI
+    resultDiv.style.display = 'block';
+    detailsDiv.style.display = 'none';
+    imagesDiv.style.display = 'none';
+    detailsDiv.innerHTML = '';
+    imagesDiv.innerHTML = '';
+    resultDiv.className = 'verification-result';
+    resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Verifying code...</span>';
+    
+    try {
+        // Check for simulation codes
+        let response;
 
-function verifyPassengerCode(code) {
-    const resultDiv = document.getElementById('passengerResult');
-    if (!resultDiv) return;
-    
-    // Simulate verification (in real app, this would call an API)
-    const isValid = simulateVerification(code, 'passenger');
-    
-    if (isValid) {
-        resultDiv.className = 'verification-result success';
-        resultDiv.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            <span>Passenger verified successfully!</span>
-        `;
-        resultDiv.style.display = 'block';
+        // if (code === 'SIM-PASS-001' || code === 'DEMO-PASSENGER') {
+        //     // Simulate passenger verification
+        //     response = await simulatePassengerVerification(code);
+        // } else if (code === 'SIM-PARCEL-001' || code === 'DEMO-PARCEL') {
+        //     // Simulate parcel verification
+        //     response = await simulateParcelVerification(code);
+        // } else {
+        //     // Call the real API
+        //     response = await verifyPassengerOrParcelCode(currentTrip.id, code);
+        // }
+
+        // Use bookingId from URL parameter or currentTrip
+        const bookingIdToUse = currentBookingId || (currentTrip && currentTrip.id) || (currentTrip && currentTrip.bookingId);
+        response = await verifyPassengerOrParcelCode(bookingIdToUse, code);
         
-        // Update trip status
-        updateTripVerification('passenger', true);
-        
-        showSuccessMessage('Passenger verification successful!');
-    } else {
+        if (response.success) {
+            resultDiv.className = 'verification-result success';
+            resultDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${response.type === 'parcel' ? 'Package' : 'Passenger'} verified successfully!</span>
+            `;
+            
+            updateTripVerification(response.type === 'parcel' ? 'package' : 'passenger', true);
+            showSuccessMessage(`${response.type === 'parcel' ? 'Package' : 'Passenger'} verification successful!`);
+            
+            // Display details based on type
+            if (response.type === 'passenger' && response.values) {
+                displayPassengerDetails(response.values, detailsDiv);
+            } else if (response.type === 'parcel' && response.values) {
+                displayParcelDetails(response.values, detailsDiv, imagesDiv);
+            }
+        } else {
+            resultDiv.className = 'verification-result error';
+            resultDiv.innerHTML = `
+                <i class="fas fa-times-circle"></i>
+                <span>${response.message || 'Invalid verification code. Please try again.'}</span>
+            `;
+            showErrorMessage(response.message || 'Verification failed. Please check the code and try again.');
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
         resultDiv.className = 'verification-result error';
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to verify code. Please try again.';
         resultDiv.innerHTML = `
             <i class="fas fa-times-circle"></i>
-            <span>Invalid verification code. Please try again.</span>
+            <span>${errorMessage}</span>
         `;
-        resultDiv.style.display = 'block';
-        
-        showErrorMessage('Verification failed. Please check the code and try again.');
+        showErrorMessage(errorMessage);
     }
 }
 
-function verifyReceiverCode(code) {
-    const resultDiv = document.getElementById('packageResult');
-    if (!resultDiv) return;
+function displayPassengerDetails(values, detailsDiv) {
+    detailsDiv.style.display = 'block';
+    detailsDiv.innerHTML = `
+        <h3><i class="fas fa-user"></i> Passenger Details</h3>
+        <div class="verification-details-grid">
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">First Name</span>
+                <span class="verification-detail-value">${values.first_name || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Last Name</span>
+                <span class="verification-detail-value">${values.last_name || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Email</span>
+                <span class="verification-detail-value">${values.email || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Phone</span>
+                <span class="verification-detail-value">${values.phone || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Code</span>
+                <span class="verification-detail-value">${values.code || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Status</span>
+                <span class="verification-detail-value">${values.booking_passenger_status || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+}
+
+function displayParcelDetails(values, detailsDiv, imagesDiv) {
+    detailsDiv.style.display = 'block';
     
-    // Simulate verification (in real app, this would call an API)
-    const isValid = simulateVerification(code, 'receiver');
+    // Display sender information
+    let detailsHTML = `
+        <h3><i class="fas fa-box"></i> Parcel Details</h3>
+        <div class="verification-details-grid">
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Sender Name</span>
+                <span class="verification-detail-value">${values.sender_name || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Sender Email</span>
+                <span class="verification-detail-value">${values.sender_email || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Sender Phone</span>
+                <span class="verification-detail-value">${values.sender_phone || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Sender Code</span>
+                <span class="verification-detail-value">${values.sender_code || 'N/A'}</span>
+            </div>
+            <div class="verification-detail-item">
+                <span class="verification-detail-label">Status</span>
+                <span class="verification-detail-value">${values.booking_parcel_status || 'N/A'}</span>
+            </div>
+        </div>
+    `;
     
-    if (isValid) {
-        resultDiv.className = 'verification-result success';
-        resultDiv.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            <span>Receiver verified successfully!</span>
-        `;
-        resultDiv.style.display = 'block';
-        
-        // Update trip status
-        updateTripVerification('receiver', true);
-        
-        showSuccessMessage('Receiver verification successful!');
-    } else {
-        resultDiv.className = 'verification-result error';
-        resultDiv.innerHTML = `
-            <i class="fas fa-times-circle"></i>
-            <span>Invalid verification code. Please try again.</span>
-        `;
-        resultDiv.style.display = 'block';
-        
-        showErrorMessage('Verification failed. Please check the code and try again.');
+    // Display parcels grouped by ID
+    if (values.parcels && values.parcels.length > 0) {
+        values.parcels.forEach((parcel, index) => {
+            detailsHTML += `
+                <div class="parcel-group">
+                    <h4><i class="fas fa-box-open"></i> Parcel #${parcel.id || index + 1}</h4>
+                    <div class="parcel-info">
+                        <div class="verification-details-grid">
+                            <div class="verification-detail-item">
+                                <span class="verification-detail-label">Parcel Number</span>
+                                <span class="verification-detail-value">${parcel.parcel_number || 'N/A'}</span>
+                            </div>
+                            <div class="verification-detail-item">
+                                <span class="verification-detail-label">Size</span>
+                                <span class="verification-detail-value">${parcel.size || 'N/A'}</span>
+                            </div>
+                            <div class="verification-detail-item">
+                                <span class="verification-detail-label">Quantity</span>
+                                <span class="verification-detail-value">${parcel.quantity_compared_to_sp || 'N/A'}</span>
+                            </div>
+                            <div class="verification-detail-item">
+                                <span class="verification-detail-label">Description</span>
+                                <span class="verification-detail-value">${parcel.description || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="parcel-images-container" data-parcel-id="${parcel.id || index}">
+                        <h5 style="margin: 0.5rem 0; color: #01386A;">Images for Parcel #${parcel.id || index + 1}</h5>
+                        <div class="package-photos" id="parcel-images-${parcel.id || index}"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    detailsDiv.innerHTML = detailsHTML;
+    
+    // Display images for each parcel separately
+    if (values.parcels && values.parcels.length > 0) {
+        values.parcels.forEach((parcel, index) => {
+            const parcelImagesContainer = document.getElementById(`parcel-images-${parcel.id || index}`);
+            if (parcelImagesContainer && parcel.images) {
+                // Parse images if they're stored as JSON string
+                let images = parcel.images;
+                if (typeof images === 'string') {
+                    try {
+                        images = JSON.parse(images);
+                    } catch (e) {
+                        // If parsing fails, treat as single image URL
+                        images = [images];
+                    }
+                }
+                
+                // Ensure images is an array
+                if (!Array.isArray(images)) {
+                    images = [images];
+                }
+                
+                // Filter out null/undefined/empty images
+                images = images.filter(img => {
+                    if (!img) return false;
+                    // Handle string images
+                    if (typeof img === 'string') {
+                        return img.trim().length > 0;
+                    }
+                    // Handle object images (if image is an object with url property)
+                    if (typeof img === 'object' && img.url) {
+                        return typeof img.url === 'string' && img.url.trim().length > 0;
+                    }
+                    return false;
+                }).map(img => {
+                    // Convert object images to string URLs
+                    if (typeof img === 'object' && img.url) {
+                        return img.url;
+                    }
+                    return img;
+                });
+                
+                if (images.length > 0) {
+                    parcelImagesContainer.innerHTML = images.map((img, imgIdx) => {
+                        // Construct full URL if it's a relative path
+                        const imageUrl = img.startsWith('http') ? img : `${BASE_URL}/${img}`;
+                        return `
+                            <img src="${imageUrl}" 
+                                 alt="Parcel #${parcel.id || index + 1} - Image ${imgIdx + 1}" 
+                                 class="package-photo" 
+                                 onclick="openPhotoModal('${imageUrl}')" />
+                        `;
+                    }).join('');
+                } else {
+                    parcelImagesContainer.innerHTML = '<p style="color: #6c757d; font-style: italic;">No images available for this parcel</p>';
+                }
+            }
+        });
     }
 }
 
-function simulateVerification(code, type) {
-    // Simulate verification logic
-    // In a real app, this would make an API call to verify the code
-    
-    // For demo purposes, accept codes that start with 'PASS' for passengers
-    // and 'RECV' for receivers
-    if (type === 'passenger') {
-        return code.startsWith('PASS') || code.length >= 6;
-    } else if (type === 'receiver') {
-        return code.startsWith('RECV') || code.length >= 6;
-    }
-    
-    return false;
+// Simulation functions for demo purposes
+function simulatePassengerVerification(code) {
+    // Simulate a delay to make it feel real
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                success: true,
+                type: 'passenger',
+                message: 'Code verified successfully',
+                values: {
+                    first_name: 'John',
+                    last_name: 'Doe',
+                    email: 'john.doe@example.com',
+                    phone: '+27 82 123 4567',
+                    code: code,
+                    booking_passenger_status: 'confirmed'
+                }
+            });
+        }, 1000); // 1 second delay
+    });
+}
+
+function simulateParcelVerification(code) {
+    // Simulate a delay to make it feel real
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                success: true,
+                type: 'parcel',
+                message: 'Code verified successfully',
+                values: {
+                    sender_name: 'Sarah Johnson',
+                    sender_email: 'sarah.johnson@example.com',
+                    sender_phone: '+27 83 987 6543',
+                    sender_code: code,
+                    booking_parcel_status: 'confirmed',
+                    parcels: [
+                        {
+                            id: 101,
+                            parcel_number: 'PKG-2024-001',
+                            size: 'Medium',
+                            quantity_compared_to_sp: '2',
+                            description: 'Electronics - Laptop and accessories',
+                            images: [
+                                'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=Parcel+101+Image+1',
+                                'https://via.placeholder.com/400x300/45B7D1/FFFFFF?text=Parcel+101+Image+2'
+                            ]
+                        },
+                        {
+                            id: 102,
+                            parcel_number: 'PKG-2024-002',
+                            size: 'Small',
+                            quantity_compared_to_sp: '1',
+                            description: 'Documents - Legal papers',
+                            images: [
+                                'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=Parcel+102+Image+1',
+                                'https://via.placeholder.com/400x300/FFA07A/FFFFFF?text=Parcel+102+Image+2',
+                                'https://via.placeholder.com/400x300/98D8C8/FFFFFF?text=Parcel+102+Image+3'
+                            ]
+                        },
+                        {
+                            id: 103,
+                            parcel_number: 'PKG-2024-003',
+                            size: 'Large',
+                            quantity_compared_to_sp: '3',
+                            description: 'Clothing - Winter collection',
+                            images: [
+                                'https://via.placeholder.com/400x300/F7DC6F/FFFFFF?text=Parcel+103+Image+1'
+                            ]
+                        }
+                    ]
+                }
+            });
+        }, 1000); // 1 second delay
+    });
 }
 
 function updateTripVerification(type, verified) {
@@ -312,7 +583,7 @@ function updateTripVerification(type, verified) {
     localStorage.setItem('currentDriverTrip', JSON.stringify(currentTrip));
 }
 
-function updateTripInfo() {
+async function updateTripInfo() {
     if (!currentTrip) {
         // Show no trip message
         const tripInfoElement = document.getElementById('tripInfo');
@@ -329,31 +600,63 @@ function updateTripInfo() {
     }
     
     // Use dummy data to prevent undefined values
+    // If bookingId is from URL, use it as the trip ID
+    const tripId = currentBookingId || currentTrip.id || currentTrip.bookingId ;
+
+    let response_bookingDetails = await trackingAPi.getBookingDetails(tripId);
+    if(response_bookingDetails.success == false || response_bookingDetails == null){
+      console.error("Error loading current trip: booking details not found");
+      return;
+    }
+    const bookingDetails = response_bookingDetails.bookingDetails;
+
+    let startingLocation;
+    let destinationLocation;
+    if(bookingDetails.direction_type == "from_loc1"){
+      startingLocation = bookingDetails.location_1;
+      destinationLocation = bookingDetails.location_2;
+    }else{
+      startingLocation = bookingDetails.location_2;
+      destinationLocation = bookingDetails.location_1;
+    }
+    
     const tripData = {
-        id: currentTrip.id || 'TRP-0001',
-        pickupLocation: currentTrip.pickupLocation || 'Sandton City Mall',
-        dropoffLocation: currentTrip.dropoffLocation || 'Rosebank Mall',
-        passengerName: currentTrip.passengerName || 'John Smith',
-        phoneNumber: currentTrip.phoneNumber || '+27123456789',
-        vehicleType: currentTrip.vehicleType || 'Sedan',
-        estimatedDuration: currentTrip.estimatedDuration || '25 min',
-        distance: currentTrip.distance || '12.5 km',
-        scheduledAt: currentTrip.scheduledAt || new Date().toISOString(),
-        status: currentTrip.status || 'active'
+        id: tripId,
+        bookingId: currentBookingId || currentTrip.bookingId,
+        pickupLocation: startingLocation || 'No location found',
+        dropoffLocation: destinationLocation || 'No location found',
+        vehicleType: bookingDetails.vehicle_make + ' ' + bookingDetails.vehicle_model || 'No vehicle type found',
+        estimatedDuration: bookingDetails.typical_duration_hours + ' hours' || 'No estimated duration found',
+        distance: bookingDetails.distance_km || 'No distance found',
+        scheduledAt: bookingDetails.scheduled_pickup || 'No scheduled time found',
+        status: bookingDetails.booking_status || 'No status found'
     };
     
     // Format scheduled time
-    const scheduledTime = new Date(tripData.scheduledAt).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
+    let scheduledTime = null;
+    if(tripData.scheduledAt && tripData.scheduledAt !== 'No scheduled time found'){
+      try {
+        const date = new Date(tripData.scheduledAt);
+        scheduledTime = date.toLocaleString("en-ZA", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        });
+      } catch (error) {
+        console.error("Error formatting scheduled time:", error);
+        scheduledTime = tripData.scheduledAt;
+      }
+    }
     
     // Update trip info display
     const tripInfoElement = document.getElementById('tripInfo');
     if (tripInfoElement) {
         tripInfoElement.innerHTML = `
             <div class="trip-info-card">
-                <h4><i class="fas fa-route"></i> Trip #${tripData.id}</h4>
+                <h4><i class="fas fa-route"></i> ${currentBookingId ? 'Booking' : 'Trip'} #${tripData.id}</h4>
                 
                 <div class="trip-info-grid">
                     <div class="trip-info-item">
@@ -364,16 +667,6 @@ function updateTripInfo() {
                     <div class="trip-info-item">
                         <span class="trip-info-label">To</span>
                         <span class="trip-info-value">${tripData.dropoffLocation}</span>
-                    </div>
-                    
-                    <div class="trip-info-item">
-                        <span class="trip-info-label">Passenger</span>
-                        <span class="trip-info-value">${tripData.passengerName}</span>
-                    </div>
-                    
-                    <div class="trip-info-item">
-                        <span class="trip-info-label">Phone</span>
-                        <span class="trip-info-value">${tripData.phoneNumber}</span>
                     </div>
                     
                     <div class="trip-info-item">
@@ -393,7 +686,7 @@ function updateTripInfo() {
                     
                     <div class="trip-info-item">
                         <span class="trip-info-label">Scheduled</span>
-                        <span class="trip-info-value">${scheduledTime}</span>
+                        <span class="trip-info-value">${scheduledTime || 'Not scheduled'}</span>
                     </div>
                 </div>
                 
@@ -424,8 +717,34 @@ function generateTripVerificationCodes() {
     
     localStorage.setItem(`verification_${currentTrip.id}`, JSON.stringify(verificationData));
     
-    // Update display
-    updateVerificationCodes(tripCode, driverCode);
+    // Update display - wait for QRCode library if needed
+    waitForQRCodeLibrary(() => {
+        updateVerificationCodes(tripCode, driverCode);
+    });
+}
+
+// Helper function to wait for QRCode library to load
+function waitForQRCodeLibrary(callback, maxAttempts = 10, attempt = 0) {
+    if (typeof QRCode !== 'undefined') {
+        callback();
+    } else if (attempt < maxAttempts) {
+        setTimeout(() => {
+            waitForQRCodeLibrary(callback, maxAttempts, attempt + 1);
+        }, 100);
+    } else {
+        console.warn('QRCode library not loaded after waiting. Proceeding without QR codes.');
+        // Still update codes, but QR generation will be skipped
+        const tripCodeElement = document.getElementById('tripVerificationCode');
+        const driverCodeElement = document.getElementById('driverVerificationCode');
+        if (tripCodeElement && driverCodeElement) {
+            const storedData = localStorage.getItem(`verification_${currentTrip.id}`);
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                tripCodeElement.textContent = data.tripCode;
+                driverCodeElement.textContent = data.driverCode;
+            }
+        }
+    }
 }
 
 function updateVerificationCodes(tripCode, driverCode) {
@@ -453,6 +772,13 @@ function generateTripQR(code) {
     // Clear previous QR code
     qrDisplay.innerHTML = '';
     
+    // Check if QRCode library is available
+    if (typeof QRCode === 'undefined') {
+        console.warn('QRCode library not loaded. QR code generation skipped.');
+        qrDisplay.innerHTML = '<p style="color: #6c757d; font-style: italic;">QR code library not available</p>';
+        return;
+    }
+    
     // Generate QR code
     QRCode.toCanvas(qrDisplay, code, {
         width: 200,
@@ -477,6 +803,13 @@ function generateDriverQR(code) {
     
     // Clear previous QR code
     qrDisplay.innerHTML = '';
+    
+    // Check if QRCode library is available
+    if (typeof QRCode === 'undefined') {
+        console.warn('QRCode library not loaded. QR code generation skipped.');
+        qrDisplay.innerHTML = '<p style="color: #6c757d; font-style: italic;">QR code library not available</p>';
+        return;
+    }
     
     // Generate QR code
     QRCode.toCanvas(qrDisplay, code, {
@@ -600,9 +933,20 @@ function refreshVerificationCodes() {
     }
 }
 
+// Backward compatibility wrapper for verifyCode
+function verifyCode(type, code) {
+    // Legacy function - now redirects to unified verification
+    if (code) {
+        verifyUnifiedCode(code);
+    } else {
+        verifyUnifiedCode();
+    }
+}
+
 // Export functions for global access
 window.startQRScan = startQRScan;
 window.verifyCode = verifyCode;
+window.verifyUnifiedCode = verifyUnifiedCode;
 window.generateQRCode = generateDriverQR;
 window.stopScanning = stopScanning;
 window.clearTripVerificationCodes = clearTripVerificationCodes;

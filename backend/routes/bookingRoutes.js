@@ -1,5 +1,6 @@
 import express from "express";
 import bookingController from "../controllers/bookingController.js";
+import passengersController from "../controllers/passengersController.js";
 import authenticateUser from "../Middleware/authenticateUser.js";
 
 const router = express.Router();
@@ -58,6 +59,12 @@ router.put("/:bookingId/route-points/:pointId/complete", authenticateUser, booki
 router.post("/existing-route-details", authenticateUser, bookingController.getExistingRouteDetails);
 
 router.get("/driver/upcoming-trips", authenticateUser, bookingController.listOfUpcomingTrips);
+
+router.post("/driver/verify-code", authenticateUser, passengersController.verifyPassengerOrParcelPickUpCode);
+
+router.post("/driver/booking-details", authenticateUser, bookingController.getBookingDetailsByBookingId);
+
+router.post("/driver/pickup-dropoff-info", authenticateUser, bookingController.listPickupDropoffInfo);
 
 // ============================================
 // OWNER ROUTES
