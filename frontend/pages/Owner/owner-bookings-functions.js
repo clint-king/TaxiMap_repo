@@ -65,14 +65,10 @@ function createBookingCard(booking) {
     
     if (booking.type === 'route-based') {
         // Route-Based Booking Display
-        const collectionDeliveryBadge = booking.collectionDelivery === 'collection' 
-            ? '<span class="collection-delivery-badge badge-collection">Collection</span>'
-            : '<span class="collection-delivery-badge badge-delivery">Delivery</span>';
-        
         bookingInfoHTML = `
             <div class="route-info">
                 <div class="route-from">
-                    <strong>Trip:</strong> ${escapeHtml(booking.tripName)} ${collectionDeliveryBadge}
+                    <strong>Trip:</strong> ${escapeHtml(booking.tripName)}
                 </div>
                 <div class="route-to">
                     <strong>Date & Time:</strong> ${escapeHtml(booking.date)}
@@ -183,14 +179,10 @@ function viewBookingDetails(bookingId) {
 
     if (booking.type === 'route-based') {
         // Route-Based Booking Detail View
-        const collectionDeliveryBadge = booking.collectionDelivery === 'collection' 
-            ? '<span class="collection-delivery-badge badge-collection">Collection</span>'
-            : '<span class="collection-delivery-badge badge-delivery">Delivery</span>';
-
         modalContent = `
             <div class="trip-info-header">
                 <h2 style="margin: 0 0 1rem 0; color: #01386A;">
-                    ${escapeHtml(booking.tripName)} ${collectionDeliveryBadge}
+                    ${escapeHtml(booking.tripName)}
                 </h2>
                 <div class="trip-info-grid">
                     <div class="trip-info-item">

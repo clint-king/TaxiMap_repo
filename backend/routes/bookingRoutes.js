@@ -73,10 +73,15 @@ router.post("/driver/pickup-dropoff-info", authenticateUser, bookingController.l
 router.get("/owner/my-bookings", authenticateUser, bookingController.getOwnerBookings);
 
 // Assign driver to booking
-router.put("/:bookingId/assign-driver", authenticateUser, bookingController.assignDriver);
+router.put("/:bookingId/assign-driver", authenticateUser, bookingController.assignDriver);     
 
 // Update booking (owner)
 router.put("/:bookingId", authenticateUser, bookingController.updateBooking);
+
+// Get upcoming trips for owner
+router.get("/owner/upcoming-trips", authenticateUser, bookingController.UpcomingTripsOwner);
+
+router.get("/owner/all-bookings", authenticateUser, bookingController.AllBookingsOwner);
 
 // ============================================
 // ADMIN ROUTES

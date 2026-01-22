@@ -1608,6 +1608,7 @@ export const completeRoutePoint = async (req, res) => {
   }
 };
 
+//List of upcoming trips for driver
 export const listOfUpcomingTrips = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1895,6 +1896,97 @@ export const getOwnerBookings = async (req, res) => {
     });
   }
 };
+
+
+export const UpcomingTripsOwner = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    checkUserType(req.user, ["owner", "admin"]);
+
+       // Get user's owner profile ID
+       const [ownerProfiles] = await pool.execute(
+        "SELECT ID FROM owner_profiles WHERE user_id = ?",
+        [userId]
+      );
+  
+      if (ownerProfiles.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: "User does not have an owner profile",
+        });
+      }
+  
+      const ownerProfileId = ownerProfiles[0].ID;
+      const upcomingTrips = await bookingModel.listOfUpcomingTripsOwner(ownerProfileId);
+      if(upcomingTrips == null || upcomingTrips.length === 0){
+        return res.status(400).json({
+          success:false,
+          message:"upcoming trips were not found"
+        }
+      )
+      }
+
+      return res.json({
+        success:true,
+        upcomingTrips
+      })
+
+  }catch (error) {
+    console.error("Error fetching upcoming trips:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch upcoming trips",
+      error: error.message,
+    });
+  }
+}
+
+export const AllBookingsOwner = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    checkUserType(req.user, ["owner", "admin"]);
+
+    // Get user's owner profile ID
+    const [ownerProfiles] = await pool.execute(
+      "SELECT ID FROM owner_profiles WHERE user_id = ?",
+      [userId]
+    );
+
+    if (ownerProfiles.length === 0) {
+      return res.status(403).json({
+        success: false, 
+        message: "User does not have an owner profile",
+      });
+    }
+
+    const ownerProfileId = ownerProfiles[0].ID;
+
+    const allBookings = await bookingModel.listOfAllBookingsOwner(ownerProfileId);
+    if(allBookings == null || allBookings.length === 0){
+      return res.status(400).json({
+        success:false,
+        message:"all bookings were not found"
+      }
+    )
+    }
+    return res.json({
+      success:true,
+      allBookings
+    })
+
+
+  }catch (error) {
+    console.error("Error fetching all bookings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch all bookings",
+      error: error.message,
+    });
+  }
+
+
+}
+
 
 // Assign driver to booking
 export const assignDriver = async (req, res) => {
@@ -2646,5 +2738,7 @@ export default {
   getExistingRouteDetails,
   listOfUpcomingTrips,
   listPickupDropoffInfo,
-  getBookingDetailsByBookingId
+  getBookingDetailsByBookingId,
+  UpcomingTripsOwner,
+  AllBookingsOwner
 };
