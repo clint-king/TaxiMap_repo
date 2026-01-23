@@ -327,6 +327,26 @@ export const updateBooking = async (bookingId, updateData) => {
     }
 };
 
+export const getUpcomingTripsOwner = async () => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/bookings/owner/upcoming-trips`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching upcoming trips:', error);
+        throw error;
+    }
+};
+
+export const  getAllBookingsOwner = async () => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/bookings/owner/all-bookings`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching all bookings:', error);
+        throw error;
+    }
+};
+
 // ============================================
 // PUBLIC BOOKING APIs (No authentication required)
 // ============================================

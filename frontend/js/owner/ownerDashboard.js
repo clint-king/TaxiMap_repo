@@ -1,5 +1,8 @@
- // Check authentication status and update navigation
- document.addEventListener('DOMContentLoaded', function() {
+import* as bookingApi from '../api/bookingApi.js';
+
+
+// Check authentication status and update navigation
+document.addEventListener('DOMContentLoaded', function() {
     const fullNav = document.getElementById('fullNav');
     
     // Check if user is logged in
@@ -18,179 +21,253 @@
 let currentTab = 'vehicles';
 let map;
 let coverageAreas = [];
+let nextTripScheduledPickup = null; // Store the first upcoming trip's scheduled_pickup
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    initializeMap();
+    // Only initialize map if the element exists (for coverage page)
+    const coverageMapElement = document.getElementById('coverageMap');
+    if (coverageMapElement && typeof mapboxgl !== 'undefined') {
+        initializeMap();
+    }
     loadDashboardData();
+    updateDateTime(); // Initialize date/time display
+    setInterval(updateDateTime, 1000); // Update every second
+    loadVehicles(); // Load vehicles from localStorage
+    
+    // Load recent bookings with a small delay to ensure DOM is fully ready
+    setTimeout(async () => {
+        try {
+            await loadRecentBookings();
+        } catch (error) {
+            console.error('Error loading recent bookings:', error);
+        }
+    }, 100);
 });
 
 // Tab switching
 // Load recent bookings
-function loadRecentBookings() {
+async function loadRecentBookings() {
+    console.log('loadRecentBookings called, document.readyState:', document.readyState);
+
+    //get upcoming trips
+    const upcomingData = await bookingApi.getUpcomingTripsOwner();
+    console.log('upcomingTrips:', upcomingData);
     // Create sample bookings for demo
     const now = new Date();
-    const bookings = [
-        {
-            id: 'BK-2025-001',
-            status: 'pending',
-            type: 'route-based',
-            customer: 'Sarah Mthembu',
-            from: 'Sandton City, Johannesburg',
-            to: 'OR Tambo Airport, Kempton Park',
-            date: 'Today, 2:30 PM',
-            passengers: '3 adults, 2 children',
-            distance: '28.5 km',
-            amount: 'R 516.75',
-            time: '2 hours ago'
-        },
-        {
-            id: 'BK-2025-002',
-            status: 'confirmed',
-            type: 'custom-trip',
-            customer: 'John Dlamini',
-            from: 'Rosebank Mall, Johannesburg',
-            to: 'Pretoria CBD, Pretoria',
-            date: 'Tomorrow, 8:00 AM',
-            passengers: '2 adults',
-            distance: '45.2 km',
-            amount: 'R 750.60',
-            time: '1 day ago'
-        },
-        {
-            id: 'BK-2025-003',
-            status: 'confirmed',
-            type: 'route-based',
-            customer: 'Mary Khumalo',
-            from: 'Soweto, Johannesburg',
-            to: 'Sandton, Johannesburg',
-            date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 10:00 AM',
-            passengers: '4 adults',
-            distance: '35.8 km',
-            amount: 'R 642.30',
-            time: '3 days ago'
-        },
-        {
-            id: 'BK-2025-004',
-            status: 'pending',
-            type: 'custom-trip',
-            customer: 'David Nkomo',
-            from: 'Midrand, Johannesburg',
-            to: 'Lanseria Airport, Johannesburg',
-            date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 6:00 AM',
-            passengers: '1 adult',
-            distance: '42.3 km',
-            amount: 'R 689.50',
-            time: '5 hours ago'
-        },
-        {
-            id: 'BK-2025-005',
-            status: 'confirmed',
-            type: 'route-based',
-            customer: 'Grace Mokoena',
-            from: 'Pretoria Central, Pretoria',
-            to: 'Johannesburg CBD, Johannesburg',
-            date: new Date(now.getTime() + 3 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 3:00 PM',
-            passengers: '5 adults',
-            distance: '58.7 km',
-            amount: 'R 987.20',
-            time: '2 days ago'
-        },
-        {
-            id: 'BK-2025-006',
-            status: 'confirmed',
-            type: 'custom-trip',
-            customer: 'Thabo Sithole',
-            from: 'Randburg, Johannesburg',
-            to: 'Sandton City, Johannesburg',
-            date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 11:30 AM',
-            passengers: '2 adults, 1 child',
-            distance: '18.9 km',
-            amount: 'R 342.80',
-            time: '1 day ago'
-        },
-        {
-            id: 'BK-2025-007',
-            status: 'pending',
-            type: 'route-based',
-            customer: 'Nomsa Dlamini',
-            from: 'Fourways, Johannesburg',
-            to: 'OR Tambo Airport, Kempton Park',
-            date: 'Tomorrow, 12:00 PM',
-            passengers: '3 adults',
-            distance: '31.4 km',
-            amount: 'R 568.90',
-            time: '3 hours ago'
-        },
-        {
-            id: 'BK-2025-008',
-            status: 'confirmed',
-            type: 'custom-trip',
-            customer: 'Peter Ngubane',
-            from: 'Benoni, Gauteng',
-            to: 'Johannesburg CBD, Johannesburg',
-            date: new Date(now.getTime() + 4 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 9:00 AM',
-            passengers: '4 adults',
-            distance: '52.1 km',
-            amount: 'R 892.40',
-            time: '4 days ago'
-        },
-        {
-            id: 'BK-2025-009',
-            status: 'pending',
-            type: 'route-based',
-            customer: 'Lindiwe Khumalo',
-            from: 'Kempton Park, Gauteng',
-            to: 'Sandton, Johannesburg',
-            date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 4:30 PM',
-            passengers: '2 adults',
-            distance: '24.6 km',
-            amount: 'R 445.20',
-            time: '6 hours ago'
-        },
-        {
-            id: 'BK-2025-010',
-            status: 'confirmed',
-            type: 'custom-trip',
-            customer: 'Sipho Mthembu',
-            from: 'Soweto, Johannesburg',
-            to: 'Rosebank, Johannesburg',
-            date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 1:00 PM',
-            passengers: '6 adults',
-            distance: '22.8 km',
-            amount: 'R 412.50',
-            time: '3 days ago'
-        },
-        {
-            id: 'BK-2025-011',
-            status: 'pending',
-            type: 'route-based',
-            customer: 'Zanele Ndlovu',
-            from: 'Johannesburg CBD',
-            to: 'OR Tambo Airport, Kempton Park',
-            date: 'Today, 5:00 PM',
-            passengers: '1 adult',
-            distance: '23.5 km',
-            amount: 'R 425.80',
-            time: '1 hour ago'
-        },
-        {
-            id: 'BK-2025-012',
-            status: 'confirmed',
-            type: 'custom-trip',
-            customer: 'Mpho Molefe',
-            from: 'Pretoria East, Pretoria',
-            to: 'Johannesburg, Gauteng',
-            date: new Date(now.getTime() + 5 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 7:30 AM',
-            passengers: '3 adults, 1 child',
-            distance: '61.3 km',
-            amount: 'R 1023.60',
-            time: '5 days ago'
-        }
-    ];
+    let bookings = [];
+    
+    // Store the first upcoming trip's scheduled_pickup for date/time display
+    if(upcomingData.success && upcomingData.upcomingTrips && upcomingData.upcomingTrips.length > 0) {
+        nextTripScheduledPickup = upcomingData.upcomingTrips[0].scheduled_pickup;
+        // Update the date/time display with the first trip's scheduled pickup
+        updateDateTime();
+    } else {
+        // No upcoming trips, use current date/time
+        nextTripScheduledPickup = null;
+        updateDateTime();
+    }
+    
+    if(upcomingData.success){
+
+        upcomingData.upcomingTrips.forEach(trip => {
+
+            let startingLocation;
+            let destinationLocation;
+            if(trip.direction_type == "from_loc1"){
+                startingLocation = trip.location_1;
+                destinationLocation = trip.location_2;
+            }else{
+                startingLocation = trip.location_2;
+                destinationLocation = trip.location_1;
+            }
+            bookings.push({
+                id: trip.booking_reference,
+                status: trip.booking_status,
+                type: 'route-based',
+                from: startingLocation,
+                to: destinationLocation,
+                date:  new Date(trip.scheduled_pickup).toLocaleString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + new Date(trip.scheduled_pickup).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }),
+                parcels: trip.total_parcels,
+                passengers: trip.passenger_count,
+                distance: trip.distance_km + ' km',
+                amount: 'R ' + trip.total_amount_paid,
+                time: new Date(trip.scheduled_pickup).toLocaleString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + new Date(trip.scheduled_pickup).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }),
+                
+            });
+        });
+
+    }
+
+    // const bookings = [
+    //     {
+    //         id: 'BK-2025-001',
+    //         status: 'pending',
+    //         type: 'route-based',
+    //         customer: 'Sarah Mthembu',
+    //         from: 'Sandton City, Johannesburg',
+    //         to: 'OR Tambo Airport, Kempton Park',
+    //         date: 'Today, 2:30 PM',
+    //         passengers: '3 adults, 2 children',
+    //         distance: '28.5 km',
+    //         amount: 'R 516.75',
+    //         time: '2 hours ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-002',
+    //         status: 'confirmed',
+    //         type: 'custom-trip',
+    //         customer: 'John Dlamini',
+    //         from: 'Rosebank Mall, Johannesburg',
+    //         to: 'Pretoria CBD, Pretoria',
+    //         date: 'Tomorrow, 8:00 AM',
+    //         passengers: '2 adults',
+    //         distance: '45.2 km',
+    //         amount: 'R 750.60',
+    //         time: '1 day ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-003',
+    //         status: 'confirmed',
+    //         type: 'route-based',
+    //         customer: 'Mary Khumalo',
+    //         from: 'Soweto, Johannesburg',
+    //         to: 'Sandton, Johannesburg',
+    //         date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 10:00 AM',
+    //         passengers: '4 adults',
+    //         distance: '35.8 km',
+    //         amount: 'R 642.30',
+    //         time: '3 days ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-004',
+    //         status: 'pending',
+    //         type: 'custom-trip',
+    //         customer: 'David Nkomo',
+    //         from: 'Midrand, Johannesburg',
+    //         to: 'Lanseria Airport, Johannesburg',
+    //         date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 6:00 AM',
+    //         passengers: '1 adult',
+    //         distance: '42.3 km',
+    //         amount: 'R 689.50',
+    //         time: '5 hours ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-005',
+    //         status: 'confirmed',
+    //         type: 'route-based',
+    //         customer: 'Grace Mokoena',
+    //         from: 'Pretoria Central, Pretoria',
+    //         to: 'Johannesburg CBD, Johannesburg',
+    //         date: new Date(now.getTime() + 3 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 3:00 PM',
+    //         passengers: '5 adults',
+    //         distance: '58.7 km',
+    //         amount: 'R 987.20',
+    //         time: '2 days ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-006',
+    //         status: 'confirmed',
+    //         type: 'custom-trip',
+    //         customer: 'Thabo Sithole',
+    //         from: 'Randburg, Johannesburg',
+    //         to: 'Sandton City, Johannesburg',
+    //         date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 11:30 AM',
+    //         passengers: '2 adults, 1 child',
+    //         distance: '18.9 km',
+    //         amount: 'R 342.80',
+    //         time: '1 day ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-007',
+    //         status: 'pending',
+    //         type: 'route-based',
+    //         customer: 'Nomsa Dlamini',
+    //         from: 'Fourways, Johannesburg',
+    //         to: 'OR Tambo Airport, Kempton Park',
+    //         date: 'Tomorrow, 12:00 PM',
+    //         passengers: '3 adults',
+    //         distance: '31.4 km',
+    //         amount: 'R 568.90',
+    //         time: '3 hours ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-008',
+    //         status: 'confirmed',
+    //         type: 'custom-trip',
+    //         customer: 'Peter Ngubane',
+    //         from: 'Benoni, Gauteng',
+    //         to: 'Johannesburg CBD, Johannesburg',
+    //         date: new Date(now.getTime() + 4 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 9:00 AM',
+    //         passengers: '4 adults',
+    //         distance: '52.1 km',
+    //         amount: 'R 892.40',
+    //         time: '4 days ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-009',
+    //         status: 'pending',
+    //         type: 'route-based',
+    //         customer: 'Lindiwe Khumalo',
+    //         from: 'Kempton Park, Gauteng',
+    //         to: 'Sandton, Johannesburg',
+    //         date: new Date(now.getTime() + 1 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 4:30 PM',
+    //         passengers: '2 adults',
+    //         distance: '24.6 km',
+    //         amount: 'R 445.20',
+    //         time: '6 hours ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-010',
+    //         status: 'confirmed',
+    //         type: 'custom-trip',
+    //         customer: 'Sipho Mthembu',
+    //         from: 'Soweto, Johannesburg',
+    //         to: 'Rosebank, Johannesburg',
+    //         date: new Date(now.getTime() + 2 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 1:00 PM',
+    //         passengers: '6 adults',
+    //         distance: '22.8 km',
+    //         amount: 'R 412.50',
+    //         time: '3 days ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-011',
+    //         status: 'pending',
+    //         type: 'route-based',
+    //         customer: 'Zanele Ndlovu',
+    //         from: 'Johannesburg CBD',
+    //         to: 'OR Tambo Airport, Kempton Park',
+    //         date: 'Today, 5:00 PM',
+    //         passengers: '1 adult',
+    //         distance: '23.5 km',
+    //         amount: 'R 425.80',
+    //         time: '1 hour ago'
+    //     },
+    //     {
+    //         id: 'BK-2025-012',
+    //         status: 'confirmed',
+    //         type: 'custom-trip',
+    //         customer: 'Mpho Molefe',
+    //         from: 'Pretoria East, Pretoria',
+    //         to: 'Johannesburg, Gauteng',
+    //         date: new Date(now.getTime() + 5 * 86400000).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' }) + ', 7:30 AM',
+    //         passengers: '3 adults, 1 child',
+    //         distance: '61.3 km',
+    //         amount: 'R 1023.60',
+    //         time: '5 days ago'
+    //     }
+    // ];
 
     const recentBookingsList = document.getElementById('recentBookingsList');
-    if (!recentBookingsList) return;
+    if (!recentBookingsList) {
+        console.error('recentBookingsList element not found');
+        // Try again after a short delay
+        setTimeout(async () => {
+            await loadRecentBookings();
+        }, 200);
+        return;
+    }
+    console.log('recentBookingsList element found, rendering bookings');
 
     if (bookings.length === 0) {
         recentBookingsList.innerHTML = `
@@ -202,13 +279,35 @@ function loadRecentBookings() {
         return;
     }
 
-    recentBookingsList.innerHTML = bookings.slice(0, 5).map(booking => createRecentBookingCard(booking)).join('');
+    try {
+        const bookingCards = bookings.slice(0, 5).map(booking => {
+            try {
+                return createRecentBookingCard(booking);
+            } catch (error) {
+                console.error('Error creating booking card:', error, booking);
+                return '';
+            }
+        }).filter(card => card !== '').join('');
+        
+        recentBookingsList.innerHTML = bookingCards;
+        console.log('Bookings rendered successfully');
+    } catch (error) {
+        console.error('Error rendering bookings:', error);
+        recentBookingsList.innerHTML = `
+            <div class="no-recent-bookings">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error loading bookings. Please refresh the page.</p>
+            </div>
+        `;
+    }
 }
 
 function createRecentBookingCard(booking) {
     const statusClass = `status-${booking.status}`;
     const statusText = booking.status === 'pending' ? 'Pending' :
                      booking.status === 'confirmed' ? 'Confirmed' :
+                     booking.status === 'fully_paid' ? 'Fully Paid' :
+                     booking.status === 'active' ? 'Active' :
                      booking.status === 'completed' ? 'Completed' : 'Cancelled';
     
     const bookingType = booking.type || 'route-based';
@@ -732,11 +831,13 @@ function cancelBooking(bookingId) {
 
 // Date/Time Display Functionality
 function updateDateTime() {
-    const now = new Date();
+    // Use the first upcoming trip's scheduled_pickup if available, otherwise use current date/time
+    const dateToUse = nextTripScheduledPickup ? new Date(nextTripScheduledPickup) : new Date();
+    
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-    const formattedDate = now.toLocaleDateString('en-ZA', dateOptions);
+    const formattedDate = dateToUse.toLocaleDateString('en-ZA', dateOptions);
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-    const formattedTime = now.toLocaleTimeString('en-ZA', timeOptions);
+    const formattedTime = dateToUse.toLocaleTimeString('en-ZA', timeOptions);
     
     const dateElement = document.getElementById('currentDate');
     const timeElement = document.getElementById('currentTimeLarge');
@@ -922,13 +1023,6 @@ function deleteDriver(driverId) {
     loadDrivers();
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Load vehicles from localStorage
 function loadVehicles() {
     const vehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
@@ -1021,18 +1115,6 @@ function createVehicleCard(vehicle) {
     return card;
 }
 
-// Escape HTML to prevent XSS
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return String(text).replace(/[&<>"']/g, m => map[m]);
-}
-
 // View vehicle details
 function viewVehicleDetails(vehicleId) {
     const vehicles = JSON.parse(localStorage.getItem('ownerVehicles') || '[]');
@@ -1043,13 +1125,7 @@ function viewVehicleDetails(vehicleId) {
     }
 }
 
-// Initialize date/time display
-document.addEventListener('DOMContentLoaded', function() {
-    updateDateTime();
-    setInterval(updateDateTime, 1000); // Update every second
-    loadVehicles(); // Load vehicles from localStorage
-    loadRecentBookings(); // Load recent bookings
-});
+// Note: Date/time, vehicles, and recent bookings initialization moved to the main DOMContentLoaded handler above
 
 // Close modals when clicking outside
 window.onclick = function(event) {
@@ -1089,23 +1165,50 @@ function topNavZIndexDecrease() {
         navbar.style.zIndex = "3";
     }
 }
-
-
-  // Check authentication status and update navigation
-  document.addEventListener('DOMContentLoaded', function() {
-    const authButtons = document.getElementById('authButtons');
-    const fullNav = document.getElementById('fullNav');
     
-    // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
-    
-    if (isLoggedIn) {
-        // User is logged in - show full navigation
-        if (authButtons) authButtons.style.display = 'none';
-        if (fullNav) fullNav.style.display = 'flex';
-    } else {
-        // User is not logged in - show auth buttons
-        if (authButtons) authButtons.style.display = 'flex';
-        if (fullNav) fullNav.style.display = 'none';
-    }
-});
+
+// Make functions available globally for inline event handlers
+// Since this is a module, we need to explicitly attach functions to window
+window.toggleMobileMenu = toggleMobileMenu;
+window.topNavZIndexIncrease = topNavZIndexIncrease;
+window.topNavZIndexDecrease = topNavZIndexDecrease;
+window.closeModal = closeModal;
+window.handleImageUpload = handleImageUpload;
+window.closeCoverageModal = closeCoverageModal;
+window.searchBaseLocation = searchBaseLocation;
+window.useCurrentLocation = useCurrentLocation;
+window.toggleMultiDayOptions = toggleMultiDayOptions;
+window.saveCoverageSettings = saveCoverageSettings;
+window.removeImage = removeImage;
+window.openAddVehicleModal = openAddVehicleModal;
+window.editVehicle = editVehicle;
+window.deleteVehicle = deleteVehicle;
+window.toggleVehicle = toggleVehicle;
+window.editCoverageAreas = editCoverageAreas;
+window.viewCoverageMap = viewCoverageMap;
+window.viewVehicleDetails = viewVehicleDetails;
+window.deleteDriver = deleteDriver;
+window.acceptBooking = acceptBooking;
+window.declineBooking = declineBooking;
+window.contactCustomer = contactCustomer;
+window.viewBookingDetails = viewBookingDetails;
+window.cancelBooking = cancelBooking;
+window.loadRecentBookings = async () => {
+    await loadRecentBookings();
+}; // Make available for testing and fallback
+
+// Ensure loadRecentBookings runs if DOMContentLoaded already fired or module loads late
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // Double check if bookings weren't loaded
+    setTimeout(async () => {
+        const recentBookingsList = document.getElementById('recentBookingsList');
+        if (recentBookingsList && !recentBookingsList.innerHTML.trim()) {
+            console.log('Bookings list is empty, attempting to load...');
+            try {
+                await loadRecentBookings();
+            } catch (error) {
+                console.error('Error loading recent bookings on page load:', error);
+            }
+        }
+    }, 300);
+}

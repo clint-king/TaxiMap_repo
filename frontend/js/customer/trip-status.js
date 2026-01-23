@@ -1253,8 +1253,8 @@ function showDemoProximityData() {
     proximityCard.style.display = 'block';
     
     // Demo data - showing 65% progress
-    const demoPercentage = 65;
-    const demoRemainingDistance = 2.5; // km
+    const demoPercentage = 0;
+    const demoRemainingDistance = 4.0; // km
     const demoHasPassed = false;
     
     const progressFill = document.getElementById('proximity-progress-fill');
@@ -1337,7 +1337,8 @@ function updateProximityUI(response) {
             proximityMessage.style.color = '#dc3545';
         } else {
             const distanceMeters = Math.round((response.remainingDistance || 0) * 1000);
-            proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location`;
+            //proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location `;
+            proximityMessage.textContent = `Trip has not yet started `;
             proximityMessage.style.color = '#666';
         }
     }

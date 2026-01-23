@@ -188,14 +188,25 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
                 let listOfPassengers = [];
                 let listOfParcels = [];
                 const [passengers] = await db.execute(`SELECT * FROM booking_passengers WHERE booking_id = ?` , [booking.booking_id]);
-                const [parcels] = await db.execute(`SELECT booking_parcels.ID as parcel_booking_id , p.ID as parcel_id ,
-                    booking_parcels.status as parcel_status, booking_parcels.sender_name as parcel_sender_name, booking_parcels.sender_phone as parcel_sender_phone,
-                    booking_parcels.sender_email as parcel_sender_email, booking_parcels.receiver_name as parcel_receiver_name, booking_parcels.receiver_phone as parcel_receiver_phone,
-                    p.size as parcel_size, p.images as parcel_images , booking_parcels.pickup_point as parcel_pickup_point, booking_parcels.dropoff_point as parcel_dropoff_point,
-                    booking_parcels.pickup_address as parcel_pickup_address, booking_parcels.dropoff_address as parcel_dropoff_address
-                     FROM booking_parcels
-                    JOIN parcels p ON booking_parcels.parcel_id = p.ID
-                     WHERE booking_id = ?` , [booking.booking_id]);
+                const [parcels] = await db.execute(`SELECT 
+                    booking_parcels.ID as parcel_booking_id,
+                    p.ID as parcel_id,
+                    booking_parcels.status as parcel_status, 
+                    booking_parcels.sender_name as parcel_sender_name, 
+                    booking_parcels.sender_phone as parcel_sender_phone,
+                    booking_parcels.receiver_name as parcel_receiver_name, 
+                    booking_parcels.receiver_phone as parcel_receiver_phone,
+                    p.size as parcel_size, 
+                    p.images as parcel_images,
+                    ST_X(booking_parcels.pickup_point) as parcel_pickup_lng,
+                    ST_Y(booking_parcels.pickup_point) as parcel_pickup_lat,
+                    ST_X(booking_parcels.dropoff_point) as parcel_dropoff_lng,
+                    ST_Y(booking_parcels.dropoff_point) as parcel_dropoff_lat,
+                    booking_parcels.pickup_address as parcel_pickup_address, 
+                    booking_parcels.dropoff_address as parcel_dropoff_address
+                    FROM booking_parcels
+                    LEFT JOIN parcel p ON p.booking_parcels_id = booking_parcels.ID
+                    WHERE booking_parcels.booking_id = ?` , [booking.booking_id]);
 
                 if(passengers && passengers.length > 0){
                     passengers.forEach(passenger =>{

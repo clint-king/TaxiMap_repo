@@ -1,5 +1,196 @@
+import * as bookingApi from '../../js/api/bookingApi.js';
+
 // Booking card creation and detail view functions
 // Note: These functions rely on global variables: allBookings
+
+
+
+// Store bookings globally
+let allBookings = [];
+let autoSettings = {
+    routeLocal: 'manual',
+    routeLong: 'manual',
+    custom: 'manual'
+};
+
+// Load auto settings from localStorage
+function loadAutoSettings() {
+    const saved = localStorage.getItem('ownerAutoSettings');
+    if (saved) {
+        autoSettings = JSON.parse(saved);
+        // Update radio buttons
+        document.getElementById('routeLocalAccept').checked = autoSettings.routeLocal === 'auto-accept';
+        document.getElementById('routeLocalReject').checked = autoSettings.routeLocal === 'auto-reject';
+        document.getElementById('routeLocalManual').checked = autoSettings.routeLocal === 'manual';
+        document.getElementById('routeLongAccept').checked = autoSettings.routeLong === 'auto-accept';
+        document.getElementById('routeLongReject').checked = autoSettings.routeLong === 'auto-reject';
+        document.getElementById('routeLongManual').checked = autoSettings.routeLong === 'manual';
+        document.getElementById('customAccept').checked = autoSettings.custom === 'auto-accept';
+        document.getElementById('customReject').checked = autoSettings.custom === 'auto-reject';
+        document.getElementById('customManual').checked = autoSettings.custom === 'manual';
+    }
+}
+
+// Save auto settings
+function saveAutoSettings() {
+    autoSettings.routeLocal = document.querySelector('input[name="routeLocalAuto"]:checked').value;
+    autoSettings.routeLong = document.querySelector('input[name="routeLongAuto"]:checked').value;
+    autoSettings.custom = document.querySelector('input[name="customAuto"]:checked').value;
+    localStorage.setItem('ownerAutoSettings', JSON.stringify(autoSettings));
+    alert('Auto-settings saved successfully!');
+}
+// Navigation functions
+function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('show');
+}
+
+function topNavZIndexDecrease() {
+    // Function for navigation link clicks
+}
+
+// Check authentication status
+document.addEventListener('DOMContentLoaded', async function() {
+    const authButtons = document.getElementById('authButtons');
+    const fullNav = document.getElementById('fullNav');
+    
+    const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile') || 
+                      localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    
+    if (isLoggedIn) {
+        if (authButtons) authButtons.style.display = 'none';
+        if (fullNav) fullNav.style.display = 'flex';
+    } else {
+        if (authButtons) authButtons.style.display = 'flex';
+        if (fullNav) fullNav.style.display = 'none';
+    }
+
+    await loadBookings();
+});
+
+function showBookingTab(tabName) {
+    // Hide all tab content sections
+    document.querySelectorAll('.tab-content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Remove active class from all buttons
+    document.querySelectorAll('.booking-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    document.getElementById(`${tabName}-bookings`).classList.add('active');
+
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+
+// {
+//     id: 'BK-2025-001',
+//     status: 'pending',
+//     type: 'route-based',
+//     routeType: 'local',
+//     tripName: 'Johannesburg Local',
+//     collectionDelivery: 'collection',
+//     date: 'Today, 2:30 PM',
+//     time: '14:30',
+//     distance: '28.5 km',
+//     passengers: 3,
+//     parcels: 2,
+//     amount: 'R 516.75',
+//     timeAgo: '2 hours ago',
+//     customer: {
+//         name: 'Sarah Mthembu',
+//         phone: '082 123 4567',
+//         email: 'sarah@example.com'
+//     },
+//     passengerDetails: [
+//         { name: 'Sarah Mthembu', id: '850101 5800 08 5', phone: '082 123 4567', pickup: 'Sandton City Mall, Sandton', dropoff: 'OR Tambo Airport' },
+//         { name: 'John Mthembu', id: '920315 5800 08 6', phone: '082 123 4568', pickup: 'Sandton City Mall, Sandton', dropoff: 'OR Tambo Airport' },
+//         { name: 'Mary Mthembu', id: '950520 5800 08 7', phone: '082 123 4569', pickup: 'Sandton City Mall, Sandton', dropoff: 'OR Tambo Airport' }
+//     ],
+//     parcelDetails: [
+//         { size: 'Medium', weight: '12kg', sender: 'Sarah Mthembu', receiver: 'John Doe', secretCode: 'ABC123', image: '../../assets/images/default-avatar.png', pickup: 'Sandton City Mall, Sandton', dropoff: '123 Main St, Tzaneen' },
+//         { size: 'Small', weight: '4kg', sender: 'Sarah Mthembu', receiver: 'Jane Smith', secretCode: 'XYZ789', image: '../../assets/images/default-avatar.png', pickup: 'Sandton City Mall, Sandton', dropoff: '456 Oak Ave, Tzaneen' }
+//     ],
+//     waitingPoints: [
+//         { type: 'waiting', location: 'Sandton City Mall Parking, Sandton', description: 'Drop-off point for passengers and parcels' }
+//     ],
+//     pickupLocations: [
+//         { type: 'pickup', location: 'Sandton City Mall, Sandton', description: 'Collect passengers and parcels' }
+//     ],
+//     dropoffLocations: [
+//         { type: 'dropoff', location: 'OR Tambo Airport, Kempton Park', description: 'Drop-off passengers' },
+//         { type: 'dropoff', location: '123 Main St, Tzaneen', description: 'Drop-off parcel for John Doe' },
+//         { type: 'dropoff', location: '456 Oak Ave, Tzaneen', description: 'Drop-off parcel for Jane Smith' }
+//     ],
+//     route: 'Via N1 Highway'
+// }
+
+
+async function loadBookings() {
+    // Load comprehensive bookings
+
+    // const allBookingsData = await bookingApi.getAllBookingsOwner();
+    // console.log('allBookingsData:', allBookingsData);
+
+
+    allBookings = createComprehensiveBookings();
+    
+    // Apply auto-settings
+    allBookings.forEach(booking => {
+        if (booking.status === 'pending') {
+            let autoAction = null;
+            if (booking.type === 'route-based') {
+                if (booking.routeType === 'local') {
+                    autoAction = autoSettings.routeLocal;
+                } else if (booking.routeType === 'long-distance') {
+                    autoAction = autoSettings.routeLong;
+                }
+            } else if (booking.type === 'custom-trip') {
+                autoAction = autoSettings.custom;
+            }
+            
+            if (autoAction === 'auto-accept') {
+                booking.status = 'confirmed';
+            } else if (autoAction === 'auto-reject') {
+                booking.status = 'cancelled';
+            }
+        }
+    });
+
+    displayBookings(allBookings);
+}
+
+function displayBookings(bookings) {
+    const pending = bookings.filter(b => b.status === 'pending');
+    const upcoming = bookings.filter(b => b.status === 'confirmed');
+    const historical = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+
+    displayBookingList('pendingBookingsList', pending);
+    displayBookingList('upcomingBookingsList', upcoming);
+    displayBookingList('historicalBookingsList', historical);
+}
+
+function displayBookingList(containerId, bookings) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (bookings.length === 0) {
+        container.innerHTML = `
+            <div class="no-bookings">
+                <i class="fas fa-calendar-times"></i>
+                <p>No bookings found in this category.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = bookings.map(booking => createBookingCard(booking)).join('');
+}
+
+
 
 function createBookingCard(booking) {
     const statusClass = `status-${booking.status}`;
@@ -30,9 +221,6 @@ function createBookingCard(booking) {
             </button>
             <button class="btn-action btn-view" onclick="viewBookingDetails('${booking.id}')">
                 <i class="fas fa-eye"></i> View Details
-            </button>
-            <button class="btn-action btn-contact" onclick="contactCustomer('${escapeHtml(booking.customer.name)}')">
-                <i class="fas fa-phone"></i> Contact
             </button>
             <button class="btn-action btn-decline" onclick="declineBooking('${booking.id}')">
                 <i class="fas fa-times"></i> Decline
@@ -471,33 +659,33 @@ window.onclick = function(event) {
     }
 }
 
-function acceptBooking(bookingId) {
+async function acceptBooking(bookingId) {
     const booking = allBookings.find(b => b.id === bookingId);
     if (booking) {
         booking.status = 'confirmed';
         alert(`Booking ${bookingId} accepted!`);
-        loadBookings();
+        await loadBookings();
     }
 }
 
-function declineBooking(bookingId) {
+async function declineBooking(bookingId) {
     if (confirm('Are you sure you want to decline this booking?')) {
         const booking = allBookings.find(b => b.id === bookingId);
         if (booking) {
             booking.status = 'cancelled';
             alert(`Booking ${bookingId} declined.`);
-            loadBookings();
+            await loadBookings();
         }
     }
 }
 
-function cancelBooking(bookingId) {
+async function cancelBooking(bookingId) {
     if (confirm('Are you sure you want to cancel this booking?')) {
         const booking = allBookings.find(b => b.id === bookingId);
         if (booking) {
             booking.status = 'cancelled';
             alert(`Booking ${bookingId} cancelled.`);
-            loadBookings();
+            await loadBookings();
         }
     }
 }
@@ -518,3 +706,20 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+     // Make functions globally accessible
+     window.toggleMobileMenu = toggleMobileMenu;
+     window.topNavZIndexDecrease = topNavZIndexDecrease;
+     window.showBookingTab = showBookingTab;
+     window.saveAutoSettings = saveAutoSettings;
+     window.acceptBooking = async (bookingId) => {
+        await acceptBooking(bookingId);
+     };
+     window.declineBooking = async (bookingId) => {
+        await declineBooking(bookingId);
+     };
+     window.cancelBooking = async (bookingId) => {
+        await cancelBooking(bookingId);
+     };
+     window.viewBookingDetails = viewBookingDetails;
+     window.contactCustomer = contactCustomer;
+     window.closeBookingModal = closeBookingModal;
