@@ -465,14 +465,15 @@ export const getMyBookings = async (req, res) => {
             FROM booking_passengers bp
             INNER JOIN bookings b ON bp.booking_id = b.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
-            WHERE bp.linked_user_id = ?
+            WHERE bp.booking_passenger_status = 'confirmed' AND bp.linked_user_id = ?
+            AND b.booking_status IN ('pending', 'fully_paid', 'active')
         `;
     const passengerParams = [userId];
 
-    if (status) {
-      passengerQuery += ` AND b.booking_status = ?`;
-      passengerParams.push(status);
-    }
+    // if (status) {
+    //   passengerQuery += ` AND b.booking_status = ?`;
+    //   passengerParams.push(status);
+    // }
 
     const [passengerBookings] = await pool.execute(
       passengerQuery,
@@ -502,14 +503,15 @@ export const getMyBookings = async (req, res) => {
             FROM booking_parcels bp
             INNER JOIN bookings b ON bp.booking_id = b.ID
             LEFT JOIN existing_routes er ON b.existing_route_id = er.id
-            WHERE bp.user_id = ?
+            WHERE bp.status = 'confirmed' AND bp.user_id = ?
+            AND b.booking_status IN ('pending', 'fully_paid', 'active')
         `;
     const parcelParams = [userId];
 
-    if (status) {
-      parcelQuery += ` AND b.booking_status = ?`;
-      parcelParams.push(status);
-    }
+    // if (status) {
+    //   parcelQuery += ` AND b.booking_status = ?`;
+    //   parcelParams.push(status);
+    // }
 
     const [parcelBookings] = await pool.execute(parcelQuery, parcelParams);
 
@@ -1962,6 +1964,8 @@ export const AllBookingsOwner = async (req, res) => {
     const ownerProfileId = ownerProfiles[0].ID;
 
     const allBookings = await bookingModel.listOfAllBookingsOwner(ownerProfileId);
+
+    console.log("all bookings:", allBookings);
     if(allBookings == null || allBookings.length === 0){
       return res.status(400).json({
         success:false,

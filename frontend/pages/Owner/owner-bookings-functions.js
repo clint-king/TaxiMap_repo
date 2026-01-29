@@ -132,8 +132,8 @@ function showBookingTab(tabName) {
 async function loadBookings() {
     // Load comprehensive bookings
 
-    // const allBookingsData = await bookingApi.getAllBookingsOwner();
-    // console.log('allBookingsData:', allBookingsData);
+    const allBookingsData = await bookingApi.getAllBookingsOwner();
+    console.log('allBookingsData:', allBookingsData);
 
 
     allBookings = createComprehensiveBookings();

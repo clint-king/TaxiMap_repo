@@ -7048,8 +7048,8 @@ async function loadUserBookings() {
         routeName: routeName || "Unknown Route",
         status: booking.booking_status, // 'pending', 'confirmed', 'paid', 'cancelled', 'completed', 'refunded'
         bookingType: bookingType, // 'passenger' or 'parcel'
-        passengers: booking.passenger_count || 0,
-        parcels: booking.parcel_count || 0,
+        passengers: (booking.total_seats - booking.total_seats_available) || 0,
+        parcels: (booking.seat_parcel_count + booking.extraspace_count) || 0,
         // Use payment_amount from payments table if available, otherwise fallback to booking total_amount_paid
         totalAmount: parseFloat(
           booking.payment_amount !== undefined
@@ -7080,6 +7080,8 @@ async function loadUserBookings() {
     const upcoming = mappedBookings.filter(
       (b) => b.status === "fully_paid" || b.status === "pending"
     );
+
+    console.log("upcoming bookings:", upcoming);
 
     // History: completed, cancelled, refunded, or confirmed (if not in upcoming)
     const history = mappedBookings.filter(

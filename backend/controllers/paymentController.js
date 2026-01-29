@@ -1938,6 +1938,7 @@ export const handleYocoWebhook = async (req, res) => {
       return res.status(500).send("Webhook secret not configured");
     }
 
+    console.log("Webhook secret:", webhookSecret);
     // ---- VERIFY WEBHOOK USING SVIX ----
     const headers = req.headers;
     const payload = req.body; // MUST be raw Buffer
@@ -1952,6 +1953,7 @@ export const handleYocoWebhook = async (req, res) => {
         "webhook-timestamp": headers["webhook-timestamp"],
         "webhook-signature": headers["webhook-signature"]
       });
+      console.log("Webhook signature verification successful");
     } catch (err) {
       console.error("Webhook signature verification failed:", err.message);
       return res.status(400).send("Invalid signature");
@@ -2048,6 +2050,7 @@ export const handleYocoWebhook = async (req, res) => {
       }
     }
 
+    console.log("Booking ID:", bookingId, "has been updated for payment");
     await connection.commit();
     res.sendStatus(200);
   } catch (err) {
@@ -2056,6 +2059,20 @@ export const handleYocoWebhook = async (req, res) => {
     res.sendStatus(500); // Yoco will retry
   } finally {
     if (connection) connection.release();
+  }
+};
+
+export const failedPaymentWebhook = async (req, res) => {
+  let connection;
+  try {
+    const webhookSecret = configurations.yoco.webhookSecret;
+    if (!webhookSecret) {
+      console.error("YOCO_WEBHOOK_SECRET not configured");
+      return res.status(500).send("Webhook secret not configured");
+    }
+  }catch (err) {
+    console.error("Failed payment webhook error:", err);
+    res.sendStatus(500);
   }
 };
 
