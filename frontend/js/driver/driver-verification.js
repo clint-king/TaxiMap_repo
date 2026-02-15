@@ -301,6 +301,13 @@ async function verifyUnifiedCode(code) {
             } else if (response.type === 'parcel' && response.values) {
                 displayParcelDetails(response.values, detailsDiv, imagesDiv);
             }
+
+            //update markers
+            // if(response.type === 'passenger'){
+            //     removeMarkerByWaypointId(response.id , 'passenger');
+            // }else if(response.type === 'parcel'){
+            //     removeMarkerByWaypointId(response.id , 'parcel');
+            // }
         } else {
             resultDiv.className = 'verification-result error';
             resultDiv.innerHTML = `

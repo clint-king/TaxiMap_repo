@@ -765,10 +765,7 @@ function populateTripStatusFromDatabase(booking) {
         }
     }
     
-    // Update driver proximity after populating trip status
-    setTimeout(() => {
-        updateDriverProximity();
-    }, 500);
+    // Map will be updated via WebSocket in updateMapWithRouteAndVehicle function
 }
 
 // Generate trip share link
@@ -915,6 +912,7 @@ let tripRouteMap = null;
 let pickupMarkers = [];
 let dropoffMarkers = [];
 let routePolyline = null;
+let vehicleMarker = null; // Marker for vehicle position
 
 function initializeTripMap(data, route) {
     const mapContainer = document.getElementById('trip-route-map');
@@ -966,28 +964,48 @@ function initializeTripMap(data, route) {
         centerLng = (route.coordinates.start[0] + route.coordinates.end[0]) / 2;
     }
     
-    // Initialize map
-    tripRouteMap = new google.maps.Map(mapContainer, {
-        center: { lat: centerLat, lng: centerLng },
-        zoom: 12,
-        mapTypeId: 'roadmap',
-        styles: [
-            {
-                featureType: 'poi',
-                elementType: 'labels',
-                stylers: [{ visibility: 'off' }]
-            }
-        ]
-    });
+    // Initialize map (only if it doesn't exist or was destroyed)
+    if (!tripRouteMap || !tripRouteMap.getDiv()) {
+        tripRouteMap = new google.maps.Map(mapContainer, {
+            center: { lat: centerLat, lng: centerLng },
+            zoom: 12,
+            mapTypeId: 'roadmap',
+            styles: [
+                {
+                    featureType: 'poi',
+                    elementType: 'labels',
+                    stylers: [{ visibility: 'off' }]
+                }
+            ]
+        });
+        console.log('🗺️ [PASSENGER] Map initialized');
+    } else {
+        // Map already exists - don't change center/zoom to avoid interrupting user's view
+        // User might be tracking the vehicle and we don't want to zoom out
+        console.log('🗺️ [PASSENGER] Map already exists, preserving current view');
+    }
     
-    // Clear existing markers
+    // Clear existing markers (but preserve vehicleMarker and routePolyline - they're updated separately)
     pickupMarkers.forEach(marker => marker.setMap(null));
     dropoffMarkers.forEach(marker => marker.setMap(null));
     pickupMarkers = [];
     dropoffMarkers = [];
     
-    if (routePolyline) {
+    // Don't remove route polyline - it's updated separately via WebSocket
+    // Only remove if we're creating a completely new map (not just updating)
+    const mapWasRecreated = !tripRouteMap || !tripRouteMap.getDiv();
+    if (mapWasRecreated && routePolyline) {
         routePolyline.setMap(null);
+    }
+    
+    // If vehicleMarker exists, update its map reference to the new map instance
+    if (vehicleMarker) {
+        vehicleMarker.setMap(tripRouteMap);
+    }
+    
+    // If routePolyline exists and map was recreated, reattach it
+    if (routePolyline && mapWasRecreated) {
+        routePolyline.setMap(tripRouteMap);
     }
     
     // Add pickup markers
@@ -1064,8 +1082,10 @@ function initializeTripMap(data, route) {
         });
     }
     
-    // Fit bounds to show all markers
-    if (pickupMarkers.length > 0 || dropoffMarkers.length > 0) {
+    // Only fit bounds on initial map creation, not on updates
+    // This prevents zoom changes when user is tracking the vehicle
+    const mapIsNew = !tripRouteMap || !tripRouteMap.getDiv();
+    if (mapIsNew && (pickupMarkers.length > 0 || dropoffMarkers.length > 0)) {
         tripRouteMap.fitBounds(bounds);
         // Add some padding
         const listener = google.maps.event.addListener(tripRouteMap, 'bounds_changed', () => {
@@ -1073,6 +1093,148 @@ function initializeTripMap(data, route) {
             google.maps.event.removeListener(listener);
         });
     }
+}
+
+// Update map with route and vehicle position from WebSocket
+function updateMapWithRouteAndVehicle(data) {
+    console.log('🗺️ [PASSENGER] Updating map with route and vehicle position...');
+    
+    if (!tripRouteMap) {
+        console.warn('⚠️ [PASSENGER] Map not initialized yet, waiting...');
+        // Try to initialize map if it doesn't exist
+        setTimeout(() => updateMapWithRouteAndVehicle(data), 500);
+        return;
+    }
+
+    // Parse vehicle position
+    let vehiclePosition = null;
+    if (data.vehiclePosition) {
+        try {
+            // vehiclePosition might be a string (JSON) or object
+            if (typeof data.vehiclePosition === 'string') {
+                vehiclePosition = JSON.parse(data.vehiclePosition);
+            } else {
+                vehiclePosition = data.vehiclePosition;
+            }
+            
+            // Handle different formats: {lat, lng} or {position: {lat, lng}}
+            if (vehiclePosition.position) {
+                vehiclePosition = vehiclePosition.position;
+            }
+            
+            console.log('📍 [PASSENGER] Parsed vehicle position:', vehiclePosition);
+        } catch (error) {
+            console.error('❌ [PASSENGER] Error parsing vehicle position:', error);
+            return;
+        }
+    }
+
+    // Parse route points
+    let routePoints = null;
+    if (data.routePoints) {
+        try {
+            // routePoints might be a string (JSON) or array
+            if (typeof data.routePoints === 'string') {
+                routePoints = JSON.parse(data.routePoints);
+            } else {
+                routePoints = data.routePoints;
+            }
+            
+            console.log('🛣️ [PASSENGER] Parsed route points:', routePoints?.length || 0, 'points');
+        } catch (error) {
+            console.error('❌ [PASSENGER] Error parsing route points:', error);
+        }
+    }
+
+    // Only draw/update route polyline if new route points are available
+    // Don't remove existing route if no new route data is received
+    if (routePoints && Array.isArray(routePoints) && routePoints.length > 0) {
+        // Convert route points to Google Maps LatLng format
+        const path = routePoints.map(point => {
+            // Handle different formats
+            const lat = point.lat || point.position?.lat || (typeof point.lat === 'function' ? point.lat() : null);
+            const lng = point.lng || point.position?.lng || (typeof point.lng === 'function' ? point.lng() : null);
+            
+            if (lat && lng) {
+                return new google.maps.LatLng(lat, lng);
+            }
+            return null;
+        }).filter(point => point !== null);
+
+        if (path.length > 0) {
+            // Remove existing polyline only when we have new route data
+            if (routePolyline) {
+                routePolyline.setMap(null);
+            }
+
+            // Create new polyline for the route
+            routePolyline = new google.maps.Polyline({
+                path: path,
+                geodesic: true,
+                strokeColor: '#4285F4', // Google Blue
+                strokeOpacity: 0.8,
+                strokeWeight: 4,
+                map: tripRouteMap
+            });
+
+            console.log('✅ [PASSENGER] Route polyline drawn with', path.length, 'points');
+        }
+    } else if (data.routePoints === null || data.routePoints === undefined) {
+        // Only log if routePoints is explicitly null/undefined (not just missing)
+        // Don't remove existing route - keep it visible
+        console.log('ℹ️ [PASSENGER] No route points in this update, keeping existing route');
+    }
+
+    // Update or create vehicle marker
+    if (vehiclePosition && vehiclePosition.lat && vehiclePosition.lng) {
+        const vehicleLatLng = new google.maps.LatLng(vehiclePosition.lat, vehiclePosition.lng);
+
+        if (vehicleMarker) {
+            // Update existing marker position and ensure it's on the map
+            vehicleMarker.setPosition(vehicleLatLng);
+            // Ensure marker is still on the map (in case map was reinitialized)
+            if (!vehicleMarker.getMap()) {
+                vehicleMarker.setMap(tripRouteMap);
+                console.log('📍 [PASSENGER] Vehicle marker reattached to map');
+            }
+            console.log('📍 [PASSENGER] Vehicle marker position updated');
+        } else {
+            // Create new vehicle marker
+            vehicleMarker = new google.maps.Marker({
+                position: vehicleLatLng,
+                map: tripRouteMap,
+                title: 'Vehicle Location',
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 12,
+                    fillColor: '#FF0000', // Red
+                    fillOpacity: 1,
+                    strokeColor: '#FFFFFF',
+                    strokeWeight: 3
+                },
+                animation: google.maps.Animation.DROP,
+                zIndex: 1000 // Ensure it's on top
+            });
+
+            // Add info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: '<div style="padding: 0.5rem;"><strong>🚗 Vehicle Location</strong><br>Driver is here</div>'
+            });
+
+            vehicleMarker.addListener('click', () => {
+                infoWindow.open(tripRouteMap, vehicleMarker);
+            });
+
+            console.log('✅ [PASSENGER] Vehicle marker created');
+        }
+
+        // Don't auto-center or change zoom - let user control the view
+        // User might be tracking the vehicle and we don't want to interrupt their view
+    } else {
+        console.warn('⚠️ [PASSENGER] Invalid vehicle position:', vehiclePosition);
+    }
+
+    console.log('✅ [PASSENGER] Map update complete');
 }
 
 // Display booking details (seat or parcels)
@@ -1244,190 +1406,56 @@ function requestRefund(bookingId, amount) {
 }
 
 
-// Show demo proximity data (for UI preview)
-function showDemoProximityData() {
-    const proximityCard = document.getElementById('driver-proximity-card');
-    if (!proximityCard) return;
-    
-    // Always show the card for demo purposes
-    proximityCard.style.display = 'block';
-    
-    // Demo data - showing 65% progress
-    const demoPercentage = 0;
-    const demoRemainingDistance = 4.0; // km
-    const demoHasPassed = false;
-    
-    const progressFill = document.getElementById('proximity-progress-fill');
-    const progressPercentage = document.getElementById('proximity-percentage');
-    const remainingDistance = document.getElementById('remaining-distance');
-    const proximityMessage = document.getElementById('proximity-message');
-    
-    if (progressFill) {
-        progressFill.style.width = `${demoPercentage}%`;
-        const progressText = progressFill.querySelector('.progress-text');
-        if (progressText) {
-            progressText.textContent = `${demoPercentage}%`;
-        }
-        
-        if (demoHasPassed) {
-            progressFill.classList.add('has-passed');
-        } else {
-            progressFill.classList.remove('has-passed');
-        }
-    }
-    
-    if (progressPercentage) {
-        progressPercentage.textContent = `${demoPercentage}%`;
-    }
-    
-    if (remainingDistance) {
-        remainingDistance.textContent = demoRemainingDistance.toFixed(2);
-    }
-    
-    if (proximityMessage) {
-        const distanceMeters = Math.round(demoRemainingDistance * 1000);
-        proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location`;
-        proximityMessage.style.color = '#666';
-    }
-}
+// Driver proximity card removed - using visual map instead
 
 // Update UI with proximity data
-function updateProximityUI(response) {
-    const proximityCard = document.getElementById('driver-proximity-card');
-    if (!proximityCard) return;
-    
-    proximityCard.style.display = 'block';
-    
-    const percentage = response.percentage || 0;
-    const progressFill = document.getElementById('proximity-progress-fill');
-    const progressPercentage = document.getElementById('proximity-percentage');
-    const remainingDistance = document.getElementById('remaining-distance');
-    const proximityMessage = document.getElementById('proximity-message');
-    
-    if (progressFill) {
-        progressFill.style.width = `${percentage}%`;
-        const progressText = progressFill.querySelector('.progress-text');
-        if (progressText) {
-            progressText.textContent = `${Math.round(percentage)}%`;
-        }
-        
-        if (response.hasPassed) {
-            progressFill.classList.add('has-passed');
-        } else {
-            progressFill.classList.remove('has-passed');
-        }
-    }
-    
-    if (progressPercentage) {
-        progressPercentage.textContent = `${Math.round(percentage)}%`;
-    }
-    
-    if (remainingDistance) {
-        const distance = response.remainingDistance || 0;
-        if (response.hasPassed) {
-            remainingDistance.textContent = '0';
-        } else {
-            remainingDistance.textContent = distance.toFixed(2);
-        }
-    }
-    
-    if (proximityMessage) {
-        if (response.hasPassed) {
-            proximityMessage.textContent = "Vehicle has passed your pickup location";
-            proximityMessage.style.color = '#dc3545';
-        } else {
-            const distanceMeters = Math.round((response.remainingDistance || 0) * 1000);
-            //proximityMessage.textContent = `Driver is ${distanceMeters} meters away from your pickup location `;
-            proximityMessage.textContent = `Trip has not yet started `;
-            proximityMessage.style.color = '#666';
-        }
-    }
-}
+// Distance calculation functions removed - using visual map with WebSocket for real-time tracking instead
 
-// Update driver proximity progress bar
-async function updateDriverProximity() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const bookingId = urlParams.get('bookingId');
-    const passengerRecordId = urlParams.get('passengerRecordId');
-    const parcelRecordId = urlParams.get('parcelRecordId');
-    const urlBookingType = urlParams.get('bookingType'); // 'passenger' or 'parcel'
-    
-    const proximityCard = document.getElementById('driver-proximity-card');
-    if (!proximityCard) return;
-    
-    // Show demo data if no bookingId or bookingType (for UI preview)
-    if (!bookingId || !urlBookingType) {
-        showDemoProximityData();
-        return;
-    }
-    
-    // Determine IDs based on booking type
-    const passengerId = urlBookingType === 'passenger' ? passengerRecordId : null;
-    const parcelId = urlBookingType === 'parcel' ? parcelRecordId : null;
-    
-    try {
-        const response = await trackingApi.getCalculatedDistance(
-            bookingId,
-            passengerId,
-            parcelId,
-            urlBookingType
-        );
-        
-        if (response.success) {
-            updateProximityUI(response);
-        } else {
-            // Show demo data if API call failed
-            showDemoProximityData();
-        }
-    } catch (error) {
-        console.error('Error updating driver proximity:', error);
-        // Show demo data on error so user can see the UI
-        showDemoProximityData();
-    }
-}
-
-// Setup WebSocket listeners for real-time updates
+// SIMPLIFIED: Setup WebSocket listeners for real-time updates
 function setupWebSocketListeners(bookingId) {
+    console.log('🚀 [PASSENGER] Setting up WebSocket listeners for booking:', bookingId);
+    
     if (!bookingId) {
-        console.log('No bookingId, skipping WebSocket setup');
+        console.error('❌ [PASSENGER] No bookingId, skipping WebSocket setup');
         return;
     }
 
-    // Initialize socket connection
+    // Step 1: Initialize socket connection
+    console.log('📡 [PASSENGER] Step 1: Initializing socket connection...');
     socketService.initSocket();
 
-    // Join booking room
+    // Step 2: Join booking room
+    console.log('📡 [PASSENGER] Step 2: Joining booking room...');
     socketService.joinBookingRoom(bookingId, (response) => {
-        console.log('Joined booking room for real-time updates');
+        console.log('✅ [PASSENGER] Successfully joined booking room:', response);
     });
 
-    // Listen for distance updates via WebSocket (real-time)
-    socketService.onDistanceUpdate((data) => {
-        if (data.bookingId === bookingId && data.success) {
-            console.log('Received real-time distance update:', data);
-            updateProximityUI(data);
-        }
-    });
-
-    // Listen for vehicle position updates
+    // Step 3: Listen for vehicle position updates and update map
+    console.log('📡 [PASSENGER] Step 3: Setting up vehicle position listener...');
     socketService.onVehiclePositionUpdate((data) => {
-        if (data.bookingId === bookingId) {
-            console.log('Received vehicle position update:', data);
-            // Trigger distance recalculation by calling API
-            // The API will broadcast the result via WebSocket
-            const urlParams = new URLSearchParams(window.location.search);
-            const passengerRecordId = urlParams.get('passengerRecordId');
-            const parcelRecordId = urlParams.get('parcelRecordId');
-            const urlBookingType = urlParams.get('bookingType');
+        console.log('🎉 [PASSENGER] ⭐ RECEIVED VEHICLE POSITION UPDATE ⭐');
+        console.log('🎉 [PASSENGER] Full data received:', JSON.stringify(data, null, 2));
+        
+        // Convert both bookingIds to strings for comparison (URL params return strings)
+        const receivedBookingId = String(data.bookingId || '');
+        const expectedBookingId = String(bookingId || '');
+        
+        if (receivedBookingId === expectedBookingId) {
+            console.log('✅ [PASSENGER] Booking ID matches! Processing update...');
+            console.log('📍 [PASSENGER] Vehicle Position:', data.vehiclePosition);
+            console.log('🛣️ [PASSENGER] Route Points type:', typeof data.routePoints);
+            console.log('🛣️ [PASSENGER] Route Points:', data.routePoints);
+            console.log('🛣️ [PASSENGER] Route Points length:', Array.isArray(data.routePoints) ? data.routePoints.length : 'not an array');
+            console.log('👤 [PASSENGER] Driver ID:', data.driverId);
             
-            const passengerId = urlBookingType === 'passenger' ? passengerRecordId : null;
-            const parcelId = urlBookingType === 'parcel' ? parcelRecordId : null;
-            
-            // Request distance update (it will be broadcasted via WebSocket)
-            trackingApi.getCalculatedDistance(bookingId, passengerId, parcelId, urlBookingType)
-                .catch(error => console.error('Error requesting distance update:', error));
+            // Update map with route and vehicle position
+            updateMapWithRouteAndVehicle(data);
+        } else {
+            console.warn('⚠️ [PASSENGER] Booking ID mismatch. Expected:', expectedBookingId, '(type:', typeof bookingId, ') Got:', receivedBookingId, '(type:', typeof data.bookingId, ')');
         }
     });
+    
+    console.log('✅ [PASSENGER] WebSocket setup complete!');
 }
 
 // Cleanup WebSocket on page unload
@@ -1442,9 +1470,6 @@ window.addEventListener('beforeunload', () => {
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    // Show demo proximity card immediately for UI preview
-    showDemoProximityData();
-    
     await loadTripData();
     
     // Get booking ID for WebSocket setup
@@ -1453,27 +1478,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlBookingType = urlParams.get('bookingType');
     
     // Setup WebSocket for real-time updates if we have bookingId
-    if (bookingId && urlBookingType) {
+    if (bookingId) {
         setupWebSocketListeners(bookingId);
-        
-        // Initial distance calculation (subsequent updates via WebSocket)
-        await updateDriverProximity();
-    } else {
-        // No booking ID, keep showing demo data
-        showDemoProximityData();
     }
     
     // Fallback: Refresh trip data every 30 seconds (WebSocket is primary)
     setInterval(() => {
-        loadTripData();
-    }, 30000);
-    
-    // Fallback: Refresh driver proximity every 30 seconds if WebSocket fails
-    // (WebSocket should handle real-time updates)
-    setInterval(() => {
-        if (bookingId && urlBookingType && !socketService.isSocketConnected()) {
-            console.warn('WebSocket disconnected, using polling fallback');
-            updateDriverProximity();
+        if (bookingId) {
+            loadTripData();
         }
     }, 30000);
 });

@@ -16,6 +16,14 @@ export async function handleLogout() {
     localStorage.removeItem("userProfile");
     localStorage.removeItem("userType");
     localStorage.removeItem("activityLog");
+    
+    // Clear payment processing data to prevent showing processing state for different users
+    localStorage.removeItem("yocoRedirectData");
+    sessionStorage.removeItem("yocoRedirectData");
+    sessionStorage.removeItem("yocoPaymentId");
+    sessionStorage.removeItem("yocoRedirectBookingId");
+    sessionStorage.removeItem("yocoPaymentToken");
+    sessionStorage.removeItem("yocoPaymentResponse");
 
     // Redirect to home page
     window.location.href = "/index.html";

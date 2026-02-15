@@ -4393,33 +4393,49 @@ function handleParcelImageUploadPublic(parcelNumber, input) {
     );
     previewContainer.innerHTML = "";
 
-    // Store the file references
-    parcelData[parcelNumber].images = Array.from(input.files);
+    // Initialize images array if it doesn't exist
+    if (!parcelData[parcelNumber].images) {
+      parcelData[parcelNumber].images = [];
+    }
 
-    // Display previews
-    Array.from(input.files).forEach((file, index) => {
+    // Convert File objects to base64 strings and store them
+    const files = Array.from(input.files);
+    const imagePromises = files.map((file, index) => {
+      return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = function (e) {
+          const base64 = e.target.result;
+          
+          // Store base64 string instead of File object
+          parcelData[parcelNumber].images.push(base64);
+          
+          // Display preview
         const imgWrapper = document.createElement("div");
         imgWrapper.style.position = "relative";
         imgWrapper.innerHTML = `
-                    <img src="${
-                      e.target.result
-                    }" class="parcel-image-preview-public" alt="Parcel ${parcelNumber} Image ${
-          index + 1
-        }">
-                    <button type="button" onclick="removeParcelImagePublic(${parcelNumber}, ${index})" 
+                    <img src="${base64}" class="parcel-image-preview-public" alt="Parcel ${parcelNumber} Image ${index + 1}">
+                    <button type="button" onclick="removeParcelImagePublic(${parcelNumber}, ${parcelData[parcelNumber].images.length - 1})" 
                         style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                         <i class="ri-close-line"></i>
                     </button>
                 `;
         previewContainer.appendChild(imgWrapper);
+          
+          resolve(base64);
+        };
+        reader.onerror = function (error) {
+          console.error("Error reading image file:", error);
+          resolve(null);
       };
       reader.readAsDataURL(file);
+      });
     });
 
+    // Wait for all images to be converted
+    Promise.all(imagePromises).then(() => {
     // Update button state after image upload
     updateContinueButtonState();
+    });
   }
 }
 
@@ -5910,6 +5926,7 @@ function getBookingAmount() {
     return { success: false };
   }
 
+
   // Get route name for description
   const routeName =
     document.getElementById("summary-route")?.textContent || "Booking Payment";
@@ -6177,15 +6194,40 @@ async function completePaymentInBooking() {
 
     // Prepare parcel data array with all parcel information
     const parcelsArray = [];
+    // Convert parcel images from File objects to base64 strings
     for (let i = 1; i <= parcelCount; i++) {
       const parcel = parcelDataFromStorage[i];
       if (parcel && parcel.size) {
-        parcelsArray.push({
+        // Images are already stored as base64 strings in sessionStorage
+        // Just filter out any invalid entries
+        let imagesBase64 = [];
+        if (parcel.images && Array.isArray(parcel.images) && parcel.images.length > 0) {
+          // Filter out null, undefined, empty strings, and invalid entries
+          imagesBase64 = parcel.images.filter(img => 
+            img && 
+            typeof img === 'string' && 
+            img.length > 0 && 
+            (img.startsWith('data:image/') || img.startsWith('http'))
+          );
+          console.log(`Parcel ${i}: Found ${imagesBase64.length} valid images out of ${parcel.images.length} total`);
+        } else {
+          console.warn(`Parcel ${i}: No images found or images is not an array`, parcel.images);
+        }
+        
+        const parcelObj = {
           size: parcel.size || "small",
           weight: parcel.weight || null,
-          images: parcel.images || [],
+          images: imagesBase64, // Array of base64 strings
           isSeatParcel: parcel.isSeatParcel || false,
+        };
+        
+        console.log(`Parcel ${i} object before push:`, {
+          size: parcelObj.size,
+          imagesCount: parcelObj.images.length,
+          imagesPreview: parcelObj.images.length > 0 ? parcelObj.images[0].substring(0, 50) + '...' : 'empty'
         });
+        
+        parcelsArray.push(parcelObj);
       }
     }
 
@@ -7877,6 +7919,62 @@ function initializePaymentMethods() {
  * Detect redirect back from Yoco hosted checkout and show the payment step.
  * Looks for bookingId / yoco_success / paymentId params and ensures the payment UI is shown.
  */
+/**
+ * Clears payment redirect data if it doesn't belong to the current user
+ * This prevents showing processing state for a different user after logout/login
+ */
+function clearInvalidPaymentData() {
+  try {
+    const raw = localStorage.getItem("yocoRedirectData");
+    if (!raw) return;
+    
+    const data = JSON.parse(raw);
+    
+    // Get current user ID
+    const userProfileString = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile");
+    let currentUserId = null;
+    if (userProfileString) {
+      try {
+        const userProfile = JSON.parse(userProfileString);
+        currentUserId = userProfile.id || userProfile.ID;
+      } catch (e) {
+        console.warn("Failed to parse user profile:", e);
+      }
+    }
+    
+    // If no user is logged in, clear all payment data
+    if (!currentUserId) {
+      console.log("No user logged in. Clearing all payment redirect data.");
+      localStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoPaymentId");
+      sessionStorage.removeItem("yocoRedirectBookingId");
+      sessionStorage.removeItem("yocoPaymentToken");
+      sessionStorage.removeItem("yocoPaymentResponse");
+      return;
+    }
+    
+    // If user IDs don't match, clear the redirect data
+    if (data.userId && String(data.userId) !== String(currentUserId)) {
+      console.log("Payment redirect data belongs to different user. Clearing data.", {
+        storedUserId: data.userId,
+        currentUserId: currentUserId
+      });
+      localStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoPaymentId");
+      sessionStorage.removeItem("yocoRedirectBookingId");
+      sessionStorage.removeItem("yocoPaymentToken");
+      sessionStorage.removeItem("yocoPaymentResponse");
+    }
+  } catch (e) {
+    console.warn("Error checking payment data ownership:", e);
+    // On error, clear data to be safe
+    localStorage.removeItem("yocoRedirectData");
+    sessionStorage.removeItem("yocoRedirectData");
+  }
+}
+
 function captureYocoRedirectParams() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -7891,6 +7989,17 @@ function captureYocoRedirectParams() {
     console.log(`BookingId : ${bookingId}, PaymentID : ${paymentId}, Booking_type : ${bookingType}, PassengerID : ${passengerId}, ParcelID : ${parcelId}`);
 
     if (bookingId && paymentId && bookingType && (passengerId || parcelId)) {
+      // Get current user ID to associate payment with user
+      const userProfileString = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile");
+      let userId = null;
+      if (userProfileString) {
+        try {
+          const userProfile = JSON.parse(userProfileString);
+          userId = userProfile.id || userProfile.ID;
+        } catch (e) {
+          console.warn("Failed to parse user profile:", e);
+        }
+      }
        
       localStorage.setItem(
         "yocoRedirectData",
@@ -7899,11 +8008,12 @@ function captureYocoRedirectParams() {
           paymentId,
           bookingType,
           passengerId,
-          parcelId
+          parcelId,
+          userId // Store user ID to verify ownership later
         })
       );
 
-      console.log("yocoRedirectData was stored as a sessionStorage");
+      console.log("yocoRedirectData was stored with userId:", userId);
       const cleanUrl =
         window.location.origin +
         window.location.pathname +
@@ -8020,6 +8130,41 @@ async function processPendingYocoRedirect() {
     const raw = localStorage.getItem("yocoRedirectData");
     if (!raw) return;
     const data = JSON.parse(raw);
+
+    // Verify that the payment belongs to the current user
+    const userProfileString = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile");
+    let currentUserId = null;
+    if (userProfileString) {
+      try {
+        const userProfile = JSON.parse(userProfileString);
+        currentUserId = userProfile.id || userProfile.ID;
+      } catch (e) {
+        console.warn("Failed to parse user profile:", e);
+      }
+    }
+
+    // If user IDs don't match, clear the redirect data and return
+    if (data.userId && currentUserId && String(data.userId) !== String(currentUserId)) {
+      console.log("Payment redirect data belongs to different user. Clearing data.", {
+        storedUserId: data.userId,
+        currentUserId: currentUserId
+      });
+      localStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoPaymentId");
+      sessionStorage.removeItem("yocoRedirectBookingId");
+      return;
+    }
+
+    // If no user is logged in, clear the redirect data
+    if (!currentUserId) {
+      console.log("No user logged in. Clearing payment redirect data.");
+      localStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoRedirectData");
+      sessionStorage.removeItem("yocoPaymentId");
+      sessionStorage.removeItem("yocoRedirectBookingId");
+      return;
+    }
 
     console.log("In processPendingYocoRedirect for yocoRedirectData : " , data);
     const bookingId = data.bookingId || sessionStorage.getItem("yocoRedirectBookingId");
@@ -8213,6 +8358,9 @@ captureYocoRedirectParams();
 // Ensure we process the redirect after route cards (pendingBookings) are loaded.
 // populateRouteCards() is called on DOMContentLoaded; schedule processing after a short delay
 document.addEventListener("DOMContentLoaded", function () {
+  // Clear payment redirect data if it doesn't belong to current user
+  clearInvalidPaymentData();
+  
   // Give async population time to finish; adjust timeout if needed
   setTimeout(() => {
     processPendingYocoRedirect();
@@ -8222,6 +8370,9 @@ document.addEventListener("DOMContentLoaded", function () {
 // ...existing code...
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Clear payment redirect data if it doesn't belong to current user (before any processing)
+  clearInvalidPaymentData();
+  
   // Initialize payment methods visibility
   initializePaymentMethods();
   populateRouteCards(); // Generate route cards dynamically from routes object

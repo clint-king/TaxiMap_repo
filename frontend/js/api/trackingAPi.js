@@ -14,6 +14,7 @@ function getGeocoder() {
  const BookingStatus = {
     PENDING: "pending",
     CONFIRMED: "confirmed",
+    PICKED_UP: "picked_up",
     IN_TRANSIT: "in_transit",
     DROPPED_OFF: "dropped-off",
     CANCELLED: "cancelled"
@@ -41,7 +42,7 @@ export const getBookingWaypoints = async (bookingID) => {
         const pickup_coordinatesOnly = fullInfo_pickup_Waypoints.map(waypoint => {
             let stopOverValue = false;
 
-            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT){
+            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT  ){
                 stopOverValue = true;
             }
 
@@ -50,7 +51,9 @@ export const getBookingWaypoints = async (bookingID) => {
                     lat: waypoint.position.lat,
                     lng: waypoint.position.lng
                 },
-                stopOverValue: stopOverValue
+                stopOverValue: stopOverValue,
+                id: waypoint.id,
+                type: waypoint.type
             };
     });
 
@@ -58,7 +61,7 @@ export const getBookingWaypoints = async (bookingID) => {
         const dropoff_coordinatesOnly = fullInfo_dropoff_Waypoints.map(waypoint => {
             let stopOverValue = false;
 
-            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT ){
+            if(waypoint.status == BookingStatus.PENDING || waypoint.status == BookingStatus.CONFIRMED || waypoint.status == BookingStatus.IN_TRANSIT || waypoint.status == BookingStatus.PICKED_UP){
                 stopOverValue = true;
             }
             return {
@@ -66,7 +69,9 @@ export const getBookingWaypoints = async (bookingID) => {
                     lat: waypoint.position.lat,
                     lng: waypoint.position.lng
                 },
-                stopOverValue: stopOverValue
+                stopOverValue: stopOverValue,
+                id: waypoint.id,
+                type: waypoint.type
             };
         });
 
@@ -84,8 +89,36 @@ export const getBookingWaypoints = async (bookingID) => {
         console.error("Error fetching booking waypoints:", error);
         throw error;
     }
-
 }
+
+/**
+ * Confirm dropoff for a passenger
+ * Re-checks distance on backend before finalizing
+ * Only for passengers (parcels are not checked by geofence)
+ * @param {number} bookingId - The booking ID
+ * @param {number} passengerId - Passenger ID
+ * @returns {Promise<Object>} Response with success status and distance
+ */
+export const confirmDropoff = async (bookingId, passengerId) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/api/tracking/confirm-dropoff`,
+            {
+                bookingId: bookingId,
+                passengerId: passengerId
+            }
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Could not confirm dropoff");
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error("Error confirming dropoff:", error);
+        throw error;
+    }
+};
 
 export const getDefaultSourceAndDestCoords = async (bookingID) => {
     try {
@@ -164,35 +197,7 @@ function getSourceInSouthAfrica(text) {
   });
 }
 
-/**
- * Get calculated distance between vehicle and passenger/parcel pickup location
- * @param {number} bookingId - The booking ID
- * @param {number} passengerId - Passenger ID (if bookingType is 'passenger')
- * @param {number} parcelId - Parcel ID (if bookingType is 'parcel')
- * @param {string} bookingType - 'passenger' or 'parcel'
- * @returns {Promise<Object>} Response with percentage, remainingDistance, hasPassed, etc.
- */
-export const getCalculatedDistance = async (bookingId, passengerId, parcelId, bookingType) => {
-    try {
-        const response = await axios.post(
-            `${BASE_URL}/api/tracking/${bookingId}/distance`,
-            {
-                passengerId: passengerId || null,
-                parcelId: parcelId || null,
-                bookingType: bookingType
-            }
-        );
-
-        if (!response.data.success) {
-            throw new Error(response.data.message || "Could not calculate distance");
-        }
-
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching calculated distance:", error);
-        throw error;
-    }
-};
+// Distance calculation API removed - using visual map with WebSocket for real-time tracking instead
 
 export const getBookingDetails = async (bookingId) => {
     try {
@@ -217,3 +222,35 @@ export const getPickupDropoffInfo = async (bookingId) => {
         throw error;
     }
 }
+
+/**
+ * Update vehicle position for real-time tracking
+ * @param {number} bookingId - The booking ID
+ * @param {Object} vehiclePosition - { lat, lng } coordinates
+ * @param {Array} fullPathCoords - Optional array of route coordinates
+ * @returns {Promise<Object>} Response with success status
+ */
+export const updateVehiclePosition = async (bookingId, vehiclePosition, fullPathCoords = null) => {
+    try {
+        console.log('🚗 [DRIVER] Sending vehicle position update:', { bookingId, vehiclePosition });
+        
+        const response = await axios.post(
+            `${BASE_URL}/api/tracking/update-position`,
+            {
+                bookingId: bookingId,
+                vehiclePosition: JSON.stringify(vehiclePosition),
+                fullPathCoords: fullPathCoords ? JSON.stringify(fullPathCoords) : null
+            }
+        );
+
+        if (response.data.success) {
+            console.log('✅ [DRIVER] Vehicle position updated successfully');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('❌ [DRIVER] Error updating vehicle position:', error);
+        // Don't throw - we don't want to stop simulation if API call fails
+        return { success: false, error: error.message };
+    }
+};

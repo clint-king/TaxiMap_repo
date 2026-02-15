@@ -158,7 +158,7 @@ export const verifyPassengerOrParcelPickUpCode = async(req,res)=>{
     }
 
     if(codeSearch){
-        const update_status = await passengerModels.updateStatus(codeSearch.ID , 'confirmed');
+        const update_status = await passengerModels.updateStatus(codeSearch.ID , 'picked_up');
         if(!update_status){
             return res.status(400).json(
                 {
@@ -169,7 +169,7 @@ export const verifyPassengerOrParcelPickUpCode = async(req,res)=>{
         }
     }
     if(codeSearchParcel){
-        const update_status = await parcelModels.updateStatus(codeSearchParcel.ID , 'confirmed');
+        const update_status = await parcelModels.updateStatus(codeSearchParcel.ID , 'picked_up');
         if(!update_status){
             return res.status(400).json(
                 {
@@ -184,6 +184,7 @@ export const verifyPassengerOrParcelPickUpCode = async(req,res)=>{
         return res.status(201).json(
             {
                 success:true,
+                id: codeSearch.ID,
                 type: "passenger",
                 message:"Code verified successfully",
                 values: {
@@ -214,6 +215,7 @@ export const verifyPassengerOrParcelPickUpCode = async(req,res)=>{
         return res.status(201).json(
             {
                 success:true,
+                id: codeSearchParcel.ID,
                 type: "parcel",
                 message:"Code verified successfully",
                 values: {

@@ -58,10 +58,10 @@ const getPickupDropoffInfo = async (bookingId) =>{
     try{
         db = await poolDb.getConnection();
         const [bookingPassengers] = await db.execute(`SELECT * FROM booking_passengers 
-            WHERE booking_id = ? AND booking_passenger_status = 'confirmed'` , [bookingId]);
+            WHERE booking_id = ? AND booking_passenger_status = 'confirmed' OR booking_passenger_status = 'picked_up'` , [bookingId]);
 
         const [bookingParcels] = await db.execute(`SELECT * FROM 
-            booking_parcels WHERE booking_id = ? AND status IN ('confirmed', 'in_transit')` , [bookingId]);
+            booking_parcels WHERE booking_id = ? AND status IN ('confirmed', 'in_transit', 'picked_up')` , [bookingId]);
 
         if(bookingPassengers.length === 0 && bookingParcels.length === 0){
             return null;
@@ -72,6 +72,8 @@ const getPickupDropoffInfo = async (bookingId) =>{
 
         if(bookingPassengers.length > 0){
             bookingPassengers.forEach(passenger =>{
+
+                if(passenger.booking_passenger_status !== 'picked_up' && passenger.booking_passenger_status !== 'in_transit'){
                 listOfPickUpInfo.push({
                     type: 'passenger',
                     id: passenger.ID,
@@ -81,6 +83,8 @@ const getPickupDropoffInfo = async (bookingId) =>{
                     pickup_point: passenger.pickup_point,
                     pickup_address: passenger.pickup_address
                 });
+            }
+
 
                 listOfDropOffInfo.push({
                     type: 'passenger',
@@ -96,6 +100,8 @@ const getPickupDropoffInfo = async (bookingId) =>{
 
         if(bookingParcels.length > 0){
             bookingParcels.forEach(parcel =>{
+
+                if(parcel.status !== 'picked_up' && parcel.status !== 'in_transit'){
                 listOfPickUpInfo.push({
                     type: 'parcel',
                     id: parcel.ID,
@@ -105,6 +111,8 @@ const getPickupDropoffInfo = async (bookingId) =>{
                     pickup_point: parcel.pickup_point,
                     pickup_address: parcel.pickup_address
                 });
+
+            }
 
                 listOfDropOffInfo.push({
                     type: 'parcel',
@@ -177,6 +185,7 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
             JOIN users u_driver ON dp.user_id = u_driver.ID
             WHERE b.owner_id = ? ORDER BY b.scheduled_pickup ASC;` , [ownerProfileId]);
 
+
             if(!getBookings || getBookings.length === 0){
                 return null;
             }
@@ -184,10 +193,10 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
             //get pssengers and parcels per booking
             let listOfBookings = [];
            
-            getBookings.forEach( async (booking) =>{
+            for (const booking of getBookings) {
                 let listOfPassengers = [];
                 let listOfParcels = [];
-                const [passengers] = await db.execute(`SELECT * FROM booking_passengers WHERE booking_id = ?` , [booking.booking_id]);
+                const [passengers] = await db.execute(`SELECT * FROM booking_passengers WHERE booking_passenger_status = 'confirmed' AND booking_id = ?` , [booking.booking_id]);
                 const [parcels] = await db.execute(`SELECT 
                     booking_parcels.ID as parcel_booking_id,
                     p.ID as parcel_id,
@@ -206,7 +215,9 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
                     booking_parcels.dropoff_address as parcel_dropoff_address
                     FROM booking_parcels
                     LEFT JOIN parcel p ON p.booking_parcels_id = booking_parcels.ID
-                    WHERE booking_parcels.booking_id = ?` , [booking.booking_id]);
+                    WHERE booking_parcels.booking_id = ? AND booking_parcels.status = 'confirmed' ` , [booking.booking_id]);
+
+            
 
                 if(passengers && passengers.length > 0){
                     passengers.forEach(passenger =>{
@@ -224,23 +235,48 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
                 }
              
                 if(parcels && parcels.length > 0){
-                    parcels.forEach(parcel =>{
+                    for (const parcel of parcels) {
+                        // Parse and clean parcel_images JSON
+                        let parsedImages = [];
+                        try {
+                            if (parcel.parcel_images) {
+                                const images = typeof parcel.parcel_images === 'string' 
+                                    ? JSON.parse(parcel.parcel_images) 
+                                    : parcel.parcel_images;
+                                
+                                if (Array.isArray(images)) {
+                                    // Filter out empty objects and null values, keep only valid strings
+                                    parsedImages = images.filter(img => 
+                                        img && 
+                                        typeof img === 'string' && 
+                                        img.length > 0 && 
+                                        !img.match(/^\[?\{\}?\]?$/) // Filter out [{}] patterns
+                                    );
+                                } else if (typeof images === 'string' && images.length > 0) {
+                                    parsedImages = [images];
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing parcel images:', e);
+                            parsedImages = [];
+                        }
+                        
                         listOfParcels.push({
                             id: parcel.parcel_id,
                             parcel_id: parcel.parcel_id,
-                            parcel_status: parcel.parcel_status,
+                            parcel_status: parcel.parcel_status,  
                             parcel_sender_name: parcel.parcel_sender_name,
                             parcel_sender_phone: parcel.parcel_sender_phone,
                             parcel_receiver_name: parcel.parcel_receiver_name,
                             parcel_receiver_phone: parcel.parcel_receiver_phone,
                             parcel_size: parcel.parcel_size,
-                            parcel_images: parcel.parcel_images,
+                            parcel_images: parsedImages.length > 0 ? JSON.stringify(parsedImages) : null,
                             parcel_pickup_point: parcel.parcel_pickup_point,
                             parcel_dropoff_point: parcel.parcel_dropoff_point,
                             parcel_pickup_address: parcel.parcel_pickup_address,
                             parcel_dropoff_address: parcel.parcel_dropoff_address
                         });
-                    }); 
+                    }
                 }
 
                 listOfBookings.push({
@@ -249,9 +285,9 @@ const listOfAllBookingsOwner = async (ownerProfileId) =>{
                     passengers: listOfPassengers,
                     parcels: listOfParcels
                 });
+            }
 
-            
-            });
+           
 
         return listOfBookings;
     }catch(error){

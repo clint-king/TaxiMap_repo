@@ -1,14 +1,20 @@
+// Import API function for sending vehicle position updates
+import { updateVehiclePosition } from '../api/trackingAPi.js';
+
 class Simulation{
 
-    constructor(fullPath, driverMarker, map){
+    constructor(fullPath, driverMarker, map, bookingId = null){
         this.fullPath = fullPath;
         this.driverMarker = driverMarker;
         this.map = map;
+        this.bookingId = bookingId; // Store bookingId for API calls
         this.currentIndex = 0;
         this.intervalId = null;
         this.isRunning = false;
-        this.speedKmh = 50; // Average car speed in km/h (50 km/h = ~31 mph, typical city speed)
+        this.speedKmh = 200; // Increased speed for faster testing (200 km/h = ~124 mph)
         this.timeoutId = null;
+        this.lastUpdateTime = 0; // Track last API call to avoid too frequent updates
+        this.updateInterval = 1000; // Send position update every 1 second for faster testing
     }
 
     startSimulation(){
@@ -23,12 +29,18 @@ class Simulation{
         }
 
         this.isRunning = true;
-        this.currentIndex = 0;
+        // Start at 3/4 of the route (75% through) for faster testing
+        this.currentIndex = Math.floor(this.fullPath.length * 0.90);
+        console.log(`🚀 Starting simulation at 75% of route (index ${this.currentIndex} of ${this.fullPath.length})`);
 
-        // Ensure driver marker exists
+        // Ensure driver marker exists at starting position (3/4 of route)
         if (!this.driverMarker && this.map) {
+            const startPosition = this.fullPath[this.currentIndex];
+            const startLat = typeof startPosition.lat === 'function' ? startPosition.lat() : startPosition.lat;
+            const startLng = typeof startPosition.lng === 'function' ? startPosition.lng() : startPosition.lng;
+            
             this.driverMarker = new google.maps.Marker({
-                position: this.fullPath[0],
+                position: { lat: startLat, lng: startLng },
                 map: this.map,
                 title: "Driver Location",
                 icon: {
@@ -109,6 +121,14 @@ class Simulation{
             });
         }
 
+        // Send vehicle position update to server (for WebSocket broadcasting)
+        // Only send updates every few seconds to avoid overwhelming the server
+        const now = Date.now();
+        if (this.bookingId && (now - this.lastUpdateTime >= this.updateInterval)) {
+            this.sendVehiclePositionUpdate(currentLat, currentLng);
+            this.lastUpdateTime = now;
+        }
+
         // Move to next coordinate
         this.currentIndex++;
 
@@ -127,10 +147,10 @@ class Simulation{
             const timeHours = distanceKm / this.speedKmh;
             const timeMs = timeHours * 3600000;
             
-            // Minimum delay of 300ms for realistic car movement (even for very close GPS points)
-            // Maximum delay of 2000ms (2 seconds) to prevent too slow updates
-            // This ensures smooth, realistic car movement
-            const delay = Math.max(300, Math.min(2000, timeMs));
+            // Minimum delay of 50ms for faster testing (reduced from 300ms)
+            // Maximum delay of 500ms for faster testing (reduced from 2000ms)
+            // This ensures fast movement for testing geofence detection
+            const delay = Math.max(50, Math.min(500, timeMs));
             
             // Schedule next update
             this.timeoutId = setTimeout(() => {
@@ -169,6 +189,39 @@ class Simulation{
 
     isSimulationRunning(){
         return this.isRunning;
+    }
+
+    // Send vehicle position update to server via API
+    async sendVehiclePositionUpdate(lat, lng) {
+        if (!this.bookingId) {
+            console.warn('⚠️ [SIMULATION] No bookingId provided, skipping position update');
+            return;
+        }
+
+        const vehiclePosition = { lat, lng };
+        
+        // Convert fullPath to simple array format for API
+        let fullPathCoords = null;
+        if (this.fullPath && this.fullPath.length > 0) {
+            fullPathCoords = this.fullPath.map(point => {
+                const lat = typeof point.lat === 'function' ? point.lat() : point.lat;
+                const lng = typeof point.lng === 'function' ? point.lng() : point.lng;
+                return { lat, lng };
+            });
+        }
+
+        try {
+            await updateVehiclePosition(this.bookingId, vehiclePosition, fullPathCoords);
+        } catch (error) {
+            // Error already logged in updateVehiclePosition, just continue simulation
+            console.warn('⚠️ [SIMULATION] Failed to send position update, continuing simulation');
+        }
+    }
+
+    // Set booking ID (useful if bookingId is not available at construction time)
+    setBookingId(bookingId) {
+        this.bookingId = bookingId;
+        console.log('📝 [SIMULATION] Booking ID set:', bookingId);
     }
 
 }

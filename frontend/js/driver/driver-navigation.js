@@ -1,6 +1,7 @@
 // Driver Navigation JavaScript
 import * as trackingAPi from "../api/trackingAPi.js";
 import { Simulation } from "./simaulation.js";
+import * as socketService from "../api/socketService.js";
 let map;
 let directionsService;
 let directionsRenderer;
@@ -82,6 +83,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // Set up real-time location tracking
   setupLocationTracking();
   
+  // Set up WebSocket listener for geofence updates
+  if (bookingId) {
+    setupGeofenceListener(bookingId);
+  }
+  
   // Set up static Verify Passenger button click handler (from HTML)
   const verifyPassengerBtnStatic = document.getElementById("verifyPassengerBtnStatic");
   if (verifyPassengerBtnStatic) {
@@ -123,25 +129,108 @@ function checkDriverAuthentication() {
   if (logoutBtn) logoutBtn.style.display = "block";
 }
 
+// Helper function to safely execute map operations
+function safeMapOperation(operation, errorMessage = "Map operation failed") {
+  if (!map) {
+    console.warn("Map not initialized:", errorMessage);
+    return false;
+  }
+  
+  try {
+    if (typeof operation === 'function') {
+      operation();
+      return true;
+    }
+  } catch (error) {
+    // Suppress Google Maps internal errors (like 'IJ' property errors)
+    if (error && error.message && error.message.includes('IJ')) {
+      console.warn("Google Maps internal error suppressed:", errorMessage);
+      return false;
+    }
+    console.error(errorMessage, error);
+    return false;
+  }
+  return false;
+}
+
 function initMap() {
-  // Initialize Google Maps
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({
-    draggable: true,
-    suppressMarkers: false,
-  });
+  // Prevent reinitialization if map already exists
+  if (map) {
+    console.warn("Map already initialized. Skipping reinitialization.");
+    return;
+  }
 
-  // Create map centered on Johannesburg
-  map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 12,
-    center: { lat: -26.2041, lng: 28.0473 }, // Johannesburg
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-  });
+  // Check if map container exists
+  const mapElement = document.getElementById("map");
+  if (!mapElement) {
+    console.error("Map container element not found");
+    return;
+  }
 
-  directionsRenderer.setMap(map);
+  try {
+    // Initialize Google Maps
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      draggable: true,
+      suppressMarkers: false,
+    });
 
-  // Initialize traffic layer
-  trafficLayer = new google.maps.TrafficLayer();
+    // Create map centered on Johannesburg
+    map = new google.maps.Map(mapElement, {
+      zoom: 12,
+      center: { lat: -26.2041, lng: 28.0473 }, // Johannesburg
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      // Add options to prevent map resets and improve stability
+      disableDefaultUI: false,
+      zoomControl: true,
+      mapTypeControl: true,
+      scaleControl: true,
+      streetViewControl: true,
+      rotateControl: false,
+      fullscreenControl: true,
+      // Prevent map from resetting on zoom/pan
+      gestureHandling: 'cooperative',
+      // Disable automatic UI updates that might cause resets
+      disableDoubleClickZoom: false,
+    });
+
+    // Auto-centering removed - no user interaction tracking needed
+
+    // Wait for map to be ready before setting directions renderer
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+      try {
+        if (directionsRenderer && map) {
+          directionsRenderer.setMap(map);
+        }
+      } catch (error) {
+        console.error("Error setting directions renderer:", error);
+      }
+    });
+
+    // Initialize traffic layer
+    if (!trafficLayer) {
+      trafficLayer = new google.maps.TrafficLayer();
+    }
+
+    // Add error handler for map to catch and suppress internal Google Maps errors
+    google.maps.event.addListener(map, 'error', (error) => {
+      // Suppress common Google Maps internal errors
+      if (error && (error.message?.includes('IJ') || error.message?.includes('undefined'))) {
+        console.warn("Google Maps internal error suppressed (common issue)");
+        return;
+      }
+      console.error("Google Maps error:", error);
+    });
+
+    console.log("Map initialized successfully");
+  } catch (error) {
+    // Suppress Google Maps internal initialization errors
+    if (error && error.message && error.message.includes('IJ')) {
+      console.warn("Google Maps internal initialization error suppressed");
+      return;
+    }
+    console.error("Error initializing map:", error);
+  }
 }
 
 // They display the ui TO SHOW LIST OF PICKUP and dropoffs information
@@ -561,8 +650,8 @@ async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
     const pickupWaypoints = waypointResult.pickup.coordinatesOnly;
     const dropoffWaypoints = waypointResult.dropoff.coordinatesOnly;
 
-    console.log("Pickup Waypoints: ", pickupWaypoints);
-    console.log("Dropoff Waypoints: ", dropoffWaypoints);
+    console.log(`Pickup Waypoints: ${pickupWaypoints.length} points`);
+    console.log(`Dropoff Waypoints: ${dropoffWaypoints.length} points`);
 
     const defaultsourcePosition =
       driverSourceCoords ?? defaultCoords.source.position;
@@ -577,11 +666,29 @@ async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
     window.activePolylines = [];
 
     /* ---------------- PICKUP ROUTE ---------------- */
+    
+    // Google Maps Directions API allows maximum 25 waypoints per request
+    // Limit pickup waypoints to 25 (origin + 25 waypoints + destination = 27 points max)
+    const MAX_WAYPOINTS = 25;
+    const limitedPickupWaypoints = pickupWaypoints.slice(0, MAX_WAYPOINTS);
+    
+    if (pickupWaypoints.length > MAX_WAYPOINTS) {
+      console.warn(`Too many pickup waypoints (${pickupWaypoints.length}). Limiting to ${MAX_WAYPOINTS} waypoints.`);
+      // Optionally show a user notification
+      if (window.showNotification) {
+        window.showNotification(`Warning: Route has ${pickupWaypoints.length} pickup points. Only showing first ${MAX_WAYPOINTS} points on map.`, 'warning');
+      }
+    }
+    
+    // Determine pickup route destination (first dropoff point or default destination)
+    const pickupDestination = dropoffWaypoints.length > 0 
+      ? dropoffWaypoints[0].position 
+      : defaultdestinationPosition;
 
     const pickupResult = await routeAsync({
       origin: defaultsourcePosition,
-      destination: dropoffWaypoints[0].position,
-      waypoints: pickupWaypoints.map(p => ({
+      destination: pickupDestination,
+      waypoints: limitedPickupWaypoints.map(p => ({
         location: p.position,
         stopover: p.stopOverValue,
       })),
@@ -629,8 +736,16 @@ async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
       })
     );
 
-    const orderedPickupWaypoints =
-      pickupRoute.waypoint_order.map(index => pickupWaypoints[index]);
+    // Check if waypoint_order exists (it might not exist if there's only one waypoint or optimization fails)
+    let orderedPickupWaypoints;
+    if (pickupRoute.waypoint_order && pickupRoute.waypoint_order.length > 0) {
+      orderedPickupWaypoints =
+        pickupRoute.waypoint_order.map(index => limitedPickupWaypoints[index]);
+    } else {
+      // If waypoint_order doesn't exist, use the waypoints in their original order
+      console.warn("Pickup route waypoint_order is missing or empty. Using original order.");
+      orderedPickupWaypoints = limitedPickupWaypoints;
+    }
 
     const lastPickupPosition =
       orderedPickupWaypoints.length > 0
@@ -638,71 +753,130 @@ async function drawRoute(bookingID, driverSourceCoords, driverDestCoords) {
         : defaultsourcePosition;
 
     /* ---------------- DROPOFF ROUTE ---------------- */
+    
+    let orderedDropoffWaypoints = [];
+    let dropoffPath = [];
+    let dropoffSteps = [];
+    let dropoffLegs = [];
+    
+    // Only process dropoff waypoints if they exist
+    if (dropoffWaypoints && dropoffWaypoints.length > 0) {
+      // Limit dropoff waypoints to 25 (origin + 25 waypoints + destination = 27 points max)
+      const limitedDropoffWaypoints = dropoffWaypoints.slice(0, MAX_WAYPOINTS);
+      
+      if (dropoffWaypoints.length > MAX_WAYPOINTS) {
+        console.warn(`Too many dropoff waypoints (${dropoffWaypoints.length}). Limiting to ${MAX_WAYPOINTS} waypoints.`);
+        // Optionally show a user notification
+        if (window.showNotification) {
+          window.showNotification(`Warning: Route has ${dropoffWaypoints.length} dropoff points. Only showing first ${MAX_WAYPOINTS} points on map.`, 'warning');
+        }
+      }
 
-    const dropoffResult = await routeAsync({
-      origin: lastPickupPosition,
-      destination: defaultdestinationPosition,
-      waypoints: dropoffWaypoints.map(p => ({
-        location: p.position,
-        stopover: p.stopOverValue,
-      })),
-      optimizeWaypoints: true,
-      travelMode: google.maps.TravelMode.DRIVING,
-    });
-
-    const dropoffRoute = dropoffResult.routes[0];
-    const dropoffLegs = dropoffRoute.legs;
-
-    // Extract navigation steps from dropoff legs (include all legs)
-    const dropoffSteps = [];
-    for (let i = 0; i < dropoffLegs.length; i++) {
-      dropoffLegs[i].steps.forEach(step => {
-        // Strip HTML tags from instructions if present
-        const instructionText = step.instructions 
-          ? step.instructions.replace(/<[^>]*>/g, '') 
-          : 'Continue straight';
-        
-        dropoffSteps.push({
-          instruction: instructionText,
-          distance: step.distance ? step.distance.text : '',
-          duration: step.duration ? step.duration.text : '',
-          maneuver: step.maneuver || 'straight',
-          startLocation: step.start_location,
-          endLocation: step.end_location,
-          path: step.path || []
-        });
+      const dropoffResult = await routeAsync({
+        origin: lastPickupPosition,
+        destination: defaultdestinationPosition,
+        waypoints: limitedDropoffWaypoints.map(p => ({
+          location: p.position,
+          stopover: p.stopOverValue,
+        })),
+        optimizeWaypoints: true,
+        travelMode: google.maps.TravelMode.DRIVING,
       });
+
+      const dropoffRoute = dropoffResult.routes[0];
+      dropoffLegs = dropoffRoute.legs;
+
+      // Extract navigation steps from dropoff legs (include all legs)
+      for (let i = 0; i < dropoffLegs.length; i++) {
+        dropoffLegs[i].steps.forEach(step => {
+          // Strip HTML tags from instructions if present
+          const instructionText = step.instructions 
+            ? step.instructions.replace(/<[^>]*>/g, '') 
+            : 'Continue straight';
+          
+          dropoffSteps.push({
+            instruction: instructionText,
+            distance: step.distance ? step.distance.text : '',
+            duration: step.duration ? step.duration.text : '',
+            maneuver: step.maneuver || 'straight',
+            startLocation: step.start_location,
+            endLocation: step.end_location,
+            path: step.path || []
+          });
+        });
+      }
+
+      // Build dropoff path (exclude last leg which goes to final destination)
+      for (let i = 0; i < dropoffLegs.length - 1; i++) {
+        dropoffLegs[i].steps.forEach(step =>
+          step.path.forEach(p => dropoffPath.push(p))
+        );
+      }
+
+      // Only add polyline if there's a path
+      if (dropoffPath.length > 0) {
+        window.activePolylines.push(
+          new google.maps.Polyline({
+            path: dropoffPath,
+            map,
+            strokeOpacity: 1,
+            strokeWeight: 5,
+          })
+        );
+      }
+
+      // Check if waypoint_order exists (it might not exist if there's only one waypoint or optimization fails)
+      if (dropoffRoute.waypoint_order && dropoffRoute.waypoint_order.length > 0) {
+        orderedDropoffWaypoints =
+          dropoffRoute.waypoint_order.map(index => limitedDropoffWaypoints[index]);
+        console.log(`Dropoff route waypoint_order: ${dropoffRoute.waypoint_order.length} waypoints`);
+      } else {
+        // If waypoint_order doesn't exist, use the waypoints in their original order
+        // This happens when there's only one waypoint or optimization is not applied
+        console.warn("Dropoff route waypoint_order is missing or empty. Using original order.");
+        orderedDropoffWaypoints = limitedDropoffWaypoints;
+      }
+      
+      console.log(`Ordered dropoff waypoints: ${orderedDropoffWaypoints.length} points`);
+    } else {
+      console.log("No dropoff waypoints found for this booking");
     }
-
-    const dropoffPath = [];
-    for (let i = 0; i < dropoffLegs.length - 1; i++) {
-      dropoffLegs[i].steps.forEach(step =>
-        step.path.forEach(p => dropoffPath.push(p))
-      );
-    }
-
-    window.activePolylines.push(
-      new google.maps.Polyline({
-        path: dropoffPath,
-        map,
-        strokeOpacity: 1,
-        strokeWeight: 5,
-      })
-    );
-
-    const orderedDropoffWaypoints =
-      dropoffRoute.waypoint_order.map(index => dropoffWaypoints[index]);
 
 
    //draw markers
 
       orderedPickupWaypoints.forEach((waypoint, index) => {
-        createMarker(waypoint.position, `W${index + 1}`, markerType.PICKUP);
+        createMarker(
+          waypoint.position, 
+          `W${index + 1}`, 
+          markerType.PICKUP,
+          {
+            id: waypoint.id,
+            type: waypoint.type,
+            waypointIndex: index
+          }
+        );
       });
 
-      orderedDropoffWaypoints.forEach((waypoint, index) => {
-        createMarker(waypoint.position, `DP${orderedPickupWaypoints.length + index }`, markerType.DROPOFF);
-      });
+      // Only create dropoff markers if there are dropoff waypoints
+      if (orderedDropoffWaypoints && orderedDropoffWaypoints.length > 0) {
+        console.log("Creating dropoff markers for", orderedDropoffWaypoints.length, "waypoints");
+        orderedDropoffWaypoints.forEach((waypoint, index) => {
+          // console.log("Creating dropoff marker:", waypoint.id, waypoint.type); // Removed position logging
+          createMarker(
+            waypoint.position, 
+            `DP${orderedPickupWaypoints.length + index}`, 
+            markerType.DROPOFF,
+            {
+              id: waypoint.id,
+              type: waypoint.type,
+              waypointIndex: index
+            }
+          );
+        });
+      } else {
+        console.log("No dropoff markers to create - orderedDropoffWaypoints is empty");
+      }
 
     createMarker(defaultsourcePosition, "S" , markerType.ORIGIN);
     createMarker(defaultdestinationPosition, "D" , markerType.DESTINATION);
@@ -864,14 +1038,8 @@ navigator.geolocation.watchPosition(
       createDriverMarker(currentCoords);
     }
 
-    // Center map on driver position and zoom for navigation
-    if (map && isTripStarted) {
-      map.setCenter(currentCoords);
-      // Keep zoom at navigation level (16) for seeing roads clearly
-      if (map.getZoom() < 15) {
-        map.setZoom(16);
-      }
-    }
+    // Auto-centering removed - map will stay where user positions it
+    // Driver marker position is updated, but map view is not automatically centered
 
     // Update navigation instructions based on current position
     if (window.findCurrentStep) {
@@ -910,6 +1078,14 @@ function sendBookingIdForVerification(bookingId) {
     return;
   }
 
+  // Get bookingId from URL parameters
+  const params = new URLSearchParams(window.location.search);
+  const bookingId = Number(params.get("bookingId"));
+
+  if (!bookingId) {
+    console.warn("⚠️ No bookingId found in URL, simulation will run but won't send position updates");
+  }
+
   // Stop existing simulation if running
   if (simulation && simulation.isSimulationRunning()) {
     simulation.stopSimulation();
@@ -920,31 +1096,46 @@ function sendBookingIdForVerification(bookingId) {
     createDriverMarker(fullPath[0]);
   }
 
-  // Create new simulation instance
-  simulation = new Simulation(fullPath, driverMarker, map);
+  // Create new simulation instance with bookingId
+  simulation = new Simulation(fullPath, driverMarker, map, bookingId);
   
   // Start the simulation
   simulation.startSimulation();
   
-  console.log("Driver position simulation started");
+  console.log("🚗 Driver position simulation started", bookingId ? `(Booking ID: ${bookingId})` : "(No booking ID)");
   }
 
 
-//create marker function
-function createMarker(position, label, type) {
+// Initialize active markers array if it doesn't exist
+if (!window.activeMarkers) {
+  window.activeMarkers = [];
+}
 
-  let iconColor = "purple";
+//create marker function
+function createMarker(position, label, type, waypointData = null) {
+
+  let iconColor = "purple"; // Default color
   if(type === markerType.ORIGIN){
     iconColor = "blue";
   } else if(type === markerType.PICKUP){
-    iconColor = "green";
+    // Check if it's a package or passenger pickup
+    if (waypointData && waypointData.type === "parcel") {
+      iconColor = "yellow"; // Package pickup: yellow
+    } else {
+      iconColor = "green"; // Passenger pickup: green
+    }
   } else if(type === markerType.DROPOFF){
-    iconColor = "yellow";
+    // Check if it's a package or passenger dropoff
+    if (waypointData && waypointData.type === "parcel") {
+      iconColor = "red"; // Package dropoff: red
+    } else {
+      iconColor = "blue"; // Passenger dropoff: blue
+    }
   } else if(type === markerType.DESTINATION){
     iconColor = "red";
   }
 
-  return new google.maps.Marker({
+  const marker = new google.maps.Marker({
     position,
     map,
      label: {
@@ -961,6 +1152,25 @@ function createMarker(position, label, type) {
       strokeWeight: 2,
     },
   });
+
+  // Store marker metadata for easy removal and identification
+  marker.markerLabel = label;
+  marker.markerType = type;
+  
+  // Store waypoint data (ID and type) if provided
+  if (waypointData) {
+    marker.waypointId = waypointData.id;
+    marker.waypointType = waypointData.type;
+    marker.waypointIndex = waypointData.waypointIndex;
+  }
+  
+  // Add to active markers array
+  if (!window.activeMarkers) {
+    window.activeMarkers = [];
+  }
+  window.activeMarkers.push(marker);
+
+  return marker;
 }
 
 //create driver marker function
@@ -987,8 +1197,114 @@ function createDriverMarker(position) {
 function clearExistingMarkers() {
   if (window.activeMarkers) {
     window.activeMarkers.forEach(marker => marker.setMap(null));
+    window.activeMarkers = [];
   }
 }
+
+/**
+ * Removes a specific marker from the map
+ * @param {string} markerIdentifier - Can be:
+ *   - Label string: Remove marker with matching label (e.g., "W1", "DP2", "S", "D")
+ *   - Type string: Remove all markers of a specific type (markerType.PICKUP, markerType.DROPOFF, etc.)
+ * @returns {boolean} - True if marker was removed, false otherwise
+ * 
+ * Usage examples:
+ *   removeMarker("W1"); // Remove marker with label "W1"
+ *   removeMarker(markerType.PICKUP); // Remove all pickup markers
+ *   removeMarker("S"); // Remove origin marker
+ */
+function removeMarker(markerIdentifier) {
+  if (!window.activeMarkers || window.activeMarkers.length === 0) {
+    console.warn("No active markers to remove");
+    return false;
+  }
+
+  if (typeof markerIdentifier !== 'string') {
+    console.warn("removeMarker only accepts string (label or type)");
+    return false;
+  }
+
+  let removed = false;
+
+  // Check if it's a marker type (ORIGIN, PICKUP, DROPOFF, DESTINATION)
+  const isMarkerType = Object.values(markerType).includes(markerIdentifier);
+  
+  if (isMarkerType) {
+    // Remove all markers of this type
+    const markersToRemove = window.activeMarkers.filter(m => m.markerType === markerIdentifier);
+    markersToRemove.forEach(marker => {
+      marker.setMap(null);
+      const index = window.activeMarkers.indexOf(marker);
+      if (index !== -1) {
+        window.activeMarkers.splice(index, 1);
+      }
+    });
+    removed = markersToRemove.length > 0;
+  } else {
+    // Remove marker by label
+    const index = window.activeMarkers.findIndex(m => m.markerLabel === markerIdentifier);
+    if (index !== -1) {
+      const marker = window.activeMarkers[index];
+      marker.setMap(null);
+      window.activeMarkers.splice(index, 1);
+      removed = true;
+    }
+  }
+
+  if (!removed) {
+    console.warn(`Marker not found: ${markerIdentifier}`);
+  }
+
+  return removed;
+}
+
+/**
+ * Gets a marker by its waypoint ID and type
+ * @param {number|string} waypointId - The waypoint ID to find
+ * @param {string} type - The waypoint type (e.g., "passenger", "parcel")
+ * @returns {google.maps.Marker|null} - The marker if found, null otherwise
+ * 
+ * Usage:
+ *   const marker = getMarkerByWaypointId(123, "passenger");
+ *   if (marker) {
+ *     // Access marker properties: marker.waypointId, marker.waypointType, marker.markerLabel
+ *   }
+ */
+function getMarkerByWaypointId(waypointId , type) {
+  if (!window.activeMarkers || window.activeMarkers.length === 0) {
+    return null;
+  }
+  
+  return window.activeMarkers.find(m => (m.waypointId === waypointId && m.waypointType === type) ||
+(m.waypointId == waypointId && m.waypointType == type)) || null;
+}
+
+/**
+ * Removes a marker by its waypoint ID
+ * @param {number|string} waypointId - The waypoint ID to remove
+ * @param {string} type - The waypoint type (e.g., "passenger", "parcel")
+ * @returns {boolean} - True if marker was removed, false otherwise
+ * 
+ * Usage:
+ *   removeMarkerByWaypointId(123, "passenger"); // Remove marker with waypoint ID 123 and type "passenger"
+ */
+function removeMarkerByWaypointId(waypointId , type) {
+  const marker = getMarkerByWaypointId(waypointId , type);
+  if (marker) {
+    marker.setMap(null);
+    const index = window.activeMarkers.indexOf(marker);
+    if (index !== -1) {
+      window.activeMarkers.splice(index, 1);
+      return true;
+    }
+  }
+  console.warn(`Marker with waypoint ID ${waypointId} and type ${type} not found`);
+  return false;
+}
+
+// Export function to window for global access (accessible from driver-verification.js)
+window.removeMarkerByWaypointId = removeMarkerByWaypointId;
+window.getMarkerByWaypointId = getMarkerByWaypointId;
 
 function calculateRoute() {
   if (!currentTrip || !directionsService || !directionsRenderer) return;
@@ -1107,13 +1423,187 @@ function updateDriverLocation(position) {
     lng: position.coords.longitude,
   };
 
-  // Update map center if needed
-  if (map) {
-    map.setCenter(driverLocation);
-  }
+  // Auto-centering removed - map will stay where user positions it
+  // Driver location is stored but map view is not automatically centered
 
   // Store driver location for real-time updates
   localStorage.setItem("driverLocation", JSON.stringify(driverLocation));
+}
+
+// Set up WebSocket listener for geofence updates (passenger arrival notifications)
+function setupGeofenceListener(bookingId) {
+  if (!bookingId) {
+    console.warn('⚠️ [DRIVER] No bookingId provided for geofence listener');
+    return;
+  }
+
+  console.log('🔔 [DRIVER] Setting up geofence listener for booking:', bookingId);
+
+  // Initialize socket and join booking room
+  socketService.initSocket();
+  socketService.joinBookingRoom(bookingId, (response) => {
+    console.log('✅ [DRIVER] Joined booking room for geofence updates:', response);
+  });
+
+  // Listen for vehicle position updates (which include geofence updates)
+  socketService.onVehiclePositionUpdate((data) => {
+    console.log('📡 [DRIVER] Received vehicle position update');
+    // Removed full data structure logging to reduce console clutter
+    if (data.vehiclePosition) {
+      console.log('📍 [DRIVER] Vehicle position:', data.vehiclePosition.lat, data.vehiclePosition.lng);
+    }
+    if (data.routePoints) {
+      console.log(`🛣️ [DRIVER] Route points: ${Array.isArray(data.routePoints) ? data.routePoints.length : 'N/A'} points`);
+    }
+
+    // Check if this update includes geofence information
+    if (data.geofenceUpdate) {
+      console.log('🔔 [DRIVER] Geofence update detected:', data.geofenceUpdate);
+      
+      if (data.geofenceUpdate.passengersArrived && Array.isArray(data.geofenceUpdate.passengersArrived)) {
+        const arrivedPassengers = data.geofenceUpdate.passengersArrived;
+        console.log('🔔 [DRIVER] Geofence triggered! Passengers arrived:', arrivedPassengers);
+        console.log('🔔 [DRIVER] Number of passengers arrived:', arrivedPassengers.length);
+
+        // Show confirmation button for each arrived passenger
+        arrivedPassengers.forEach(passenger => {
+          console.log('🔔 [DRIVER] Processing passenger:', passenger);
+          showDropoffConfirmationButton(bookingId, passenger.id, passenger.name, passenger.distance);
+        });
+      } else {
+        console.log('⚠️ [DRIVER] No passengersArrived array in geofenceUpdate');
+      }
+    } else {
+      console.log('ℹ️ [DRIVER] No geofenceUpdate in vehicle position update');
+    }
+  });
+}
+
+// Show dropoff confirmation button for driver
+function showDropoffConfirmationButton(bookingId, passengerId, passengerName, distance) {
+  // Remove any existing confirmation button for this passenger
+  const existingBtn = document.getElementById(`confirm-dropoff-btn-${passengerId}`);
+  if (existingBtn) {
+    existingBtn.remove();
+  }
+
+  // Create confirmation button
+  const confirmBtn = document.createElement('button');
+  confirmBtn.id = `confirm-dropoff-btn-${passengerId}`;
+  confirmBtn.className = 'action-btn success';
+  confirmBtn.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: pulse 2s infinite;
+  `;
+  confirmBtn.innerHTML = `
+    <i class="fas fa-check-circle"></i>
+    Confirm Dropoff: ${passengerName} (${distance.toFixed(0)}m away)
+  `;
+
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+    }
+  `;
+  if (!document.getElementById('geofence-pulse-style')) {
+    style.id = 'geofence-pulse-style';
+    document.head.appendChild(style);
+  }
+
+  // Add click handler
+  confirmBtn.onclick = async () => {
+    try {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming...';
+
+      const response = await trackingAPi.confirmDropoff(bookingId, passengerId);
+      
+      if (response.success) {
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Dropoff Confirmed!';
+        confirmBtn.style.background = '#28a745';
+        
+        // Remove button after 2 seconds
+        setTimeout(() => {
+          confirmBtn.remove();
+        }, 2000);
+
+        // Show success notification
+        showNotification(`✅ Dropoff confirmed for ${passengerName}`, 'success');
+      } else {
+        throw new Error(response.message || 'Failed to confirm dropoff');
+      }
+    } catch (error) {
+      console.error('❌ [DRIVER] Error confirming dropoff:', error);
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        Confirm Dropoff: ${passengerName} (Error - Try Again)
+      `;
+      showNotification(`❌ Error: ${error.message}`, 'error');
+    }
+  };
+
+  // Add to page
+  document.body.appendChild(confirmBtn);
+
+  // Show notification
+  showNotification(`🔔 ${passengerName} has arrived at dropoff point (${distance.toFixed(0)}m away)`, 'info');
+}
+
+// Simple notification function
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 3000;
+    max-width: 400px;
+    animation: slideIn 0.3s ease-out;
+  `;
+  notification.textContent = message;
+
+  // Add slide-in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  `;
+  if (!document.getElementById('notification-style')) {
+    style.id = 'notification-style';
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideIn 0.3s ease-out reverse';
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
 }
 
 // Map control functions
@@ -1124,8 +1614,10 @@ function centerMapOnLocation() {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      map.setCenter(location);
-      map.setZoom(15);
+      safeMapOperation(() => {
+        map.setCenter(location);
+        map.setZoom(15);
+      }, "Error setting map center/zoom in setupLocationTracking");
     });
   }
 }
@@ -1143,16 +1635,29 @@ function toggleTrafficLayer() {
 }
 
 function toggleSatelliteView() {
+  if (!map) {
+    console.warn("Map not initialized. Cannot toggle satellite view.");
+    return;
+  }
+
   const satelliteBtn = document.getElementById("satelliteBtn");
 
-  if (isSatelliteView) {
-    map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
-    isSatelliteView = false;
-    satelliteBtn.classList.remove("active");
-  } else {
-    map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
-    isSatelliteView = true;
-    satelliteBtn.classList.add("active");
+  try {
+    if (isSatelliteView) {
+      if (typeof map.setMapTypeId === 'function') {
+        map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+      }
+      isSatelliteView = false;
+      if (satelliteBtn) satelliteBtn.classList.remove("active");
+    } else {
+      if (typeof map.setMapTypeId === 'function') {
+        map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+      }
+      isSatelliteView = true;
+      if (satelliteBtn) satelliteBtn.classList.add("active");
+    }
+  } catch (error) {
+    console.error("Error toggling satellite view:", error);
   }
 }
 
@@ -1223,13 +1728,16 @@ function startTripNavigation() {
   updateStartTripButton(true);
   
   // Zoom into the map to show roads clearly
-  if (map) {
+  safeMapOperation(() => {
     // Zoom to navigation level (15-16 is good for seeing roads)
     map.setZoom(16);
     
     // Center on driver's current position if available, otherwise center on route start
-    if (driverMarker && driverMarker.getPosition()) {
-      map.setCenter(driverMarker.getPosition());
+    if (driverMarker && driverMarker.getPosition) {
+      const position = driverMarker.getPosition();
+      if (position) {
+        map.setCenter(position);
+      }
     } else if (fullPath && fullPath.length > 0) {
       // Center on first point of the route
       const firstPoint = fullPath[0];
@@ -1237,7 +1745,7 @@ function startTripNavigation() {
       const lng = typeof firstPoint.lng === 'function' ? firstPoint.lng() : firstPoint.lng;
       map.setCenter({ lat: lat, lng: lng });
     }
-  }
+  }, "Error setting map zoom/center in startTripNavigation");
   
   // Show navigation instruction panel if steps are available
   if (allNavigationSteps && allNavigationSteps.length > 0) {

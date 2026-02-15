@@ -1,12 +1,12 @@
-// Socket.io WebSocket server configuration
+// SIMPLIFIED Socket.io WebSocket server configuration
 import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
-import config from './configurations.js';
 
 let io = null;
 
-// Initialize Socket.io server
+// Initialize Socket.io server - SIMPLIFIED (no auth for now)
 export const initSocket = (httpServer) => {
+    console.log('🔌 [WEBSOCKET] Initializing Socket.io server...');
+    
     io = new Server(httpServer, {
         cors: {
             origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -18,68 +18,48 @@ export const initSocket = (httpServer) => {
         pingInterval: 25000
     });
 
-    // Authentication middleware for Socket.io
-    io.use(async (socket, next) => {
-        try {
-            // Extract token from handshake auth or query
-            const token = socket.handshake.auth?.token || socket.handshake.query?.token;
-            
-            if (!token) {
-                return next(new Error('Authentication token required'));
-            }
-
-            // Verify JWT token directly (same as authenticateUser middleware)
-            try {
-                const decoded = jwt.verify(token, config.jwt.secret);
-                socket.user = decoded;
-                next();
-            } catch (error) {
-                console.error('Socket authentication error:', error);
-                next(new Error('Invalid or expired token'));
-            }
-        } catch (error) {
-            console.error('Socket authentication error:', error);
-            next(new Error('Authentication failed'));
-        }
-    });
-
-    // Handle connections
+    // Handle connections - SIMPLIFIED
     io.on('connection', (socket) => {
-        console.log(`✅ Client connected: ${socket.id} (User: ${socket.user?.id || 'unknown'})`);
+        console.log('✅ [WEBSOCKET] Client connected:', socket.id);
 
-        // Join booking room for tracking
-        socket.on('join-booking', async (bookingId) => {
+        // Join booking room for tracking - SIMPLIFIED
+        socket.on('join-booking', (bookingId) => {
+            console.log('📥 [WEBSOCKET] Received join-booking request:', { socketId: socket.id, bookingId });
+            
             if (!bookingId) {
+                console.error('❌ [WEBSOCKET] No bookingId provided');
                 socket.emit('error', { message: 'Booking ID required' });
                 return;
             }
 
             const room = `booking:${bookingId}`;
             socket.join(room);
-            console.log(`👤 User ${socket.user?.id} joined room: ${room}`);
+            console.log(`✅ [WEBSOCKET] Socket ${socket.id} joined room: ${room}`);
             
             socket.emit('joined-booking', { bookingId, room });
+            console.log(`📤 [WEBSOCKET] Sent joined-booking confirmation to ${socket.id}`);
         });
 
         // Leave booking room
         socket.on('leave-booking', (bookingId) => {
+            console.log('📥 [WEBSOCKET] Received leave-booking request:', { socketId: socket.id, bookingId });
             const room = `booking:${bookingId}`;
             socket.leave(room);
-            console.log(`👤 User ${socket.user?.id} left room: ${room}`);
+            console.log(`👋 [WEBSOCKET] Socket ${socket.id} left room: ${room}`);
         });
 
         // Handle disconnection
         socket.on('disconnect', (reason) => {
-            console.log(`❌ Client disconnected: ${socket.id} (Reason: ${reason})`);
+            console.log(`❌ [WEBSOCKET] Client disconnected: ${socket.id} (Reason: ${reason})`);
         });
 
         // Handle errors
         socket.on('error', (error) => {
-            console.error(`❌ Socket error for ${socket.id}:`, error);
+            console.error(`❌ [WEBSOCKET] Socket error for ${socket.id}:`, error);
         });
     });
 
-    console.log('✅ Socket.io server initialized');
+    console.log('✅ [WEBSOCKET] Socket.io server initialized successfully');
     return io;
 };
 
@@ -91,38 +71,57 @@ export const getIO = () => {
     return io;
 };
 
-// Broadcast vehicle position update to all clients tracking a booking
+// SIMPLIFIED: Broadcast vehicle position update to all clients tracking a booking
 export const broadcastVehiclePosition = (bookingId, positionData) => {
+    console.log('📡 [WEBSOCKET] broadcastVehiclePosition called:', { bookingId, positionData });
+    
     if (!io) {
-        console.warn('Socket.io not initialized, cannot broadcast');
+        console.error('❌ [WEBSOCKET] Socket.io not initialized, cannot broadcast');
         return;
     }
 
     const room = `booking:${bookingId}`;
-    io.to(room).emit('vehicle-position-update', {
+    const clientsInRoom = io.sockets.adapter.rooms.get(room);
+    const clientCount = clientsInRoom ? clientsInRoom.size : 0;
+    
+    console.log(`📡 [WEBSOCKET] Broadcasting to room "${room}" (${clientCount} clients connected)`);
+    
+    const message = {
         bookingId,
         ...positionData,
         timestamp: new Date().toISOString()
-    });
-
-    console.log(`📡 Broadcasted vehicle position update to room: ${room}`);
+    };
+    
+    console.log('📤 [WEBSOCKET] Sending vehicle-position-update:', message);
+    
+    io.to(room).emit('vehicle-position-update', message);
+    
+    console.log(`✅ [WEBSOCKET] Broadcasted vehicle position update to room: ${room}`);
 };
 
-// Broadcast calculated distance to all clients tracking a booking
+// SIMPLIFIED: Broadcast calculated distance (keeping for compatibility, but simplified)
 export const broadcastCalculatedDistance = (bookingId, distanceData) => {
+    console.log('📡 [WEBSOCKET] broadcastCalculatedDistance called:', { bookingId, distanceData });
+    
     if (!io) {
-        console.warn('Socket.io not initialized, cannot broadcast');
+        console.error('❌ [WEBSOCKET] Socket.io not initialized, cannot broadcast');
         return;
     }
 
     const room = `booking:${bookingId}`;
-    io.to(room).emit('distance-update', {
+    const clientsInRoom = io.sockets.adapter.rooms.get(room);
+    const clientCount = clientsInRoom ? clientsInRoom.size : 0;
+    
+    console.log(`📡 [WEBSOCKET] Broadcasting distance to room "${room}" (${clientCount} clients connected)`);
+    
+    const message = {
         bookingId,
         ...distanceData,
         timestamp: new Date().toISOString()
-    });
-
-    console.log(`📡 Broadcasted distance update to room: ${room}`);
+    };
+    
+    io.to(room).emit('distance-update', message);
+    console.log(`✅ [WEBSOCKET] Broadcasted distance update to room: ${room}`);
 };
 
 export default io;

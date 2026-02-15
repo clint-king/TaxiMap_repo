@@ -18,11 +18,13 @@ router.post(
   trackingController.updateVehiclePosition
 );
 
-// Route to get calculated distance between vehicle and passenger/parcel
+// Route to confirm dropoff (re-checks distance before finalizing)
 router.post(
-  "/:bookingId/distance",
+  "/confirm-dropoff",
   authenticateUser,
-  trackingController.getCalculatedDistance
+  trackingController.confirmDropoff
 );
+
+// Distance calculation route removed - using visual map instead
 
 export default router;

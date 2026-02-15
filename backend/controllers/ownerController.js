@@ -356,6 +356,118 @@ export const updateOwnerStatus = async (req, res) => {
     }
 };
 
+// Get banking details
+export const getBankingDetails = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        checkUserType(req.user, ['owner', 'admin']);
+
+        const [banking] = await pool.execute(
+            `SELECT bank_name, account_holder, account_number, branch_code, account_type, payment_reference
+             FROM owner_profiles
+             WHERE user_id = ?`,
+            [userId]
+        );
+
+        if (banking.length === 0 || !banking[0].bank_name) {
+            return res.json({
+                success: false,
+                message: "Banking details not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            banking: banking[0]
+        });
+    } catch (error) {
+        console.error("Error fetching banking details:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch banking details",
+            error: error.message
+        });
+    }
+};
+
+// Create or update banking details
+export const saveBankingDetails = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        checkUserType(req.user, ['owner', 'admin']);
+        
+        const { bank_name, account_holder, account_number, branch_code, account_type, payment_reference } = req.body;
+
+        // Validate required fields
+        if (!bank_name || !account_holder || !account_number || !branch_code || !account_type) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required banking details fields"
+            });
+        }
+
+        // Check if owner profile exists
+        const [profiles] = await pool.execute(
+            "SELECT * FROM owner_profiles WHERE user_id = ?",
+            [userId]
+        );
+
+        if (profiles.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Owner profile not found"
+            });
+        }
+
+        // Check if banking details already exist
+        const [existingBanking] = await pool.execute(
+            "SELECT bank_name FROM owner_profiles WHERE user_id = ? AND bank_name IS NOT NULL",
+            [userId]
+        );
+
+        if (existingBanking.length > 0) {
+            // Update existing banking details
+            await pool.execute(
+                `UPDATE owner_profiles 
+                 SET bank_name = ?, account_holder = ?, account_number = ?, branch_code = ?, 
+                     account_type = ?, payment_reference = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = ?`,
+                [bank_name, account_holder, account_number, branch_code, account_type, payment_reference || null, userId]
+            );
+        } else {
+            // Insert new banking details
+            await pool.execute(
+                `UPDATE owner_profiles 
+                 SET bank_name = ?, account_holder = ?, account_number = ?, branch_code = ?, 
+                     account_type = ?, payment_reference = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = ?`,
+                [bank_name, account_holder, account_number, branch_code, account_type, payment_reference || null, userId]
+            );
+        }
+
+        // Fetch updated banking details
+        const [updatedBanking] = await pool.execute(
+            `SELECT bank_name, account_holder, account_number, branch_code, account_type, payment_reference
+             FROM owner_profiles
+             WHERE user_id = ?`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            message: "Banking details saved successfully",
+            banking: updatedBanking[0]
+        });
+    } catch (error) {
+        console.error("Error saving banking details:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to save banking details",
+            error: error.message
+        });
+    }
+};
+
 export default {
     getOwnerProfile,
     updateOwnerProfile,
@@ -363,6 +475,8 @@ export default {
     getOwnerRevenue,
     getAllOwners,
     verifyOwner,
-    updateOwnerStatus
+    updateOwnerStatus,
+    getBankingDetails,
+    saveBankingDetails
 };
 

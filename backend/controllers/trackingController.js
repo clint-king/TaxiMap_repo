@@ -9,6 +9,19 @@ const checkUserType = (user, allowedTypes) => {
     }
 };
 
+// Haversine formula to calculate distance between two coordinates (in meters)
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in meters
+    return distance;
+}
 
 //sending pickup and dropoff coordinates (from passengers and parcels)
 export const getBookingWaypoints = async(req,res) =>{
@@ -73,11 +86,12 @@ export const getBookingWaypoints = async(req,res) =>{
      //get from booking_parcels with parcls table
      const [bookingParcels] = await pool.execute(`SELECT ID , ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat,
          pickup_address, ST_X(dropoff_point) AS dropoff_lng, ST_Y(dropoff_point) AS dropoff_lat, dropoff_address , status FROM booking_parcels
-          WHERE booking_id = ?`, [bookingId]);
+          WHERE status IN ('confirmed','picked_up' , 'in_transit') AND booking_id = ?`, [bookingId]);
 
 
           if(bookingParcels.length > 0){
             bookingParcels.forEach(parcel =>{
+                if(parcel.status === 'confirmed'){
                 pickup_points.push({
                     id: parcel.ID,
                     position:{
@@ -88,6 +102,9 @@ export const getBookingWaypoints = async(req,res) =>{
                     type: 'parcel',
                     status: parcel.status
                 });
+            }else{
+                return;
+            }
             });
 
             bookingParcels.forEach(parcel =>{
@@ -108,11 +125,13 @@ export const getBookingWaypoints = async(req,res) =>{
      //get from booking_passengers
      const [bookingPassengers] = await pool.execute(`SELECT ID , ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat,
          pickup_address, ST_X(dropoff_point) AS dropoff_lng, ST_Y(dropoff_point) AS dropoff_lat, dropoff_address, booking_passenger_status FROM booking_passengers
-          WHERE booking_id = ?`, [bookingId]);
+          WHERE booking_passenger_status IN ('confirmed','picked_up') AND booking_id = ?`, [bookingId]);
 
             if(bookingPassengers.length > 0){
 
                 bookingPassengers.forEach(passenger =>{
+
+                    if(passenger.booking_passenger_status === 'confirmed'){
                     pickup_points.push({
                         id: passenger.ID,
                         position:{
@@ -123,6 +142,9 @@ export const getBookingWaypoints = async(req,res) =>{
                         type: 'passenger',
                         status: passenger.booking_passenger_status
                     });
+                    }else{
+                        return;
+                    }
                 });
 
                 bookingPassengers.forEach(passenger =>{
@@ -160,7 +182,7 @@ export const getBookingWaypoints = async(req,res) =>{
 }
 
 
-export const updateVehiclePosition = async(req , res)=>{
+export const updateVehiclePosition = async(req , res)=>{  
      checkUserType(req.user , ['driver']);
 
      //get the information
@@ -174,6 +196,48 @@ export const updateVehiclePosition = async(req , res)=>{
                     message:"either vehiclePosition or bookingId is missing"
                 }
             );
+     }
+
+     // Parse vehiclePosition if it's a JSON string
+     let parsedVehiclePosition = vehiclePosition;
+     try {
+         if (typeof vehiclePosition === 'string') {
+             parsedVehiclePosition = JSON.parse(vehiclePosition);
+         }
+     } catch (error) {
+         console.error('Error parsing vehiclePosition:', error);
+         return res.status(400).json({
+             success: false,
+             message: "Invalid vehiclePosition format"
+         });
+     }
+
+     // Extract lat and lng from vehiclePosition
+     let vehicleLat, vehicleLng;
+     if (parsedVehiclePosition.lat !== undefined && parsedVehiclePosition.lng !== undefined) {
+         vehicleLat = Number(parsedVehiclePosition.lat);
+         vehicleLng = Number(parsedVehiclePosition.lng);
+     } else if (parsedVehiclePosition.position) {
+         vehicleLat = Number(parsedVehiclePosition.position.lat);
+         vehicleLng = Number(parsedVehiclePosition.position.lng);
+     } else {
+         return res.status(400).json({
+             success: false,
+             message: "vehiclePosition must contain lat and lng"
+         });
+     }
+
+     // Parse routePoints if provided
+     let parsedRoutePoints = fullPathCoords;
+     if (fullPathCoords) {
+         try {
+             if (typeof fullPathCoords === 'string') {
+                 parsedRoutePoints = JSON.parse(fullPathCoords);
+             }
+         } catch (error) {
+             console.error('Error parsing fullPathCoords:', error);
+             parsedRoutePoints = null; // Continue without route points if parsing fails
+         }
      }
 
      //validate if user is a driver and should be able to update this booking info
@@ -228,21 +292,36 @@ export const updateVehiclePosition = async(req , res)=>{
             }
         }
     
-     //check fullCoords to determine update query
+     // Format vehicle_location as MySQL POINT geometry
+     // MySQL POINT format: ST_GeomFromText('POINT(lng lat)', 4326)
+     // Note: lng comes first, then lat in MySQL POINT format
+     const vehicleLocationSQL = `ST_GeomFromText('POINT(${vehicleLng} ${vehicleLat})', 4326)`;
+     
+     // Format route_points as JSON string (route_points is likely a JSON or TEXT column)
+     let routePointsValue = null;
+     if (parsedRoutePoints && Array.isArray(parsedRoutePoints) && parsedRoutePoints.length > 0) {
+         routePointsValue = JSON.stringify(parsedRoutePoints);
+     }
+
+     // Build update query - embed GEOMETRY function directly in SQL, use ? for JSON parameter
      let updateQuery;
      let params = [];
-     if(!fullPathCoords || fullPathCoords === null){
-        updateQuery = "UPDATE bookings SET vehicle_location = ?  WHERE ID = ?";
-        params.push(vehiclePosition);
-       
-     }else{
-        updateQuery ="UPDATE bookings SET vehicle_location = ? , route_points = ? WHERE ID = ?";
-        params.push(vehiclePosition);
-        params.push(fullPathCoords);
-     }
      
+     if (!routePointsValue) {
+         // Only update vehicle_location (GEOMETRY field)
+         updateQuery = `UPDATE bookings SET vehicle_location = ${vehicleLocationSQL} WHERE ID = ?`;
+         params = [bookingId];
+     } else {
+         // Update both vehicle_location (GEOMETRY) and route_points (JSON/TEXT)
+         updateQuery = `UPDATE bookings SET vehicle_location = ${vehicleLocationSQL}, route_points = ? WHERE ID = ?`;
+         params = [routePointsValue, bookingId];
+     }
 
-        const [result] = await connection.execute(updateQuery ,[...params,bookingId]);
+     console.log('📝 [DRIVER] Executing update query:', updateQuery);
+     console.log('📝 [DRIVER] Params:', params);
+     console.log('📝 [DRIVER] Vehicle location:', { lat: vehicleLat, lng: vehicleLng });
+
+     const [result] = await connection.execute(updateQuery, params);
 
         if(result.affectedRows <= 0){
             return res.status(403).json({
@@ -256,12 +335,24 @@ export const updateVehiclePosition = async(req , res)=>{
         // Store vehicle position in Redis for fast access
         await redisHelpers.setVehiclePosition(bookingId, vehiclePosition, fullPathCoords);
 
-        // Broadcast position update via WebSocket to all clients tracking this booking
+        // Check geofence for dropoff points (40m radius) - runs in background, doesn't block response
+        checkGeofenceForDropoffs(connection, bookingId, vehicleLat, vehicleLng).catch(err => {
+            console.error('❌ [GEOFENCE] Background geofence check failed:', err);
+        });
+
+        // Use already-parsed variables (parsed earlier in the function)
+        // parsedVehiclePosition and parsedRoutePoints are already available from lines 189-228
+        
+        // SIMPLIFIED: Broadcast position update via WebSocket with complete route data
+        console.log(`🚗 [DRIVER] Broadcasting vehicle position update - Booking: ${bookingId}, Route points: ${parsedRoutePoints ? (Array.isArray(parsedRoutePoints) ? parsedRoutePoints.length : 'N/A') : 'none'}`);
+        
         broadcastVehiclePosition(bookingId, {
-            vehiclePosition,
-            routePoints: fullPathCoords,
+            vehiclePosition: parsedVehiclePosition,
+            routePoints: parsedRoutePoints, // Complete route as array of {lat, lng}
             driverId: driveResponse[0].ID
         });
+        
+        console.log('✅ [DRIVER] Vehicle position broadcast completed');
 
         return res.status(200).json({
              success: true,
@@ -281,404 +372,295 @@ export const updateVehiclePosition = async(req , res)=>{
 
 }
 
-//FOR clients to get the calculated distance between the vehicle and the passenger or parcel
-export const getCalculatedDistance = async(req,res)=>{
+// Distance calculation removed - using visual map with WebSocket for real-time tracking instead
+
+// Geofence check function - checks distance to passenger dropoff points and marks as "arrived" if within 40m
+// Only checks passengers, not parcels
+// Uses Redis cache for faster access, falls back to database if not cached
+async function checkGeofenceForDropoffs(connection, bookingId, vehicleLat, vehicleLng) {
+    const GEOFENCE_RADIUS_METERS = 40; // 40 meters
+    
+    console.log(`🔍 [GEOFENCE] Checking geofence for booking ${bookingId} at (${vehicleLat}, ${vehicleLng})`);
+    
+    // Use a separate connection to avoid issues with the main transaction
+    let geofenceConnection = null;
     try {
-        checkUserType(req.user , ['client']);
-        const {bookingId} = req.params;
-        const {passengerId,parcelId,bookingType} = req.body;
-      
-
-       // Validate input parameters
-       if(!bookingId || (!passengerId && !parcelId) || !bookingType){
-        return res.status(400).json({
-            success: false,
-            message: "bookingId and either passengerId or parcelId and bookingType are required"
-        });
-       }
-
-       if(bookingType !== 'passenger' && bookingType !== 'parcel'){
-        return res.status(400).json({
-            success: false,
-            message: "Invalid booking type"
-        });
-       }
-
-       // Get pickup position for passenger or parcel
-       const pickupResult = await getPickupPosition(bookingType, passengerId, parcelId, bookingId);
-       if(!pickupResult.success){
-           return res.status(404).json({
-               success: false,
-               message: pickupResult.message
-           });
-       }
-       const {lat: pickupLat, lng: pickupLng} = pickupResult;
-
-       // Try to get vehicle position from Redis first (faster)
-       let vehiclePositionRaw = null;
-       let routePointsRaw = null;
-       const redisData = await redisHelpers.getVehiclePosition(bookingId);
-       
-       if(redisData && redisData.position) {
-           vehiclePositionRaw = redisData.position;
-           routePointsRaw = redisData.routePoints;
-       }
-
-       // Fallback to database if not in Redis
-       if(!vehiclePositionRaw || !routePointsRaw) {
-           const bookingData = await getBookingRouteAndVehicle(bookingId);
-           if(!bookingData.success){
-               return res.status(bookingData.message === "Booking not found" ? 404 : 400).json({
-                   success: false,
-                   message: bookingData.message
-               });
-           }
-           vehiclePositionRaw = bookingData.vehicleLocation;
-           routePointsRaw = bookingData.routePoints;
-       }
-
-       // Parse route points
-       const routeParseResult = parseRoutePoints(routePointsRaw);
-       if(!routeParseResult.success){
-           return res.status(400).json({
-               success: false,
-               message: routeParseResult.message
-           });
-       }
-
-       // Parse vehicle location
-       const vehicleParseResult = parseVehicleLocation(vehiclePositionRaw);
-       if(!vehicleParseResult.success){
-           return res.status(400).json({
-               success: false,
-               message: vehicleParseResult.message
-           });
-       }
-
-       // Normalize vehicle location to coordinates
-       const vehicleCoordsResult = normalizeVehicleLocation(vehicleParseResult.vehicleLocation);
-       if(!vehicleCoordsResult.success){
-           return res.status(400).json({
-               success: false,
-               message: vehicleCoordsResult.message
-           });
-       }
-       const {lat: vehicleLat, lng: vehicleLng} = vehicleCoordsResult;
-
-       // Normalize route points
-       const routeNormalizeResult = normalizeRoute(routeParseResult.routePoints);
-       if(!routeNormalizeResult.success){
-           return res.status(400).json({
-               success: false,
-               message: routeNormalizeResult.message
-           });
-       }
-       const normalizedRoute = routeNormalizeResult.route;
-
-       // Find passenger's position in route (closest match, max 1km away)
-       const passengerIndexResult = findClosestRouteIndex(normalizedRoute, pickupLat, pickupLng, 1.0);
-       if(!passengerIndexResult.success){
-           return res.status(400).json({
-               success: false,
-               message: passengerIndexResult.message || "Passenger pickup point is not on the route"
-           });
-       }
-       const passengerIndex = passengerIndexResult.index;
-
-       // Find vehicle's position in route
-       const vehicleIndexResult = findClosestRouteIndex(normalizedRoute, vehicleLat, vehicleLng);
-       if(!vehicleIndexResult.success){
-           return res.status(400).json({
-               success: false,
-               message: vehicleIndexResult.message || "Vehicle position could not be determined on route"
-           });
-       }
-       const vehicleIndex = vehicleIndexResult.index;
-
-       // Calculate progress metrics (percentage, remaining distance, hasPassed)
-       const metrics = calculateProgressMetrics(normalizedRoute, vehicleIndex, passengerIndex);
-
-       // Generate status message
-       const statusMessage = generateStatusMessage(metrics.hasPassed, metrics.remainingDistance);
-
-       const responseData = {
-           success: true,
-           percentage: metrics.percentage,
-           remainingDistance: metrics.remainingDistance,
-           hasPassed: metrics.hasPassed,
-           vehiclePosition: {
-               lat: vehicleLat,
-               lng: vehicleLng,
-               routeIndex: vehicleIndex
-           },
-           passengerPosition: {
-               lat: pickupLat,
-               lng: pickupLng,
-               routeIndex: passengerIndex
-           },
-           message: statusMessage
-       };
-
-       // Broadcast calculated distance via WebSocket to all clients tracking this booking
-       broadcastCalculatedDistance(bookingId, responseData);
-
-       return res.status(200).json(responseData);
-
-    } catch(error) {
-        console.error("Error in getCalculatedDistance:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        });
-    }
-}
-
-
-
-// Helper function to calculate distance between two coordinates using Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * (Math.PI / 180);  // Convert degrees to radians
-    const dLon = (lon2 - lon1) * (Math.PI / 180); 
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d;
-}
-
-// Get pickup position for passenger or parcel
-async function getPickupPosition(bookingType, passengerId, parcelId, bookingId) {
-    let query, params, notFoundMessage;
-    
-    if(bookingType === 'passenger') {
-        query = "SELECT ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat FROM booking_passengers WHERE ID = ? AND booking_id = ?";
-        params = [passengerId, bookingId];
-        notFoundMessage = "Passenger not found for this booking";
-    } else {
-        query = "SELECT ST_X(pickup_point) AS pickup_lng , ST_Y(pickup_point) AS pickup_lat FROM booking_parcels WHERE ID = ? AND booking_id = ?";
-        params = [parcelId, bookingId];
-        notFoundMessage = "Parcel not found for this booking";
-    }
-    
-    const [result] = await pool.execute(query, params);
-    
-    if(result.length === 0){
-        return { success: false, message: notFoundMessage };
-    }
-    
-    return {
-        success: true,
-        lat: Number(result[0].pickup_lat),
-        lng: Number(result[0].pickup_lng)
-    };
-}
-
-// Get booking route points and vehicle location from database
-async function getBookingRouteAndVehicle(bookingId) {
-    const [bookingResult] = await pool.execute(
-        "SELECT route_points, vehicle_location FROM bookings WHERE ID = ?", 
-        [bookingId]
-    );
-
-    if(bookingResult.length === 0){
-        return { success: false, message: "Booking not found" };
-    }
-
-    const routePointsRaw = bookingResult[0].route_points;
-    const vehicleLocationRaw = bookingResult[0].vehicle_location;
-
-    if(!routePointsRaw){
-        return { success: false, message: "Route points not found for this booking" };
-    }
-
-    if(!vehicleLocationRaw){
-        return { success: false, message: "Vehicle location not available" };
-    }
-
-    return {
-        success: true,
-        routePoints: routePointsRaw,
-        vehicleLocation: vehicleLocationRaw
-    };
-}
-
-// Parse route points from database format
-function parseRoutePoints(routePointsRaw) {
-    try {
-        const routePoints = typeof routePointsRaw === 'string' ? JSON.parse(routePointsRaw) : routePointsRaw;
+        // Get a new connection for geofence check (connection from updateVehiclePosition might be released)
+        geofenceConnection = await pool.getConnection();
+        // Try to get passenger dropoffs from Redis first (faster)
+        let passengerDropoffs = await redisHelpers.getPassengerDropoffs(bookingId);
         
-        if(!Array.isArray(routePoints) || routePoints.length === 0){
-            return { success: false, message: "Route points is empty or invalid" };
-        }
-        
-        return { success: true, routePoints };
-    } catch(e){
-        return { success: false, message: "Invalid route points format" };
-    }
-}
+        // If not in Redis, fetch from database and cache it
+        if (!passengerDropoffs) {
+            console.log(`📦 [GEOFENCE] Dropoff points not in Redis, fetching from database for booking ${bookingId}`);
+            
+            const [dropoffData] = await geofenceConnection.execute(
+                `SELECT 
+                    ID,
+                    first_name,
+                    last_name,
+                    booking_passenger_status,
+                    ST_X(dropoff_point) as dropoff_lng,
+                    ST_Y(dropoff_point) as dropoff_lat
+                FROM booking_passengers
+                WHERE booking_id = ?
+                    AND booking_passenger_status IN ('picked_up', 'in_transit')
+                    AND dropoff_point IS NOT NULL`,
+                [bookingId]
+            );
 
-// Parse vehicle location from various formats (JSON, POINT, array)
-function parseVehicleLocation(vehicleLocationRaw) {
-    try {
-        let vehicleLocation;
-        
-        if(typeof vehicleLocationRaw === 'string'){
-            // Try to parse as JSON first
-            try {
-                vehicleLocation = JSON.parse(vehicleLocationRaw);
-            } catch {
-                // Might be POINT format "POINT(lng lat)"
-                if(vehicleLocationRaw.startsWith('POINT(')){
-                    const pointStr = vehicleLocationRaw.replace('POINT(', '').replace(')', '');
-                    const parts = pointStr.split(' ');
-                    if(parts.length >= 2){
-                        vehicleLocation = {lng: parseFloat(parts[0]), lat: parseFloat(parts[1])};
-                    }
-                } else {
-                    vehicleLocation = vehicleLocationRaw;
-                }
+            // Store in Redis for future use
+            passengerDropoffs = dropoffData.map(p => ({
+                id: p.ID,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                booking_passenger_status: p.booking_passenger_status,
+                dropoff_lat: Number(p.dropoff_lat),
+                dropoff_lng: Number(p.dropoff_lng)
+            }));
+
+            await redisHelpers.setPassengerDropoffs(bookingId, passengerDropoffs);
+            console.log(`✅ [GEOFENCE] Cached ${passengerDropoffs.length} dropoff points in Redis`);
+            if (passengerDropoffs.length > 0) {
+                console.log(`📍 [GEOFENCE] Sample dropoff point:`, {
+                    id: passengerDropoffs[0].id,
+                    name: `${passengerDropoffs[0].first_name} ${passengerDropoffs[0].last_name}`,
+                    lat: passengerDropoffs[0].dropoff_lat,
+                    lng: passengerDropoffs[0].dropoff_lng,
+                    status: passengerDropoffs[0].booking_passenger_status
+                });
             }
         } else {
-            vehicleLocation = vehicleLocationRaw;
+            console.log(`⚡ [GEOFENCE] Using cached dropoff points from Redis (${passengerDropoffs.length} points)`);
+            if (passengerDropoffs.length > 0) {
+                console.log(`📍 [GEOFENCE] Sample cached dropoff point:`, {
+                    id: passengerDropoffs[0].id,
+                    name: `${passengerDropoffs[0].first_name} ${passengerDropoffs[0].last_name}`,
+                    lat: passengerDropoffs[0].dropoff_lat,
+                    lng: passengerDropoffs[0].dropoff_lng,
+                    status: passengerDropoffs[0].booking_passenger_status
+                });
+            }
         }
-        
-        return { success: true, vehicleLocation };
-    } catch(e){
-        return { success: false, message: "Invalid vehicle location format" };
-    }
-}
 
-// Normalize vehicle location to {lat, lng} format
-function normalizeVehicleLocation(vehicleLocation) {
-    let vehicleLat, vehicleLng;
-    
-    if(Array.isArray(vehicleLocation)){
-        // Format: [lng, lat]
-        vehicleLng = Number(vehicleLocation[0]);
-        vehicleLat = Number(vehicleLocation[1]);
-    } else if(vehicleLocation.lat !== undefined && vehicleLocation.lng !== undefined){
-        vehicleLat = Number(vehicleLocation.lat);
-        vehicleLng = Number(vehicleLocation.lng);
-    } else if(vehicleLocation.latitude !== undefined && vehicleLocation.longitude !== undefined){
-        vehicleLat = Number(vehicleLocation.latitude);
-        vehicleLng = Number(vehicleLocation.longitude);
-    } else {
-        return { success: false, message: "Invalid vehicle location coordinates" };
-    }
-    
-    return { success: true, lat: vehicleLat, lng: vehicleLng };
-}
-
-// Normalize route points to consistent format [{lat, lng}]
-function normalizeRoute(routePoints) {
-    const normalizedRoute = routePoints.map(point => {
-        if(Array.isArray(point)){
-            // Format: [lng, lat]
-            return {lat: Number(point[1]), lng: Number(point[0])};
-        } else if(point.lat !== undefined && point.lng !== undefined){
-            return {lat: Number(point.lat), lng: Number(point.lng)};
-        } else if(point.latitude !== undefined && point.longitude !== undefined){
-            return {lat: Number(point.latitude), lng: Number(point.longitude)};
+        if (passengerDropoffs.length === 0) {
+            console.warn(`⚠️ [GEOFENCE] No passenger dropoff points found for booking ${bookingId}.`);
+            console.warn(`⚠️ [GEOFENCE] This could mean:`);
+            console.warn(`   - No passengers exist for this booking`);
+            console.warn(`   - Passengers are not in 'picked_up' or 'in_transit' status`);
+            console.warn(`   - Passengers don't have dropoff_point coordinates`);
+            geofenceConnection.release();
+            return; // Exit early if no dropoff points
         }
-        return null;
-    }).filter(p => p !== null);
 
-    if(normalizedRoute.length === 0){
-        return { success: false, message: "No valid route points found" };
+        // Calculate distance for each passenger dropoff point
+        console.log(`🔍 [GEOFENCE] Checking ${passengerDropoffs.length} passenger dropoff points against vehicle position (${vehicleLat}, ${vehicleLng})`);
+        const passengersNearDropoff = [];
+        for (const passenger of passengerDropoffs) {
+            // Calculate distance using Haversine formula (simpler than MySQL ST_Distance_Sphere for cached data)
+            const distance = calculateHaversineDistance(
+                vehicleLat,
+                vehicleLng,
+                passenger.dropoff_lat,
+                passenger.dropoff_lng
+            );
+
+            console.log(`📏 [GEOFENCE] Passenger ${passenger.id} (${passenger.first_name} ${passenger.last_name}): Distance = ${distance.toFixed(2)}m (threshold: ${GEOFENCE_RADIUS_METERS}m)`);
+
+            if (distance <= GEOFENCE_RADIUS_METERS) {
+                console.log(`✅ [GEOFENCE] Passenger ${passenger.id} is within geofence!`);
+                passengersNearDropoff.push({
+                    ID: passenger.id,
+                    first_name: passenger.first_name,
+                    last_name: passenger.last_name,
+                    booking_passenger_status: passenger.booking_passenger_status,
+                    distance_meters: distance
+                });
+            }
+        }
+
+        console.log(`📊 [GEOFENCE] Found ${passengersNearDropoff.length} passenger(s) within ${GEOFENCE_RADIUS_METERS}m radius`);
+
+        // Sort by distance (closest first)
+        passengersNearDropoff.sort((a, b) => a.distance_meters - b.distance_meters);
+
+        // Mark passengers as "arrived" if within geofence
+        for (const passenger of passengersNearDropoff) {
+            if (passenger.booking_passenger_status !== 'arrived') {
+                await geofenceConnection.execute(
+                    `UPDATE booking_passengers 
+                     SET booking_passenger_status = 'arrived',
+                         updated_at = NOW()
+                     WHERE ID = ?`,
+                    [passenger.ID]
+                );
+                console.log(`✅ [GEOFENCE] Passenger ${passenger.ID} (${passenger.first_name} ${passenger.last_name}) marked as arrived. Distance: ${passenger.distance_meters.toFixed(2)}m`);
+                
+                // Invalidate Redis cache since passenger status changed
+                await redisHelpers.invalidatePassengerDropoffs(bookingId);
+            }
+        }
+
+        // Broadcast geofence updates via WebSocket if any arrivals detected
+        if (passengersNearDropoff.length > 0) {
+            console.log(`📡 [GEOFENCE] Broadcasting geofence update for ${passengersNearDropoff.length} passenger(s)`);
+            const geofenceData = {
+                geofenceUpdate: {
+                    passengersArrived: passengersNearDropoff.map(p => ({
+                        id: p.ID,
+                        name: `${p.first_name} ${p.last_name}`,
+                        distance: p.distance_meters
+                    }))
+                }
+            };
+            console.log(`📡 [GEOFENCE] Geofence data to broadcast:`, JSON.stringify(geofenceData, null, 2));
+            
+            const { broadcastVehiclePosition } = await import('../config/socket.js');
+            broadcastVehiclePosition(bookingId, geofenceData);
+            console.log(`✅ [GEOFENCE] Geofence update broadcasted successfully`);
+        } else {
+            console.log(`ℹ️ [GEOFENCE] No passengers within ${GEOFENCE_RADIUS_METERS}m radius`);
+        }
+
+    } catch (error) {
+        console.error('❌ [GEOFENCE] Error checking geofence:', error);
+        console.error('❌ [GEOFENCE] Error stack:', error.stack);
+        // Don't throw - geofence check failure shouldn't break vehicle position update
+    } finally {
+        // Release the geofence connection
+        if (geofenceConnection) {
+            geofenceConnection.release();
+            console.log('🔌 [GEOFENCE] Connection released');
+        }
     }
-    
-    return { success: true, route: normalizedRoute };
 }
 
-// Find the closest point index in the route to a given coordinate
-function findClosestRouteIndex(normalizedRoute, targetLat, targetLng, maxDistance = Infinity) {
-    let closestIndex = -1;
-    let minDistance = Infinity;
+// Confirm dropoff endpoint - re-checks distance before finalizing
+// Only for passengers (parcels are not checked by geofence)
+export const confirmDropoff = async (req, res) => {
+    checkUserType(req.user, ['driver']);
     
-    for(let i = 0; i < normalizedRoute.length; i++){
-        const dist = calculateDistance(
-            normalizedRoute[i].lat,
-            normalizedRoute[i].lng,
-            targetLat,
-            targetLng
+    const { bookingId, passengerId } = req.body;
+    const GEOFENCE_RADIUS_METERS = 40;
+    
+    if (!bookingId || !passengerId) {
+        return res.status(400).json({
+            success: false,
+            message: "bookingId and passengerId are required"
+        });
+    }
+
+    let connection = null;
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // Get current vehicle position from database
+        const [bookingData] = await connection.execute(
+            `SELECT vehicle_location FROM bookings WHERE ID = ?`,
+            [bookingId]
         );
-        if(dist < minDistance){
-            minDistance = dist;
-            closestIndex = i;
-        }
-    }
-    
-    if(minDistance > maxDistance){
-        return { success: false, message: `Point is more than ${maxDistance}km away from route` };
-    }
-    
-    return { success: true, index: closestIndex, distance: minDistance };
-}
 
-// Calculate distance along route between two indices
-function calculateRouteDistance(normalizedRoute, startIndex, endIndex) {
-    if(startIndex === endIndex) return 0;
-    
-    let distance = 0;
-    const step = startIndex < endIndex ? 1 : -1;
-    
-    for(let i = startIndex; i !== endIndex; i += step){
-        distance += calculateDistance(
-            normalizedRoute[i].lat,
-            normalizedRoute[i].lng,
-            normalizedRoute[i + step].lat,
-            normalizedRoute[i + step].lng
+        if (bookingData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        const vehicleLocation = bookingData[0].vehicle_location;
+        if (!vehicleLocation) {
+            return res.status(400).json({
+                success: false,
+                message: "Vehicle location not available"
+            });
+        }
+
+        // Extract vehicle coordinates from GEOMETRY field
+        const [vehicleCoords] = await connection.execute(
+            `SELECT ST_X(vehicle_location) as lng, ST_Y(vehicle_location) as lat 
+             FROM bookings WHERE ID = ?`,
+            [bookingId]
         );
-    }
-    
-    return distance;
-}
 
-// Calculate percentage and remaining distance along route
-function calculateProgressMetrics(normalizedRoute, vehicleIndex, passengerIndex) {
-    const hasPassed = vehicleIndex > passengerIndex;
-    
-    // Calculate distance from start to passenger
-    const totalDistanceToPassenger = calculateRouteDistance(normalizedRoute, 0, passengerIndex);
-    
-    // Calculate distance from start to vehicle
-    const totalDistanceToVehicle = calculateRouteDistance(normalizedRoute, 0, vehicleIndex);
-    
-    // Calculate remaining distance from vehicle to passenger
-    const remainingDistance = calculateRouteDistance(
-        normalizedRoute, 
-        vehicleIndex, 
-        passengerIndex
-    );
-    
-    // Calculate percentage (how much of route from start to passenger has been completed)
-    let percentage = 0;
-    if(totalDistanceToPassenger > 0){
-        percentage = (totalDistanceToVehicle / totalDistanceToPassenger) * 100;
-        // Cap at 100% if vehicle has passed
-        if(hasPassed || percentage > 100){
-            percentage = 100;
+        if (vehicleCoords.length === 0 || !vehicleCoords[0].lat || !vehicleCoords[0].lng) {
+            return res.status(400).json({
+                success: false,
+                message: "Could not extract vehicle coordinates"
+            });
         }
+
+        const vehicleLat = vehicleCoords[0].lat;
+        const vehicleLng = vehicleCoords[0].lng;
+        const vehiclePointSQL = `ST_GeomFromText('POINT(${vehicleLng} ${vehicleLat})', 4326)`;
+
+        // Re-check distance before confirming passenger dropoff
+        const [passenger] = await connection.execute(
+            `SELECT 
+                ID,
+                first_name,
+                last_name,
+                booking_passenger_status,
+                ST_Distance_Sphere(${vehiclePointSQL}, dropoff_point) as distance_meters
+            FROM booking_passengers
+            WHERE ID = ? AND booking_id = ?`,
+            [passengerId, bookingId]
+        );
+
+        if (passenger.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Passenger not found"
+            });
+        }
+
+        if (passenger[0].booking_passenger_status !== 'arrived') {
+            return res.status(400).json({
+                success: false,
+                message: "Passenger must be marked as 'arrived' before confirming dropoff"
+            });
+        }
+
+        const distance = passenger[0].distance_meters;
+        if (distance > GEOFENCE_RADIUS_METERS) {
+            return res.status(400).json({
+                success: false,
+                message: `Vehicle is too far from dropoff point. Distance: ${distance.toFixed(2)}m (required: <= ${GEOFENCE_RADIUS_METERS}m)`
+            });
+        }
+
+        // Mark as dropped off
+        await connection.execute(
+            `UPDATE booking_passengers 
+             SET booking_passenger_status = 'dropped_off',
+                 updated_at = NOW()
+             WHERE ID = ?`,
+            [passengerId]
+        );
+
+        // Invalidate Redis cache since passenger status changed
+        await redisHelpers.invalidatePassengerDropoffs(bookingId);
+
+        await connection.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: "Passenger dropoff confirmed",
+            distance: distance
+        });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('❌ [GEOFENCE] Error confirming dropoff:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to confirm dropoff",
+            error: error.message
+        });
+    } finally {
+        if (connection) connection.release();
     }
-    
-    return {
-        percentage: Math.round(percentage * 100) / 100,
-        remainingDistance: Math.round(remainingDistance * 100) / 100,
-        hasPassed,
-        totalDistanceToPassenger,
-        totalDistanceToVehicle
-    };
 }
-
-// Generate response message based on vehicle position
-function generateStatusMessage(hasPassed, remainingDistance) {
-    if(hasPassed) {
-        return "Vehicle has passed the passenger's pickup location";
-    }
-    return `Vehicle is ${Math.round(remainingDistance * 1000)} meters away along the route`;
-}
-
-
 
 //return the percentage based on the vehicle completing the trip
 export const getVehiclePositionFullTrip = async(req,res)=>{
@@ -704,7 +686,7 @@ export const detectionConformation = async()=>{
 export default{
 getBookingWaypoints,
 updateVehiclePosition,
-getCalculatedDistance,
+confirmDropoff,
 checkBookingStatus,
 detectionConformation
 }

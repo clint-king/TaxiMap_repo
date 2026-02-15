@@ -1,24 +1,25 @@
-// WebSocket client service for real-time updates
+// SIMPLIFIED WebSocket client service for real-time updates
 import { io } from 'socket.io-client';
 import { BASE_URL } from '../AddressSelection.js';
 
 let socket = null;
 let isConnected = false;
 
-// Initialize Socket.io connection
-export const initSocket = (token) => {
+// SIMPLIFIED: Initialize Socket.io connection (no auth for now)
+export const initSocket = () => {
+    console.log('🔌 [CLIENT] Initializing WebSocket connection...');
+    
     if (socket && socket.connected) {
-        console.log('Socket already connected');
+        console.log('✅ [CLIENT] Socket already connected:', socket.id);
         return socket;
     }
 
     // Get base URL without /api
     const wsBaseUrl = BASE_URL.replace('/api', '');
+    console.log('🔗 [CLIENT] Connecting to:', wsBaseUrl);
 
     socket = io(wsBaseUrl, {
-        auth: {
-            token: token || getAuthToken()
-        },
+        // SIMPLIFIED: No auth for now
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
@@ -28,67 +29,47 @@ export const initSocket = (token) => {
 
     socket.on('connect', () => {
         isConnected = true;
-        console.log('✅ WebSocket connected:', socket.id);
+        console.log('✅ [CLIENT] WebSocket connected! Socket ID:', socket.id);
     });
 
     socket.on('disconnect', (reason) => {
         isConnected = false;
-        console.log('❌ WebSocket disconnected:', reason);
+        console.log('❌ [CLIENT] WebSocket disconnected. Reason:', reason);
     });
 
     socket.on('connect_error', (error) => {
-        console.error('❌ WebSocket connection error:', error);
+        console.error('❌ [CLIENT] WebSocket connection error:', error);
         isConnected = false;
     });
 
     socket.on('error', (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('❌ [CLIENT] WebSocket error:', error);
     });
 
     return socket;
 };
 
-// Get authentication token from localStorage or cookies
-function getAuthToken() {
-    // Try to get token from localStorage
-    const userProfile = localStorage.getItem('userProfile');
-    if (userProfile) {
-        try {
-            const user = JSON.parse(userProfile);
-            return user.token || null;
-        } catch (e) {
-            console.error('Error parsing user profile:', e);
-        }
-    }
-
-    // Try to get from cookies
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'token') {
-            return decodeURIComponent(value);
-        }
-    }
-
-    return null;
-}
-
-// Join a booking room to receive updates
+// SIMPLIFIED: Join a booking room to receive updates
 export const joinBookingRoom = (bookingId, callback) => {
+    console.log('📥 [CLIENT] joinBookingRoom called with bookingId:', bookingId);
+    
     if (!socket || !socket.connected) {
-        console.warn('Socket not connected, attempting to initialize...');
+        console.log('⚠️ [CLIENT] Socket not connected, initializing...');
         initSocket();
         
         // Wait for connection
         socket.once('connect', () => {
+            console.log('✅ [CLIENT] Socket connected, now joining room...');
             joinBookingRoom(bookingId, callback);
         });
         return;
     }
 
+    console.log('📤 [CLIENT] Emitting join-booking for bookingId:', bookingId);
     socket.emit('join-booking', bookingId, (response) => {
+        console.log('📥 [CLIENT] Received joined-booking response:', response);
         if (response && response.bookingId) {
-            console.log(`✅ Joined booking room: ${response.bookingId}`);
+            console.log(`✅ [CLIENT] Successfully joined booking room: ${response.bookingId}`);
             if (callback) callback(response);
         }
     });
@@ -104,16 +85,29 @@ export const leaveBookingRoom = (bookingId) => {
     console.log(`👋 Left booking room: ${bookingId}`);
 };
 
-// Listen for vehicle position updates
+// SIMPLIFIED: Listen for vehicle position updates
 export const onVehiclePositionUpdate = (callback) => {
+    console.log('👂 [CLIENT] Setting up vehicle position update listener...');
+    
     if (!socket) {
+        console.log('⚠️ [CLIENT] Socket not initialized, initializing now...');
         initSocket();
     }
 
     socket.on('vehicle-position-update', (data) => {
-        console.log('📡 Received vehicle position update:', data);
-        if (callback) callback(data);
+        console.log('📡 [CLIENT] ⭐ RECEIVED VEHICLE POSITION UPDATE ⭐');
+        console.log('📡 [CLIENT] Vehicle position data:', data);
+        console.log('📡 [CLIENT] Booking ID:', data.bookingId);
+        console.log('📡 [CLIENT] Vehicle Position:', data.vehiclePosition);
+        console.log('📡 [CLIENT] Timestamp:', data.timestamp);
+        
+        if (callback) {
+            console.log('📡 [CLIENT] Calling callback with data...');
+            callback(data);
+        }
     });
+    
+    console.log('✅ [CLIENT] Vehicle position update listener set up');
 };
 
 // Listen for distance calculation updates

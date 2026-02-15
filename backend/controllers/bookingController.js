@@ -1634,40 +1634,58 @@ export const listOfUpcomingTrips = async (req, res) => {
     console.log("Driver profile ID:", driverProfileId);
 
     //get a list of bookings with driver ID and statuses = 'pending','fully_paid','active'
+    // Optimized: Select only needed columns (exclude large GEOMETRY/JSON fields like vehicle_location, route_points)
     const [upcomingTrips] = await pool.execute(
-      `SELECT b.* , location_1, location_2, route_name
-FROM bookings b
-INNER JOIN existing_routes er 
-    ON b.existing_route_id = er.id
-WHERE b.driver_id = ?
-  AND b.booking_status IN (
-      'pending',
-      'fully_paid',
-      'active'
-  )
-  AND b.scheduled_pickup >= CURRENT_DATE
-ORDER BY b.scheduled_pickup ASC;
-`,
+      `SELECT 
+        b.ID, b.booking_reference, b.booking_status, b.direction_type,
+        b.scheduled_pickup, b.total_seats, b.total_seats_available,
+        b.passenger_count, b.seat_parcel_count, b.extraspace_count,
+        b.total_amount_paid, b.total_amount_needed,
+        b.owner_id, b.driver_id, b.vehicle_id, b.existing_route_id,
+        b.created_at, b.updated_at,
+        er.location_1, er.location_2, er.route_name
+      FROM bookings b
+      INNER JOIN existing_routes er 
+          ON b.existing_route_id = er.id
+      WHERE b.driver_id = ?
+        AND b.booking_status IN (
+            'pending',
+            'fully_paid',
+            'active'
+        )
+        AND b.scheduled_pickup >= CURRENT_DATE
+      ORDER BY b.scheduled_pickup ASC
+      LIMIT 100;
+      `,
       [driverProfileId]
     );
 
     //get a list of bookings with driver ID and statuses = 'pending','fully_paid','active', 'refund_pending','cancelled','refunded'
+    // Optimized: Select only needed columns (exclude large GEOMETRY/JSON fields)
     const [allTrips] = await pool.execute(
-      `SELECT b.* , location_1, location_2, route_name
-FROM bookings b
-INNER JOIN existing_routes er 
-    ON b.existing_route_id = er.id
-WHERE b.driver_id = ?
-  AND b.booking_status IN (
-      'pending',
-      'fully_paid',
-      'active',
-      'refund_pending',
-        'refunded'
-  )
-  AND b.scheduled_pickup >= CURRENT_DATE
-ORDER BY b.scheduled_pickup ASC;
-`,
+      `SELECT 
+        b.ID, b.booking_reference, b.booking_status, b.direction_type,
+        b.scheduled_pickup, b.total_seats, b.total_seats_available,
+        b.passenger_count, b.seat_parcel_count, b.extraspace_count,
+        b.total_amount_paid, b.total_amount_needed,
+        b.owner_id, b.driver_id, b.vehicle_id, b.existing_route_id,
+        b.created_at, b.updated_at,
+        er.location_1, er.location_2, er.route_name
+      FROM bookings b
+      INNER JOIN existing_routes er 
+          ON b.existing_route_id = er.id
+      WHERE b.driver_id = ?
+        AND b.booking_status IN (
+            'pending',
+            'fully_paid',
+            'active',
+            'refund_pending',
+            'refunded'
+        )
+        AND b.scheduled_pickup >= CURRENT_DATE
+      ORDER BY b.scheduled_pickup ASC
+      LIMIT 100;
+      `,
       [driverProfileId]
     );
 
@@ -1954,6 +1972,9 @@ export const AllBookingsOwner = async (req, res) => {
       [userId]
     );
 
+    console.log("Owner's userid : ", userId);
+    console.log("Owner's profile : ", ownerProfiles);
+
     if (ownerProfiles.length === 0) {
       return res.status(403).json({
         success: false, 
@@ -1965,7 +1986,8 @@ export const AllBookingsOwner = async (req, res) => {
 
     const allBookings = await bookingModel.listOfAllBookingsOwner(ownerProfileId);
 
-    console.log("all bookings:", allBookings);
+    console.log("listOfAllBookingsOwner returned :", allBookings);
+
     if(allBookings == null || allBookings.length === 0){
       return res.status(400).json({
         success:false,

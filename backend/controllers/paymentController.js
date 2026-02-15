@@ -436,11 +436,41 @@ export const initiateYocoCheckout = async (req, res) => {
       parcel_data = null,
     } = req.body;
 
-    if (!amountInCents || amountInCents <= 0) {
+    // Ensure amountInCents is a valid integer
+    const amountInCentsInt = Math.round(Number(amountInCents));
+    
+    if (!amountInCentsInt || amountInCentsInt <= 0 || isNaN(amountInCentsInt)) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid amount" });
+        .json({ 
+          success: false, 
+          message: "Invalid amount", 
+          received: amountInCents,
+          converted: amountInCentsInt
+        });
     }
+    
+    // Basic validation - Yoco typically accepts amounts >= 100 cents (R1.00)
+    // R60 (6000 cents) is a valid amount for small parcels
+    if (amountInCentsInt < 100) {
+      return res
+        .status(400)
+        .json({ 
+          success: false, 
+          message: "Amount too small. Minimum amount is R1.00 (100 cents)", 
+          amountInCents: amountInCentsInt,
+          amountInRands: (amountInCentsInt / 100).toFixed(2)
+        });
+    }
+    
+    console.log("Creating Yoco checkout with:", {
+      amountInCents: amountInCentsInt,
+      amountInRands: (amountInCentsInt / 100).toFixed(2),
+      currency: "ZAR",
+      booking_id,
+      userId,
+      originalAmountReceived: amountInCents
+    });
 
     // Use a single DB transaction for createPayment + checkout creation + payment update
     connection = await pool.getConnection();
@@ -479,10 +509,11 @@ export const initiateYocoCheckout = async (req, res) => {
     }
 
     // Create Yoco checkout; if this fails, we'll rollback the DB transaction
+    // Ensure amount is sent as an integer (Yoco requires integer cents)
     const response = await axios.post(
       "https://payments.yoco.com/api/checkouts",
       {
-        amount: amountInCents,
+        amount: amountInCentsInt, // Use validated integer amount
         currency: "ZAR",
         successUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id : ""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
         cancelUrl: `${configurations.frontend.url}/pages/customer/booking-public.html?bookingID=${booking_id}&paymentID=${paymentId}&bookingType=${resultP.bookingType}&passengerID=${resultP.passenger != null ? resultP.passenger.id : ""}&parcelID=${resultP.parcel ? resultP.parcel.booking_parcels_id : ""}`,
@@ -525,8 +556,35 @@ export const initiateYocoCheckout = async (req, res) => {
         console.error("Rollback failed:", e);
       }
     }
-    console.error("Yoco checkout error:", err.response?.data || err.message);
-    res.status(500).json({ success: false, message: "Payment init failed" });
+    
+    // Enhanced error logging for debugging
+    console.error("=== Yoco Checkout Error ===");
+    console.error("Error message:", err.message);
+    console.error("Error response data:", err.response?.data);
+    console.error("Error response status:", err.response?.status);
+    console.error("Error response headers:", err.response?.headers);
+    console.error("Request data sent:", {
+      amountInCents: amountInCentsInt,
+      amountInRands: (amountInCentsInt / 100).toFixed(2),
+      currency: "ZAR",
+      booking_id,
+      paymentId,
+      originalAmountReceived: amountInCents
+    });
+    
+    // Return more detailed error message
+    const errorMessage = err.response?.data?.message || err.message || "Payment init failed";
+    const errorDetails = err.response?.data?.error || null;
+    
+    res.status(err.response?.status || 500).json({ 
+      success: false, 
+      message: errorMessage,
+      error: errorDetails,
+      details: process.env.NODE_ENV === 'development' ? {
+        originalError: err.message,
+        responseData: err.response?.data
+      } : undefined
+    });
   } finally {
     if (connection) connection.release();
   }

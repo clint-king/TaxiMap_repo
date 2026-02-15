@@ -110,3 +110,41 @@ export const updateOwnerStatus = async (ownerId, status) => {
     }
 };
 
+/**
+ * Get banking details
+ */
+export const getBankingDetails = async () => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/owners/banking`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching banking details:', error);
+        throw error;
+    }
+};
+
+/**
+ * Create banking details
+ */
+export const createBankingDetails = async (bankingData) => {
+    try {
+        const response = await axios.post(`${BASE_URL}/api/owners/banking`, bankingData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating banking details:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update banking details
+ */
+export const updateBankingDetails = async (bankingData) => {
+    try {
+        const response = await axios.put(`${BASE_URL}/api/owners/banking`, bankingData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating banking details:', error);
+        throw error;
+    }
+};
