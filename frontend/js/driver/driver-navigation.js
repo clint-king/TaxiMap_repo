@@ -1480,6 +1480,7 @@ function setupGeofenceListener(bookingId) {
 }
 
 // Show dropoff confirmation button for driver
+// Handles multiple passengers at the same dropoff location by stacking buttons vertically
 function showDropoffConfirmationButton(bookingId, passengerId, passengerName, distance) {
   // Remove any existing confirmation button for this passenger
   const existingBtn = document.getElementById(`confirm-dropoff-btn-${passengerId}`);
@@ -1487,13 +1488,19 @@ function showDropoffConfirmationButton(bookingId, passengerId, passengerName, di
     existingBtn.remove();
   }
 
+  // Count existing confirm buttons to stack them vertically
+  const existingButtons = document.querySelectorAll('[id^="confirm-dropoff-btn-"]');
+  const buttonCount = existingButtons.length;
+  const buttonSpacing = 80; // Space between buttons in pixels
+  const baseBottom = 20; // Base position from bottom
+
   // Create confirmation button
   const confirmBtn = document.createElement('button');
   confirmBtn.id = `confirm-dropoff-btn-${passengerId}`;
   confirmBtn.className = 'action-btn success';
   confirmBtn.style.cssText = `
     position: fixed;
-    bottom: 20px;
+    bottom: ${baseBottom + (buttonCount * buttonSpacing)}px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2000;
@@ -1501,6 +1508,8 @@ function showDropoffConfirmationButton(bookingId, passengerId, passengerName, di
     font-size: 1.1rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     animation: pulse 2s infinite;
+    min-width: 300px;
+    white-space: nowrap;
   `;
   confirmBtn.innerHTML = `
     <i class="fas fa-check-circle"></i>
@@ -1532,9 +1541,11 @@ function showDropoffConfirmationButton(bookingId, passengerId, passengerName, di
         confirmBtn.innerHTML = '<i class="fas fa-check"></i> Dropoff Confirmed!';
         confirmBtn.style.background = '#28a745';
         
-        // Remove button after 2 seconds
+        // Remove button after 2 seconds and reposition remaining buttons
         setTimeout(() => {
           confirmBtn.remove();
+          // Reposition remaining buttons after this one is removed
+          repositionConfirmButtons();
         }, 2000);
 
         // Show success notification
@@ -1559,6 +1570,98 @@ function showDropoffConfirmationButton(bookingId, passengerId, passengerName, di
   // Show notification
   showNotification(`🔔 ${passengerName} has arrived at dropoff point (${distance.toFixed(0)}m away)`, 'info');
 }
+
+// Reposition all confirm buttons after one is removed (to handle multiple passengers at same location)
+function repositionConfirmButtons() {
+  const buttons = Array.from(document.querySelectorAll('[id^="confirm-dropoff-btn-"]'));
+  const buttonSpacing = 80;
+  const baseBottom = 20;
+  
+  buttons.forEach((btn, index) => {
+    btn.style.bottom = `${baseBottom + (index * buttonSpacing)}px`;
+  });
+}
+
+// Test function to position vehicle near a dropoff point for geofence testing
+async function testGeofenceNearDropoff() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = Number(params.get("bookingId"));
+    
+    if (!bookingId) {
+      showNotification("❌ No booking ID found in URL", 'error');
+      return;
+    }
+
+    console.log('🧪 [TEST] Testing geofence - fetching dropoff waypoints...');
+    
+    // Get dropoff waypoints
+    const waypointResult = await trackingAPi.getBookingWaypoints(bookingId);
+    const dropoffWaypoints = waypointResult.dropoff.coordinatesOnly;
+    
+    // Filter for passenger dropoffs only
+    const passengerDropoffs = dropoffWaypoints.filter(wp => wp.type === 'passenger');
+    
+    if (passengerDropoffs.length === 0) {
+      showNotification("❌ No passenger dropoff points found for this booking", 'error');
+      return;
+    }
+
+    // Use the first passenger dropoff point
+    const targetDropoff = passengerDropoffs[0];
+    const dropoffLat = targetDropoff.position.lat;
+    const dropoffLng = targetDropoff.position.lng;
+    
+    console.log('🧪 [TEST] Target dropoff point:', {
+      id: targetDropoff.id,
+      lat: dropoffLat,
+      lng: dropoffLng
+    });
+
+    // Calculate a position 25-30 meters away from the dropoff point (within geofence radius of 40m)
+    // Using more accurate calculation to ensure we're within 40m threshold
+    // 1 degree latitude ≈ 111,000 meters
+    // 1 degree longitude ≈ 111,000 * cos(latitude) meters
+    
+    const distanceMeters = 25; // 25 meters away (well within 40m geofence, accounting for calculation differences)
+    const latOffset = distanceMeters / 111000; // ~0.000225 degrees
+    const lngOffset = distanceMeters / (111000 * Math.cos(dropoffLat * Math.PI / 180)); // Adjust for latitude
+    
+    // Position vehicle slightly north-east of dropoff point
+    const testLat = dropoffLat + latOffset;
+    const testLng = dropoffLng + lngOffset;
+    
+    console.log('🧪 [TEST] Positioning vehicle at:', {
+      lat: testLat,
+      lng: testLng,
+      distanceFromDropoff: distanceMeters + 'm'
+    });
+
+    // Update driver marker position visually
+    if (driverMarker) {
+      driverMarker.setPosition({ lat: testLat, lng: testLng });
+    }
+    if (map) {
+      map.setCenter({ lat: testLat, lng: testLng });
+      map.setZoom(18); // Zoom in to see the position clearly
+    }
+
+    // Send position update to trigger geofence check
+    console.log('🧪 [TEST] Sending position update to trigger geofence...');
+    await trackingAPi.updateVehiclePosition(bookingId, { lat: testLat, lng: testLng }, []);
+    
+    showNotification(`✅ Test position sent! Vehicle positioned ~${distanceMeters}m from dropoff. Check backend logs for geofence check.`, 'success');
+    console.log('🧪 [TEST] Position update sent. Geofence should trigger if passenger is in "picked_up" or "in_transit" status.');
+    console.log('🧪 [TEST] Note: Actual distance may vary slightly due to Haversine calculation. Target: within 40m threshold.');
+    
+  } catch (error) {
+    console.error('❌ [TEST] Error testing geofence:', error);
+    showNotification(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+// Make test function globally accessible
+window.testGeofenceNearDropoff = testGeofenceNearDropoff;
 
 // Simple notification function
 function showNotification(message, type = 'info') {

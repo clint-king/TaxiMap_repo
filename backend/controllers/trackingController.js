@@ -390,24 +390,32 @@ async function checkGeofenceForDropoffs(connection, bookingId, vehicleLat, vehic
         // Try to get passenger dropoffs from Redis first (faster)
         let passengerDropoffs = await redisHelpers.getPassengerDropoffs(bookingId);
         
-        // If not in Redis, fetch from database and cache it
-        if (!passengerDropoffs) {
-            console.log(`📦 [GEOFENCE] Dropoff points not in Redis, fetching from database for booking ${bookingId}`);
+        // If not in Redis or empty array, fetch from database and cache it
+        // Also invalidate cache if it exists but is empty (stale data)
+
+
+        if (!passengerDropoffs || (Array.isArray(passengerDropoffs) && passengerDropoffs.length === 0)) {
+            // Invalidate stale cache if it exists (empty array means stale data)
+            if (Array.isArray(passengerDropoffs) && passengerDropoffs.length === 0) {
+                await redisHelpers.invalidatePassengerDropoffs(bookingId);
+                console.log(`🔄 [GEOFENCE] Invalidated stale Redis cache (empty array) for booking ${bookingId}`);
+            }
+            console.log(`📦 [GEOFENCE] Dropoff points not in Redis or empty, fetching from database for booking ${bookingId}`);
             
-            const [dropoffData] = await geofenceConnection.execute(
-                `SELECT 
-                    ID,
-                    first_name,
-                    last_name,
-                    booking_passenger_status,
-                    ST_X(dropoff_point) as dropoff_lng,
-                    ST_Y(dropoff_point) as dropoff_lat
-                FROM booking_passengers
-                WHERE booking_id = ?
-                    AND booking_passenger_status IN ('picked_up', 'in_transit')
-                    AND dropoff_point IS NOT NULL`,
-                [bookingId]
-            );
+                const [dropoffData] = await geofenceConnection.execute(
+                    `SELECT 
+                        ID,
+                        first_name,
+                        last_name,
+                        booking_passenger_status,
+                        ST_X(dropoff_point) as dropoff_lng,
+                        ST_Y(dropoff_point) as dropoff_lat
+                    FROM booking_passengers
+                    WHERE booking_id = ?
+                        AND booking_passenger_status IN ('confirmed', 'picked_up', 'in_transit')
+                        AND dropoff_point IS NOT NULL`,
+                    [bookingId]
+                );
 
             // Store in Redis for future use
             passengerDropoffs = dropoffData.map(p => ({
@@ -447,8 +455,10 @@ async function checkGeofenceForDropoffs(connection, bookingId, vehicleLat, vehic
             console.warn(`⚠️ [GEOFENCE] No passenger dropoff points found for booking ${bookingId}.`);
             console.warn(`⚠️ [GEOFENCE] This could mean:`);
             console.warn(`   - No passengers exist for this booking`);
-            console.warn(`   - Passengers are not in 'picked_up' or 'in_transit' status`);
+            console.warn(`   - Passengers are not in 'confirmed', 'picked_up', or 'in_transit' status`);
             console.warn(`   - Passengers don't have dropoff_point coordinates`);
+            // Invalidate Redis cache to force fresh fetch on next check
+            await redisHelpers.invalidatePassengerDropoffs(bookingId);
             geofenceConnection.release();
             return; // Exit early if no dropoff points
         }
@@ -486,11 +496,10 @@ async function checkGeofenceForDropoffs(connection, bookingId, vehicleLat, vehic
 
         // Mark passengers as "arrived" if within geofence
         for (const passenger of passengersNearDropoff) {
-            if (passenger.booking_passenger_status !== 'arrived') {
+            if (passenger.booking_passenger_status !== 'dropped-off') {
                 await geofenceConnection.execute(
                     `UPDATE booking_passengers 
-                     SET booking_passenger_status = 'arrived',
-                         updated_at = NOW()
+                     SET booking_passenger_status = 'dropped-off'
                      WHERE ID = ?`,
                     [passenger.ID]
                 );
@@ -614,10 +623,24 @@ export const confirmDropoff = async (req, res) => {
             });
         }
 
-        if (passenger[0].booking_passenger_status !== 'arrived') {
+        console.log(`[ConfirmDropoff] Passenger: ${JSON.stringify(passenger[0])}`);
+        console.log(`[ConfirmDropoff] Passenger status: ${passenger[0].booking_passenger_status}`);
+
+        // Check if passenger dropoff has already been fully confirmed (prevent duplicate confirmations)
+        // Note: 'dropped-off' is set by geofence when passenger arrives, this function finalizes it
+        if (passenger[0].booking_passenger_status === 'dropped_off' || passenger[0].booking_passenger_status === 'dropped-off') {
+            // Check if this is a duplicate confirmation attempt
+            // For now, we allow re-confirmation if they're already dropped-off (idempotent)
+            // But we could add a separate 'confirmed_dropped_off' status if needed
+            console.log(`[ConfirmDropoff] Passenger already in dropped-off status, proceeding with confirmation`);
+        }
+
+        // Allow confirmation if passenger is in valid status
+        // Geofence sets status to 'dropped-off' when passenger arrives, then this function finalizes it
+        if (!['confirmed', 'picked_up', 'in_transit', 'dropped-off'].includes(passenger[0].booking_passenger_status)) {
             return res.status(400).json({
                 success: false,
-                message: "Passenger must be marked as 'arrived' before confirming dropoff"
+                message: `Passenger must be in 'confirmed', 'picked_up', 'in_transit', or 'dropped-off' status. Current status: ${passenger[0].booking_passenger_status}`
             });
         }
 
@@ -629,11 +652,10 @@ export const confirmDropoff = async (req, res) => {
             });
         }
 
-        // Mark as dropped off
+        // Mark as dropped off (using 'dropped-off' to match geofence and database schema)
         await connection.execute(
             `UPDATE booking_passengers 
-             SET booking_passenger_status = 'dropped_off',
-                 updated_at = NOW()
+             SET booking_passenger_status = 'dropped-off'
              WHERE ID = ?`,
             [passengerId]
         );
