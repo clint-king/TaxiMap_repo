@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Booking Type - TekSiMap</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+      
+      @media (max-width: 768px) {
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+  <script type="module" crossorigin src="/assets/booking-type-selection-GmZXvCUr.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/AddressSelection-CWIIN_Gi.js">
+  <link rel="modulepreload" crossorigin href="/assets/tonav-BKPMnGmg.js">
+  <link rel="modulepreload" crossorigin href="/assets/axios-D4YhIzwJ.js">
+  <link rel="modulepreload" crossorigin href="/assets/logout-DBLdyFVo.js">
+  <link rel="stylesheet" crossorigin href="/assets/booking-type-selection-BcdQ2E9C.css">
+  <link rel="stylesheet" crossorigin href="/assets/feedback-BKXHax7C.css">
+  <link rel="stylesheet" crossorigin href="/assets/booking-hC124eKU.css">
+  <link rel="stylesheet" crossorigin href="/assets/topnav-Cma-tSYg.css">
+</head>
+<body class="has-map-layout">  
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJ3aGl0ZUdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4NCiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkZGRkY7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGMEYwRjA7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgPC9saW5lYXJHcmFkaWVudD4NCiAgICANCiAgICA8IS0tIEVuaGFuY2VkIGdsb3cgZWZmZWN0IC0tPg0KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciPg0KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImNvbG9yZWRCbHVyIi8+DQogICAgICA8ZmVNZXJnZT4gDQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4NCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+DQogICAgICA8L2ZlTWVyZ2U+DQogICAgPC9maWx0ZXI+DQogICAgDQogICAgPCEtLSBTdWJ0bGUgc2hhZG93IGZvciBkZXB0aCAtLT4NCiAgICA8ZmlsdGVyIGlkPSJ0ZXh0U2hhZG93Ij4NCiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAuNSIgZHk9IjAuNSIgc3RkRGV2aWF0aW9uPSIwLjUiIGZsb29kLWNvbG9yPSIjMDAwMDAwIiBmbG9vZC1vcGFjaXR5PSIwLjIiLz4NCiAgICA8L2ZpbHRlcj4NCiAgPC9kZWZzPg0KICANCiAgPCEtLSBDdXN0b20gc3R5bGVkICJUZWtzaU1hcCIgdGV4dCB3aXRoIGVuaGFuY2VkIHN0eWxpbmcgLS0+DQogIDwhLS0gVCB3aXRoIHVuaXF1ZSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI2MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI2dsb3cpIHVybCgjdGV4dFNoYWRvdykiPg0KICAgIFQNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBlIHdpdGggc2xpZ2h0IHJvdGF0aW9uIC0tPg0KICA8dGV4dCB4PSI3OCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoMiA3OCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgZQ0KICA8L3RleHQ+DQogIA0KICA8IS0tIGsgd2l0aCBjdXN0b20gc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iOTYiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgaw0KICA8L3RleHQ+DQogIA0KICA8IS0tIHMgd2l0aCBzbGlnaHQgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTE0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgtMSAxMTQgMzIpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHMNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBpIHdpdGggZG90IHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjEzMiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBpDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gTWFwIHBhcnQgd2l0aCBXSElURSBjb2xvciBmb3IgYmx1ZSBiYWNrZ3JvdW5kcyAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCN3aGl0ZUdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBNDQogIDwvdGV4dD4NCiAgDQogIDx0ZXh0IHg9IjE3NCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjd2hpdGVHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgYQ0KICA8L3RleHQ+DQogIA0KICA8dGV4dCB4PSIxOTIiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI3doaXRlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4NCg==" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html"   onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="booking-type-selection.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <!-- Login/Signup buttons for non-logged in users -->
+            <div id="authButtons" class="auth-buttons">
+              <a href="../authentication/login.html" class="btn-login">Login</a>
+              <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+            </div>
+            <!-- Full navigation for logged in users -->
+            <div id="fullNav" class="full-navigation" style="display: none;">
+              <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+              <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+              <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+          </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="booking-type-container">
+        <div class="booking-type-header">
+            <h1>Choose Your Booking Type</h1>
+            <p>Select the type of taxi booking that best suits your travel needs</p>
+        </div>
+
+        <div class="booking-types-grid">
+            <!-- Private Booking Card -->
+            <div class="booking-type-card private" onclick="selectBookingType('custom')">
+                <div class="booking-type-icon">
+                    <i class="ri-car-line"></i>
+                </div>
+                <div class="booking-type-title">Custom Trip Booking</div>
+                <div class="booking-type-badge">Personalized</div>
+                <div class="booking-type-description">
+                    Create your own custom trip for your group. You choose the pickup points, destination, and timing. Perfect for group trips, events, or personalized travel.
+                </div>
+                <ul class="booking-features">
+                    <li>Create custom trips for your group</li>
+                    <li>Pickup from any location you choose</li>
+                    <li>Drop-off at any destination</li>
+                    <li>Round trip - taxi returns to collect you</li>
+                    <li>You pay for your entire group</li>
+                    <li>Full control over timing and route</li>
+                </ul>
+                <div class="booking-type-cta">
+                    <button class="btn-booking-type private">Choose Custom Trip</button>
+                </div>
+            </div>
+
+            <!-- Public Booking Card -->
+            <div class="booking-type-card public" onclick="selectBookingType('route')">
+                <div class="booking-type-icon">
+                    <i class="ri-bus-line"></i>
+                </div>
+                <div class="booking-type-title">Individual Seat Booking</div>
+                <div class="booking-type-badge">Shared Vehicle</div>
+                <div class="booking-type-description">
+                    Reserve a single seat on a shared taxi. Ideal for individuals travelling long-distance without chartering the entire vehicle.
+                </div>
+                <ul class="booking-features">
+                    <li>Book a single seat for yourself</li>
+                    <li>Share the vehicle with other passengers</li>
+                    <li>Flexible departure options based on taxi availability</li>
+                    <li>Long-distance travel between supported towns/cities</li>
+                </ul>
+                <div class="booking-type-cta">
+                    <button class="btn-booking-type public">Choose Shared Booking</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div class="comparison-section">
+            <h2 class="comparison-title">Booking Type Comparison</h2>
+            <div class="comparison-table">
+                <div class="comparison-header">Feature</div>
+                <div class="comparison-header">Custom Trip Booking</div>
+                <div class="comparison-header">Individual Seat Booking</div>
+                
+                <div class="comparison-cell">Trip Type</div>
+                <div class="comparison-cell private">Round trip (return included)</div>
+                <div class="comparison-cell public">One-way seat bookings</div>
+                
+                <div class="comparison-cell">Route</div>
+                <div class="comparison-cell private">Create your own route</div>
+                <div class="comparison-cell public">Existing long-distance routes</div>
+                
+                <div class="comparison-cell">Passengers</div>
+                <div class="comparison-cell private">Your group only</div>
+                <div class="comparison-cell public">You plus other travellers</div>
+                
+                <!-- Parcel features temporarily disabled
+                <div class="comparison-cell">Parcel Support</div>
+                <div class="comparison-cell private">Handled by your group</div>
+                <div class="comparison-cell public">Add a parcel to your seat booking</div>
+                -->
+                
+                <div class="comparison-cell">Payment</div>
+                <div class="comparison-cell private">You pay for your group</div>
+                <div class="comparison-cell public">Pay for your seat only</div>
+                
+                <div class="comparison-cell">Pickup/Drop-off</div>
+                <div class="comparison-cell private">Your chosen locations</div>
+                <div class="comparison-cell public">Supported ranks/stops on the route</div>
+                
+                <div class="comparison-cell">Distance</div>
+                <div class="comparison-cell private">Any distance</div>
+                <div class="comparison-cell public">Long-distance only</div>
+                
+                <div class="comparison-cell">Timing</div>
+                <div class="comparison-cell private">Flexible timing</div>
+                <div class="comparison-cell public">Depends on taxi schedule</div>
+            </div>
+        </div>
+    </div>
+
+   
+    
+    <!-- Global functions for HTML onclick -->
+    <script>
+        function selectBookingType(type) {
+            if (type === 'custom') {
+                // Redirect to custom trip booking system
+                window.location.href = 'booking-trip-info.html';
+            } else if (type === 'route') {
+                // Redirect to route-based booking system
+                window.location.href = 'booking-public.html';
+            }
+        }
+
+        // Navigation functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexIncrease() {
+        const navbar = document.querySelector(".topnav");
+        navbar.style.zIndex = "3001";
+      }
+
+      function topNavZIndexDecrease() {
+        const navbar = document.querySelector(".topnav");
+        navbar.style.zIndex = "3";
+      }
+    </script>
+    
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Pickup & Destination - TeksiMap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <style>
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+      
+      @media (max-width: 768px) {
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+  <script type="module" crossorigin src="/assets/AddressSelection-CWIIN_Gi.js"></script>
+  <script type="module" crossorigin src="/assets/tonav-BKPMnGmg.js"></script>
+  <script type="module" crossorigin src="/assets/axios-D4YhIzwJ.js"></script>
+  <script type="module" crossorigin src="/assets/logout-DBLdyFVo.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/booking-edit-locations-DlgfPs02.css">
+  <link rel="stylesheet" crossorigin href="/assets/style-BkU9BqLn.css">
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJ3aGl0ZUdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4NCiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkZGRkY7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGMEYwRjA7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgPC9saW5lYXJHcmFkaWVudD4NCiAgICANCiAgICA8IS0tIEVuaGFuY2VkIGdsb3cgZWZmZWN0IC0tPg0KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciPg0KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImNvbG9yZWRCbHVyIi8+DQogICAgICA8ZmVNZXJnZT4gDQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4NCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+DQogICAgICA8L2ZlTWVyZ2U+DQogICAgPC9maWx0ZXI+DQogICAgDQogICAgPCEtLSBTdWJ0bGUgc2hhZG93IGZvciBkZXB0aCAtLT4NCiAgICA8ZmlsdGVyIGlkPSJ0ZXh0U2hhZG93Ij4NCiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAuNSIgZHk9IjAuNSIgc3RkRGV2aWF0aW9uPSIwLjUiIGZsb29kLWNvbG9yPSIjMDAwMDAwIiBmbG9vZC1vcGFjaXR5PSIwLjIiLz4NCiAgICA8L2ZpbHRlcj4NCiAgPC9kZWZzPg0KICANCiAgPCEtLSBDdXN0b20gc3R5bGVkICJUZWtzaU1hcCIgdGV4dCB3aXRoIGVuaGFuY2VkIHN0eWxpbmcgLS0+DQogIDwhLS0gVCB3aXRoIHVuaXF1ZSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI2MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI2dsb3cpIHVybCgjdGV4dFNoYWRvdykiPg0KICAgIFQNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBlIHdpdGggc2xpZ2h0IHJvdGF0aW9uIC0tPg0KICA8dGV4dCB4PSI3OCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoMiA3OCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgZQ0KICA8L3RleHQ+DQogIA0KICA8IS0tIGsgd2l0aCBjdXN0b20gc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iOTYiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgaw0KICA8L3RleHQ+DQogIA0KICA8IS0tIHMgd2l0aCBzbGlnaHQgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTE0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgtMSAxMTQgMzIpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHMNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBpIHdpdGggZG90IHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjEzMiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBpDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gTWFwIHBhcnQgd2l0aCBXSElURSBjb2xvciBmb3IgYmx1ZSBiYWNrZ3JvdW5kcyAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCN3aGl0ZUdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBNDQogIDwvdGV4dD4NCiAgDQogIDx0ZXh0IHg9IjE3NCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjd2hpdGVHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgYQ0KICA8L3RleHQ+DQogIA0KICA8dGV4dCB4PSIxOTIiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI3doaXRlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4NCg==" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <!-- Login/Signup buttons for non-logged in users -->
+                <div id="authButtons" class="auth-buttons">
+                    <a href="../authentication/login.html" class="btn-login">Login</a>
+                    <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+                </div>
+                <!-- Full navigation for logged in users -->
+                <div id="fullNav" class="full-navigation" style="display: none;">
+                    <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="location-edit-container">
+            <div class="location-header">
+                <h1><i class="fas fa-map-marker-alt"></i> Edit Pickup & Destination</h1>
+                <p>Update your pickup and destination locations for this booking</p>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="booking-summary">
+                <h3><i class="fas fa-info-circle"></i> Booking Summary</h3>
+                <div class="booking-details" id="bookingDetails">
+                    <!-- Booking details will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Location Form -->
+            <div class="location-form">
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-map"></i> Location Details
+                    </h3>
+                    
+                    <div class="map-instructions">
+                        <h4>How to update locations:</h4>
+                        <p>1. Enter new pickup and destination addresses in the fields below<br>
+                        2. Click on the map to set exact coordinates<br>
+                        3. Use the search functionality to find specific locations</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="pickupLocation">Pickup Location</label>
+                        <input type="text" id="pickupLocation" name="pickupLocation" placeholder="Enter pickup address">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="destinationLocation">Destination Location</label>
+                        <input type="text" id="destinationLocation" name="destinationLocation" placeholder="Enter destination address">
+                    </div>
+
+                    <div class="map-container" id="map"></div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> Back to Bookings
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveLocations()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentBooking = null;
+        let map = null;
+        let pickupMarker = null;
+        let destinationMarker = null;
+
+        // Initialize Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBookingInfo();
+            initializeMap();
+        });
+
+        function loadBookingInfo() {
+            currentBooking = JSON.parse(sessionStorage.getItem('currentBooking') || '{}');
+            if (!currentBooking.id) {
+                alert('No booking found. Redirecting to bookings page.');
+                window.location.href = 'booking-trip-info.html';
+                return;
+            }
+            
+            // Display booking information
+            const bookingDetails = document.getElementById('bookingDetails');
+            bookingDetails.innerHTML = `
+                <div class="detail-item">
+                    <span class="detail-label">Vehicle</span>
+                    <span class="detail-value">${currentBooking.vehicle.name}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">${currentBooking.trip.date}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value">${currentBooking.trip.time}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Current Pickup</span>
+                    <span class="detail-value">${currentBooking.trip.pickup}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Current Destination</span>
+                    <span class="detail-value">${currentBooking.trip.destination}</span>
+                </div>
+            `;
+            
+            // Load current locations into form
+            document.getElementById('pickupLocation').value = currentBooking.trip.pickup || '';
+            document.getElementById('destinationLocation').value = currentBooking.trip.destination || '';
+        }
+
+        function initializeMap() {
+            // Initialize map centered on South Africa
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [28.0475, -26.2041], // Johannesburg, South Africa
+                zoom: 10
+            });
+
+            // Add navigation controls
+            map.addControl(new mapboxgl.NavigationControl());
+
+            // Add geocoder for address search
+            const geocoder = new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                mapboxgl: mapboxgl,
+                placeholder: 'Search for a location...',
+                marker: false
+            });
+
+            map.addControl(geocoder);
+
+            // Add click event to map
+            map.on('click', function(e) {
+                const coordinates = e.lngLat;
+                
+                // Determine which location to update based on which input is focused
+                const activeInput = document.activeElement;
+                if (activeInput.id === 'pickupLocation') {
+                    updatePickupMarker(coordinates);
+                } else if (activeInput.id === 'destinationLocation') {
+                    updateDestinationMarker(coordinates);
+                }
+            });
+
+            // Load existing markers if locations exist
+            if (currentBooking && currentBooking.trip) {
+                loadExistingMarkers();
+            }
+        }
+
+        function loadExistingMarkers() {
+            // This would typically geocode the addresses to get coordinates
+            // For demo purposes, we'll use approximate coordinates
+            const pickupCoords = [28.0475, -26.2041]; // Johannesburg area
+            const destCoords = [18.4241, -33.9249]; // Cape Town area
+
+            if (currentBooking.trip.pickup) {
+                updatePickupMarker({ lng: pickupCoords[0], lat: pickupCoords[1] });
+            }
+
+            if (currentBooking.trip.destination) {
+                updateDestinationMarker({ lng: destCoords[0], lat: destCoords[1] });
+            }
+        }
+
+        function updatePickupMarker(coordinates) {
+            // Remove existing pickup marker
+            if (pickupMarker) {
+                pickupMarker.remove();
+            }
+
+            // Add new pickup marker
+            pickupMarker = new mapboxgl.Marker({ color: '#28a745' })
+                .setLngLat([coordinates.lng, coordinates.lat])
+                .setPopup(new mapboxgl.Popup().setHTML('<b>Pickup Location</b>'))
+                .addTo(map);
+
+            // Update input field with coordinates (in a real app, you'd reverse geocode)
+            document.getElementById('pickupLocation').value = `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`;
+        }
+
+        function updateDestinationMarker(coordinates) {
+            // Remove existing destination marker
+            if (destinationMarker) {
+                destinationMarker.remove();
+            }
+
+            // Add new destination marker
+            destinationMarker = new mapboxgl.Marker({ color: '#dc3545' })
+                .setLngLat([coordinates.lng, coordinates.lat])
+                .setPopup(new mapboxgl.Popup().setHTML('<b>Destination Location</b>'))
+                .addTo(map);
+
+            // Update input field with coordinates (in a real app, you'd reverse geocode)
+            document.getElementById('destinationLocation').value = `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`;
+        }
+
+        function saveLocations() {
+            const pickupLocation = document.getElementById('pickupLocation').value;
+            const destinationLocation = document.getElementById('destinationLocation').value;
+
+            if (!pickupLocation || !destinationLocation) {
+                alert('Please enter both pickup and destination locations.');
+                return;
+            }
+
+            // Update the booking with new locations
+            currentBooking.trip.pickup = pickupLocation;
+            currentBooking.trip.destination = destinationLocation;
+
+            // Save to appropriate storage based on booking status
+            const bookingStatus = sessionStorage.getItem('currentBookingStatus');
+            const bookingId = sessionStorage.getItem('currentBookingId');
+
+            if (bookingStatus === 'pending') {
+                const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
+                const bookingIndex = pendingBookings.findIndex(b => b.id === bookingId);
+                if (bookingIndex !== -1) {
+                    pendingBookings[bookingIndex] = currentBooking;
+                    localStorage.setItem('pendingBookings', JSON.stringify(pendingBookings));
+                }
+            } else if (bookingStatus === 'confirmed') {
+                const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+                const bookingIndex = confirmedBookings.findIndex(b => b.id === bookingId);
+                if (bookingIndex !== -1) {
+                    confirmedBookings[bookingIndex] = currentBooking;
+                    localStorage.setItem('confirmedBookings', JSON.stringify(confirmedBookings));
+                }
+            }
+
+            alert('Locations updated successfully!');
+            window.location.href = 'booking-trip-info.html';
+        }
+
+        function goBack() {
+            window.location.href = 'booking-trip-info.html';
+        }
+
+        // Navigation functions
+        function toggleMobileMenu() {
+            const navMenu = document.getElementById('nav-menu');
+            const navToggle = document.getElementById('nav-toggle');
+            
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
+

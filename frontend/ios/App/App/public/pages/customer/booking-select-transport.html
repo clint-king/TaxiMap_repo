@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Taxi - Select Transport | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon-tteXNlc0.ico">
+    <link rel="icon" type="image/png" href="/assets/favicon-16x16-DGNnmhM2.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/assets/favicon-32x32-D1RVGpwX.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon-9ebpAsM0.png">
+    <link rel="manifest" href="/assets/site-BwHFeIBa.webmanifest">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Match booking-trip-info.html styling */
+      /* Override external CSS to allow whole page scrolling */
+      html, body {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        max-height: none !important;
+      }
+
+      body {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      .page-content {
+        flex: 1;
+        padding: 2.5rem 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      @media (min-width: 1024px) {
+        .page-content {
+          padding: 3rem 2rem;
+        }
+      }
+
+      .vehicle-selection-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 3rem 4rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.5s ease;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      @media (min-width: 1024px) and (max-width: 1399px) {
+        .vehicle-selection-container {
+          max-width: 1400px;
+          padding: 2.5rem 3rem;
+        }
+      }
+
+      @media (min-width: 1400px) and (max-width: 1599px) {
+        .vehicle-selection-container {
+          max-width: 1600px;
+          padding: 3rem 4rem;
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .vehicle-selection-container {
+          max-width: 1800px;
+          padding: 3.5rem 5rem;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Selection Header Styling - Override external CSS */
+      .selection-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding: 2.5rem 2rem !important;
+        padding-bottom: 2.5rem !important;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+        background: white !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .selection-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+        z-index: 1;
+      }
+
+      .selection-title {
+        color: #01386A !important;
+        font-size: 2.8rem !important;
+        margin-bottom: 0.75rem !important;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .selection-title i {
+        color: #FFD52F !important;
+        font-size: 3rem !important;
+      }
+
+      .selection-subtitle {
+        color: #666 !important;
+        font-size: 1.2rem !important;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+        position: relative;
+        z-index: 2;
+        opacity: 1 !important;
+      }
+
+      /* Progress Indicator */
+      .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5rem;
+        margin-bottom: 4rem;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3.5rem 2.5rem;
+        border-radius: 15px;
+      }
+
+      .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-step .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: #999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.4s ease;
+        border: 4px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-step.active .step-number,
+      .progress-step.completed .step-number {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        transform: scale(1.15);
+        box-shadow: 0 8px 25px rgba(255, 213, 47, 0.4);
+      }
+
+      .progress-step .step-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .progress-step.active .step-label,
+      .progress-step.completed .step-label {
+        color: #01386A;
+        font-weight: 700;
+      }
+
+      .progress-line {
+        flex: 1;
+        height: 4px;
+        background: #e0e0e0;
+        margin: 0 1rem;
+        position: relative;
+        top: -30px;
+      }
+
+      .progress-line.completed {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+      }
+
+      /* Filters Section */
+      .filters-section {
+        margin-bottom: 3rem;
+      }
+
+      .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .filter-label {
+        color: #01386A;
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .filter-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+        background: white;
+      }
+
+      .filter-select:focus {
+        border-color: #01386A;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+      }
+
+      /* Vehicles Grid */
+      .vehicles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 2rem;
+      }
+
+      @media (min-width: 1400px) {
+        .vehicles-grid {
+          grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .vehicles-grid {
+          grid-template-columns: repeat(auto-fill, minmax(550px, 1fr));
+        }
+      }
+
+      /* Vehicle Card Styling */
+      .vehicle-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .vehicle-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+        border-color: #01386A;
+      }
+
+      /* Vehicle Image Container - Increased height */
+      .vehicle-image-container {
+        position: relative;
+        height: 350px !important;
+        min-height: 350px !important;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .vehicle-main-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .vehicle-card:hover .vehicle-main-image {
+        transform: scale(1.05);
+      }
+
+      .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+        display: flex;
+        align-items: flex-end;
+        padding: 1rem;
+      }
+
+      .image-info {
+        color: white;
+      }
+
+      .image-count {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+
+      /* Navigation links spacing */
+      @media (min-width: 769px) {
+        .nav-links {
+          gap: 30px;
+        }
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+
+      /* Topnav styling to ensure it stands out on gradient background */
+      .topnav {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        position: relative;
+      }
+
+      /* Back Button Styling */
+      .btn-back,
+      .btn-secondary {
+        background: #f8f9fa;
+        color: #01386A;
+        border: 2px solid #e9ecef;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+
+      .btn-back:hover,
+      .btn-secondary:hover {
+        background: #e9ecef;
+        border-color: #01386A;
+        transform: translateY(-2px);
+        text-decoration: none;
+      }
+
+      /* Form Header for Back Button */
+      .form-header {
+        margin-bottom: 2rem;
+      }
+
+      /* Link styling */
+      a {
+        color: #01386A;
+        transition: color 0.3s ease;
+      }
+
+      a:hover {
+        color: #025aa5;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .page-content {
+          padding: 1rem 0.5rem;
+          overflow: visible !important;
+          height: auto !important;
+        }
+
+        .vehicle-selection-container {
+          padding: 1.5rem;
+          border-radius: 15px;
+          overflow: visible !important;
+          height: auto !important;
+        }
+
+        .selection-title {
+          font-size: 2rem;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .progress-indicator {
+          gap: 2rem;
+          padding: 2rem 1rem;
+        }
+
+        .filters-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .vehicles-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .vehicle-image-container {
+          height: 300px !important;
+          min-height: 300px !important;
+        }
+
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .nav-links {
+          gap: 0;
+        }
+
+        .nav-links a {
+          padding: 10px 15px !important;
+          border-top: 1px solid rgba(255,255,255,0.1) !important;
+          text-align: center;
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .nav-links a:first-child {
+          border-top: none !important;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          margin-left: 0;
+          align-items: stretch;
+        }
+        
+        .full-navigation a {
+          display: block;
+          padding: 10px 15px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .full-navigation a:first-child {
+          border-top: none;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+        }
+        
+        .nav-logout-btn {
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+  <script type="module" crossorigin src="/assets/booking-select-transport-CkYGEuOn.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/AddressSelection-CWIIN_Gi.js">
+  <link rel="modulepreload" crossorigin href="/assets/tonav-BKPMnGmg.js">
+  <link rel="modulepreload" crossorigin href="/assets/axios-D4YhIzwJ.js">
+  <link rel="modulepreload" crossorigin href="/assets/logout-DBLdyFVo.js">
+  <link rel="stylesheet" crossorigin href="/assets/booking-select-transport-D-ywDXdP.css">
+  <link rel="stylesheet" crossorigin href="/assets/booking-hC124eKU.css">
+  <link rel="stylesheet" crossorigin href="/assets/clientStyle-DtqhMjhg.css">
+  <link rel="stylesheet" crossorigin href="/assets/topnav-Cma-tSYg.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJ3aGl0ZUdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4NCiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkZGRkY7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGMEYwRjA7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgPC9saW5lYXJHcmFkaWVudD4NCiAgICANCiAgICA8IS0tIEVuaGFuY2VkIGdsb3cgZWZmZWN0IC0tPg0KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciPg0KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImNvbG9yZWRCbHVyIi8+DQogICAgICA8ZmVNZXJnZT4gDQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4NCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+DQogICAgICA8L2ZlTWVyZ2U+DQogICAgPC9maWx0ZXI+DQogICAgDQogICAgPCEtLSBTdWJ0bGUgc2hhZG93IGZvciBkZXB0aCAtLT4NCiAgICA8ZmlsdGVyIGlkPSJ0ZXh0U2hhZG93Ij4NCiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAuNSIgZHk9IjAuNSIgc3RkRGV2aWF0aW9uPSIwLjUiIGZsb29kLWNvbG9yPSIjMDAwMDAwIiBmbG9vZC1vcGFjaXR5PSIwLjIiLz4NCiAgICA8L2ZpbHRlcj4NCiAgPC9kZWZzPg0KICANCiAgPCEtLSBDdXN0b20gc3R5bGVkICJUZWtzaU1hcCIgdGV4dCB3aXRoIGVuaGFuY2VkIHN0eWxpbmcgLS0+DQogIDwhLS0gVCB3aXRoIHVuaXF1ZSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI2MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI2dsb3cpIHVybCgjdGV4dFNoYWRvdykiPg0KICAgIFQNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBlIHdpdGggc2xpZ2h0IHJvdGF0aW9uIC0tPg0KICA8dGV4dCB4PSI3OCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoMiA3OCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgZQ0KICA8L3RleHQ+DQogIA0KICA8IS0tIGsgd2l0aCBjdXN0b20gc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iOTYiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgaw0KICA8L3RleHQ+DQogIA0KICA8IS0tIHMgd2l0aCBzbGlnaHQgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTE0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgtMSAxMTQgMzIpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHMNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBpIHdpdGggZG90IHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjEzMiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBpDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gTWFwIHBhcnQgd2l0aCBXSElURSBjb2xvciBmb3IgYmx1ZSBiYWNrZ3JvdW5kcyAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCN3aGl0ZUdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBNDQogIDwvdGV4dD4NCiAgDQogIDx0ZXh0IHg9IjE3NCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjd2hpdGVHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgYQ0KICA8L3RleHQ+DQogIA0KICA8dGV4dCB4PSIxOTIiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI3doaXRlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4NCg==" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html"   onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="booking-type-selection.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <!-- Login/Signup buttons for non-logged in users -->
+            <div id="authButtons" class="auth-buttons">
+              <a href="../authentication/login.html" class="btn-login">Login</a>
+              <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+            </div>
+            <!-- Full navigation for logged in users -->
+            <div id="fullNav" class="full-navigation" style="display: none;">
+              <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+              <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+              <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+          </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <div class="vehicle-selection-container">
+            <!-- Back Button -->
+            <div class="form-header">
+                <button class="btn-back" onclick="window.location.href='booking-trip-info.html'">
+                    <i class="fas fa-arrow-left"></i> Back to Trip Info
+                </button>
+            </div>
+            
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Trip Info</div>
+                </div>
+                <div class="progress-line completed"></div>
+                <div class="progress-step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Select Transport</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Passenger Info</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Payment</div>
+                </div>
+            </div>
+
+        <!-- Header -->
+        <div class="selection-header">
+            <h1 class="selection-title">
+                <i class="fas fa-car"></i>
+                Choose Your Transport
+            </h1>
+            <p class="selection-subtitle">Select from available taxis and buses in your area</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Vehicle Type</label>
+                    <select class="filter-select" id="vehicleTypeFilter">
+                        <option value="">All Vehicles</option>
+                        <option value="minibus">Minibus Taxi</option>
+                        <option value="bus">22-Seater Bus</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Price Range</label>
+                    <select class="filter-select" id="priceFilter">
+                        <option value="">Any Price</option>
+                        <option value="low">Under R15/km</option>
+                        <option value="medium">R15-20/km</option>
+                        <option value="high">Over R20/km</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Rating</label>
+                    <select class="filter-select" id="ratingFilter">
+                        <option value="">Any Rating</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4+ Stars</option>
+                        <option value="3">3+ Stars</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Amenities</label>
+                    <select class="filter-select" id="amenitiesFilter">
+                        <option value="">All Amenities</option>
+                        <option value="ac">Air Conditioning</option>
+                        <option value="wifi">WiFi</option>
+                        <option value="music">Music System</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicles Grid -->
+        <div class="vehicles-grid" id="vehiclesGrid">
+            <!-- Vehicles will be loaded here -->
+        </div>
+            </div>
+
+    <!-- Vehicle Details Modal -->
+    <div id="vehicleModal" class="vehicle-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Vehicle Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+            </div>
+        </div>
+                        </div>
+
+    <!-- Scripts -->
+    <!-- External booking-select-transport.js removed - functionality is handled inline -->
+    
+    <script>
+        // Navigation functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexIncrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3001";
+        }
+
+        function topNavZIndexDecrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3";
+        }
+    </script>
+    
+</body>
+</html>

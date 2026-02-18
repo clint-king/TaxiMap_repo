@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suggest a Route - TeksiMap</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/favicon-tteXNlc0.ico" />
+  <link rel="icon" type="image/png" href="/assets/favicon-16x16-DGNnmhM2.png" sizes="16x16" />
+  <link rel="icon" type="image/png" href="/assets/favicon-32x32-D1RVGpwX.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Navigation spacing to match help page */
+      /* .nav-links {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        align-items: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      
+      .nav-links a.active {
+        background-color: #FFD52F !important;
+        color: #01386A !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      
+      .nav-links a.active:hover {
+        background-color: #FFC107 !important;
+        text-decoration: none;
+      }
+    
+  
+    .nav-logout-btn {
+      background: #dc3545 !important;
+      color: white !important;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+      white-space: nowrap;
+    }
+    
+    .nav-logout-btn:hover {
+      background: #c82333 !important;
+      text-decoration: none !important;
+      transform: translateY(-1px);
+    }
+    
+    .nav-logout-btn i {
+      font-size: 14px;
+    } */
+  </style>
+  <script type="module" crossorigin src="/assets/route-suggestion-DQwf2-r5.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/AddressSelection-CWIIN_Gi.js">
+  <link rel="modulepreload" crossorigin href="/assets/axios-D4YhIzwJ.js">
+  <link rel="modulepreload" crossorigin href="/assets/logout-DBLdyFVo.js">
+  <link rel="stylesheet" crossorigin href="/assets/route-suggestion-BwisCOq9.css">
+  <link rel="stylesheet" crossorigin href="/assets/topnav-Cma-tSYg.css">
+</head>
+<body class="has-map-layout">
+  <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJ3aGl0ZUdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4NCiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkZGRkY7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGMEYwRjA7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgPC9saW5lYXJHcmFkaWVudD4NCiAgICANCiAgICA8IS0tIEVuaGFuY2VkIGdsb3cgZWZmZWN0IC0tPg0KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciPg0KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImNvbG9yZWRCbHVyIi8+DQogICAgICA8ZmVNZXJnZT4gDQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4NCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+DQogICAgICA8L2ZlTWVyZ2U+DQogICAgPC9maWx0ZXI+DQogICAgDQogICAgPCEtLSBTdWJ0bGUgc2hhZG93IGZvciBkZXB0aCAtLT4NCiAgICA8ZmlsdGVyIGlkPSJ0ZXh0U2hhZG93Ij4NCiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAuNSIgZHk9IjAuNSIgc3RkRGV2aWF0aW9uPSIwLjUiIGZsb29kLWNvbG9yPSIjMDAwMDAwIiBmbG9vZC1vcGFjaXR5PSIwLjIiLz4NCiAgICA8L2ZpbHRlcj4NCiAgPC9kZWZzPg0KICANCiAgPCEtLSBDdXN0b20gc3R5bGVkICJUZWtzaU1hcCIgdGV4dCB3aXRoIGVuaGFuY2VkIHN0eWxpbmcgLS0+DQogIDwhLS0gVCB3aXRoIHVuaXF1ZSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI2MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI2dsb3cpIHVybCgjdGV4dFNoYWRvdykiPg0KICAgIFQNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBlIHdpdGggc2xpZ2h0IHJvdGF0aW9uIC0tPg0KICA8dGV4dCB4PSI3OCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoMiA3OCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgZQ0KICA8L3RleHQ+DQogIA0KICA8IS0tIGsgd2l0aCBjdXN0b20gc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iOTYiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgaw0KICA8L3RleHQ+DQogIA0KICA8IS0tIHMgd2l0aCBzbGlnaHQgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTE0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgtMSAxMTQgMzIpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHMNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBpIHdpdGggZG90IHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjEzMiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBpDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gTWFwIHBhcnQgd2l0aCBXSElURSBjb2xvciBmb3IgYmx1ZSBiYWNrZ3JvdW5kcyAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCN3aGl0ZUdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBNDQogIDwvdGV4dD4NCiAgDQogIDx0ZXh0IHg9IjE3NCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjd2hpdGVHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgYQ0KICA8L3RleHQ+DQogIA0KICA8dGV4dCB4PSIxOTIiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI3doaXRlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4NCg==" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                  <a href="./client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                  <a href="./booking-type-selection.html" onclick="topNavZIndexDecrease()">Book Taxi</a>
+                  <a href="./help.html" onclick="topNavZIndexDecrease()">Help</a>
+                  <a href="./route-suggestion.html" class="active" onclick="topNavZIndexDecrease()">Suggest route</a>
+                  <a href="./feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                  <a href="../authentication/profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
+              </div>
+            </div>
+        </nav>
+
+  <!-- Main Content -->
+  <div class="main-container">
+
+    <!-- Progress Steps -->
+    <div class="progress-container">
+      <div class="progress-steps">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-label">Route Type</div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-label">Taxi Ranks</div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-label">Draw Route</div>
+        </div>
+        <div class="step" data-step="4">
+          <div class="step-number">4</div>
+          <div class="step-label">Review & Submit</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: Route Type Selection -->
+    <div class="step-content active" id="step-1">
+      <div class="step-header">
+        <h2><i class="fas fa-route"></i> Choose Route Type</h2>
+        <p>Select the type of route you want to suggest</p>
+      </div>
+
+      <div class="route-type-selection">
+        <div class="route-type-card" onclick="selectRouteType('Straight')">
+          <div class="route-type-icon">
+            <i class="fas fa-arrow-right"></i>
+          </div>
+          <h3>Straight Route</h3>
+          <p>Route with a starting point and destination</p>
+          <div class="route-type-example">
+            <div class="example-point">A</div>
+            <div class="example-line"></div>
+            <div class="example-point">B</div>
+          </div>
+        </div>
+
+        <div class="route-type-card" onclick="selectRouteType('Loop')">
+          <div class="route-type-icon">
+            <i class="fas fa-sync-alt"></i>
+          </div>
+          <h3>Loop Route</h3>
+          <p>Route that starts and ends at the same location</p>
+          <div class="route-type-example">
+            <div class="example-loop">
+              <div class="example-point">A</div>
+              <div class="example-curve"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Taxi Rank Selection -->
+    <div class="step-content" id="step-2">
+      <div class="step-header">
+        <h2><i class="fas fa-map-marker-alt"></i> Select Taxi Ranks</h2>
+        <p id="step2Description">Choose your starting and destination taxi ranks</p>
+      </div>
+
+      <div class="location-selection">
+        <div class="location-group">
+          <label for="startLocation">Starting Taxi Rank *</label>
+          <div class="location-input-container">
+            <input type="text" id="startLocation" placeholder="Search for starting taxi rank..." required>
+            <button class="btn btn-secondary" onclick="createNewLocation('start')">
+              <i class="fas fa-plus"></i> Create New
+            </button>
+          </div>
+          <div class="location-suggestions" id="startSuggestions"></div>
+        </div>
+
+        <div class="location-group" id="endLocationGroup">
+          <label for="endLocation">Destination Taxi Rank *</label>
+          <div class="location-input-container">
+            <input type="text" id="endLocation" placeholder="Search for destination taxi rank..." required>
+            <button class="btn btn-secondary" onclick="createNewLocation('end')">
+              <i class="fas fa-plus"></i> Create New
+            </button>
+          </div>
+          <div class="location-suggestions" id="endSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-secondary" onclick="previousStep()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <button class="btn btn-primary" onclick="nextStep()" id="step2NextBtn" disabled>
+          Next: Draw Route <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Route Drawing -->
+    <div class="step-content" id="step-3">
+      <div class="step-header">
+        <h2><i class="fas fa-pencil-alt"></i> Draw Your Route</h2>
+        <p>Click on the map to draw the route path</p>
+      </div>
+
+      <div class="drawing-container">
+        <!-- Price Selection at the top -->
+        <div class="route-price-section">
+          <div class="price-input-group">
+            <label for="routePrice" class="price-label">
+              <i class="fas fa-money-bill-wave"></i> Route Price
+            </label>
+            <div class="price-input-wrapper">
+              <input type="number" id="routePrice" placeholder="0.00" min="0" step="0.50" class="price-input">
+              <span class="currency-badge">ZAR</span>
+            </div>
+            <small class="price-hint">Set the fare for this route</small>
+          </div>
+        </div>
+        
+        <!-- Map -->
+        <div id="map" class="drawing-map"></div>
+        
+        <!-- Drawing Controls closer to map -->
+        <div class="drawing-controls">
+          <div class="draw-controls">
+            <button class="btn btn-outline" id="drawRouteBtn" onclick="toggleDrawMode()">
+              <i class="fas fa-pencil-alt"></i> Start Drawing
+            </button>
+            <button class="btn btn-outline" id="clearRouteBtn" onclick="clearRoute()" disabled>
+              <i class="fas fa-eraser"></i> Clear Route
+            </button>
+            <button class="btn btn-outline" id="finishRouteBtn" onclick="finishRoute()" disabled>
+              <i class="fas fa-check"></i> Finish Route
+            </button>
+          </div>
+          
+          <div class="draw-status">
+            <span id="drawStatus">Click "Start Drawing" to begin drawing your route</span>
+          </div>
+        </div>
+        
+        <!-- Multiple Route Management -->
+        <div class="route-management-section">
+          <div class="route-management-header">
+            <h3><i class="fas fa-route"></i> Route Management</h3>
+            <button class="btn btn-outline btn-sm" id="addRouteBtn" onclick="addNewRoute()" disabled>
+              <i class="fas fa-plus"></i> Add Route
+            </button>
+          </div>
+          
+          <div class="routes-container">
+            <div class="addRoute">
+              <div class="route_div" data-name="1" style="background-color: #eba9b7">
+                Route 1
+                <button class="routeButton" style="background-color: #eba9b7" onclick="showRoute(1)">
+                  <i class="fa fa-eye" style="font-size: 12px; color: black;" aria-hidden="true"></i>
+                </button>
+                <button class="routeButton routeDeleteBtn" style="background-color: #eba9b7" onclick="removeRoute(1)" disabled>
+                  <i class="fa fa-times" style="font-size: 12px; color: black;" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-secondary" onclick="previousStep()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <button class="btn btn-primary" onclick="nextStep()" id="step3NextBtn" disabled>
+          Next: Review Route <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 4: Review & Submit -->
+    <div class="step-content" id="step-4">
+      <div class="step-header">
+        <h2><i class="fas fa-check-circle"></i> Review Your Route</h2>
+        <p>Please review your route suggestion before submitting</p>
+      </div>
+
+      <div class="review-container">
+        <div class="review-section">
+          <h3>Route Details</h3>
+          <div class="review-item">
+            <label>Route Name:</label>
+            <span id="reviewRouteName">-</span>
+          </div>
+          <div class="review-item">
+            <label>Route Type:</label>
+            <span id="reviewRouteType">-</span>
+          </div>
+          <div class="review-item">
+            <label>Travel Method:</label>
+            <span id="reviewTravelMethod">-</span>
+          </div>
+          <div class="review-item">
+            <label>Price:</label>
+            <span id="reviewPrice">-</span>
+          </div>
+          <div class="review-item">
+            <label>Description:</label>
+            <span id="reviewDescription">-</span>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3>Locations</h3>
+          <div class="review-item">
+            <label>Starting Point:</label>
+            <span id="reviewStartLocation">-</span>
+          </div>
+          <div class="review-item">
+            <label>Destination:</label>
+            <span id="reviewEndLocation">-</span>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3>Route Preview</h3>
+          <div class="route-preview">
+            <div id="routePreviewMap"></div>
+          </div>
+        </div>
+      </div>
+
+        <div class="step-actions">
+          <button class="btn btn-secondary" onclick="previousStep()">
+            <i class="fas fa-arrow-left"></i> Back to Edit
+          </button>
+          <button class="btn btn-success" onclick="submitRoute()">
+            <i class="fas fa-paper-plane"></i> Submit Route
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-card">
+        <div class="success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Route Submitted Successfully!</h2>
+        <p>Thank you for your contribution. Your route will be reviewed by our team.</p>
+        <div class="success-actions">
+          <button class="btn btn-primary" onclick="startNewRoute()">
+            <i class="fas fa-plus"></i> Suggest Another Route
+          </button>
+          <button class="btn btn-secondary" onclick="goToHome()">
+            <i class="fas fa-home"></i> Go to Home
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Location Creation Modal -->
+  <div class="modal" id="locationModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Location</h3>
+        <button class="modal-close" onclick="closeLocationModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="newLocationName">Location Name *</label>
+          <input type="text" id="newLocationName" placeholder="e.g., Nkowankowa Taxi Rank" required>
+        </div>
+        <div class="form-group">
+          <label for="newLocationProvince">Province *</label>
+          <select id="newLocationProvince" required>
+            <option value="">Select province</option>
+            <option value="Gauteng">Gauteng</option>
+            <option value="Western Cape">Western Cape</option>
+            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+            <option value="Eastern Cape">Eastern Cape</option>
+            <option value="Free State">Free State</option>
+            <option value="Limpopo">Limpopo</option>
+            <option value="Mpumalanga">Mpumalanga</option>
+            <option value="Northern Cape">Northern Cape</option>
+            <option value="North West">North West</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="newLocationAddress">Address *</label>
+          <div class="address-input-container">
+            <input type="text" id="newLocationAddress" placeholder="Type address or click on map..." required>
+            <div class="address-suggestions" id="addressSuggestions"></div>
+          </div>
+          <small class="address-help">Type to search for addresses or click on the map below</small>
+        </div>
+        <div class="form-group">
+          <label>Click on the map to set location</label>
+          <div id="locationMap" style="height: 300px; border: 1px solid #ddd; border-radius: 8px;"></div>
+          <small class="map-help">Click anywhere on the map to set the exact location</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewLocation()">Save Location</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marker Context Menu -->
+  <div class="listmenu" id="markerContextMenu">
+    <p id="title">Modify Marker</p>
+    <button class="close_button" id="del_close_button">
+      <i class="fa fa-times" style="font-size: 20px; color: black" aria-hidden="true"></i>
+    </button>
+    <div class="btnListContainer">
+      <button class="btnMenu Edit" id="editbtnListMenu">Edit Marker</button>
+      <button class="btnMenu Remove" id="removebtnListMenu">Remove Marker</button>
+    </div>
+  </div>
+
+  <!-- Edit Marker Confirmation Menu -->
+  <div class="menu editMarker" id="editMarkerMenu">
+    <p id="title">Confirm Edit</p>
+    <button class="close_button" id="edit_close_button">
+      <i class="fa fa-times" style="font-size: 20px; color: black" aria-hidden="true"></i>
+    </button>
+    <div class="btnContainer">
+      <button class="btn yes" id="editYesBtn">Yes</button>
+      <button class="btn no" id="editNoBtn">No</button>
+    </div>
+  </div>
+
+  <!-- Remove Route Confirmation Menu -->
+  <div class="menu removeRoute" id="removeRouteMenu">
+    <p id="title">Remove Route</p>
+    <button class="close_button" id="removeRoute_close_button">
+      <i class="fa fa-times" style="font-size: 20px; color: black" aria-hidden="true"></i>
+    </button>
+    <div class="btnContainer">
+      <p id="removeRouteMessage">Do you want to remove this route?</p>
+      <button class="btn yes" id="removeRouteYesBtn">Yes</button>
+      <button class="btn no" id="removeRouteNoBtn">No</button>
+    </div>
+  </div>
+
+  <!-- Success/Error Messages -->
+  <div class="message-container" id="messageContainer"></div>
+  </div> <!-- Close wrapper -->
+
+  <!-- Scripts -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  
+</body>
+</html>
+

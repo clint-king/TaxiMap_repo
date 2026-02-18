@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "za.co.clietin.teksimap.app-mergeDebugResources-25:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\cliet\\.gradle\\caches\\transforms-4\\532d1202414184cef8a63db88a25ccbf\\transformed\\appcompat-1.7.1\\res\\values-ldltr-v21\\values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

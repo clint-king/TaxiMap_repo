@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TeksiMap - South African Minibus Taxi Navigator</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon-tteXNlc0.ico" />
+    <link rel="icon" type="image/png" href="/assets/favicon-16x16-DGNnmhM2.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="/assets/favicon-32x32-D1RVGpwX.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.svg" />
+    <link rel="manifest" href="/assets/site-BwHFeIBa.webmanifest" />
+    
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { primary: "#FFD700", secondary: "#000000" },
+            borderRadius: { button: "8px" },
+          },
+        },
+      };
+    </script>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+    />
+    <script type="module" crossorigin src="/assets/main-O5a0Tho0.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/AddressSelection-CWIIN_Gi.js">
+    <link rel="modulepreload" crossorigin href="/assets/contributors-DrZ1xbbi.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-CYIJD7b3.css">
+  </head>
+  <body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md fixed w-full z-50">
+      <div
+        class="container mx-auto px-4 py-3 flex justify-between items-center"
+      >
+        <a href="#" class="flex items-center">
+          <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJibHVlR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAxMzg2QTtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwNTZiMztzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICA8L2xpbmVhckdyYWRpZW50Pg0KICAgIA0KICAgIDwhLS0gRW5oYW5jZWQgZ2xvdyBlZmZlY3QgLS0+DQogICAgPGZpbHRlciBpZD0iZ2xvdyI+DQogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIxLjUiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4NCiAgICAgIDxmZU1lcmdlPiANCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJjb2xvcmVkQmx1ciIvPg0KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz4NCiAgICAgIDwvZmVNZXJnZT4NCiAgICA8L2ZpbHRlcj4NCiAgICANCiAgICA8IS0tIFN1YnRsZSBzaGFkb3cgZm9yIGRlcHRoIC0tPg0KICAgIDxmaWx0ZXIgaWQ9InRleHRTaGFkb3ciPg0KICAgICAgPGZlRHJvcFNoYWRvdyBkeD0iMC41IiBkeT0iMC41IiBzdGREZXZpYXRpb249IjAuNSIgZmxvb2QtY29sb3I9IiMwMDAwMDAiIGZsb29kLW9wYWNpdHk9IjAuMiIvPg0KICAgIDwvZmlsdGVyPg0KICA8L2RlZnM+DQogIA0KICA8IS0tIEN1c3RvbSBzdHlsZWQgIlRla3NpTWFwIiB0ZXh0IHdpdGggZW5oYW5jZWQgc3R5bGluZyAtLT4NCiAgPCEtLSBUIHdpdGggdW5pcXVlIHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjYwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjZ2xvdykgdXJsKCN0ZXh0U2hhZG93KSI+DQogICAgVA0KICA8L3RleHQ+DQogIA0KICA8IS0tIGUgd2l0aCBzbGlnaHQgcm90YXRpb24gLS0+DQogIDx0ZXh0IHg9Ijc4IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgyIDc4IDMyKSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBlDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gayB3aXRoIGN1c3RvbSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI5NiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBrDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gcyB3aXRoIHNsaWdodCBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSIxMTQiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIHRyYW5zZm9ybT0icm90YXRlKC0xIDExNCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgcw0KICA8L3RleHQ+DQogIA0KICA8IS0tIGkgd2l0aCBkb3Qgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTMyIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIGkNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBNYXAgcGFydCB3aXRoIGRpZmZlcmVudCBjb2xvciAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIE0NCiAgPC90ZXh0Pg0KICANCiAgPHRleHQgeD0iMTc0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIGENCiAgPC90ZXh0Pg0KICANCiAgPHRleHQgeD0iMTkyIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4g" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="#home" class="hover:text-primary">Home</a>
+          <a href="#about" class="hover:text-primary">About</a>
+          <a href="#contributors" class="hover:text-primary">Contributors</a>
+          <a href="#contact" class="hover:text-primary">Contact</a>
+          <button
+            class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
+              onclick="window.location.href='pages/authentication/login.html'"
+          >
+            Sign In
+          </button>
+          <button
+            class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
+            onclick="window.location.href='pages/authentication/signup.html'"
+          >
+            Sign Up
+          </button>
+        </div>
+        <div class="md:hidden flex items-center">
+          <button
+            id="mobile-menu-button"
+            class="w-10 h-10 flex items-center justify-center"
+          >
+            <i class="ri-menu-line ri-lg"></i>
+          </button>
+        </div>
+      </div>
+      <div
+        id="mobile-menu"
+        class="md:hidden hidden mt-0 pb-2 absolute top-full left-0 w-full bg-white shadow-lg z-50"
+      >
+        <div class="px-4">
+          <a
+            href="#home"
+            class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+            >Home</a
+          >
+          <a
+            href="#about"
+            class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+            >About</a
+          >
+          <a
+            href="#contributors"
+            class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+            >Contributors</a
+          >
+          <a
+            href="#contact"
+            class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+            >Contact</a
+          >
+          <div class="py-3 flex flex-col gap-2">
+             <button
+            class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
+             onclick="window.location.href='pages/authentication/login.html'"
+          >
+            Sign In
+          </button>
+
+            <button
+              class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
+               onclick="window.location.href='pages/authentication/signup.html'"
+            >
+              Sign Up
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section id="home" class="hero-section min-h-screen flex items-center">
+      <div class="container mx-auto px-4 pt-20">
+        <div class="w-full md:w-1/2 text-white">
+          <h1 class="text-4xl md:text-5xl font-bold mb-4">
+            Navigate South African Taxi Routes with Confidence
+          </h1>
+          <p class="text-lg mb-8">
+            Find routes, estimate fares, and travel smarter with the first app
+            built for minibus taxi commuters.
+          </p>
+          <div class="flex gap-4 flex-col sm:flex-row">
+            <button
+              class="bg-primary text-black py-3 px-8 rounded-button hover:bg-opacity-90 transition-all"
+              onclick="window.location.href='pages/authentication/signup.html'"
+            >
+              Get Started
+            </button>
+            <button
+              class="border-2 border-white text-white py-3 px-8 rounded-button hover:bg-white hover:text-black transition-all"
+              onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})"
+            >
+              Learn More
+            </button>
+          </div>
+          
+          <!-- External Page Links -->
+          <div class="mt-8 pt-6 border-t border-white border-opacity-30">
+            <p class="text-white text-sm mb-4 opacity-90">Try our services without signing up:</p>
+            <div class="flex gap-4 flex-col sm:flex-row">
+              <a
+                href="./pages/customer/client.html"
+                class="inline-flex items-center gap-2 bg-white bg-opacity-10 text-white py-2 px-6 rounded-button hover:bg-opacity-20 transition-all border border-white border-opacity-30"
+              >
+                <i class="ri-route-line"></i>
+                Find Route
+                <i class="ri-external-link-line text-xs"></i>
+              </a>
+              <a
+                href="./pages/customer/help.html"
+                class="inline-flex items-center gap-2 bg-white bg-opacity-10 text-white py-2 px-6 rounded-button hover:bg-opacity-20 transition-all border border-white border-opacity-30"
+              >
+                <i class="ri-question-line"></i>
+                Help & FAQ
+                <i class="ri-external-link-line text-xs"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="py-20 bg-white">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl font-bold mb-4">About TeksiMap</h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Transforming daily commutes for millions of South Africans.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div
+            class="about-card p-8 shadow-lg rounded-lg transition hover:-translate-y-1"
+          >
+            <i class="ri-compass-3-line text-primary text-3xl mb-4"></i>
+            <h3 class="font-bold mb-2">What We Do</h3>
+            <p class="text-gray-600">
+              Map taxi routes and fares to help commuters plan their journeys.
+            </p>
+          </div>
+          <div
+            class="about-card p-8 shadow-lg rounded-lg transition hover:-translate-y-1"
+          >
+            <i class="ri-roadster-line text-primary text-3xl mb-4"></i>
+            <h3 class="font-bold mb-2">The Problem</h3>
+            <p class="text-gray-600">
+              The lack of easily accessible, centralized taxi data leads to confusion and delays for millions of commuters.
+            </p>
+          </div>
+          <div
+            class="about-card p-8 shadow-lg rounded-lg transition hover:-translate-y-1"
+          >
+            <i class="ri-user-smile-line text-primary text-3xl mb-4"></i>
+            <h3 class="font-bold mb-2">How We Help</h3>
+            <p class="text-gray-600">
+              We provide mapped-out routes to reduce the stress of taxi travel.
+            </p>
+          </div>
+          <div
+            class="about-card p-8 shadow-lg rounded-lg transition hover:-translate-y-1"
+          >
+            <i class="ri-focus-3-line text-primary text-3xl mb-4"></i>
+            <h3 class="font-bold mb-2">Our Vision</h3>
+            <p class="text-gray-600">
+              Making public transportation easier and more accessible, starting with the taxi network.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contributors -->
+    <section id="contributors" class="py-20 bg-white">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl font-bold mb-4">Our Contributors</h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Meet the amazing people helping map South Africa's taxi network.
+          </p>
+        </div>
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 contributors-grid">
+          <!-- Contributor 1 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-black font-bold text-xl"
+              >
+                TB
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Thabo Baloyi</h3>
+                <span class="text-sm text-gray-500">Johannesburg Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Mapped 28 routes across Soweto and Johannesburg CBD, contributing
+              detailed fare information.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-primary/20 text-xs font-semibold px-3 py-1 rounded-full"
+                >Early Supporter</span
+              >
+              <span class="text-xs text-gray-500">Since March 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 2 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl"
+              >
+                NM
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Nomsa Mthembu</h3>
+                <span class="text-sm text-gray-500">Durban Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Documented 42 routes in the Durban metropolitan area, with focus
+              on KwaMashu and Umlazi connections.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-blue-100 text-xs font-semibold px-3 py-1 rounded-full text-blue-600"
+                >Top Contributor</span
+              >
+              <span class="text-xs text-gray-500">Since January 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 3 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xl"
+              >
+                LN
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Lungile Ndlovu</h3>
+                <span class="text-sm text-gray-500">Cape Town Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Mapped 35 routes connecting Cape Town CBD with Khayelitsha,
+              Mitchells Plain, and surrounding areas.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-green-100 text-xs font-semibold px-3 py-1 rounded-full text-green-600"
+                >Route Expert</span
+              >
+              <span class="text-xs text-gray-500">Since February 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 4 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xl"
+              >
+                SM
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Sipho Mbatha</h3>
+                <span class="text-sm text-gray-500">Pretoria Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Documented 23 routes in Pretoria and Centurion, with special focus
+              on university connections.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-amber-100 text-xs font-semibold px-3 py-1 rounded-full text-amber-600"
+                >Community Leader</span
+              >
+              <span class="text-xs text-gray-500">Since April 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 5 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-xl"
+              >
+                ZK
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Zanele Khumalo</h3>
+                <span class="text-sm text-gray-500">East London Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Mapped 18 routes in East London and surrounding townships,
+              providing detailed stop information.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-red-100 text-xs font-semibold px-3 py-1 rounded-full text-red-600"
+                >Data Specialist</span
+              >
+              <span class="text-xs text-gray-500">Since March 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 6 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xl"
+              >
+                BM
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Bongani Molefe</h3>
+                <span class="text-sm text-gray-500">Bloemfontein Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Documented 15 routes in Bloemfontein, with focus on connecting
+              residential areas to industrial zones.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-amber-100 text-xs font-semibold px-3 py-1 rounded-full text-amber-600"
+                >Regional Expert</span
+              >
+              <span class="text-xs text-gray-500">Since May 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 7 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-xl"
+              >
+                NN
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Nompumelelo Nkosi</h3>
+                <span class="text-sm text-gray-500">Port Elizabeth Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Mapped 22 routes in Port Elizabeth/Gqeberha, focusing on township
+              to CBD connections.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-teal-100 text-xs font-semibold px-3 py-1 rounded-full text-teal-600"
+                >Verification Expert</span
+              >
+              <span class="text-xs text-gray-500">Since February 2025</span>
+            </div>
+          </div>
+          <!-- Contributor 8 -->
+          <div
+            class="contributor-card bg-white rounded-lg shadow-lg p-6 transition-all duration-300"
+          >
+            <div class="flex items-center mb-4">
+              <div
+                class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xl"
+              >
+                TM
+              </div>
+              <div class="ml-4">
+                <h3 class="font-bold">Thandeka Moyo</h3>
+                <span class="text-sm text-gray-500">Nelspruit Routes</span>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">
+              Documented 12 routes in Nelspruit/Mbombela and surrounding areas,
+              with fare and schedule details.
+            </p>
+            <div class="flex justify-between items-center">
+              <span
+                class="bg-indigo-100 text-xs font-semibold px-3 py-1 rounded-full text-indigo-600"
+                >New Contributor</span
+              >
+              <span class="text-xs text-gray-500">Since June 2025</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-12 text-center">
+          <a
+            href="pages/contributors.html"
+            class="inline-block bg-white border-2 border-primary text-primary font-bold py-3 px-8 rounded-button hover:bg-primary hover:text-black transition-all"
+            >See All Contributors</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-20 bg-white">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold mb-4">Contact Us</h2>
+        <p class="mb-6 text-gray-600">
+          Get in touch via email or WhatsApp below.
+        </p>
+        <form id="contact-form" class="max-w-md mx-auto space-y-4">
+          <input
+            id="name"
+            type="text"
+            placeholder="Your Name"
+            required
+            class="w-full border p-3 rounded"
+          />
+          <input
+            id="email"
+            type="email"
+            placeholder="Your Email"
+            required
+            class="w-full border p-3 rounded"
+          />
+          <textarea
+            id="message"
+            placeholder="Your Message"
+            required
+            class="w-full border p-3 rounded"
+          ></textarea>
+          <button class="bg-primary text-black py-3 px-8 rounded-button">
+            Send
+          </button>
+        </form>
+        <p class="mt-4">
+          Or reach us on
+          <a href="https://chat.whatsapp.com/DqQYrTx0ypcDrNIsM3AlPk?mode=ac_t" class="text-primary">WhatsApp</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <a
+              href="#"
+              class="text-2xl font-['Pacifico'] text-primary mb-4 inline-block"
+              >TeksiMap</a
+            >
+            <p class="text-gray-400 mb-6">
+              Simplifying taxi commutes across South Africa.
+            </p>
+            <div class="flex space-x-4">
+              <a
+                href="https://www.facebook.com/profile.php?id=61576862880136"
+                class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+              >
+                <i class="ri-facebook-line"></i>
+              </a>
+              <a
+                href="https://x.com/FiqaWay"
+                class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+              >
+                <i class="ri-twitter-x-line"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/fiqaroute/"
+                class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+              >
+                <i class="ri-instagram-line"></i>
+              </a>
+              <a
+                href="https://chat.whatsapp.com/DqQYrTx0ypcDrNIsM3AlPk?mode=ac_t"
+                class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+              >
+                <i class="ri-whatsapp-line"></i>
+              </a>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+            <ul class="space-y-2">
+              <li>
+                <a href="#home" class="text-gray-400 hover:text-primary"
+                  >Home</a
+                >
+              </li>
+              <li>
+                <a href="#about" class="text-gray-400 hover:text-primary"
+                  >About</a
+                >
+              </li>
+              <li>
+                <a href="#contributors" class="text-gray-400 hover:text-primary"
+                  >Contributors</a
+                >
+              </li>
+              <li>
+                <a href="#contact" class="text-gray-400 hover:text-primary"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold mb-4">Legal</h3>
+            <ul class="space-y-2">
+              <li>
+                <a
+                  href="pages/terms.html"
+                  class="text-gray-400 hover:text-primary"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a
+                  href="pages/privacy.html"
+                  class="text-gray-400 hover:text-primary"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a
+                  href="pages/cookies.html"
+                  class="text-gray-400 hover:text-primary"
+                  >Cookie Policy</a
+                >
+              </li>
+              <li>
+                <a
+                  href="pages/data-protection.html"
+                  class="text-gray-400 hover:text-primary"
+                  >Data Protection</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold mb-4">Download App</h3>
+            <p class="text-gray-400 mb-4">
+              Get the TeksiMap app for iOS and Android
+            </p>
+            <div class="flex flex-col space-y-3">
+              <a
+                href="#"
+                class="border border-gray-700 rounded px-4 py-2 flex items-center hover:bg-gray-800"
+              >
+                <i class="ri-apple-fill ri-lg mr-3"></i>
+                <div>
+                  <div class="text-xs">Download on the</div>
+                  <div class="font-medium">App Store</div>
+                </div>
+              </a>
+              <a
+                href="#"
+                class="border border-gray-700 rounded px-4 py-2 flex items-center hover:bg-gray-800"
+              >
+                <i class="ri-google-play-fill ri-lg mr-3"></i>
+                <div>
+                  <div class="text-xs">Get it on</div>
+                  <div class="font-medium">Google Play</div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div
+          class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+        >
+          <p class="text-gray-400 text-sm mb-4 md:mb-0">
+            &copy; 2025 TeksiMap. All rights reserved.
+          </p>
+          <div class="flex items-center space-x-4">
+            <i class="ri-visa-line ri-lg"></i>
+            <i class="ri-mastercard-line ri-lg"></i>
+            <i class="ri-paypal-line ri-lg"></i>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            window.scrollTo({
+              top: target.offsetTop - 80,
+              behavior: "smooth",
+            });
+          }
+        });
+      });
+
+      const mobileMenuButton = document.getElementById("mobile-menu-button");
+      const mobileMenu = document.getElementById("mobile-menu");
+
+      mobileMenuButton.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+      });
+
+      document.querySelectorAll("#mobile-menu a").forEach((link) => {
+        link.addEventListener("click", () => {
+          document.getElementById("mobile-menu").classList.add("hidden");
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        const menu = document.getElementById("mobile-menu");
+        const button = document.getElementById("mobile-menu-button");
+        if (!menu.contains(e.target) && !button.contains(e.target)) {
+          menu.classList.add("hidden");
+        }
+      });
+
+      window.addEventListener("scroll", () => {
+        document.getElementById("mobile-menu").classList.add("hidden");
+      });
+    </script>
+  </body>
+</html>

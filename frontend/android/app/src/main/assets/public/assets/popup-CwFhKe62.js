@@ -1,0 +1,1 @@
+function p(o,t,e){const s=document.getElementById("informPopup");if(!s){console.error("Popup element not found. Make sure popup.html is loaded.");return}s.textContent=o,s.classList.remove("success","error"),s.classList.add(t?"success":"error"),s.classList.add("show"),setTimeout(()=>{s.classList.remove("show"),e&&e()},3e3)}const r={showSuccessPopup:p};export{r as p};

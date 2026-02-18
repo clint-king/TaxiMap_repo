@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "za.co.clietin.teksimap.app-mergeDebugResources-25:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\cliet\\.gradle\\caches\\transforms-4\\532d1202414184cef8a63db88a25ccbf\\transformed\\appcompat-1.7.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    }
+                }
+            ]
+        }
+    ]
+}

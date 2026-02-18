@@ -1,0 +1,1 @@
+document.addEventListener("DOMContentLoaded",function(){const e=document.getElementById("authButtons"),t=document.getElementById("fullNav");localStorage.getItem("userProfile")||sessionStorage.getItem("userProfile")?(e.style.display="none",t.style.display="block"):(e.style.display="block",t.style.display="none")});

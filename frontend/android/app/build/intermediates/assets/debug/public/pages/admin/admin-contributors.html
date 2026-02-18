@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Contributors - TeksiMap</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script type="module" crossorigin src="/assets/admin-contributors-DkecGZmC.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/AddressSelection-CWIIN_Gi.js">
+  <link rel="modulepreload" crossorigin href="/assets/adminCommon-B1qRNhTn.js">
+  <link rel="modulepreload" crossorigin href="/assets/axios-D4YhIzwJ.js">
+  <link rel="modulepreload" crossorigin href="/assets/logout-DBLdyFVo.js">
+  <link rel="stylesheet" crossorigin href="/assets/adminCommon-DS_8ZDrl.css">
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJ3aGl0ZUdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4NCiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkZGRkY7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGMEYwRjA7c3RvcC1vcGFjaXR5OjEiIC8+DQogICAgPC9saW5lYXJHcmFkaWVudD4NCiAgICANCiAgICA8IS0tIEVuaGFuY2VkIGdsb3cgZWZmZWN0IC0tPg0KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciPg0KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImNvbG9yZWRCbHVyIi8+DQogICAgICA8ZmVNZXJnZT4gDQogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iY29sb3JlZEJsdXIiLz4NCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+DQogICAgICA8L2ZlTWVyZ2U+DQogICAgPC9maWx0ZXI+DQogICAgDQogICAgPCEtLSBTdWJ0bGUgc2hhZG93IGZvciBkZXB0aCAtLT4NCiAgICA8ZmlsdGVyIGlkPSJ0ZXh0U2hhZG93Ij4NCiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAuNSIgZHk9IjAuNSIgc3RkRGV2aWF0aW9uPSIwLjUiIGZsb29kLWNvbG9yPSIjMDAwMDAwIiBmbG9vZC1vcGFjaXR5PSIwLjIiLz4NCiAgICA8L2ZpbHRlcj4NCiAgPC9kZWZzPg0KICANCiAgPCEtLSBDdXN0b20gc3R5bGVkICJUZWtzaU1hcCIgdGV4dCB3aXRoIGVuaGFuY2VkIHN0eWxpbmcgLS0+DQogIDwhLS0gVCB3aXRoIHVuaXF1ZSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI2MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI2dsb3cpIHVybCgjdGV4dFNoYWRvdykiPg0KICAgIFQNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBlIHdpdGggc2xpZ2h0IHJvdGF0aW9uIC0tPg0KICA8dGV4dCB4PSI3OCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgdHJhbnNmb3JtPSJyb3RhdGUoMiA3OCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgZQ0KICA8L3RleHQ+DQogIA0KICA8IS0tIGsgd2l0aCBjdXN0b20gc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iOTYiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgaw0KICA8L3RleHQ+DQogIA0KICA8IS0tIHMgd2l0aCBzbGlnaHQgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTE0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgtMSAxMTQgMzIpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHMNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBpIHdpdGggZG90IHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjEzMiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBpDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gTWFwIHBhcnQgd2l0aCBXSElURSBjb2xvciBmb3IgYmx1ZSBiYWNrZ3JvdW5kcyAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCN3aGl0ZUdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBNDQogIDwvdGV4dD4NCiAgDQogIDx0ZXh0IHg9IjE3NCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjd2hpdGVHcmFkaWVudCkiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgYQ0KICA8L3RleHQ+DQogIA0KICA8dGV4dCB4PSIxOTIiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI3doaXRlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4NCg==" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html" class="active">Contributors</a>
+        <a href="admin-existing-routes.html">Existing Routes</a>
+        <a href="admin-vehicles.html">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
+        <a href="admin-execute-booking.html">Execute Booking</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-dashboard">
+    <div class="admin-section">
+      <h1><i class="fas fa-users"></i> Contributors</h1>
+      
+      <!-- Stats Overview -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalContributors">-</div>
+          <div class="stat-label">Total Contributors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalRoutesContributed">-</div>
+          <div class="stat-label">Routes Contributed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="activeContributors">-</div>
+          <div class="stat-label">Active Contributors</div>
+        </div>
+      </div>
+
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <div>
+          <label for="contributorSort">Sort by:</label>
+          <select id="contributorSort" onchange="sortContributors()">
+            <option value="created_at">Join Date</option>
+            <option value="routes_contributed">Routes Contributed</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
+        <div>
+          <label for="contributorFilter">Filter:</label>
+          <select id="contributorFilter" onchange="filterContributors()">
+            <option value="all">All Contributors</option>
+            <option value="active">Active</option>
+            <option value="top">Top Contributors (5+ routes)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="refreshContributors()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Contributors Container -->
+      <div id="contributorsContainer">
+        <p>Loading contributors...</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

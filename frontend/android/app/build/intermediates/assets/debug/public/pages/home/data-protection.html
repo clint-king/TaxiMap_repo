@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Data Protection - TeksiMap</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+    <link rel="icon" type="image/png" href="../favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="../favicon-32x32.png" sizes="32x32" />
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { primary: '#FFD700', secondary: '#000000' },
+      borderRadius: {
+        none: '0px',
+        sm: '4px',
+        DEFAULT: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '20px',
+        '2xl': '24px',
+        '3xl': '32px',
+        full: '9999px',
+        button: '8px',
+      },
+    },
+  },
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&display=swap"
+  rel="stylesheet"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+/>
+<link rel="stylesheet" href="../css/style.css" />
+<style>
+  /* Additional mobile-friendly styles */
+  @media (max-width: 768px) {
+    .content-section {
+      padding: 1rem;
+    }
+    
+    .content-section h2 {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .content-section p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    
+    footer .grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      text-align: center;
+    }
+    
+    footer .flex-col {
+      align-items: center;
+    }
+  }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<nav class="bg-white shadow-md fixed w-full z-50">
+  <div class="container mx-auto px-4 py-3">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center">
+        <a
+          href="../../index.html"
+          class="flex items-center"
+          ><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjYwIiB2aWV3Qm94PSIwIDAgMjQwIDYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8ZGVmcz4NCiAgICA8IS0tIEdyYWRpZW50cyAtLT4NCiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdvbGRHcmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRDcwMDtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZBNTAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENzAwO3N0b3Atb3BhY2l0eToxIiAvPg0KICAgIDwvbGluZWFyR3JhZGllbnQ+DQogICAgDQogICAgPGxpbmVhckdyYWRpZW50IGlkPSJibHVlR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPg0KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAxMzg2QTtzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwNTZiMztzdG9wLW9wYWNpdHk6MSIgLz4NCiAgICA8L2xpbmVhckdyYWRpZW50Pg0KICAgIA0KICAgIDwhLS0gRW5oYW5jZWQgZ2xvdyBlZmZlY3QgLS0+DQogICAgPGZpbHRlciBpZD0iZ2xvdyI+DQogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIxLjUiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4NCiAgICAgIDxmZU1lcmdlPiANCiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJjb2xvcmVkQmx1ciIvPg0KICAgICAgICA8ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz4NCiAgICAgIDwvZmVNZXJnZT4NCiAgICA8L2ZpbHRlcj4NCiAgICANCiAgICA8IS0tIFN1YnRsZSBzaGFkb3cgZm9yIGRlcHRoIC0tPg0KICAgIDxmaWx0ZXIgaWQ9InRleHRTaGFkb3ciPg0KICAgICAgPGZlRHJvcFNoYWRvdyBkeD0iMC41IiBkeT0iMC41IiBzdGREZXZpYXRpb249IjAuNSIgZmxvb2QtY29sb3I9IiMwMDAwMDAiIGZsb29kLW9wYWNpdHk9IjAuMiIvPg0KICAgIDwvZmlsdGVyPg0KICA8L2RlZnM+DQogIA0KICA8IS0tIEN1c3RvbSBzdHlsZWQgIlRla3NpTWFwIiB0ZXh0IHdpdGggZW5oYW5jZWQgc3R5bGluZyAtLT4NCiAgPCEtLSBUIHdpdGggdW5pcXVlIHN0eWxpbmcgLS0+DQogIDx0ZXh0IHg9IjYwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjZ2xvdykgdXJsKCN0ZXh0U2hhZG93KSI+DQogICAgVA0KICA8L3RleHQ+DQogIA0KICA8IS0tIGUgd2l0aCBzbGlnaHQgcm90YXRpb24gLS0+DQogIDx0ZXh0IHg9Ijc4IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiB0cmFuc2Zvcm09InJvdGF0ZSgyIDc4IDMyKSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBlDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gayB3aXRoIGN1c3RvbSBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSI5NiIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9InVybCgjZ29sZEdyYWRpZW50KSIgZmlsdGVyPSJ1cmwoI3RleHRTaGFkb3cpIj4NCiAgICBrDQogIDwvdGV4dD4NCiAgDQogIDwhLS0gcyB3aXRoIHNsaWdodCBzdHlsaW5nIC0tPg0KICA8dGV4dCB4PSIxMTQiIHk9IjMyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIHRyYW5zZm9ybT0icm90YXRlKC0xIDExNCAzMikiIGZpbHRlcj0idXJsKCN0ZXh0U2hhZG93KSI+DQogICAgcw0KICA8L3RleHQ+DQogIA0KICA8IS0tIGkgd2l0aCBkb3Qgc3R5bGluZyAtLT4NCiAgPHRleHQgeD0iMTMyIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNnb2xkR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIGkNCiAgPC90ZXh0Pg0KICANCiAgPCEtLSBNYXAgcGFydCB3aXRoIGRpZmZlcmVudCBjb2xvciAtLT4NCiAgPHRleHQgeD0iMTUwIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIE0NCiAgPC90ZXh0Pg0KICANCiAgPHRleHQgeD0iMTc0IiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIGENCiAgPC90ZXh0Pg0KICANCiAgPHRleHQgeD0iMTkyIiB5PSIzMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0idXJsKCNibHVlR3JhZGllbnQpIiBmaWx0ZXI9InVybCgjdGV4dFNoYWRvdykiPg0KICAgIHANCiAgPC90ZXh0Pg0KICANCiAgPCEtLSA0IGRlY29yYXRpdmUgcGFydGljbGVzIC0gaW1wcm92ZWQgcG9zaXRpb25pbmcgYW5kIHNpemluZyBmb3IgYmV0dGVyIHZpc3VhbCBiYWxhbmNlIC0tPg0KICA8Y2lyY2xlIGN4PSIyMTAiIGN5PSIxNSIgcj0iMi41IiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuNyIvPg0KICA8Y2lyY2xlIGN4PSIyMTUiIGN5PSI0NSIgcj0iMS44IiBmaWxsPSIjRkZBNTAwIiBvcGFjaXR5PSIwLjYiLz4NCiAgPGNpcmNsZSBjeD0iMjIwIiBjeT0iOCIgcj0iMi4yIiBmaWxsPSJ1cmwoI2dvbGRHcmFkaWVudCkiIG9wYWNpdHk9IjAuOCIvPg0KICA8Y2lyY2xlIGN4PSIyMjUiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI0ZGQTUwMCIgb3BhY2l0eT0iMC41Ii8+DQo8L3N2Zz4g" alt="TeksiMap Logo" class="h-10 w-auto" /></a
+        >
+      </div>
+      <div class="hidden md:flex items-center space-x-8">
+        <a href="../index.html" class="font-medium hover:text-primary transition-colors"
+          >Home</a
+        >
+        <a href="../index.html#about" class="font-medium hover:text-primary transition-colors"
+          >About</a
+        >
+        <a
+          href="../index.html#contributors"
+          class="font-medium hover:text-primary transition-colors"
+          >Contributors</a
+        >
+        <a
+          href="../index.html#contact"
+          class="font-medium hover:text-primary transition-colors"
+          >Contact</a
+        >
+        <button
+          class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
+        >
+          Sign In
+        </button>
+        <button
+          class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
+        >
+          Sign Up
+        </button>
+      </div>
+      <div class="md:hidden flex items-center">
+        <button id="mobile-menu-button" class="w-10 h-10 flex items-center justify-center">
+          <i class="ri-menu-line ri-lg"></i>
+        </button>
+      </div>
+    </div>
+    <div
+      id="mobile-menu"
+      class="md:hidden hidden mt-0 pb-2 absolute top-full left-0 w-full bg-white shadow-lg z-50"
+    >
+      <div class="px-4">
+        <a href="../index.html" class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+          >Home</a
+        >
+        <a href="../index.html#about" class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+          >About</a
+        >
+        <a
+          href="../index.html#contributors"
+          class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+          >Contributors</a
+        >
+        <a
+          href="../index.html#contact"
+          class="block py-3 hover:text-primary transition-colors border-b border-gray-100"
+          >Contact</a
+        >
+        <div class="py-3 flex flex-col gap-2">
+          <button
+            class="bg-white border-2 border-primary text-primary font-bold py-2 px-6 !rounded-button hover:bg-primary hover:text-black transition-all whitespace-nowrap"
+          >
+            Sign In
+          </button>
+          <button
+            class="bg-primary text-black font-bold py-2 px-6 !rounded-button hover:bg-opacity-90 transition-all whitespace-nowrap"
+          >
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+</nav>
+<main class="pt-24 pb-20 flex-grow">
+  <div class="container mx-auto px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-12">
+        <h1 class="text-4xl font-bold mb-4">Data Protection</h1>
+        <p class="text-gray-600">Last updated: January 15, 2025</p>
+      </div>
+      <div class="space-y-8">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">1. Overview</h2>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            TeksiMap is committed to protecting your personal data and complying with applicable data protection laws, including the Protection of Personal Information Act (POPIA) in South Africa and other relevant international data protection regulations.
+          </p>
+          <p class="text-gray-700 leading-relaxed">
+            This Data Protection Policy outlines our commitment to safeguarding your personal information and explains how we ensure compliance with data protection principles.
+          </p>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">2. Data Protection Principles</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              We adhere to the following fundamental data protection principles:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Lawfulness, Fairness, and Transparency:</strong> We process personal data lawfully, fairly, and transparently</li>
+              <li><strong>Purpose Limitation:</strong> We collect data for specified, explicit, and legitimate purposes</li>
+              <li><strong>Data Minimization:</strong> We collect only the data that is necessary for our purposes</li>
+              <li><strong>Accuracy:</strong> We ensure that personal data is accurate and kept up to date</li>
+              <li><strong>Storage Limitation:</strong> We retain personal data only for as long as necessary</li>
+              <li><strong>Integrity and Confidentiality:</strong> We implement appropriate security measures</li>
+              <li><strong>Accountability:</strong> We take responsibility for compliance with these principles</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">3. Categories of Personal Data We Process</h2>
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-xl font-semibold mb-2">3.1 Identity and Contact Data</h3>
+              <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+                <li>Name, email address, phone number</li>
+                <li>Account credentials and profile information</li>
+                <li>Communication preferences</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">3.2 Location and Navigation Data</h3>
+              <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+                <li>GPS coordinates and location information</li>
+                <li>Route planning and navigation history</li>
+                <li>Start and destination points</li>
+                <li>Location-based preferences</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">3.3 Usage and Technical Data</h3>
+              <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+                <li>App usage patterns and interactions</li>
+                <li>Device information and technical specifications</li>
+                <li>IP address and network information</li>
+                <li>Performance and error logs</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">3.4 User-Generated Content</h3>
+              <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+                <li>Route contributions and feedback</li>
+                <li>Reviews and ratings</li>
+                <li>Support requests and communications</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">4. Legal Basis for Processing</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              We process your personal data based on the following legal grounds:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Consent:</strong> When you have given clear consent for specific processing activities</li>
+              <li><strong>Contract Performance:</strong> To provide our services and fulfill our contractual obligations</li>
+              <li><strong>Legitimate Interests:</strong> To improve our services, ensure security, and prevent fraud</li>
+              <li><strong>Legal Obligations:</strong> To comply with applicable laws and regulations</li>
+              <li><strong>Vital Interests:</strong> To protect your safety or the safety of others</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">5. Data Processing Activities</h2>
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-xl font-semibold mb-2">5.1 Service Provision</h3>
+              <p class="text-gray-700 leading-relaxed">
+                We process your data to provide route planning, navigation, and transportation information services, including location-based features and personalized recommendations.
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">5.2 User Support and Communication</h3>
+              <p class="text-gray-700 leading-relaxed">
+                We process your data to respond to your inquiries, provide customer support, and send important service updates and notifications.
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">5.3 Service Improvement</h3>
+              <p class="text-gray-700 leading-relaxed">
+                We analyze usage patterns and user feedback to improve our services, develop new features, and enhance user experience.
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">5.4 Security and Fraud Prevention</h3>
+              <p class="text-gray-700 leading-relaxed">
+                We process data to ensure the security of our platform, prevent fraud, and protect against unauthorized access.
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-semibold mb-2">5.5 Legal Compliance</h3>
+              <p class="text-gray-700 leading-relaxed">
+                We process data to comply with applicable laws, regulations, and legal processes.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">6. Data Security Measures</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              We implement comprehensive security measures to protect your personal data:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Encryption:</strong> Data is encrypted in transit and at rest using industry-standard protocols</li>
+              <li><strong>Access Controls:</strong> Strict access controls and authentication mechanisms</li>
+              <li><strong>Regular Audits:</strong> Regular security assessments and vulnerability testing</li>
+              <li><strong>Employee Training:</strong> Comprehensive data protection training for all staff</li>
+              <li><strong>Incident Response:</strong> Established procedures for handling data breaches</li>
+              <li><strong>Backup and Recovery:</strong> Secure backup systems and disaster recovery plans</li>
+              <li><strong>Physical Security:</strong> Secure data centers and office facilities</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">7. Data Retention and Deletion</h2>
+          <div class="space-y-4">
+          <p class="text-gray-700 leading-relaxed mb-4">
+              We retain personal data only for as long as necessary to fulfill the purposes for which it was collected:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Account Data:</strong> Retained while your account is active and for a reasonable period after deactivation</li>
+              <li><strong>Location Data:</strong> Typically retained for up to 12 months for service improvement</li>
+              <li><strong>Usage Analytics:</strong> Retained for up to 24 months for service optimization</li>
+              <li><strong>Legal Records:</strong> Retained as required by applicable laws and regulations</li>
+              <li><strong>Support Communications:</strong> Retained for up to 36 months for quality assurance</li>
+            </ul>
+            <p class="text-gray-700 leading-relaxed">
+              You may request deletion of your data at any time, subject to legal and contractual obligations.
+            </p>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">8. Your Data Protection Rights</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              You have the following rights regarding your personal data:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Right of Access:</strong> Request a copy of your personal data and information about how it is processed</li>
+              <li><strong>Right of Rectification:</strong> Request correction of inaccurate or incomplete data</li>
+              <li><strong>Right of Erasure:</strong> Request deletion of your personal data in certain circumstances</li>
+              <li><strong>Right to Restrict Processing:</strong> Request limitation of data processing in specific situations</li>
+              <li><strong>Right to Data Portability:</strong> Request a copy of your data in a structured, machine-readable format</li>
+              <li><strong>Right to Object:</strong> Object to processing based on legitimate interests</li>
+              <li><strong>Right to Withdraw Consent:</strong> Withdraw consent where processing is based on consent</li>
+              <li><strong>Right to Lodge a Complaint:</strong> File a complaint with the Information Regulator</li>
+            </ul>
+          <p class="text-gray-700 leading-relaxed">
+              To exercise these rights, please contact us using the information provided below.
+          </p>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">9. Data Sharing and Transfers</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              We may share your data with the following categories of recipients:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li><strong>Service Providers:</strong> Trusted third-party providers who assist in operating our platform</li>
+              <li><strong>Legal Authorities:</strong> When required by law or to protect our rights and safety</li>
+              <li><strong>Business Partners:</strong> With your consent for specific purposes</li>
+              <li><strong>Analytics Providers:</strong> For service improvement and analytics (anonymized where possible)</li>
+            </ul>
+          <p class="text-gray-700 leading-relaxed">
+              We ensure that all data transfers comply with applicable data protection laws and implement appropriate safeguards.
+            </p>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">10. International Data Transfers</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              Your data may be transferred to and processed in countries outside South Africa. We ensure that such transfers are lawful and secure by:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li>Implementing appropriate safeguards and security measures</li>
+              <li>Ensuring recipient countries provide adequate data protection</li>
+              <li>Using standard contractual clauses where necessary</li>
+              <li>Obtaining your explicit consent when required</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">11. Data Breach Response</h2>
+          <div class="space-y-4">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              In the event of a data breach, we have established procedures to:
+            </p>
+            <ul class="list-disc pl-6 text-gray-700 leading-relaxed">
+              <li>Immediately assess and contain the breach</li>
+              <li>Notify relevant authorities within required timeframes</li>
+              <li>Inform affected individuals where necessary</li>
+              <li>Take corrective actions to prevent future breaches</li>
+              <li>Document and review the incident for lessons learned</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">12. Data Protection Officer</h2>
+          <p class="text-gray-700 leading-relaxed">
+            We have designated a Data Protection Officer (DPO) who is responsible for overseeing our data protection compliance and can be contacted for any data protection-related inquiries.
+          </p>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">13. Updates to This Policy</h2>
+          <p class="text-gray-700 leading-relaxed">
+            We may update this Data Protection Policy from time to time to reflect changes in our practices, legal requirements, or for other operational reasons. We will notify you of any material changes and update the "Last updated" date accordingly.
+          </p>
+        </section>
+        <section>
+          <h2 class="text-2xl font-bold mb-4">14. Contact Information</h2>
+          <p class="text-gray-700 leading-relaxed">
+            For any questions about data protection or to exercise your rights, please contact us at:
+          </p>
+          <div class="mt-4 bg-gray-100 p-6 rounded-lg">
+            <p class="text-gray-700"><strong>Email:</strong> dataprotection@teksimap.co.za</p>
+            <p class="text-gray-700"><strong>Address:</strong> 88 Marshall Street, Johannesburg CBD, 2001</p>
+            <p class="text-gray-700"><strong>Phone:</strong> +27 71 234 5678</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="bg-gray-900 text-white py-12 mt-auto">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div class="md:col-span-1">
+        <a href="index.html" class="text-2xl font-['Pacifico'] text-primary mb-4 inline-block"
+          >TeksiMap</a
+        >
+        <p class="text-gray-400 mb-6">Simplifying taxi commutes across South Africa.</p>
+        <div class="flex space-x-4">
+          <a
+            href="#"
+            class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+            ><i class="ri-facebook-line"></i
+          ></a>
+          <a
+            href="#"
+            class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+            ><i class="ri-twitter-x-line"></i
+          ></a>
+          <a
+            href="#"
+            class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+            ><i class="ri-instagram-line"></i
+          ></a>
+          <a
+            href="#"
+            class="w-10 h-10 border border-gray-700 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary hover:text-black transition-all"
+            ><i class="ri-whatsapp-line"></i
+          ></a>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="../index.html" class="text-gray-400 hover:text-primary transition-colors">Home</a></li>
+          <li><a href="../index.html#about" class="text-gray-400 hover:text-primary transition-colors">About</a></li>
+          <li><a href="../index.html#contributors" class="text-gray-400 hover:text-primary transition-colors">Contributors</a></li>
+          <li><a href="../index.html#contact" class="text-gray-400 hover:text-primary transition-colors">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold mb-4">Legal</h3>
+        <ul class="space-y-2">
+          <li><a href="terms.html" class="text-gray-400 hover:text-primary transition-colors">Terms of Service</a></li>
+          <li><a href="privacy.html" class="text-gray-400 hover:text-primary transition-colors">Privacy Policy</a></li>
+          <li><a href="cookies.html" class="text-gray-400 hover:text-primary transition-colors">Cookie Policy</a></li>
+          <li><a href="data-protection.html" class="text-gray-400 hover:text-primary transition-colors">Data Protection</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold mb-4">Download App</h3>
+                    <p class="text-gray-400 mb-4">Get the TeksiMap app for iOS and Android</p>
+        <div class="flex flex-col space-y-3">
+          <a
+            href="#"
+            class="border border-gray-700 rounded px-4 py-2 flex items-center hover:bg-gray-800 transition-colors"
+          >
+            <i class="ri-apple-fill ri-lg mr-3"></i>
+            <div>
+              <div class="text-xs">Download on the</div>
+              <div class="font-medium">App Store</div>
+            </div>
+          </a>
+          <a
+            href="#"
+            class="border border-gray-700 rounded px-4 py-2 flex items-center hover:bg-gray-800 transition-colors"
+          >
+            <i class="ri-google-play-fill ri-lg mr-3"></i>
+            <div>
+              <div class="text-xs">Get it on</div>
+              <div class="font-medium">Google Play</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div
+      class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+    >
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">&copy; 2025 TeksiMap. All rights reserved.</p>
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center">
+          <i class="ri-visa-line ri-lg mr-2"></i>
+          <i class="ri-mastercard-line ri-lg mr-2"></i>
+          <i class="ri-paypal-line ri-lg"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+<script src="../js/script.js"></script>
+</body>
+</html>

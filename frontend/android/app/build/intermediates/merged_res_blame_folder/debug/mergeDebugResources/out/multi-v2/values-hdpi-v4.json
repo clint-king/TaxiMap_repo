@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "za.co.clietin.teksimap.app-mergeDebugResources-25:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\cliet\\.gradle\\caches\\transforms-4\\532d1202414184cef8a63db88a25ccbf\\transformed\\appcompat-1.7.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

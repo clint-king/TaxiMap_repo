@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/favicon-tteXNlc0.ico" />
+  <link rel="icon" type="image/png" href="/assets/favicon-16x16-DGNnmhM2.png" sizes="16x16" />
+  <link rel="icon" type="image/png" href="/assets/favicon-32x32-D1RVGpwX.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+  <meta http-equiv="Content-Security-Policy" content="
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
+  frame-src 'self';
+  connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:* https://api.teksimap.co.za;
+">
+      <title>TeksiMap | Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #01386A, #001f3f);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #01386A;
+    }
+
+    .auth-container {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .form-section {
+      flex: 1;
+      padding: 3rem;
+    }
+
+    .form-section h2 {
+      margin-bottom: 1rem;
+      color: #01386A;
+      font-size: 2rem;
+    }
+
+    .form-section form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-section label {
+      margin: 0.5rem 0 0.2rem;
+      font-weight: 500;
+    }
+
+    .form-section input {
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid #dfe6e9;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .form-section button {
+      background: #FFD737;
+      color: #01386A;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+    }
+
+    .form-section button:hover {
+      background: #e6c32c;
+    }
+
+    .switch-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .switch-link a {
+      color: #FFD737;
+      text-decoration: none;
+    }
+
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Inline error message under inputs */
+    .error-line {
+      color: #e53935; /* red */
+      font-size: 0.85rem;
+      min-height: 1.2rem; /* reserve space to avoid layout shift */
+      margin: -0.3rem 0 0.8rem; /* tuck closer to input */
+    }
+
+    .image-section {
+      flex: 1;
+      background: url('https://images.unsplash.com/photo-1534081333815-ae5019106621') no-repeat center center/cover;
+      min-height: 400px;
+    }
+
+
+
+    .btn-link {
+      background: none;
+      border: none;
+      color: #FFD737;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0;
+    }
+
+    .btn-link:hover {
+      color: #e6c32c;
+    }
+
+    /* Forgot password link specific styling */
+    .forgot-password-section .btn-link {
+      color: #007bff;
+      text-decoration: underline;
+      font-weight: normal;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .forgot-password-section .btn-link:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    .verification-help {
+      display: none;
+    }
+
+    .verification-help.show {
+      display: block;
+    }
+
+    /* Forgot Password Styles */
+    .forgot-password-section {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      position: absolute;
+      right: 1rem;
+      top: 0.5rem;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: #000;
+    }
+
+    .modal-content h2 {
+      margin-bottom: 1rem;
+      color: #01386A;
+    }
+
+    .modal-content p {
+      margin-bottom: 1.5rem;
+      color: #666;
+    }
+
+    .reset-password-btn {
+      background: #FFD737;
+      color: #01386A;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .reset-password-btn:hover {
+      background: #e6c32c;
+    }
+
+    .forgot-password-success {
+      text-align: center;
+      color: #28a745;
+    }
+
+    .forgot-password-success p {
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    /* Loading Animation Styles */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(1, 56, 106, 0.9);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 215, 55, 0.3);
+      border-top: 4px solid #FFD737;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: #FFD737;
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .loading-subtext {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Button loading state */
+    .loginSubmit.loading {
+      background: #ccc;
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    .loginSubmit.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #01386A;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @media (max-width: 768px) {
+      .auth-container {
+        flex-direction: column;
+      }
+      .image-section {
+        display: none;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/AddressSelection-CWIIN_Gi.js"></script>
+  <script type="module" crossorigin src="/assets/axios-D4YhIzwJ.js"></script>
+  <script type="module" crossorigin src="/assets/logout-DBLdyFVo.js"></script>
+  <script type="module" crossorigin src="/assets/Auth-B_7nsQpx.js"></script>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div class="auth-container">
+    <div class="form-section">
+      <h2>Welcome Back</h2>
+      <form action="#" method="post">
+        <label for="email">Email Address</label>
+        <input type="email" class="loginEmail" id="email" name="email" required />
+
+        <label for="password">Password</label>
+        <input type="password" class="loginPassword" id="password" name="password" required />
+
+        <div class="loginError error-line" aria-live="polite"></div>
+
+        <button class="loginSubmit" type="submit">Login</button>
+        
+        <div class="forgot-password-section">
+          <button type="button" class="btn-link" onclick="showForgotPassword()">Forgot Password?</button>
+        </div>
+        
+        <div class="verification-help" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;">
+          <p style="color: #6c757d; margin-bottom: 0.5rem;">Need to verify your email?</p>
+          <button type="button" class="btn-link" onclick="showResendVerification()">Resend verification email</button>
+        </div>
+
+
+      </form>
+      <div class="switch-link">
+        Don't have an account? <a href="./signup.html">Sign up here</a>
+      </div>
+    </div>
+    <div class="image-section"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Logging you in...</div>
+    <div class="loading-subtext">Please wait while we verify your credentials</div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+      <h2>Reset Password</h2>
+      <p>Enter your email address and we'll send you a link to reset your password.</p>
+      
+      <form id="forgotPasswordForm">
+        <label for="resetEmail">Email Address</label>
+        <input type="email" id="resetEmail" name="email" required />
+        
+        <div class="forgotPasswordError error-line" aria-live="polite"></div>
+        
+        <button type="submit" class="reset-password-btn">Send Reset Link</button>
+      </form>
+      
+      <div class="forgot-password-success" style="display: none;">
+        <p>✅ Reset link sent! Please check your email.</p>
+        <button type="button" class="btn-link" onclick="closeForgotPasswordModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+
+    
+</body>
+</html>
+

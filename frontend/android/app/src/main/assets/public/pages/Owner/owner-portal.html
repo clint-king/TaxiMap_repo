@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Owner Portal | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="/assets/site-BwHFeIBa.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./css/clientStyle.css">
+    <link rel="stylesheet" href="./css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        .owner-portal {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .portal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .portal-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+        
+        .portal-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .portal-subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            color: white;
+            text-align: center;
+        }
+        
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .welcome-text {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+        
+        .owner-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .portal-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .portal-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+            border-color: #01386A;
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            color: #01386A;
+            margin-bottom: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 1rem;
+        }
+        
+        .card-description {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .card-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-features li {
+            padding: 0.3rem 0;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .card-features li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .card-button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .card-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(1, 56, 106, 0.3);
+        }
+        
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .quick-actions-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .quick-action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .quick-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .quick-action-icon {
+            font-size: 2rem;
+        }
+        
+        .quick-action-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 3rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .owner-portal {
+                padding: 1rem;
+            }
+            
+            .portal-title {
+                font-size: 2rem;
+            }
+            
+            .portal-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .owner-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/AddressSelection-CWIIN_Gi.js"></script>
+  <script type="module" crossorigin src="/assets/axios-D4YhIzwJ.js"></script>
+  <script type="module" crossorigin src="/assets/logout-DBLdyFVo.js"></script>
+</head>
+<body>
+    <div class="owner-portal">
+        <div class="portal-container">
+            <!-- Header -->
+            <div class="portal-header">
+                <h1 class="portal-title">
+                    <i class="fas fa-taxi"></i>
+                    Taxi Owner Portal
+                </h1>
+                <p class="portal-subtitle">Manage your fleet, track performance, and grow your business</p>
+            </div>
+
+            <!-- Welcome Card -->
+            <div class="welcome-card">
+                <h2 class="welcome-title">Welcome back, John Mthembu!</h2>
+                <p class="welcome-text">Your taxi business is performing well. Here's a quick overview of your current status.</p>
+                
+                <div class="owner-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">Active Vehicles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">127</div>
+                        <div class="stat-label">Total Bookings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">R 15,420</div>
+                        <div class="stat-label">Monthly Revenue</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">4.8</div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3 class="quick-actions-title">Quick Actions</h3>
+                <div class="quick-actions-grid">
+                    <a href="owner-vehicle-post.html" class="quick-action-btn">
+                        <i class="fas fa-plus quick-action-icon"></i>
+                        <span class="quick-action-text">Add Vehicle</span>
+                    </a>
+                    <a href="owner-dashboard.html" class="quick-action-btn">
+                        <i class="fas fa-car quick-action-icon"></i>
+                        <span class="quick-action-text">Manage Fleet</span>
+                    </a>
+                    <a href="../customer/booking-select-transport.html" class="quick-action-btn">
+                        <i class="fas fa-calendar-check quick-action-icon"></i>
+                        <span class="quick-action-text">Test Booking</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Portal Cards -->
+            <div class="portal-grid">
+                <!-- Dashboard Card -->
+                <div class="portal-card" onclick="window.location.href='owner-dashboard.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3 class="card-title">Dashboard</h3>
+                    <p class="card-description">
+                        Overview of your taxi business with key metrics, vehicle management, and booking insights.
+                    </p>
+                    <ul class="card-features">
+                        <li>Vehicle fleet management</li>
+                        <li>Real-time booking status</li>
+                        <li>Revenue tracking</li>
+                        <li>Performance metrics</li>
+                    </ul>
+                    <button class="card-button">
+                        <i class="fas fa-arrow-right"></i>
+                        Open Dashboard
+                    </button>
+                </div>
+
+                <!-- Vehicle Management Card -->
+                <div class="portal-card" onclick="window.location.href='owner-vehicle-post.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h3 class="card-title">Vehicle Management</h3>
+                    <p class="card-description">
+                        Add new vehicles, update existing ones, set pricing, and manage your fleet availability.
+                    </p>
+                    <ul class="card-features">
+                        <li>Add new vehicles</li>
+                        <li>Set pricing and rates</li>
+                        <li>Upload vehicle images</li>
+                        <li>Define coverage areas</li>
+                    </ul>
+                    <button class="card-button">
+                        <i class="fas fa-plus"></i>
+                        Manage Vehicles
+                    </button>
+                </div>
+
+                <!-- Coverage Areas Card -->
+                <div class="portal-card" onclick="window.location.href='owner-dashboard.html#coverage'">
+                    <div class="card-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3 class="card-title">Coverage Areas</h3>
+                    <p class="card-description">
+                        Define and manage the areas where you're willing to provide taxi services.
+                    </p>
+                    <ul class="card-features">
+                        <li>Set service areas</li>
+                        <li>Define travel radius</li>
+                        <li>Map visualization</li>
+                        <li>Area performance</li>
+                    </ul>
+                    <button class="card-button">
+                        <i class="fas fa-map"></i>
+                        Manage Coverage
+                    </button>
+                </div>
+
+                <!-- Bookings Card -->
+                <div class="portal-card" onclick="window.location.href='owner-dashboard.html#bookings'">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="card-title">Booking Management</h3>
+                    <p class="card-description">
+                        View and manage incoming bookings, track customer requests, and handle scheduling.
+                    </p>
+                    <ul class="card-features">
+                        <li>View all bookings</li>
+                        <li>Accept/decline requests</li>
+                        <li>Customer communication</li>
+                        <li>Schedule management</li>
+                    </ul>
+                    <button class="card-button">
+                        <i class="fas fa-calendar"></i>
+                        Manage Bookings
+                    </button>
+                </div>
+
+                <!-- Integration Card -->
+                <div class="portal-card" onclick="window.location.href='../customer/booking-select-transport.html'">
+                    <div class="card-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h3 class="card-title">Booking System Integration</h3>
+                    <p class="card-description">
+                        Test and experience how customers book your vehicles through the TeksiMap platform.
+                    </p>
+                    <ul class="card-features">
+                        <li>Customer booking flow</li>
+                        <li>Vehicle selection process</li>
+                        <li>Pricing display</li>
+                        <li>Booking confirmation</li>
+                    </ul>
+                    <button class="card-button">
+                        <i class="fas fa-external-link-alt"></i>
+                        Test Booking Flow
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-links">
+                    <a href="../../index.html">Home</a>
+                    <a href="../customer/client.html">Customer App</a>
+                    <a href="../customer/help.html">Help & Support</a>
+                    <a href="../authentication/profile.html">Profile Settings</a>
+                </div>
+                <p>&copy; 2025 TeksiMap. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+<!-- Logout Script -->
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.portal-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Add hover effects to quick action buttons
+            document.querySelectorAll('.quick-action-btn').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.05)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
