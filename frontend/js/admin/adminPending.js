@@ -1,5 +1,6 @@
 // Admin Pending Routes functionality
 import { makeAdminRequest, showLoading, showError, formatDate, createStatusBadge } from './adminCommon.js';
+import { escapeHTML } from '../utils/sanitize.js';
 
 let pendingRoutesData = [];
 
@@ -30,16 +31,16 @@ function displayPendingRoutes(routes) {
   const routesHtml = routes.map(route => `
     <div class="pending-route-card">
       <div class="route-header">
-        <h3>${route.name}</h3>
-        <span class="status-badge ${route.status}">${route.status}</span>
+        <h3>${escapeHTML(route.name || '')}</h3>
+        <span class="status-badge ${escapeHTML(route.status || '')}">${escapeHTML(route.status || '')}</span>
       </div>
       <div class="route-details">
-        <p><strong>From:</strong> ${route.start_rank_name}</p>
-        <p><strong>To:</strong> ${route.end_rank_name}</p>
-        <p><strong>Price:</strong> R${route.price}</p>
-        <p><strong>Type:</strong> ${route.route_type}</p>
-        <p><strong>Method:</strong> ${route.travel_method}</p>
-        <p><strong>Contributor:</strong> ${route.username} (${route.email})</p>
+        <p><strong>From:</strong> ${escapeHTML(route.start_rank_name || '')}</p>
+        <p><strong>To:</strong> ${escapeHTML(route.end_rank_name || '')}</p>
+        <p><strong>Price:</strong> R${escapeHTML(String(route.price || 0))}</p>
+        <p><strong>Type:</strong> ${escapeHTML(route.route_type || '')}</p>
+        <p><strong>Method:</strong> ${escapeHTML(route.travel_method || '')}</p>
+        <p><strong>Contributor:</strong> ${escapeHTML(route.username || '')} (${escapeHTML(route.email || '')})</p>
         <p><strong>Submitted:</strong> ${formatDate(route.created_at)}</p>
       </div>
       <div class="route-actions">
@@ -122,7 +123,7 @@ function showRouteDetailsModal(route) {
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Route Details: ${route.name}</h2>
+        <h2>Route Details: ${escapeHTML(route.name || '')}</h2>
         <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
           <i class="fas fa-times"></i>
         </button>
@@ -130,11 +131,11 @@ function showRouteDetailsModal(route) {
       <div class="modal-body">
         <div class="route-info">
           <h3>Basic Information</h3>
-          <p><strong>Start:</strong> ${route.start_rank_name}</p>
-          <p><strong>End:</strong> ${route.end_rank_name}</p>
-          <p><strong>Price:</strong> R${route.price}</p>
-          <p><strong>Type:</strong> ${route.route_type}</p>
-          <p><strong>Method:</strong> ${route.travel_method}</p>
+          <p><strong>Start:</strong> ${escapeHTML(route.start_rank_name || '')}</p>
+          <p><strong>End:</strong> ${escapeHTML(route.end_rank_name || '')}</p>
+          <p><strong>Price:</strong> R${escapeHTML(String(route.price || 0))}</p>
+          <p><strong>Type:</strong> ${escapeHTML(route.route_type || '')}</p>
+          <p><strong>Method:</strong> ${escapeHTML(route.travel_method || '')}</p>
         </div>
         <div class="route-coordinates">
           <h3>Route Coordinates</h3>

@@ -19,7 +19,7 @@ const config = {
   // Database Configuration
   database: {
     host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "Taxi Map database",
+    user: process.env.DB_USER || "taximap_user",
     password: process.env.DB_PASSWORD || "12345",
     name: process.env.DB_NAME || "taximapdb",
     port: process.env.DB_PORT || 3306
@@ -43,7 +43,6 @@ const config = {
     url: process.env.FRONTEND_URL || "http://localhost:5173"
   },
 
-  
   // Social Authentication Credentials
   social: {
     google: {
@@ -80,6 +79,7 @@ const config = {
 // Print config values to console
 console.log('🔧 BACKEND CONFIGURATION VALUES:');
 console.log('================================');
+console.log("Pure FRONTEND_URL :" , process.env.FRONTEND_URL);
 console.log(`Environment: ${config.env}`);
 console.log(`Port: ${config.port}`);
 console.log(`Frontend URL: ${config.frontend.url}`);

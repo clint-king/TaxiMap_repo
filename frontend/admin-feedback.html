@@ -91,9 +91,11 @@
     window.respondToFeedback = respondToFeedback;
     
     // Check authentication and load data
-    document.addEventListener('DOMContentLoaded', () => {
-      requireAuth();
-      loadFeedback();
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthenticated = await requireAuth();
+      if (isAuthenticated) {
+        loadFeedback();
+      }
     });
   </script>
 </body>

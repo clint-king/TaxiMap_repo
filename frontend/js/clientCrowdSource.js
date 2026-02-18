@@ -17,24 +17,14 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.log('Session expired detected by interceptor');
+            console.log('Unauthorized access detected. Redirecting to homepage...');
             // Clear local storage
             localStorage.removeItem('userProfile');
             localStorage.removeItem('activityLog');
+            localStorage.removeItem('token');
             
-            // Show message to user
-            const messageContainer = document.getElementById('messageContainer');
-            if (messageContainer) {
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message error';
-                messageElement.textContent = 'Session expired. Redirecting to home page...';
-                messageContainer.appendChild(messageElement);
-            }
-            
-            // Redirect to home page after a short delay
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 2000);
+            // Redirect to homepage immediately
+            window.location.href = '/index.html';
         }
         return Promise.reject(error);
     }
@@ -49,9 +39,9 @@ apiClient.interceptors.response.use(
  const taxiRInputContainer = document.querySelector(".taxiRInput_container");
  const routeSelect = document.getElementById('routeType');
  const startingTRList = document.querySelector(".inputcontainer.startingInput ul");
- const destTRList = document.querySelector(".inputcontainer.destInput ul");
+ let destTRList = document.querySelector(".inputcontainer.destInput ul");
  const startingTRInput = document.querySelector(".inputcontainer.startingInput input");
- const destTRInput = document.querySelector(".inputcontainer.destInput input");
+ let destTRInput = document.querySelector(".inputcontainer.destInput input");
  const startingTRButton = document.querySelector(".group1 button");
  const destTRButton = document.querySelector(".group2 button");
  const drawBar = document.querySelector(".draw_flag");

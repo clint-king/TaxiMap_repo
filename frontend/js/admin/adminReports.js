@@ -1,5 +1,6 @@
 // Admin Reports functionality
 import { makeAdminRequest, showLoading, showError, formatDate, formatCurrency, createStatusBadge, debounce } from './adminCommon.js';
+import { escapeHTML } from '../utils/sanitize.js';
 
 // Global variables for charts
 let charts = {};
@@ -420,12 +421,12 @@ function populateUserTable() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${user.id}</td>
-      <td>${user.name}</td>
-      <td>${user.email}</td>
+      <td>${escapeHTML(user.name || '')}</td>
+      <td>${escapeHTML(user.email || '')}</td>
       <td>${formatDate(user.registrationDate)}</td>
-      <td>${formatDate(user.lastLogin)}</td>
-      <td>${user.activityCount}</td>
-      <td>${user.routesContributed}</td>
+      <td>${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}</td>
+      <td>${user.activityCount || 0}</td>
+      <td>${user.routesContributed || 0}</td>
       <td>${createStatusBadge(user.status)}</td>
     `;
     tbody.appendChild(row);
@@ -441,14 +442,14 @@ function populateRouteTable() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${route.id}</td>
-      <td>${route.name}</td>
-      <td>${route.startLocation}</td>
-      <td>${route.endLocation}</td>
-      <td>${formatCurrency(route.price)}</td>
-      <td>${route.type}</td>
-      <td>${route.searchCount}</td>
+      <td>${escapeHTML(route.name || '')}</td>
+      <td>${escapeHTML(route.startLocation || '')}</td>
+      <td>${escapeHTML(route.endLocation || '')}</td>
+      <td>${formatCurrency(route.price || 0)}</td>
+      <td>${escapeHTML(route.type || '')}</td>
+      <td>${route.searchCount || 0}</td>
       <td>${formatDate(route.createdDate)}</td>
-      <td>${route.contributor}</td>
+      <td>${escapeHTML(route.contributor || '')}</td>
     `;
     tbody.appendChild(row);
   });
@@ -487,11 +488,18 @@ export function filterUserTable() {
   if (filter === 'active') {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    filteredUsers = reportData.users.filter(user => new Date(user.lastLogin) > weekAgo);
-  } else if (filter === 'inactive') {
+    filteredUsers = reportData.users.filter(user => {
+      if (user.lastLogin === 'Never') return false;
+      return new Date(user.lastLogin) > weekAgo;
+    });
+  } else if (filter === 'dormant') {
+    // Filter for users who are Dormant (30+ days since last login or never logged in)
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 30);
-    filteredUsers = reportData.users.filter(user => new Date(user.lastLogin) < monthAgo);
+    filteredUsers = reportData.users.filter(user => {
+      if (user.lastLogin === 'Never') return true;
+      return new Date(user.lastLogin) < monthAgo;
+    });
   } else if (filter === 'contributors') {
     filteredUsers = reportData.users.filter(user => user.routesContributed > 0);
   }
@@ -503,12 +511,12 @@ export function filterUserTable() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${user.id}</td>
-      <td>${user.name}</td>
-      <td>${user.email}</td>
+      <td>${escapeHTML(user.name || '')}</td>
+      <td>${escapeHTML(user.email || '')}</td>
       <td>${formatDate(user.registrationDate)}</td>
-      <td>${formatDate(user.lastLogin)}</td>
-      <td>${user.activityCount}</td>
-      <td>${user.routesContributed}</td>
+      <td>${user.lastLogin === 'Never' ? 'Never' : formatDate(user.lastLogin)}</td>
+      <td>${user.activityCount || 0}</td>
+      <td>${user.routesContributed || 0}</td>
       <td>${createStatusBadge(user.status)}</td>
     `;
     tbody.appendChild(row);
@@ -549,14 +557,14 @@ export function filterRouteTable() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${route.id}</td>
-      <td>${route.name}</td>
-      <td>${route.startLocation}</td>
-      <td>${route.endLocation}</td>
-      <td>${formatCurrency(route.price)}</td>
-      <td>${route.type}</td>
-      <td>${route.searchCount}</td>
+      <td>${escapeHTML(route.name || '')}</td>
+      <td>${escapeHTML(route.startLocation || '')}</td>
+      <td>${escapeHTML(route.endLocation || '')}</td>
+      <td>${formatCurrency(route.price || 0)}</td>
+      <td>${escapeHTML(route.type || '')}</td>
+      <td>${route.searchCount || 0}</td>
       <td>${formatDate(route.createdDate)}</td>
-      <td>${route.contributor}</td>
+      <td>${escapeHTML(route.contributor || '')}</td>
     `;
     tbody.appendChild(row);
   });

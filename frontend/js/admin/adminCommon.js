@@ -21,13 +21,25 @@ export async function makeAdminRequest(endpoint, options = {}) {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('token')}`,
       'Content-Type': 'application/json'
-    }
+    },
+    credentials: 'include' // Include cookies for authentication
   };
 
   const response = await fetch(`${BASE_URL}/admin/${endpoint}`, {
     ...defaultOptions,
     ...options
   });
+
+  // Handle 401 Unauthorized - redirect to homepage
+  if (response.status === 401) {
+    console.log('Unauthorized access detected. Redirecting to homepage...');
+    // Clear any stored authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('userProfile');
+    // Redirect to homepage
+    window.location.href = '/index.html';
+    return response; // Return response to prevent further processing
+  }
 
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);

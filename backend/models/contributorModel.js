@@ -1,5 +1,34 @@
 import poolDb from "../config/db.js";
 
+// Get all contributors - PUBLIC VERSION (no sensitive data)
+const getPublicContributors = async () => {
+  let db;
+  try {
+    db = await poolDb.getConnection();
+    const query = `
+      SELECT 
+        c.ID,
+        c.name,
+        c.region,
+        c.routes_contributed,
+        c.status,
+        c.created_at
+      FROM contributors c
+      WHERE c.status = 'active'
+      ORDER BY c.routes_contributed DESC, c.created_at DESC
+    `;
+    
+    const [rows] = await db.execute(query);
+    return rows;
+  } catch (error) {
+    console.log('Error getting public contributors:', error);
+    return [];
+  } finally {
+    if (db) db.release();
+  }
+};
+
+// Get all contributors - ADMIN VERSION (includes email, username)
 const getAllContributors = async () => {
   let db;
   try {
@@ -111,6 +140,7 @@ const getPendingRoutesForUser = async (userId) => {
 };
 
 export default {
+  getPublicContributors,
   getAllContributors,
   getContributorByUserId,
   createContributor,

@@ -1,50 +1,14 @@
 // Profile Page JavaScript
 import axios from 'axios';
 import { BASE_URL } from "./AddressSelection.js";
+import { escapeHTML } from "./utils/sanitize.js";
 
 axios.defaults.withCredentials = true;
 
-// Add global axios interceptor for session expiration
-axios.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.log('Session expired detected by interceptor');
-            
-            // Check if user profile exists in localStorage (user is logged in)
-            const userProfile = localStorage.getItem('userProfile');
-            if (!userProfile) {
-                // No user profile, redirect to login
-                window.location.href = '/login.html';
-                return Promise.reject(error);
-            }
-            
-            // User profile exists but request failed - this might be a session expiration
-            // Only redirect if we're not on the login page and the error is persistent
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('login.html') && !currentPath.includes('signup.html')) {
-                // Clear local storage
-                localStorage.removeItem('userProfile');
-                localStorage.removeItem('activityLog');
-                
-                // Show message to user
-                const messageContainer = document.getElementById('messageContainer');
-                if (messageContainer) {
-                    const messageElement = document.createElement('div');
-                    messageElement.className = 'message error';
-                    messageElement.textContent = 'Session expired. Redirecting to home page...';
-                    messageContainer.appendChild(messageElement);
-                }
-                
-                // Redirect to home page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
-            }
-        }
-        return Promise.reject(error);
-    }
-);
+// REMOVED global axios interceptor - it was too aggressive and redirected immediately
+// Authentication is now handled by requireClientAuth() in profile.html
+// This prevents immediate redirects on page load when cookie isn't ready yet
+// Errors are handled per request instead of globally
 
 class ProfileManager {
     constructor() {
@@ -66,39 +30,34 @@ class ProfileManager {
     async loadUserData() {
         try {
             // Try to get user data from backend first
+            // requireClientAuth() already verified authentication, so this should work
             const response = await axios.get(`${BASE_URL}/auth/profile`);
             if (response.data.success) {
                 this.currentUser = response.data.user;
                 localStorage.setItem('userProfile', JSON.stringify(this.currentUser));
             } else {
+                // Fallback to localStorage if response doesn't indicate success
                 const savedUser = localStorage.getItem('userProfile');
                 if (savedUser) {
                     this.currentUser = JSON.parse(savedUser);
                 } else {
-                    // No user data found, redirect to home page
-                    window.location.href = '/index.html';
+                    // No user data found - requireClientAuth should have handled this
+                    console.error('No user data available');
                     return;
                 }
             }
         } catch (error) {
             console.error('Error loading user data:', error);
             
-            // Check if it's an authentication error (401 or 403)
-            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                console.log('Session expired, redirecting to home page');
-                localStorage.removeItem('userProfile');
-                window.location.href = '/index.html';
-                return;
-            }
-            
-            // Fallback to localStorage
+            // Don't redirect immediately - requireClientAuth already handled authentication
+            // Just fallback to localStorage if available
             const savedUser = localStorage.getItem('userProfile');
             if (savedUser) {
                 this.currentUser = JSON.parse(savedUser);
-                console.log("this.currentUser:", this.currentUser);
+                console.log("Using cached user data:", this.currentUser);
             } else {
-                // No user data found, redirect to home page
-                window.location.href = '/index.html';
+                // If no cached data and auth fails, requireClientAuth will handle redirect
+                console.error('No user data available and authentication failed');
                 return;
             }
         }
@@ -306,10 +265,10 @@ class ProfileManager {
             
             // Check for session expiration
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                this.showMessage('Session expired. Please log in again.', 'error');
-                setTimeout(() => {
-                    this.handleLogout();
-                }, 2000);
+                console.log('Authentication error - session may have expired');
+                // Don't redirect immediately - show error message instead
+                // requireClientAuth will handle redirect if needed
+                this.showMessage('Session expired. Please refresh the page.', 'error');
                 return;
             }
             
@@ -363,10 +322,10 @@ class ProfileManager {
             
             // Check for session expiration
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                this.showMessage('Session expired. Please log in again.', 'error');
-                setTimeout(() => {
-                    this.handleLogout();
-                }, 2000);
+                console.log('Authentication error - session may have expired');
+                // Don't redirect immediately - show error message instead
+                // requireClientAuth will handle redirect if needed
+                this.showMessage('Session expired. Please refresh the page.', 'error');
                 return;
             }
             
@@ -423,10 +382,10 @@ class ProfileManager {
             
             // Check for session expiration
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                this.showMessage('Session expired. Please log in again.', 'error');
-                setTimeout(() => {
-                    this.handleLogout();
-                }, 2000);
+                console.log('Authentication error - session may have expired');
+                // Don't redirect immediately - show error message instead
+                // requireClientAuth will handle redirect if needed
+                this.showMessage('Session expired. Please refresh the page.', 'error');
                 return;
             }
             
@@ -595,12 +554,12 @@ class ProfileManager {
 
         return `
             <div class="activity-item">
-                <div class="activity-icon ${activity.type}">
+                <div class="activity-icon ${escapeHTML(activity.type || '')}">
                     <i class="fas ${icon}"></i>
                 </div>
                 <div class="activity-details">
-                    <div class="activity-title">${activity.title}</div>
-                    <div class="activity-time">${timeAgo} • ${activity.device} • ${activity.ip}</div>
+                    <div class="activity-title">${escapeHTML(activity.title || '')}</div>
+                    <div class="activity-time">${escapeHTML(timeAgo)} • ${escapeHTML(activity.device || 'Unknown')} • ${escapeHTML(activity.ip || 'Unknown')}</div>
                 </div>
             </div>
         `;

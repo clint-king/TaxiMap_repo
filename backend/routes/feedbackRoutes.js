@@ -1,6 +1,7 @@
 import express from 'express';
 import feedbackController from '../controllers/feedbackController.js';
 import authenticateUser from '../Middleware/authenticateUser.js';
+import { validateFeedback, validateId } from '../Middleware/validation.js';
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
 router.use(authenticateUser);
 
 // Submit feedback
-router.post('/submit', feedbackController.submitFeedback);
+router.post('/submit', validateFeedback, feedbackController.submitFeedback);
 
 // Get user's feedback history
 router.get('/history', feedbackController.getUserFeedback);
