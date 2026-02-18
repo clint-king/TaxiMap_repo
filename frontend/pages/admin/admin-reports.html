@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Reports - TeksiMap</title>
+  <link rel="stylesheet" href="../../css/adminStyle.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html" class="active">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="admin-existing-routes.html">Existing Routes</a>
+        <a href="admin-vehicles.html">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
+        <a href="admin-execute-booking.html">Execute Booking</a>
+        <a href="admin-payments.html">Payments</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-dashboard">
+    <div class="admin-section">
+      <h1><i class="fas fa-chart-line"></i> Analytics Dashboard</h1>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <div>
+          <label for="dateRange">Date Range:</label>
+          <select id="dateRange" onchange="updateDateRange()">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
+        </div>
+        <div>
+          <label for="startDate">From:</label>
+          <input type="date" id="startDate" onchange="updateReports()">
+        </div>
+        <div>
+          <label for="endDate">To:</label>
+          <input type="date" id="endDate" onchange="updateReports()">
+        </div>
+        <button class="btn btn-primary" onclick="exportReports()">
+          <i class="fas fa-download"></i> Export Data
+        </button>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalUsers">-</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="newRegistrations">-</div>
+          <div class="stat-label">New Registrations</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="activeUsers">-</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalRoutes">-</div>
+          <div class="stat-label">Total Routes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="routeSearches">-</div>
+          <div class="stat-label">Route Searches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="contributors">-</div>
+          <div class="stat-label">Contributors</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-container">
+        <div class="chart-card">
+          <h3>User Registrations Over Time</h3>
+          <canvas id="registrationsChart" width="400" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Daily Active Users</h3>
+          <canvas id="activeUsersChart" width="400" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Route Searches by Day</h3>
+          <canvas id="routeSearchesChart" width="400" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>User Activity Types</h3>
+          <canvas id="activityTypesChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Detailed Tables -->
+      <div class="admin-section">
+        <h2><i class="fas fa-users"></i> User Analytics</h2>
+        <div class="filter-controls">
+          <div>
+            <label for="userSort">Sort by:</label>
+            <select id="userSort" onchange="sortUserTable()">
+              <option value="registration_date">Registration Date</option>
+              <option value="last_login">Last Login</option>
+              <option value="activity_count">Activity Count</option>
+            </select>
+          </div>
+          <div>
+            <label for="userFilter">Filter:</label>
+            <select id="userFilter" onchange="filterUserTable()">
+              <option value="all">All Users</option>
+              <option value="active">Active (Last 7 days)</option>
+              <option value="dormant">Dormant (30+ days)</option>
+              <option value="contributors">Contributors</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table" id="userTable">
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Registration Date</th>
+                <th>Last Login</th>
+                <th>Activity Count</th>
+                <th>Routes Contributed</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+              <!-- Data will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h2><i class="fas fa-route"></i> Route Analytics</h2>
+        <div class="filter-controls">
+          <div>
+            <label for="routeSort">Sort by:</label>
+            <select id="routeSort" onchange="sortRouteTable()">
+              <option value="created_date">Creation Date</option>
+              <option value="search_count">Search Count</option>
+              <option value="price">Price</option>
+            </select>
+          </div>
+          <div>
+            <label for="routeFilter">Filter:</label>
+            <select id="routeFilter" onchange="filterRouteTable()">
+              <option value="all">All Routes</option>
+              <option value="popular">Most Popular</option>
+              <option value="recent">Recently Added</option>
+              <option value="expensive">High Price</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table" id="routeTable">
+            <thead>
+              <tr>
+                <th>Route ID</th>
+                <th>Route Name</th>
+                <th>Start Location</th>
+                <th>End Location</th>
+                <th>Price</th>
+                <th>Type</th>
+                <th>Search Count</th>
+                <th>Created Date</th>
+                <th>Contributor</th>
+              </tr>
+            </thead>
+            <tbody id="routeTableBody">
+              <!-- Data will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h2><i class="fas fa-chart-bar"></i> Activity Summary</h2>
+        <div class="charts-container">
+          <div class="chart-card">
+            <h3>Top Search Locations</h3>
+            <canvas id="topLocationsChart" width="400" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Peak Usage Hours</h3>
+            <canvas id="peakHoursChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h2><i class="fas fa-map-marked-alt"></i> Geographic Distribution</h2>
+        <div class="chart-card">
+          <h3>Routes by Province</h3>
+          <canvas id="provinceChart" width="400" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>User Distribution by Location</h3>
+          <canvas id="userLocationChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../../js/authentication/logout.js"></script>
+  <script type="module" src="../../js/admin/adminCommon.js"></script>
+  <script type="module" src="../../js/admin/adminReports.js"></script>
+  <script type="module">
+    import { requireAuth } from '../../js/authentication/logout.js';
+    import { toggleAdminMobileMenu, logout } from '../../js/admin/adminCommon.js';
+    import { 
+      initializeReports, 
+      updateDateRange, 
+      updateReports, 
+      sortUserTable, 
+      filterUserTable, 
+      sortRouteTable, 
+      filterRouteTable, 
+      exportReports 
+    } from '../../js/admin/adminReports.js';
+    
+    // Make functions globally available
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+    window.logout = logout;
+    window.updateDateRange = updateDateRange;
+    window.updateReports = updateReports;
+    window.sortUserTable = sortUserTable;
+    window.filterUserTable = filterUserTable;
+    window.sortRouteTable = sortRouteTable;
+    window.filterRouteTable = filterRouteTable;
+    window.exportReports = exportReports;
+    
+    // Check authentication before loading the page
+    document.addEventListener('DOMContentLoaded', async () => {
+      const isAuthenticated = await requireAuth();
+      if (isAuthenticated) {
+        initializeReports();
+      }
+    });
+  </script>
+
+</body>
+</html>

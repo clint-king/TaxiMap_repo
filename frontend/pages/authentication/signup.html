@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico" />
+  <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16" />
+  <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg" />
+  <meta http-equiv="Content-Security-Policy" content="
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
+  frame-src 'self';
+  connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:* https://api.teksimap.co.za;
+">
+      <title>TeksiMap | Sign Up</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #01386A, #001f3f);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 3rem 1rem;
+      overflow-y: auto;
+      color: #01386A;
+    }
+
+    .auth-container {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .form-section {
+      flex: 1;
+      padding: 3rem;
+    }
+
+    .form-section h2 {
+      margin-bottom: 1rem;
+      color: #01386A;
+      font-size: 2rem;
+    }
+
+    .form-section form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-section label {
+      margin: 0.5rem 0 0.2rem;
+      font-weight: 500;
+    }
+
+    .form-section input {
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid #dfe6e9;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .form-section button {
+      background: #FFD737;
+      color: #01386A;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease-in-out;
+    }
+
+    .form-section button:hover {
+      background: #e6c32c;
+    }
+
+    .form-description {
+      color: #6c757d;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .signup-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      background: #f1f5f9;
+      padding: 0.5rem;
+      border-radius: 12px;
+    }
+
+    .signup-toggle button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #01386A;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .signup-toggle button.active {
+      background: #01386A;
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(1, 56, 106, 0.2);
+    }
+
+    .signup-form {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .signup-form.active {
+      display: block;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid #dfe6e9;
+      font-size: 1rem;
+      width: 100%;
+    }
+
+    .form-divider {
+      height: 1px;
+      background: #e6ecf2;
+      margin: 1.5rem 0;
+    }
+
+    .info-note {
+      background: #f8fafc;
+      border-left: 4px solid #FFD737;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: #4a5568;
+      margin-bottom: 1.5rem;
+    }
+
+    .banking-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem 1.5rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-section button.owner-submit {
+      margin-top: 1rem;
+    }
+
+    .switch-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .switch-link a {
+      color: #FFD737;
+      text-decoration: none;
+    }
+
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Loading Animation Styles */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(1, 56, 106, 0.9);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 215, 55, 0.3);
+      border-top: 4px solid #FFD737;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loading-text {
+      color: #FFD737;
+      font-size: 18px;
+      font-weight: 500;
+      text-align: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .loading-subtext {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Button loading state */
+    .signupSubmit.loading {
+      background: #ccc;
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    .signupSubmit.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #01386A;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .image-section {
+      flex: 1;
+      background: url('https://images.unsplash.com/photo-1605556761896-dcf9f70f1c54') no-repeat center center/cover;
+      min-height: 400px;
+    }
+
+
+
+    @media (max-width: 768px) {
+      .auth-container {
+        flex-direction: column;
+      }
+      .image-section {
+        display: none;
+      }
+      .form-grid,
+      .banking-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sign Up Page -->
+  <div class="auth-container">
+    <div class="form-section">
+      <h2>Create an Account</h2>
+      <p class="form-description">Choose the account type you want to register. Owners need to share additional details so we can verify vehicles and send payouts.</p>
+
+      <div class="signup-toggle">
+        <button type="button" class="toggle-btn active" data-target="generalSignupForm">Passenger &amp; Parcel Sender</button>
+        <button type="button" class="toggle-btn" data-target="ownerSignupForm">Driver / Owner Portal</button>
+      </div>
+
+      <form id="generalSignupForm" class="signup-form active" action="#" method="post" autocomplete="off">
+        <div class="form-group full-width">
+        <label for="name">Full Name</label>
+        <input type="text" class="signupName" id="name" name="name" required />
+        </div>
+
+        <div class="form-group full-width">
+        <label for="email">Email Address</label>
+          <input type="email" class="signupEmail" id="email" name="email" required />
+        </div>
+
+        <div class="form-group full-width">
+        <label for="password">Password</label>
+        <input type="password" class="signupPassword" id="password" name="password" required />
+        </div>
+
+        <div class="form-group full-width">
+        <label for="confirm">Confirm Password</label>
+        <input type="password" class="signupConfirm" id="confirm" name="confirm" required />
+        </div>
+
+        <button class="signupSubmit" type="submit">Sign Up</button>
+      </form>
+
+      <form id="ownerSignupForm" class="signup-form" action="#" method="post" autocomplete="off">
+        <div class="info-note">
+          Register to manage vehicles, drivers, and payouts. Choose whether you are setting up as a vehicle owner or a driver in the taxi network.
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="ownerFullName">Full Name *</label>
+            <input type="text" id="ownerFullName" name="ownerFullName" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerPhone">Mobile Number *</label>
+            <input type="tel" id="ownerPhone" name="ownerPhone" placeholder="e.g., 071 234 5678" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerEmail">Email Address *</label>
+            <input type="email" id="ownerEmail" name="ownerEmail" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerIdNumber">ID Number *</label>
+            <input type="text" id="ownerIdNumber" name="ownerIdNumber" placeholder="13 digit ID" maxlength="13" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerPassword">Password *</label>
+            <input type="password" id="ownerPassword" name="ownerPassword" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ownerConfirmPassword">Confirm Password *</label>
+            <input type="password" id="ownerConfirmPassword" name="ownerConfirmPassword" required>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="ownerRole">Registering As *</label>
+            <select id="ownerRole" name="ownerRole" required>
+              <option value="owner" selected>Vehicle Owner</option>
+              <option value="driver">Driver</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="ownerSpecificSection" style="margin-top: 1.5rem;">
+          <div class="info-note">
+            Tell us how your business operates so we can set up payouts correctly. Trading information is only required when you operate as a company or partnership.
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="ownerBusinessType">Business Type *</label>
+              <select id="ownerBusinessType" name="ownerBusinessType" data-owner-required="true">
+                <option value="individual" selected>Individual</option>
+                <option value="company">Company</option>
+                <option value="partnership">Partnership</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="ownerBusinessFields" class="form-grid" style="display: none; margin-top: 1rem;">
+            <div class="form-group">
+              <label for="ownerBusinessName">Business / Trading Name *</label>
+              <input type="text" id="ownerBusinessName" name="ownerBusinessName">
+            </div>
+
+            <div class="form-group">
+              <label for="ownerBusinessReg">Business Registration Number *</label>
+              <input type="text" id="ownerBusinessReg" name="ownerBusinessReg" placeholder="e.g., 2019/123456/07">
+            </div>
+
+            <div class="form-group">
+              <label for="ownerTaxNumber">Tax Number *</label>
+              <input type="text" id="ownerTaxNumber" name="ownerTaxNumber" placeholder="e.g., 9123456789">
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+
+          <h3 style="font-size: 1.1rem; color: #01386A; margin-bottom: 1rem;">Banking Information</h3>
+          <div class="banking-grid">
+            <div class="form-group">
+              <label for="ownerBankName">Bank *</label>
+              <select id="ownerBankName" name="ownerBankName" data-owner-required="true">
+                <option value="">Select bank</option>
+                <option value="absa">ABSA</option>
+                <option value="capitec">Capitec</option>
+                <option value="fnb">First National Bank (FNB)</option>
+                <option value="nedbank">Nedbank</option>
+                <option value="standard">Standard Bank</option>
+                <option value="tymebank">TymeBank</option>
+                <option value="african_bank">African Bank</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="ownerAccountHolder">Account Holder *</label>
+              <input type="text" id="ownerAccountHolder" name="ownerAccountHolder" data-owner-required="true">
+            </div>
+
+            <div class="form-group">
+              <label for="ownerAccountNumber">Account Number *</label>
+              <input type="text" id="ownerAccountNumber" name="ownerAccountNumber" data-owner-required="true">
+            </div>
+
+            <div class="form-group">
+              <label for="ownerBranchCode">Branch Code *</label>
+              <input type="text" id="ownerBranchCode" name="ownerBranchCode" placeholder="e.g., 250655" data-owner-required="true">
+            </div>
+
+            <div class="form-group">
+              <label for="ownerAccountType">Account Type *</label>
+              <select id="ownerAccountType" name="ownerAccountType" data-owner-required="true">
+                <option value="">Select account type</option>
+                <option value="cheque">Cheque / Current</option>
+                <option value="savings">Savings</option>
+                <option value="transmission">Transmission</option>
+                <option value="business">Business</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="ownerPaymentReference">Preferred Payment Reference (Optional)</label>
+              <input type="text" id="ownerPaymentReference" name="ownerPaymentReference" placeholder="e.g., Taxi Fleet XYZ">
+            </div>
+          </div>
+        </div>
+
+        <div id="driverSpecificSection" style="display: none; margin-top: 1.5rem;">
+          <div class="info-note">
+            Drivers need to provide valid license information so we can verify your eligibility to operate registered vehicles on the platform.
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="driverLicenseNumber">License Number *</label>
+              <input type="text" id="driverLicenseNumber" name="driverLicenseNumber" data-driver-required="true">
+            </div>
+
+            <div class="form-group">
+              <label for="driverLicenseClass">License Class *</label>
+              <select id="driverLicenseClass" name="driverLicenseClass" data-driver-required="true">
+                <option value="">Select class</option>
+                <option value="A1">A1 - Motorcycle ≤ 125cc</option>
+                <option value="A">A - Motorcycle &gt; 125cc</option>
+                <option value="B">B - Light Motor Vehicle</option>
+                <option value="EB">EB - Light Motor Vehicle + Trailer &gt; 750kg</option>
+                <option value="C1">C1 - Medium Goods (3.5t - 16t)</option>
+                <option value="C">C - Heavy Goods (&gt; 16t)</option>
+                <option value="EC1">EC1 - Medium Goods + Trailer</option>
+                <option value="EC">EC - Heavy Goods + Trailer</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="driverLicenseExpiry">License Expiry Date *</label>
+              <input type="date" id="driverLicenseExpiry" name="driverLicenseExpiry" data-driver-required="true">
+            </div>
+
+            <div class="form-group">
+              <label for="driverPdpNumber">PDP Number (Optional)</label>
+              <input type="text" id="driverPdpNumber" name="driverPdpNumber" placeholder="Professional Driving Permit number">
+            </div>
+          </div>
+        </div>
+
+        <button class="owner-submit" type="submit">Submit Application</button>
+      </form>
+
+      <div class="switch-link">
+        Already have an account? <a href="login.html">Login here</a>
+      </div>
+    </div>
+    <div class="image-section"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Creating your account...</div>
+    <div class="loading-subtext">Please wait while we set up your profile</div>
+  </div>
+
+  
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleButtons = document.querySelectorAll('.signup-toggle button');
+      const forms = document.querySelectorAll('.signup-form');
+
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetFormId = button.getAttribute('data-target');
+
+          toggleButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+
+          forms.forEach(form => {
+            if (form.id === targetFormId) {
+              form.classList.add('active');
+            } else {
+              form.classList.remove('active');
+            }
+          });
+        });
+      });
+
+      const ownerRoleSelect = document.getElementById('ownerRole');
+      const ownerSpecificSection = document.getElementById('ownerSpecificSection');
+      const driverSpecificSection = document.getElementById('driverSpecificSection');
+      const ownerRequiredInputs = ownerSpecificSection ? Array.from(ownerSpecificSection.querySelectorAll('[data-owner-required="true"]')) : [];
+      const ownerBusinessTypeSelect = document.getElementById('ownerBusinessType');
+      const ownerBusinessFields = document.getElementById('ownerBusinessFields');
+      const ownerBusinessFieldInputs = ownerBusinessFields ? Array.from(ownerBusinessFields.querySelectorAll('input')) : [];
+      const driverRequiredInputs = driverSpecificSection ? Array.from(driverSpecificSection.querySelectorAll('[data-driver-required="true"]')) : [];
+
+      function updateBusinessFields() {
+        if (!ownerBusinessTypeSelect || !ownerBusinessFields) return;
+        if (!ownerRoleSelect || ownerRoleSelect.value !== 'owner') {
+          ownerBusinessFields.style.display = 'none';
+          ownerBusinessFieldInputs.forEach(input => {
+            input.required = false;
+            input.value = '';
+          });
+          return;
+        }
+
+        const requiresBusinessInfo = ownerBusinessTypeSelect.value !== 'individual';
+        ownerBusinessFields.style.display = requiresBusinessInfo ? 'grid' : 'none';
+        ownerBusinessFieldInputs.forEach(input => {
+          input.required = requiresBusinessInfo;
+          if (!requiresBusinessInfo) {
+            input.value = '';
+          }
+        });
+      }
+
+      function updateOwnerDriverSections() {
+        if (!ownerRoleSelect) return;
+        const isOwner = ownerRoleSelect.value === 'owner';
+
+        if (ownerSpecificSection) {
+          ownerSpecificSection.style.display = isOwner ? 'block' : 'none';
+          ownerRequiredInputs.forEach(input => {
+            input.required = isOwner;
+            if (!isOwner) {
+              input.value = '';
+            }
+          });
+        }
+
+        if (driverSpecificSection) {
+          driverSpecificSection.style.display = isOwner ? 'none' : 'block';
+          driverRequiredInputs.forEach(input => {
+            input.required = !isOwner;
+            if (isOwner) {
+              input.value = '';
+            }
+          });
+        }
+
+        if (ownerBusinessTypeSelect) {
+          if (isOwner) {
+            updateBusinessFields();
+          } else {
+            ownerBusinessTypeSelect.value = 'individual';
+            updateBusinessFields();
+          }
+        }
+      }
+
+      if (ownerRoleSelect) {
+        updateOwnerDriverSections();
+        ownerRoleSelect.addEventListener('change', () => {
+          updateOwnerDriverSections();
+        });
+      }
+
+      if (ownerBusinessTypeSelect) {
+        updateBusinessFields();
+        ownerBusinessTypeSelect.addEventListener('change', updateBusinessFields);
+      }
+    });
+  </script>
+  <script type="module" src="../../js/authentication/Auth.js"></script>
+</body>
+</html>

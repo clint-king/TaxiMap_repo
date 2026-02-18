@@ -1,0 +1,363 @@
+   /* == NAVIGATION BAR == */
+
+    /* Wrapper to hold topbar + page content in column layout */
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width:100%;
+      }
+  
+      /* Top navigation bar */
+  .topnav {
+    background-color: #01386A;
+    color: white;
+    position: fixed;
+    position: sticky;
+    width: 100%;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: sans-serif;
+  }
+  
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .nav-links a{
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-links a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
+  }
+  
+  /* Active/Current page link highlighting */
+  .nav-links a.active {
+    background-color: #FFD52F !important;
+    color: #01386A !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  
+  .nav-links a.active:hover {
+    background-color: #FFC107 !important;
+    text-decoration: none;
+  }
+  
+  /* Logout Button in Navigation */
+  .nav-logout-btn {
+    background: #dc3545;
+    color: white !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+  
+  .nav-logout-btn:hover {
+    background: #c82333;
+    text-decoration: none !important;
+    transform: translateY(-1px);
+  }
+  
+  .nav-logout-btn i {
+    font-size: 14px;
+  }
+  
+  /* Burger styles */
+  .burger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 4px;
+  }
+  
+  .burger .bar {
+    width: 25px;
+    height: 3px;
+    background-color: white;
+    border-radius: 2px;
+  }
+  
+  .topnav img {
+    height: 35px; /* smaller height */
+    width: auto;
+    border-radius: 8px;
+    display: block;
+  }
+  
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    .burger {
+      display: flex;
+    }
+  
+    .nav-links {
+      display: none;
+      flex-direction: column;
+      background-color: #01386A;
+      position: absolute;
+      top: 60px;
+      left: 0;
+      width: 100%;
+      padding: 10px 0;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+      gap:0 !important;
+    }
+  
+    .nav-links.show {
+      display: flex;
+    }
+  
+    .nav-links a {
+      padding: 10px 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+  
+    /* Mobile active link highlighting */
+    .nav-links a.active {
+      background-color: #FFD52F !important;
+      color: #01386A !important;
+      font-weight: 600;
+      text-decoration: none;
+    }
+  
+    .nav-links a.active:hover {
+      background-color: #FFC107 !important;
+      text-decoration: none;
+    }
+  
+    /* Mobile styles for logout button */
+    .nav-logout-btn {
+      margin-left: 0 !important;
+      margin-top: 10px;
+      justify-content: center;
+      width: calc(100% - 30px);
+      padding: 12px 16px;
+    }
+  
+    /* Handle nav_group for clientCrowdSource page */
+    .nav_group a {
+      padding: 10px 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+  
+    .nav_group .nav-logout-btn {
+      margin-left: 0 !important;
+      margin-top: 10px;
+      justify-content: center;
+      width: calc(100% - 30px);
+      padding: 12px 16px;
+    }
+  
+  
+    /* just checking*/
+    .nav-links a {
+      padding: 10px 15px !important;
+      border-top: 1px solid rgba(255,255,255,0.1) !important;
+      text-align: center;
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      gap:0 !important;
+    }
+    
+    .nav-links a:first-child {
+      border-top: none !important;
+    }
+    
+  
+    .full-navigation a {
+      display: block;
+      padding: 10px 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .full-navigation a:first-child {
+      border-top: none;
+    }
+  
+  }
+
+
+  /* PART FROM CLIENT.HTML */
+        /* Auth buttons styling */
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-left: auto;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+          
+          .btn-login {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-login:hover {
+            background: white;
+            color: #333;
+          }
+          
+          .btn-signup {
+            background: #FFD700;
+            color: #333;
+            border: 2px solid #FFD700;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-signup:hover {
+            background: transparent;
+            color: white;
+            border-color: white;
+          }
+    
+          
+          .full-navigation {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-left: auto;
+          }
+          
+          .full-navigation a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+          }
+          
+          .full-navigation a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+          }
+          
+          /* Logout Button Styling */
+          .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+          }
+          
+          .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+          }
+          
+          .nav-logout-btn i {
+            font-size: 14px;
+          }
+          
+          /* Ensure nav-container has relative positioning */
+          .nav-container {
+            position: relative;
+          }
+          
+          @media (max-width: 768px) {
+            .auth-buttons {
+              position: static;
+              transform: none;
+              margin-left: 0;
+              flex-direction: column;
+              gap: 0.5rem;
+              width: 100%;
+            }
+            
+            /* Ensure all nav links have uniform spacing */
+            .nav-links a {
+              padding: 10px 15px !important;
+              border-top: 1px solid rgba(255,255,255,0.1) !important;
+              text-align: center;
+              display: block;
+              width: 100%;
+              box-sizing: border-box;
+              gap:0 !important;
+            }
+            
+            .nav-links a:first-child {
+              border-top: none !important;
+            }
+            
+            .full-navigation {
+              flex-direction: column;
+              gap: 0.5rem;
+              width: 100%;
+              margin-left: 0;
+              align-items: stretch;
+            }
+            
+            .full-navigation a {
+              display: block;
+              padding: 10px 15px;
+              border-top: 1px solid rgba(255,255,255,0.1);
+              text-align: center;
+              width: 100%;
+              box-sizing: border-box;
+            }
+            
+            .full-navigation a:first-child {
+              border-top: none;
+            }
+            
+            .btn-login, .btn-signup {
+              width: 100%;
+              text-align: center;
+            }
+          }

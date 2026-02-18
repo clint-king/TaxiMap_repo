@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking Details | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        html, body {
+            height: auto !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            padding-top: 70px !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        @media (min-width: 1400px) {
+            .page-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .page-container {
+                max-width: 1600px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem 0.5rem;
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title i {
+            color: #FFD52F;
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        .banking-container {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .banking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .banking-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .banking-header h2 i {
+            color: #FFD52F;
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .banking-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid #01386A;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .no-banking-info {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #6c757d;
+        }
+
+        .no-banking-info i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+            color: #01386A;
+        }
+
+        .no-banking-info h3 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .no-banking-info p {
+            margin-bottom: 2rem;
+        }
+
+        .add-banking-btn {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-banking-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+
+        /* Form Styles */
+        .banking-form {
+            display: none;
+        }
+
+        .banking-form.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc3545;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #01386A;
+            box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .banking-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <!-- Navigation links -->
+            <div class="nav-links" id="mobileMenu">
+                <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-university"></i>
+                Banking Details
+            </h1>
+            <a href="owner-dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <div class="banking-container">
+            <!-- Alert Messages -->
+            <div id="alertMessage" class="alert"></div>
+
+            <!-- Banking Info Display -->
+            <div id="bankingInfoDisplay">
+                <div class="banking-header">
+                    <h2>
+                        <i class="fas fa-info-circle"></i>
+                        Your Banking Information
+                    </h2>
+                    <button class="edit-btn" onclick="toggleEditMode()">
+                        <i class="fas fa-edit"></i>
+                        Edit Details
+                    </button>
+                </div>
+
+                <div id="bankingInfoContent">
+                    <!-- Banking info will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Banking Form -->
+            <div id="bankingForm" class="banking-form">
+                <div class="banking-header">
+                    <h2>
+                        <i class="fas fa-edit"></i>
+                        <span id="formTitle">Add Banking Details</span>
+                    </h2>
+                    <button class="btn btn-secondary" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                </div>
+
+                <form id="bankingDetailsForm" onsubmit="saveBankingDetails(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label required" for="bankName">Bank</label>
+                            <select id="bankName" class="form-select" required>
+                                <option value="">Select bank</option>
+                                <option value="absa">ABSA</option>
+                                <option value="capitec">Capitec</option>
+                                <option value="fnb">First National Bank (FNB)</option>
+                                <option value="nedbank">Nedbank</option>
+                                <option value="standard">Standard Bank</option>
+                                <option value="tymebank">TymeBank</option>
+                                <option value="african_bank">African Bank</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="accountHolder">Account Holder Name</label>
+                            <input type="text" id="accountHolder" class="form-input" placeholder="Enter account holder name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="accountNumber">Account Number</label>
+                            <input type="text" id="accountNumber" class="form-input" placeholder="Enter account number" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="branchCode">Branch Code</label>
+                            <input type="text" id="branchCode" class="form-input" placeholder="e.g., 250655" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required" for="accountType">Account Type</label>
+                            <select id="accountType" class="form-select" required>
+                                <option value="">Select account type</option>
+                                <option value="cheque">Cheque / Current</option>
+                                <option value="savings">Savings</option>
+                                <option value="transmission">Transmission</option>
+                                <option value="business">Business</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label" for="paymentReference">Preferred Payment Reference (Optional)</label>
+                            <input type="text" id="paymentReference" class="form-input" placeholder="e.g., Taxi Fleet XYZ">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Banking Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../js/owner/owner-banking.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+
+    <script>
+        // Make functions available globally for inline handlers
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) {
+                menu.classList.toggle('active');
+            }
+        }
+
+        function topNavZIndexDecrease() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) {
+                menu.classList.remove('active');
+            }
+        }
+
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.topNavZIndexDecrease = topNavZIndexDecrease;
+    </script>
+</body>
+</html>

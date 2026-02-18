@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Driver | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        /* Add padding to body to account for fixed topnav */
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            padding-top: 70px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            z-index: -1;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-content {
+            flex: 1;
+            padding: 2rem 1rem;
+        }
+
+        .driver-post-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2.5rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.5s ease;
+            min-height: calc(100vh - 70px);
+            overflow-x: hidden !important;
+            overflow-y: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            padding-bottom: 4rem !important;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .post-content {
+            max-width: 100%;
+            margin: 0 auto;
+            overflow-x: hidden !important;
+            overflow-y: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        .post-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 3px solid #f0f0f0;
+            position: relative;
+        }
+
+        .post-header::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+            border-radius: 2px;
+        }
+        
+        .post-title {
+            color: #01386A;
+            font-size: 2.8rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .post-title i {
+            color: #FFD52F;
+            font-size: 3rem;
+        }
+        
+        .post-subtitle {
+            color: #666;
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .post-form {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            margin-bottom: 0;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: auto !important;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 2.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            overflow: visible !important;
+            height: auto !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        @media (min-width: 1024px) {
+            .form-section {
+                padding: 3rem;
+            }
+        }
+        
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #01386A;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title i {
+            color: #FFD52F;
+            font-size: 1.8rem;
+        }
+
+        .section-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 1024px) and (max-width: 1399px) {
+            .form-grid {
+                gap: 2.5rem;
+            }
+        }
+
+        @media (min-width: 1400px) and (max-width: 1599px) {
+            .form-grid {
+                gap: 2.5rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .form-grid {
+                gap: 3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #01386A;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group label i {
+            color: #FFD52F;
+            font-size: 1.1rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #01386A;
+            box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+        }
+
+        .photo-upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            border: 2px dashed #e9ecef;
+        }
+
+        .photo-preview {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: #6c757d;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .photo-preview i {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .photo-upload-btn {
+            background: linear-gradient(135deg, #1E88E5, #64B5F6);
+            color: #ffffff;
+            padding: 0.9rem 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            border: none;
+        }
+
+        .photo-upload-btn:hover {
+            background: linear-gradient(135deg, #1565C0, #42A5F5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(21, 101, 192, 0.35);
+        }
+
+        .photo-upload-container input[type="file"] {
+            display: none;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            text-decoration: none;
+        }
+
+        .btn-action.btn-primary {
+            background: linear-gradient(135deg, #01386A, #025aa5);
+            color: white;
+        }
+
+        .btn-action.btn-primary:hover {
+            background: linear-gradient(135deg, #025aa5, #01386A);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+        }
+
+        .btn-action.btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-action.btn-secondary:hover {
+            background: #5a6268;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .driver-post-container {
+                padding: 1.5rem;
+            }
+
+            .post-title {
+                font-size: 2rem;
+                flex-direction: column;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-action {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Progress Indicator */
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .progress-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: calc(50% + 30px);
+            top: 20px;
+            width: 4rem;
+            height: 3px;
+            background: #e9ecef;
+        }
+
+        .progress-step.active::after {
+            background: linear-gradient(90deg, #FFD52F 0%, #FFC107 100%);
+        }
+
+        .progress-step.completed::after {
+            background: linear-gradient(90deg, #01386A 0%, #025aa5 100%);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .step-number {
+            background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+            color: #01386A;
+            transform: scale(1.1);
+        }
+
+        .progress-step.completed .step-number {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .progress-step.active .step-label {
+            color: #01386A;
+        }
+
+        .progress-step.completed .step-label {
+            color: #01386A;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <na v class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto"/>
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                    <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <div class="driver-post-container">
+                <div class="post-content">
+                    <!-- Header -->
+                    <div class="post-header">
+                        <h1 class="post-title">
+                            <i class="fas fa-user-tie"></i>
+                            <span id="pageTitle">Add New Driver</span>
+                        </h1>
+                        <p class="post-subtitle">Fill in the driver's information to add them to your team</p>
+                    </div>
+
+                    <!-- Progress Indicator -->
+                    <div class="progress-indicator">
+                        <div class="progress-step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Driver Info</div>
+                        </div>
+                    </div>
+
+                    <!-- Driver Form -->
+                    <form id="driverForm" class="post-form" onsubmit="saveDriver(event)">
+                        <!-- Personal Information Section -->
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i class="fas fa-user"></i> Personal Information
+                            </h2>
+                            <p class="section-description">Basic personal details of the driver</p>
+
+                            <div class="form-grid">
+                                <!-- Driver Photo -->
+                                <div class="form-group full-width">
+                                    <label for="driverPhoto">
+                                        <i class="fas fa-camera"></i> Driver Photo *
+                                    </label>
+                                    <div class="photo-upload-container">
+                                        <div class="photo-preview" id="driverPhotoPreview">
+                                            <i class="fas fa-user-circle"></i>
+                                            <span>No photo selected</span>
+                                        </div>
+                                        <input type="file" id="driverPhoto" accept="image/*" onchange="previewDriverPhoto(event)" required>
+                                        <label for="driverPhoto" class="photo-upload-btn">
+                                            <i class="fas fa-upload"></i> Upload Photo
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverFirstName">
+                                        <i class="fas fa-user"></i> First Name *
+                                    </label>
+                                    <input type="text" id="driverFirstName" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverSurname">
+                                        <i class="fas fa-user"></i> Surname *
+                                    </label>
+                                    <input type="text" id="driverSurname" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverIdNumber">
+                                        <i class="fas fa-id-card"></i> ID Number *
+                                    </label>
+                                    <input type="text" id="driverIdNumber" required pattern="[0-9]{13}" placeholder="13 digits" maxlength="13">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information Section -->
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i class="fas fa-address-book"></i> Contact Information
+                            </h2>
+                            <p class="section-description">How to reach the driver</p>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="driverPhone">
+                                        <i class="fas fa-phone"></i> Phone Number *
+                                    </label>
+                                    <input type="tel" id="driverPhone" required placeholder="071 234 5678">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverEmail">
+                                        <i class="fas fa-envelope"></i> Email Address *
+                                    </label>
+                                    <input type="email" id="driverEmail" required>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="driverAddress">
+                                        <i class="fas fa-map-marker-alt"></i> Physical Address *
+                                    </label>
+                                    <textarea id="driverAddress" rows="3" required placeholder="Street address, City, Province"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- License Information Section -->
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i class="fas fa-id-badge"></i> License Information
+                            </h2>
+                            <p class="section-description">Driver's license and qualification details</p>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="driverLicenseNumber">
+                                        <i class="fas fa-id-badge"></i> Driver's License Number *
+                                    </label>
+                                    <input type="text" id="driverLicenseNumber" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverLicenseExpiry">
+                                        <i class="fas fa-calendar-alt"></i> License Expiry Date *
+                                    </label>
+                                    <input type="date" id="driverLicenseExpiry" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverLicenseClass">
+                                        <i class="fas fa-certificate"></i> License Class *
+                                    </label>
+                                    <select id="driverLicenseClass" required>
+                                        <option value="">Select Class</option>
+                                        <option value="A1">A1 - Motorcycle (125cc or less)</option>
+                                        <option value="A">A - Motorcycle (over 125cc)</option>
+                                        <option value="B">B - Light Motor Vehicle</option>
+                                        <option value="EB">EB - Light Motor Vehicle with Trailer (> 750kg)</option>
+                                        <option value="C1">C1 - Medium Goods Vehicle (3.5t - 16t)</option>
+                                        <option value="C">C - Heavy Goods Vehicle (> 16t)</option>
+                                        <option value="EC1">EC1 - Medium Goods Vehicle with Trailer (> 750kg)</option>
+                                        <option value="EC">EC - Heavy Goods Vehicle with Trailer (> 750kg)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- License Photo Upload -->
+                            <div class="form-group full-width" style="margin-top: 1.5rem;">
+                                <label for="driverLicensePhoto">
+                                    <i class="fas fa-image"></i> License Photo * <small style="color: #6c757d; font-weight: normal;">(Upload a clear photo of the driver's license)</small>
+                                </label>
+                                <div class="photo-upload-container">
+                                    <div class="photo-preview" id="driverLicensePhotoPreview">
+                                        <i class="fas fa-id-card"></i>
+                                        <span>No license photo selected</span>
+                                    </div>
+                                    <input type="file" id="driverLicensePhoto" accept="image/*" onchange="previewLicensePhoto(event)" required>
+                                    <label for="driverLicensePhoto" class="photo-upload-btn">
+                                        <i class="fas fa-upload"></i> Upload License Photo
+                                    </label>
+                                </div>
+                                <small style="color: #6c757d; font-size: 0.85rem; display: block; margin-top: 0.5rem;">
+                                    <i class="fas fa-info-circle"></i> Please upload a clear, readable photo of the driver's license
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Account Access Section -->
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i class="fas fa-key"></i> Account Access
+                            </h2>
+                            <p class="section-description">Set a default password for the driver to access their portal</p>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="driverPassword">
+                                        <i class="fas fa-lock"></i> Default Password *
+                                    </label>
+                                    <input type="password" id="driverPassword" required minlength="6" placeholder="Minimum 6 characters">
+                                    <small class="text-muted" style="display: block; margin-top: 0.5rem; color: #6c757d; font-size: 0.85rem;">
+                                        <i class="fas fa-info-circle"></i> Driver will use this password to login to their portal
+                                    </small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="driverPasswordConfirm">
+                                        <i class="fas fa-lock"></i> Confirm Password *
+                                    </label>
+                                    <input type="password" id="driverPasswordConfirm" required minlength="6" placeholder="Re-enter password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <a href="owner-dashboard.html" class="btn-action btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn-action btn-primary">
+                                <i class="fas fa-save"></i> Save Driver
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <!-- Extra padding at bottom to ensure scrolling reaches end -->
+                <div style="height: 50px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Script -->
+    <script type="module" src="../../js/authentication/logout.js"></script>
+
+    <!-- Main driver post JavaScript module -->
+    <script type="module" src="../../js/owner/ownerDriverPost.js"></script>
+</body>
+</html>

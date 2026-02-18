@@ -43,6 +43,24 @@ const config = {
     url: process.env.FRONTEND_URL || "http://localhost:5173"
   },
 
+ 
+  // Yoco Payment Gateway Configuration
+  yoco: {
+    publicKey: process.env.YOCO_PUBLIC_KEY || 'pk_test_660c6ab0kwjeRzEb28d4',
+    secretKey: process.env.YOCO_SECRET_KEY || "sk_test_960bfde0VBaD1dQb6",
+    webhookSecret: process.env.YOCO_WEBHOOK_SECRET ,
+    // Use test keys by default, replace with live keys in production
+    // Live keys should be set via environment variables
+    environment: process.env.YOCO_ENVIRONMENT || "test" // 'test' or 'live'
+  },
+
+  //redis
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT
+  },
+
+  
   // Social Authentication Credentials
   social: {
     google: {
@@ -79,7 +97,6 @@ const config = {
 // Print config values to console
 console.log('🔧 BACKEND CONFIGURATION VALUES:');
 console.log('================================');
-console.log("Pure FRONTEND_URL :" , process.env.FRONTEND_URL);
 console.log(`Environment: ${config.env}`);
 console.log(`Port: ${config.port}`);
 console.log(`Frontend URL: ${config.frontend.url}`);

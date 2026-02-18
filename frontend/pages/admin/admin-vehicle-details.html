@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Details - Admin - TeksiMap</title>
+  <link rel="stylesheet" href="../../css/adminStyle.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Admin Navigation -->
+  <nav class="admin-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="admin.html">
+          <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+        </a>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Burger button for mobile -->
+      <div class="burger" onclick="toggleAdminMobileMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="nav-links" id="adminMobileMenu">
+        <a href="admin.html">Taxi Ranks</a>
+        <a href="route.html">Routes</a>
+        <a href="admin-reports.html">Reports</a>
+        <a href="admin-pending.html">Pending Routes</a>
+        <a href="admin-feedback.html">Feedback</a>
+        <a href="admin-contributors.html">Contributors</a>
+        <a href="admin-existing-routes.html">Existing Routes</a>
+        <a href="admin-vehicles.html" class="active">Vehicles</a>
+        <a href="admin-drivers.html">Drivers</a>
+        <a href="admin-execute-booking.html">Execute Booking</a>
+        <a href="admin-payments.html">Payments</a>
+        <a href="../customer/client.html" class="user-link">User View</a>
+        <a href="#" onclick="logout()" class="logout-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-dashboard">
+    <div class="admin-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+          <h1><i class="fas fa-car"></i> Vehicle Details</h1>
+          <p style="color: #666; margin-top: 0.5rem;">View complete vehicle information and documents</p>
+        </div>
+        <a href="admin-vehicles.html" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Vehicles
+        </a>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" style="text-align: center; padding: 3rem;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #01386A; margin-bottom: 1rem;"></i>
+        <p>Loading vehicle details...</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="errorState" style="display: none; text-align: center; padding: 3rem; color: #dc3545;">
+        <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+        <p id="errorMessage">Failed to load vehicle details</p>
+        <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 1rem;">
+          <i class="fas fa-sync-alt"></i> Retry
+        </button>
+      </div>
+
+      <!-- Vehicle Details Content -->
+      <div id="vehicleDetailsContent" style="display: none;">
+        <!-- Vehicle Information Card -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="card-header">
+            <h2><i class="fas fa-info-circle"></i> Vehicle Information</h2>
+            <span id="adminStatusBadge" class="status-badge pending">Pending</span>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+              <div>
+                <h3 style="margin-bottom: 1rem; color: #193148;">Basic Details</h3>
+                <div class="info-group">
+                  <label>Registration Number:</label>
+                  <p id="registrationNumber">-</p>
+                </div>
+                <div class="info-group">
+                  <label>License Plate:</label>
+                  <p id="licensePlate">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Make & Model:</label>
+                  <p id="makeModel">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Color:</label>
+                  <p id="color">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Vehicle Type:</label>
+                  <p id="vehicleType">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Capacity:</label>
+                  <p id="capacity">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Extra Space Parcel SP:</label>
+                  <p id="extraSpaceParcel">-</p>
+                </div>
+              </div>
+              <div>
+                <h3 style="margin-bottom: 1rem; color: #193148;">Owner & Driver Information</h3>
+                <div class="info-group">
+                  <label>Owner:</label>
+                  <p id="ownerName">-</p>
+                  <small id="ownerEmail" style="color: #666;">-</small>
+                </div>
+                <div class="info-group">
+                  <label>Driver:</label>
+                  <p id="driverName">-</p>
+                  <small id="driverEmail" style="color: #666;">-</small>
+                </div>
+                <div class="info-group">
+                  <label>Route:</label>
+                  <p id="routeName">-</p>
+                  <small id="routeDetails" style="color: #666;">-</small>
+                </div>
+                <div class="info-group">
+                  <label>Route Types:</label>
+                  <p id="routeTypes">-</p>
+                </div>
+                <div class="info-group">
+                  <label>Vehicle Status:</label>
+                  <p><span id="vehicleStatusBadge" class="status-badge inactive">-</span></p>
+                </div>
+                <div class="info-group">
+                  <label>Admin Status:</label>
+                  <p><span id="adminStatusBadge2" class="status-badge pending">-</span></p>
+                </div>
+              </div>
+            </div>
+            <div id="descriptionSection" style="margin-top: 2rem; display: none;">
+              <h3 style="margin-bottom: 1rem; color: #193148;">Description</h3>
+              <p id="description" style="color: #666; line-height: 1.6;">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicle Images -->
+        <div id="imagesSection" class="card" style="margin-bottom: 2rem; display: none;">
+          <div class="card-header">
+            <h2><i class="fas fa-images"></i> Vehicle Images</h2>
+          </div>
+          <div class="card-body">
+            <div id="imagesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+              <!-- Images will be inserted here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicle Documents -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="card-header">
+            <h2><i class="fas fa-file-alt"></i> Vehicle Documents</h2>
+            <span id="documentsCount" class="badge">0</span>
+          </div>
+          <div class="card-body">
+            <div id="documentsList" style="display: grid; gap: 1.5rem;">
+              <p style="text-align: center; color: #666; padding: 2rem;">Loading documents...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Viewer Modal -->
+        <div id="documentModal" class="modal" style="display: none; z-index: 10000;">
+          <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: auto; height: auto; margin: 2rem auto;">
+            <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10001; border-bottom: 1px solid #ddd;">
+              <h2 id="modalDocumentTitle" style="margin: 0;">Document Viewer</h2>
+              <button class="modal-close" onclick="closeDocumentModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; max-height: calc(95vh - 100px); padding: 1rem;">
+              <div id="modalDocumentContent" style="text-align: center;">
+                <!-- Document content will be inserted here -->
+              </div>
+            </div>
+            <div class="modal-footer" style="position: sticky; bottom: 0; background: white; border-top: 1px solid #ddd; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+              <button id="prevPageBtn" class="btn btn-secondary" onclick="previousPage()" style="display: none;">
+                <i class="fas fa-chevron-left"></i> Previous
+              </button>
+              <span id="pageCounter" style="color: #666;"></span>
+              <button id="nextPageBtn" class="btn btn-secondary" onclick="nextPage()" style="display: none;">
+                Next <i class="fas fa-chevron-right"></i>
+              </button>
+              <button class="btn btn-primary" onclick="closeDocumentModal()">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Actions -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="card-header">
+            <h2><i class="fas fa-tasks"></i> Admin Actions</h2>
+          </div>
+          <div class="card-body">
+            <div id="pendingActions" style="display: none;">
+              <p style="margin-bottom: 1.5rem; color: #666;">This vehicle is pending approval. Review all details and documents before making a decision.</p>
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-success btn-lg" onclick="approveVehicle()">
+                  <i class="fas fa-check"></i> Approve Vehicle
+                </button>
+                <button class="btn btn-danger btn-lg" onclick="rejectVehicle()">
+                  <i class="fas fa-times"></i> Reject Vehicle
+                </button>
+              </div>
+            </div>
+            <div id="approvedActions" style="display: none;">
+              <p style="margin-bottom: 1.5rem; color: #666;">This vehicle has been approved. You can suspend it if needed.</p>
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-warning btn-lg" onclick="suspendVehicle()">
+                  <i class="fas fa-ban"></i> Suspend Vehicle
+                </button>
+              </div>
+            </div>
+            <div id="otherActions" style="display: none;">
+              <p style="color: #666;">No actions available for vehicles with this status.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="../../js/admin/adminVehicleDetails.js"></script>
+  <script type="module" src="../../js/authentication/logout.js"></script>
+
+  <script>
+    // Navigation functions
+    function toggleAdminMobileMenu() {
+      const menu = document.getElementById('adminMobileMenu');
+      menu.classList.toggle('show');
+    }
+
+    window.toggleAdminMobileMenu = toggleAdminMobileMenu;
+  </script>
+
+</body>
+</html>
+

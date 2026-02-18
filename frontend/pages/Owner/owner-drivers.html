@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Drivers | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            padding-top: 70px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            z-index: -1;
+        }
+
+        .page-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        @media (min-width: 1400px) {
+            .page-container {
+                max-width: 1400px;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .page-container {
+                max-width: 1600px;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .page-container {
+                max-width: 1800px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title i {
+            color: #FFD52F;
+        }
+
+        .add-driver-btn {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+
+        .add-driver-btn:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(1, 56, 106, 0.4);
+            color: white;
+        }
+
+        .drivers-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 0.5rem 0;
+        }
+
+        @media (min-width: 1400px) {
+            .drivers-grid {
+                grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+                gap: 2rem;
+            }
+        }
+
+        @media (min-width: 1600px) {
+            .drivers-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .drivers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .add-driver-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .driver-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+        }
+
+        .driver-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #01386A 0%, #025aa5 100%);
+        }
+
+        .driver-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .driver-photo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .driver-photo,
+        .driver-photo-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e9ecef;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .driver-card:hover .driver-photo,
+        .driver-card:hover .driver-photo-placeholder {
+            border-color: #01386A;
+            transform: scale(1.05);
+        }
+
+        .driver-photo-placeholder i {
+            font-size: 3.5rem;
+            color: #6c757d;
+        }
+
+        .driver-info {
+            text-align: center;
+        }
+
+        .driver-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #01386A;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .driver-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .driver-detail-item {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .driver-detail-item:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
+
+        .driver-detail-item i {
+            color: #01386A;
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .driver-detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            min-width: 100px;
+        }
+
+        .driver-detail-value {
+            color: #333;
+            flex: 1;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .driver-status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-self: center;
+            margin-top: 0.5rem;
+        }
+
+        .driver-status-active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .driver-status-inactive {
+            background: #6c757d;
+            color: white;
+        }
+
+        .driver-status-on_leave {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+        }
+
+        .driver-status-suspended {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        /* Verification status badges */
+        .driver-status-badge.verified {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .driver-status-badge.pending {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+        }
+
+        .driver-status-badge.rejected {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .driver-status-badge.suspended {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+
+        /* Status toggle buttons */
+        .btn-active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-active:hover {
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-inactive {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-inactive:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .driver-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .driver-actions .btn-action {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            justify-content: center;
+        }
+
+        .driver-actions .btn-edit {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .driver-actions .btn-edit:hover {
+            background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+            color: white;
+        }
+
+        .driver-actions .btn-delete {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .driver-actions .btn-delete:hover {
+            background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .no-drivers {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+            grid-column: 1 / -1;
+        }
+
+        .no-drivers i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .no-drivers p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Navigation links spacing */
+        @media (min-width: 769px) {
+            .nav-links {
+                gap: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .full-navigation {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            .nav-logout-btn {
+                margin-left: 0 !important;
+                margin-top: 10px;
+                justify-content: center;
+                width: calc(100% - 30px);
+                padding: 12px 16px;
+            }
+        }
+
+        /* Logout Button Styling */
+        .nav-logout-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .nav-logout-btn:hover {
+            background: #c82333 !important;
+            text-decoration: none !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-logout-btn i {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top navigation bar -->
+    <nav class="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+
+            <!-- Burger button for mobile -->
+            <div class="burger" onclick="toggleMobileMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+                <!-- Navigation links -->
+                <div class="nav-links" id="mobileMenu">
+                    <a href="../customer/client.html" onclick="topNavZIndexDecrease()">Find route</a>
+                    <a href="../customer/help.html" onclick="topNavZIndexDecrease()">Help</a>
+                    <a href="../customer/route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+                    <a href="../customer/feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+                    <a href="../authentication/profile.html"  onclick="topNavZIndexDecrease()">Profile</a>
+                </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-user-tie"></i>
+                My Drivers
+            </h1>
+            <a href="owner-driver-post.html" class="add-driver-btn">
+                <i class="fas fa-plus"></i>
+                Add New Driver
+            </a>
+        </div>
+
+        <div class="drivers-container">
+            <div class="drivers-grid" id="driversGrid">
+                <!-- Drivers will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    
+  <!-- Logout Script -->
+  <script type="module" src="../../js/authentication/logout.js"></script>
+  <!-- Main Owner Drivers JavaScript Module -->
+  <script type="module" src="../../js/owner/ownerDrivers.js"></script>
+  
+</body>
+</html>
+

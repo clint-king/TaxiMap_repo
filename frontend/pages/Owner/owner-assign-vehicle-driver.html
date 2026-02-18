@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Vehicle to Driver | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../../assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="../../assets/icons/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* Topnav Fixed Position */
+        .topnav {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        html {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+            padding-top: 70px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 70px);
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-header h1 {
+            margin: 0 0 0.5rem 0;
+            color: #01386A;
+            font-size: 2rem;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #666;
+        }
+
+        .assignment-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            color: #01386A;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #01386A;
+        }
+
+        .form-group select:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #01386A;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box p {
+            margin: 0;
+            color: #01386A;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 56, 106, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ccc;
+        }
+
+        .selected-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 2px solid #01386A;
+        }
+
+        .selected-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: #01386A;
+        }
+
+        .selected-info p {
+            margin: 0.25rem 0;
+            color: #666;
+        }
+
+        .assignments-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .assignments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .assignment-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .assignment-card:hover {
+            border-color: #01386A;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignment-card h4 {
+            margin: 0 0 1rem 0;
+            color: #01386A;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.75rem;
+        }
+
+        .assignment-details {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .assignment-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .assignment-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .assignment-detail-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 120px;
+        }
+
+        .assignment-detail-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+        }
+
+        .assignment-actions {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="topnav" id="topnav">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../../index.html">
+                    <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                </a>
+            </div>
+            <div class="nav-links" id="fullNav" style="display: none;">
+                <a href="owner-dashboard.html">Dashboard</a>
+                <a href="owner-vehicles.html">Vehicles</a>
+                <a href="owner-drivers.html">Drivers</a>
+                <a href="owner-bookings.html">Bookings</a>
+            </div>
+            <div class="auth-buttons" id="authButtons" style="display: none;">
+                <a href="../authentication/login.html" class="nav-btn">Login</a>
+                <a href="../authentication/register.html" class="nav-btn primary">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <a href="owner-dashboard.html" class="btn-secondary" style="margin-bottom: 1rem;">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <h1><i class="fas fa-link"></i> Assign Vehicle to Driver</h1>
+            <p>Assign verified and active vehicles to verified and active drivers (one-to-one relationship)</p>
+        </div>
+
+        <!-- Current Assignments Section -->
+        <div class="assignments-section">
+            <h2><i class="fas fa-list-check"></i> Current Assignments</h2>
+            <p style="color: #666; margin-top: 0.5rem;">View vehicles and drivers that are currently assigned to each other</p>
+            
+            <div id="assignmentsLoading" class="loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading assignments...</p>
+            </div>
+
+            <div id="assignmentsGrid" class="assignments-grid">
+                <!-- Assignments will be inserted here -->
+            </div>
+
+            <div id="noAssignments" class="empty-state" style="display: none;">
+                <i class="fas fa-info-circle"></i>
+                <p>No current assignments</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Assign a vehicle to a driver using the form below.</p>
+            </div>
+        </div>
+
+        <div class="assignment-container">
+            <h2 style="color: #01386A; margin-bottom: 1rem;"><i class="fas fa-plus-circle"></i> Create New Assignment</h2>
+            <div class="info-box">
+                <p><i class="fas fa-info-circle"></i> <strong>Note:</strong> Only verified and active vehicles and drivers can be assigned. Each driver can have only one vehicle, and each vehicle can have only one driver.</p>
+            </div>
+
+            <div id="loadingState" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading available vehicles and drivers...</p>
+            </div>
+
+            <div id="assignmentForm" style="display: none;">
+                <form id="assignForm">
+                    <div class="form-section">
+                        <h3><i class="fas fa-car"></i> Select Vehicle</h3>
+                        <div class="form-group">
+                            <label for="vehicleSelect">Available Vehicles (Verified & Active, No Driver Assigned)</label>
+                            <select id="vehicleSelect" name="vehicleId" required>
+                                <option value="">-- Select a Vehicle --</option>
+                            </select>
+                        </div>
+                        <div id="vehicleInfo" class="selected-info" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-user-tie"></i> Select Driver</h3>
+                        <div class="form-group">
+                            <label for="driverSelect">Available Drivers (Verified & Active, No Vehicle Assigned)</label>
+                            <select id="driverSelect" name="driverId" required>
+                                <option value="">-- Select a Driver --</option>
+                            </select>
+                        </div>
+                        <div id="driverInfo" class="selected-info" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <button type="submit" class="btn-primary" id="assignBtn">
+                            <i class="fas fa-link"></i> Assign Vehicle to Driver
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>No available vehicles or drivers for assignment.</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Make sure you have verified and active vehicles and drivers.</p>
+            </div>
+
+            <div id="errorState" style="display: none; text-align: center; padding: 2rem; color: #dc3545;">
+                <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p id="errorMessage">Failed to load data</p>
+                <button class="btn-secondary" onclick="location.reload()" style="margin-top: 1rem;">
+                    <i class="fas fa-sync-alt"></i> Retry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../../js/owner/ownerAssignVehicleDriver.js"></script>
+</body>
+</html>
+

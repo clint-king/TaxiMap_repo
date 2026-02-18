@@ -1,4 +1,9 @@
 /* Help Page Styles */
+body {
+    margin: 0;
+    padding: 0;
+}
+
 .help-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -23,6 +28,86 @@
     font-size: 1.1rem;
     opacity: 0.9;
 }
+
+/* Navigation Styles */
+/* .topnav {
+    background-color: #01386A;
+    color: white;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: 'Open Sans', sans-serif;
+  }
+  
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+  }
+  
+  .topnav img {
+    height: 35px; 
+    width: auto;
+    border-radius: 8px;
+    display: block;
+  }
+  
+  .burger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 4px;
+  }
+  
+  .burger .bar {
+    width: 25px;
+    height: 3px;
+    background: white;
+    transition: 0.3s;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-links a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Active/Current page link highlighting */
+  .nav-links a.active {
+    background-color: #FFD52F !important;
+    color: #01386A !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  
+  .nav-links a.active:hover {
+    background-color: #FFC107 !important;
+    text-decoration: none;
+  } */
+
 
 /* FAQ Section */
 .faq-section {
@@ -318,6 +403,42 @@
     font-size: 3rem;
     color: #ddd;
     margin-bottom: 15px;
+}
+
+/* Mobile Navigation Styles */
+@media (max-width: 768px) {
+    .burger {
+        display: flex;
+    }
+    
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        background-color: #01386A;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        padding: 10px 0;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .nav-links.show {
+        display: flex;
+    }
+    
+    .nav-links a {
+        padding: 10px 15px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* Mobile active link highlighting */
+    .nav-links a.active {
+        background-color: #FFD52F !important;
+        color: #01386A !important;
+        margin: 0 10px;
+        border-radius: 6px;
+    }
 }
 
 /* Responsive Design */

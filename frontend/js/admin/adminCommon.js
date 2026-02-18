@@ -11,15 +11,15 @@ export function toggleAdminMobileMenu() {
 export function logout() {
   if (confirm('Are you sure you want to logout?')) {
     localStorage.removeItem('token');
-    window.location.href = 'login.html';
+    window.location.href = '/pages/authentication/login.html';
   }
 }
 
-// Common API request function
+// Common API request function (uses cookie-based authentication)
 export async function makeAdminRequest(endpoint, options = {}) {
   const defaultOptions = {
+    credentials: 'include', // Include cookies for authentication
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
       'Content-Type': 'application/json'
     },
     credentials: 'include' // Include cookies for authentication
@@ -27,7 +27,11 @@ export async function makeAdminRequest(endpoint, options = {}) {
 
   const response = await fetch(`${BASE_URL}/admin/${endpoint}`, {
     ...defaultOptions,
-    ...options
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...(options.headers || {})
+    }
   });
 
   // Handle 401 Unauthorized - redirect to homepage

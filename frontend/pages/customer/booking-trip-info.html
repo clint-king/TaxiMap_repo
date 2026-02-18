@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Taxi - Trip Information | TeksiMap</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.svg">
+    <link rel="manifest" href="../../assets/icons/site.webmanifest">
+    
+    <!-- Google Maps API -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASSRp8maLZsB0W6FGYlDPck8AO5riY_vg&libraries=places,geometry"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../css/booking.css">
+    <link rel="stylesheet" href="../../css/clientStyle.css">
+    <link rel="stylesheet" href="../../css/booking-trip-info.css">
+    <link rel="stylesheet" href="../../css/topnav.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Match booking-public.html styling */
+      body {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%) !important;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-content {
+        flex: 1;
+        padding: 2.5rem 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      @media (min-width: 1024px) {
+        .page-content {
+          padding: 3rem 2rem;
+        }
+      }
+
+      .booking-dashboard,
+      .booking-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 3rem 4rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.5s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      @media (min-width: 1024px) and (max-width: 1399px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1400px;
+          padding: 2.5rem 3rem;
+        }
+      }
+
+      @media (min-width: 1400px) and (max-width: 1599px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1600px;
+          padding: 3rem 4rem;
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .booking-dashboard,
+        .booking-container {
+          max-width: 1800px;
+          padding: 3.5rem 5rem;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Dashboard Header Styling */
+      .dashboard-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+      }
+
+      .dashboard-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+      }
+
+      .dashboard-header h1 {
+        color: #01386A;
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .dashboard-header h1 i {
+        color: #FFD52F;
+        font-size: 3rem;
+      }
+
+      .dashboard-header p {
+        color: #666;
+        font-size: 1.2rem;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* Page Header Styling */
+      .page-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 3px solid #f0f0f0;
+        position: relative;
+      }
+
+      .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 2px;
+      }
+
+      .page-header h1 {
+        color: #01386A;
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .page-header h1 i {
+        color: #FFD52F;
+        font-size: 3rem;
+      }
+
+      .page-header p {
+        color: #666;
+        font-size: 1.2rem;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* Buttons Styling */
+      .btn-new-booking,
+      .btn-primary,
+      button[type="submit"].btn-primary {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        color: white;
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(1, 56, 106, 0.3);
+      }
+
+      .btn-new-booking:hover,
+      .btn-primary:hover,
+      button[type="submit"].btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(1, 56, 106, 0.4);
+        background: linear-gradient(135deg, #025aa5 0%, #01386A 100%);
+      }
+
+      .btn-back,
+      .btn-secondary {
+        background: #f8f9fa;
+        color: #01386A;
+        border: 2px solid #e9ecef;
+        padding: 0.875rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-back:hover,
+      .btn-secondary:hover {
+        background: #e9ecef;
+        border-color: #01386A;
+        transform: translateY(-2px);
+      }
+
+      /* Tabs Styling */
+      .booking-tabs {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.5rem;
+        border-radius: 15px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: 1.25rem 2rem;
+        background: white;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        font-size: 1rem;
+      }
+
+      .tab-btn:hover {
+        border-color: #01386A;
+        color: #01386A;
+        transform: translateY(-2px);
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        box-shadow: 0 4px 15px rgba(255, 213, 47, 0.3);
+      }
+
+      /* Section Headers */
+      .form-section h2,
+      h2 {
+        color: #01386A;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        margin-top: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .form-section h2::before {
+        content: '';
+        width: 5px;
+        height: 40px;
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        border-radius: 3px;
+      }
+
+      /* Progress Indicator */
+      .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5rem;
+        margin-bottom: 4rem;
+        position: relative;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3.5rem 2.5rem;
+        border-radius: 15px;
+      }
+
+      .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .progress-step .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        color: #999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.4s ease;
+        border: 4px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-step.active .step-number {
+        background: linear-gradient(135deg, #FFD52F 0%, #FFC107 100%);
+        color: #01386A;
+        border-color: #FFD52F;
+        transform: scale(1.15);
+        box-shadow: 0 8px 25px rgba(255, 213, 47, 0.4);
+      }
+
+      .progress-step .step-label {
+        color: #7f8c8d;
+        font-weight: 600;
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .progress-step.active .step-label {
+        color: #01386A;
+        font-weight: 700;
+      }
+
+      /* Cards and Forms */
+      .booking-card,
+      .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+
+      .booking-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Booking Grid */
+      .bookings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 2rem;
+      }
+
+      @media (min-width: 1400px) {
+        .bookings-grid {
+          grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .bookings-grid {
+          grid-template-columns: repeat(auto-fill, minmax(550px, 1fr));
+        }
+      }
+
+      /* Header Content */
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 2rem;
+        padding: 0 1rem;
+      }
+
+      .header-text h1 {
+        color: #01386A;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .header-text h1 i {
+        color: #FFD52F;
+        font-size: 2.5rem;
+      }
+
+      .header-text p {
+        color: #666;
+        font-size: 1.1rem;
+        margin: 0;
+      }
+
+      /* Map Container Styling */
+      .map-container,
+      .location-map-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 2px solid #e9ecef;
+      }
+
+      /* Input Styling */
+      .input-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .input-group label {
+        color: #01386A;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: block;
+        font-size: 1rem;
+      }
+
+      .input-group input,
+      .input-group select,
+      .input-group textarea {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .input-group input:focus,
+      .input-group select:focus,
+      .input-group textarea:focus {
+        border-color: #01386A;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(1, 56, 106, 0.1);
+      }
+
+      /* Auth buttons styling */
+      .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-left: auto;
+        position: absolute;
+        right: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      
+      .btn-login {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-login:hover {
+        background: white;
+        color: #333;
+      }
+      
+      .btn-signup {
+        background: #FFD700;
+        color: #333;
+        border: 2px solid #FFD700;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-signup:hover {
+        background: transparent;
+        color: white;
+        border-color: white;
+      }
+      
+      .full-navigation {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-left: auto;
+      }
+      
+      .full-navigation a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+      }
+      
+      .full-navigation a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
+
+      /* Navigation links spacing */
+      @media (min-width: 769px) {
+        .nav-links {
+          gap: 30px;
+        }
+      }
+      
+      /* Logout Button Styling */
+      .nav-logout-btn {
+        background: #dc3545 !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        white-space: nowrap;
+      }
+      
+      .nav-logout-btn:hover {
+        background: #c82333 !important;
+        text-decoration: none !important;
+        transform: translateY(-1px);
+      }
+      
+      .nav-logout-btn i {
+        font-size: 14px;
+      }
+      
+      /* Ensure nav-container has relative positioning */
+      .nav-container {
+        position: relative;
+      }
+
+      /* Topnav styling to ensure it stands out on gradient background */
+      .topnav {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        position: relative;
+      }
+
+      /* Status badges and counts */
+      .tab-count,
+      .status-badge {
+        background: linear-gradient(135deg, #01386A 0%, #025aa5 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+
+      /* Form headers and labels */
+      .form-header {
+        margin-bottom: 2.5rem;
+      }
+
+      /* Additional spacing improvements */
+      .location-map-container,
+      .location-inputs {
+        margin-bottom: 2rem;
+      }
+
+      .pickup-points,
+      .dropoff-points {
+        margin-top: 2rem;
+      }
+
+      .trip-form {
+        max-width: 100%;
+      }
+
+      /* Ensure proper spacing in grid layouts */
+      .bookings-grid > * {
+        min-width: 0;
+      }
+
+      /* Booking Actions Styling */
+      .booking-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        width: 100%;
+        box-sizing: border-box;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .btn-action {
+        flex: 1 1 auto;
+        min-width: 120px;
+        padding: 1rem 1.25rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        box-sizing: border-box;
+        text-align: center;
+      }
+
+      .btn-action i {
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      /* Button color variants */
+      .btn-view {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-view:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+      }
+
+      .btn-passengers {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-passengers:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+      }
+
+      .btn-cancel {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-cancel:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+      }
+
+      .btn-contact {
+        background: #6610f2;
+        color: white;
+      }
+
+      .btn-contact:hover {
+        background: #520dc2;
+        transform: translateY(-2px);
+      }
+
+      /* Link styling */
+      a {
+        color: #01386A;
+        transition: color 0.3s ease;
+      }
+
+      a:hover {
+        color: #025aa5;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .page-content {
+          padding: 1rem 0.5rem;
+        }
+
+        .booking-dashboard,
+        .booking-container {
+          padding: 1.5rem;
+          border-radius: 15px;
+        }
+
+        .dashboard-header h1,
+        .page-header h1 {
+          font-size: 2rem;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .header-text h1 {
+          font-size: 2rem;
+        }
+
+        .progress-indicator {
+          gap: 2rem;
+          padding: 2rem 1rem;
+        }
+
+        .booking-tabs {
+          flex-direction: column;
+        }
+
+        .bookings-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .booking-actions {
+          flex-direction: column;
+        }
+
+        .btn-action {
+          width: 100%;
+          min-width: 100%;
+        }
+
+        .auth-buttons {
+          position: static;
+          transform: none;
+          margin-left: 0;
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 2rem;
+        }
+        
+        .nav-links {
+          gap: 0;
+        }
+
+        .nav-links a {
+          padding: 10px 15px !important;
+          border-top: 1px solid rgba(255,255,255,0.1) !important;
+          text-align: center;
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .nav-links a:first-child {
+          border-top: none !important;
+        }
+        
+        .full-navigation {
+          flex-direction: column;
+          gap: 0.5rem;
+          width: 100%;
+          margin-left: 0;
+          align-items: stretch;
+        }
+        
+        .full-navigation a {
+          display: block;
+          padding: 10px 15px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .full-navigation a:first-child {
+          border-top: none;
+        }
+        
+        .btn-login, .btn-signup {
+          width: 100%;
+          text-align: center;
+        }
+        
+        .nav-logout-btn {
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+        }
+      }
+    </style>
+</head>
+<body class="has-map-layout">
+    <div class="wrapper">
+        <!-- Top navigation bar -->
+        <nav class="topnav">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="../../index.html">
+                        <img src="../../assets/icons/logo-advanced-white.svg" alt="TeksiMap Logo" class="h-10 w-auto" />
+                    </a>
+                </div>
+
+                <!-- Burger button for mobile -->
+                <div class="burger" onclick="toggleMobileMenu()">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+
+          <!-- Navigation links -->
+          <div class="nav-links" id="mobileMenu">
+            <a href="client.html"   onclick="topNavZIndexDecrease()">Find route</a>
+            <a href="booking-trip-info.html" class="active" onclick="topNavZIndexDecrease()">Book Taxi</a>
+            <a href="help.html" onclick="topNavZIndexDecrease()">Help</a>
+            <!-- Login/Signup buttons for non-logged in users -->
+            <div id="authButtons" class="auth-buttons">
+              <a href="../authentication/login.html" class="btn-login">Login</a>
+              <a href="../authentication/signup.html" class="btn-signup">Sign Up</a>
+            </div>
+            <!-- Full navigation for logged in users -->
+            <div id="fullNav" class="full-navigation" style="display: none;">
+              <a href="route-suggestion.html" onclick="topNavZIndexDecrease()">Suggest route</a>
+              <a href="feedback.html" onclick="topNavZIndexDecrease()">Feedback</a>
+              <a href="../authentication/profile.html" onclick="topNavZIndexDecrease()">Profile</a>
+            </div>
+          </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="page-content">
+        <!-- Booking Dashboard -->
+        <div class="booking-dashboard" id="bookingDashboard">
+            <div class="dashboard-header">
+                <div class="header-content">
+                    <div class="header-text">
+                        <h1><i class="fas fa-calendar-alt"></i> My Bookings</h1>
+                        <p>Manage your taxi bookings and track their status</p>
+                    </div>
+                    <button class="btn-new-booking" onclick="showNewBookingForm()">
+                        <i class="fas fa-plus"></i> New Booking
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Booking Tabs -->
+            <div class="booking-tabs">
+                <button class="tab-btn active" onclick="showBookingTab('pending')">
+                    <i class="fas fa-clock"></i> Pending Payment
+                    <span class="tab-count" id="pendingCount">0</span>
+                </button>
+                <button class="tab-btn" onclick="showBookingTab('confirmed')">
+                    <i class="fas fa-check-circle"></i> Confirmed
+                    <span class="tab-count" id="confirmedCount">0</span>
+                </button>
+                <button class="tab-btn" onclick="showBookingTab('history')">
+                    <i class="fas fa-history"></i> History
+                    <span class="tab-count" id="historyCount">0</span>
+                </button>
+            </div>
+            
+            <!-- Pending Payment Bookings -->
+            <div class="booking-tab-content active" id="pendingTab">
+                <div class="bookings-grid" id="pendingBookings">
+                    <!-- Pending bookings will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Confirmed Bookings -->
+            <div class="booking-tab-content" id="confirmedTab">
+                <div class="bookings-grid" id="confirmedBookings">
+                    <!-- Confirmed bookings will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Booking History -->
+            <div class="booking-tab-content" id="historyTab">
+                <div class="bookings-grid" id="historyBookings">
+                    <!-- Completed bookings will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Booking Form -->
+        <div class="booking-container" id="newBookingForm" style="display: none;">
+            <!-- Back Button -->
+            <div class="form-header">
+                <button class="btn-back" onclick="showBookingDashboard()">
+                    <i class="fas fa-arrow-left"></i> Back to My Bookings
+                </button>
+            </div>
+            
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Trip Info</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Select Transport</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Passenger Info</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Payment</div>
+                </div>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Plan Your Group Trip</h1>
+                <p>Tell us about your journey and we'll find the perfect transport for your group</p>
+            </div>
+
+            <!-- Trip Information Form -->
+            <form id="tripInfoForm" class="trip-form" onsubmit="handleFormSubmit(event)">
+                <!-- Location Search Section -->
+                <div class="form-section">
+                    <h2>Enter Your Locations</h2>
+                    <p class="map-description">Search for addresses and see them appear on the map. Drag pins to adjust locations if needed.</p>
+                    
+                    <div class="location-map-container">
+                        <!-- Location Inputs -->
+                        <div class="location-inputs">
+                            <div class="input-group">
+                                <label for="destination">Destination</label>
+                                <div class="input-with-icon">
+                                    <input type="text" id="destination" name="destination" placeholder="Search for destination address" required>
+                                    <span class="input-icon">📍</span>
+                                </div>
+                                <ul id="destinationSuggestions" class="suggestions-dropdown"></ul>
+                            </div>
+                            
+                            <div class="pickup-points">
+                                <h3>Pickup Points</h3>
+                                <div id="pickupPointsList" class="pickup-list">
+                                    <div class="pickup-point-item">
+                                        <div class="input-group">
+                                            <label>Pickup Point 1</label>
+                                            <div class="input-with-icon">
+                                                <input type="text" name="pickup[]" placeholder="Search for pickup address" required>
+                                                <span class="input-icon">📍</span>
+                                            </div>
+                                            <ul id="pickupSuggestions1" class="suggestions-dropdown"></ul>
+                                        </div>
+                                        <button type="button" class="remove-pickup" style="display: none;">Remove</button>
+                                    </div>
+                                </div>
+                                <button type="button" id="addPickupPoint" class="add-pickup-btn">+ Add Another Pickup Point</button>
+                            </div>
+                        </div>
+
+                        <!-- Map Section -->
+                        <div class="map-section">
+                            <div class="map-header">
+                                <h3>Live Map</h3>
+                                <p class="map-description">Drag pins to adjust locations</p>
+                            </div>
+                            <div class="map-container">
+                                <div id="bookingMap" class="booking-map"></div>
+                                <div class="map-controls">
+                                    <button type="button" id="clearMarkers" class="map-control-btn">Clear All</button>
+                                    <button type="button" id="centerMap" class="map-control-btn">Center Map</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trip Details Section -->
+                <div class="form-section">
+                    <h2>Trip Details</h2>
+                    <div class="trip-details-grid">
+                        <div class="input-group">
+                            <label for="passengerCount">Number of Passengers</label>
+                            <input type="number" id="passengerCount" name="passengerCount" min="1" max="50" value="1" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="departureDate">Departure Date</label>
+                            <input type="date" id="departureDate" name="departureDate" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="departureTime">Departure Time</label>
+                            <input type="time" id="departureTime" name="departureTime" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="returnDate">Return Date (Optional)</label>
+                            <input type="date" id="returnDate" name="returnDate">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="returnTime">Return Time (Optional)</label>
+                            <input type="time" id="returnTime" name="returnTime">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxDistance">Max Distance Between Pickups (km)</label>
+                            <input type="number" id="maxDistance" name="maxDistance" min="1" max="100" value="10" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Trip Summary -->
+                <div class="form-section">
+                    <h2>Trip Summary</h2>
+                    <div id="tripSummary" class="trip-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Estimated Distance:</span>
+                            <span class="summary-value" id="estimatedDistance">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Estimated Duration:</span>
+                            <span class="summary-value" id="estimatedDuration">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Pickup Points:</span>
+                            <span class="summary-value" id="pickupCount">1</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Passengers:</span>
+                            <span class="summary-value" id="passengerSummary">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="showBookingDashboard()">Back</button>
+                    <button type="submit" class="btn btn-primary">Continue to Transport Selection</button>
+                </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script  type="module" src="../../js/tonav.js"></script>
+    <script type="module" src="../../js/customer/booking-trip-info.js"></script>
+    <script type="module" src="../../js/authentication/logout.js"></script>
+    
+    <script>
+        // Navigation functions
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('show');
+        }
+
+        function topNavZIndexIncrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3001";
+        }
+
+        function topNavZIndexDecrease() {
+            const navbar = document.querySelector(".topnav");
+            navbar.style.zIndex = "3";
+        }
+    </script>
+    
+    <script>
+        
+        // Check authentication status and update navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const fullNav = document.getElementById('fullNav');
+            
+            // Check if user is logged in
+            const isLoggedIn = localStorage.getItem('userProfile') || sessionStorage.getItem('userProfile');
+            
+            if (isLoggedIn) {
+                // User is logged in - show full navigation
+                authButtons.style.display = 'none';
+                fullNav.style.display = 'block';
+            } else {
+                // User is not logged in - show auth buttons
+                authButtons.style.display = 'block';
+                fullNav.style.display = 'none';
+            }
+            
+            loadBookingDashboard();
+            
+            // Ensure dashboard is shown by default
+            document.getElementById('bookingDashboard').style.display = 'block';
+            document.getElementById('newBookingForm').style.display = 'none';
+        });
+        
+        // Booking Dashboard Functions
+        function loadBookingDashboard() {
+            loadPendingBookings();
+            loadConfirmedBookings();
+            loadHistoryBookings();
+            updateTabCounts();
+        }
+        
+        function loadPendingBookings() {
+            const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
+            const container = document.getElementById('pendingBookings');
+            
+            if (pendingBookings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <h3>No Pending Payments</h3>
+                        <p>All your bookings are up to date</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+                pendingBookings.forEach(booking => {
+                    const bookingCard = createBookingCard(booking, 'pending');
+                    container.appendChild(bookingCard);
+                });
+            }
+        }
+        
+        function loadConfirmedBookings() {
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            const container = document.getElementById('confirmedBookings');
+            
+            if (confirmedBookings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>No Confirmed Bookings</h3>
+                        <p>Your confirmed bookings will appear here</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+                confirmedBookings.forEach(booking => {
+                    const bookingCard = createBookingCard(booking, 'confirmed');
+                    container.appendChild(bookingCard);
+                });
+            }
+        }
+        
+        function loadHistoryBookings() {
+            const historyBookings = JSON.parse(localStorage.getItem('historyBookings') || '[]');
+            const container = document.getElementById('historyBookings');
+            
+            if (historyBookings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>No Trip History</h3>
+                        <p>Your completed trips will appear here</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+                historyBookings.forEach(booking => {
+                    const bookingCard = createBookingCard(booking, 'completed');
+                    container.appendChild(bookingCard);
+                });
+            }
+        }
+        
+        function createBookingCard(booking, status) {
+            const card = document.createElement('div');
+            card.className = `booking-card ${status}`;
+            
+            const paidAmount = booking.paidAmount || 0;
+            const totalAmount = parseFloat(booking.totalAmount.replace('R ', ''));
+            const progressPercentage = (paidAmount / totalAmount) * 100;
+            
+            // Get passenger count and capacity info
+            const passengerCount = booking.passengers ? booking.passengers.length : 0;
+            const vehicleCapacity = booking.vehicle.capacity || 1;
+            const canAddPassengers = passengerCount < vehicleCapacity;
+            
+            let actionsHTML = '';
+            if (status === 'pending') {
+                actionsHTML = `
+                    <button class="btn-action btn-passengers" onclick="managePassengers('${booking.id}', 'pending')">
+                        <i class="fas fa-users"></i> Manage Passengers
+                    </button>
+                    <button class="btn-action btn-cancel" onclick="cancelBooking('${booking.id}')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                `;
+            } else if (status === 'confirmed') {
+                actionsHTML = `
+                    <button class="btn-action btn-view" onclick="viewBookingDetails('${booking.id}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="btn-action btn-passengers" onclick="viewPassengers('${booking.id}', 'confirmed')">
+                        <i class="fas fa-users"></i> View Passengers
+                    </button>
+                    <button class="btn-action btn-locations" onclick="viewPickupDestination('${booking.id}', 'confirmed')">
+                        <i class="fas fa-map-marker-alt"></i> View Locations
+                    </button>
+                    <button class="btn-action btn-contact" onclick="contactDriver('${booking.id}')">
+                        <i class="fas fa-phone"></i> Contact Driver
+                    </button>
+                `;
+            } else if (status === 'completed') {
+                actionsHTML = `
+                    <button class="btn-action btn-view" onclick="viewBookingDetails('${booking.id}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="btn-action btn-passengers" onclick="viewPassengers('${booking.id}')">
+                        <i class="fas fa-users"></i> View Passengers
+                    </button>
+                    <button class="btn-action btn-locations" onclick="viewPickupDestination('${booking.id}', 'completed')">
+                        <i class="fas fa-map-marker-alt"></i> View Locations
+                    </button>
+                `;
+            }
+            
+            card.innerHTML = `
+                <div class="booking-header">
+                    <div class="booking-info">
+                        <h3>${booking.vehicle.name}</h3>
+                        <div class="booking-id">${booking.id}</div>
+                    </div>
+                    <div class="booking-status ${status}">${status}</div>
+                </div>
+                
+                <div class="booking-details">
+                    <div class="detail-item">
+                        <span class="detail-label">From</span>
+                        <span class="detail-value">${booking.trip.pickup}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">To</span>
+                        <span class="detail-value">${booking.trip.destination}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value">${booking.trip.date}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Time</span>
+                        <span class="detail-value">${booking.trip.time}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Passengers</span>
+                        <span class="detail-value">${passengerCount}/${vehicleCapacity}</span>
+                    </div>
+                </div>
+                
+                ${status === 'pending' ? `
+                <div class="payment-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Payment Progress</span>
+                        <span class="progress-amount">R ${paidAmount.toFixed(2)} / ${booking.totalAmount}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="booking-actions">
+                    ${actionsHTML}
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function updateTabCounts() {
+            const pendingCount = JSON.parse(localStorage.getItem('pendingBookings') || '[]').length;
+            const confirmedCount = JSON.parse(localStorage.getItem('confirmedBookings') || '[]').length;
+            const historyCount = JSON.parse(localStorage.getItem('historyBookings') || '[]').length;
+            
+            document.getElementById('pendingCount').textContent = pendingCount;
+            document.getElementById('confirmedCount').textContent = confirmedCount;
+            document.getElementById('historyCount').textContent = historyCount;
+        }
+        
+        function showBookingTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.booking-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
+        function showNewBookingForm() {
+            document.getElementById('bookingDashboard').style.display = 'none';
+            document.getElementById('newBookingForm').style.display = 'block';
+        }
+        
+        function showBookingDashboard() {
+            document.getElementById('bookingDashboard').style.display = 'block';
+            document.getElementById('newBookingForm').style.display = 'none';
+            loadBookingDashboard();
+        }
+        
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            // Collect form data
+            const formData = new FormData(event.target);
+            const tripInfo = {
+                pickup: formData.get('pickup[]') || '123 Main Street, Johannesburg',
+                destination: formData.get('destination') || '456 Oak Avenue, Pretoria',
+                date: formData.get('departureDate') || new Date().toISOString().split('T')[0],
+                time: formData.get('departureTime') || '14:30',
+                distance: 45.5,
+                duration: '1h 15min',
+                passengerCount: parseInt(formData.get('passengerCount')) || 1
+            };
+            
+            // Store trip info
+            sessionStorage.setItem('tripInfo', JSON.stringify(tripInfo));
+            
+            // Redirect to vehicle selection
+            window.location.href = 'booking-select-transport.html';
+        }
+        
+        // Booking Actions
+        function cancelBooking(bookingId) {
+            if (confirm('Are you sure you want to cancel this booking?')) {
+                const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
+                const updatedBookings = pendingBookings.filter(booking => booking.id !== bookingId);
+                localStorage.setItem('pendingBookings', JSON.stringify(updatedBookings));
+                loadBookingDashboard();
+            }
+        }
+        
+        function viewBookingDetails(bookingId) {
+            // In a real app, this would show detailed booking information
+            alert('Booking Details:\n\nID: ' + bookingId + '\n\nDetailed information would be shown here.');
+        }
+        
+        function contactDriver(bookingId) {
+            // In a real app, this would initiate contact with the driver
+            alert('Contacting driver for booking: ' + bookingId);
+        }
+
+        // Passenger Management Functions
+        function managePassengers(bookingId, status) {
+            // Find the booking
+            const pendingBookings = JSON.parse(localStorage.getItem('pendingBookings') || '[]');
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            
+            let booking = null;
+            if (status === 'pending') {
+                booking = pendingBookings.find(b => b.id === bookingId);
+            } else if (status === 'confirmed') {
+                booking = confirmedBookings.find(b => b.id === bookingId);
+            }
+            
+            if (!booking) {
+                alert('Booking not found');
+                return;
+            }
+            
+            console.log('Found booking for management:', booking); // Debug log
+            console.log('Booking passengers:', booking.passengers); // Debug log
+            console.log('Vehicle capacity:', booking.vehicle.capacity); // Debug log
+            
+            // Store booking info for passenger management
+            sessionStorage.setItem('currentBookingId', bookingId);
+            sessionStorage.setItem('currentBookingStatus', status);
+            sessionStorage.setItem('currentBooking', JSON.stringify(booking));
+            
+            // Redirect to passenger management page
+            window.location.href = 'booking-passenger-management.html';
+        }
+
+        function viewPassengers(bookingId, status) {
+            // Find the booking in confirmed or history bookings
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            const historyBookings = JSON.parse(localStorage.getItem('historyBookings') || '[]');
+            
+            let booking = null;
+            if (status === 'confirmed') {
+                booking = confirmedBookings.find(b => b.id === bookingId);
+            } else {
+                // Default to history bookings if status is not provided or is 'completed'
+                booking = historyBookings.find(b => b.id === bookingId);
+            }
+            
+            if (!booking) {
+                alert('Booking not found');
+                return;
+            }
+            
+            // Show passenger list in a modal (read-only)
+            showPassengerListModal(booking);
+        }
+
+        function showPassengerListModal(booking) {
+            const passengers = booking.passengers || [];
+            const vehicleCapacity = booking.vehicle.capacity || 1;
+            
+            let passengerListHTML = '';
+            if (passengers.length === 0) {
+                passengerListHTML = '<p>No passenger information available.</p>';
+            } else {
+                passengerListHTML = passengers.map((passenger, index) => `
+                    <div class="passenger-item">
+                        <div class="passenger-number">#${index + 1}</div>
+                        <div class="passenger-info">
+                            <div class="passenger-name">${passenger.firstName} ${passenger.lastName}</div>
+                            <div class="passenger-details">
+                                ${passenger.idNumber ? `<span>ID: ${passenger.idNumber}</span>` : ''}
+                                ${passenger.phone ? `<span>Phone: ${passenger.phone}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            const modalHTML = `
+                <div class="modal-overlay" onclick="closePassengerModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h3>Passenger List - ${booking.vehicle.name}</h3>
+                            <button class="close-modal" onclick="closePassengerModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="passenger-summary">
+                                <p><strong>Total Passengers:</strong> ${passengers.length}/${vehicleCapacity}</p>
+                            </div>
+                            <div class="passenger-list">
+                                ${passengerListHTML}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closePassengerModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function closePassengerModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Location Management Functions
+        function viewPickupDestination(bookingId, status) {
+            // Find the booking
+            const confirmedBookings = JSON.parse(localStorage.getItem('confirmedBookings') || '[]');
+            const historyBookings = JSON.parse(localStorage.getItem('historyBookings') || '[]');
+            
+            let booking = null;
+            if (status === 'confirmed') {
+                booking = confirmedBookings.find(b => b.id === bookingId);
+            } else if (status === 'completed') {
+                booking = historyBookings.find(b => b.id === bookingId);
+            }
+            
+            if (!booking) {
+                alert('Booking not found');
+                return;
+            }
+            
+            // Show location viewing modal
+            showLocationViewModal(booking, bookingId, status);
+        }
+
+        function showLocationViewModal(booking, bookingId, status) {
+            const modalHTML = `
+                <div class="modal-overlay" id="locationViewModal">
+                    <div class="modal-content location-view-modal">
+                        <div class="modal-header">
+                            <h2><i class="fas fa-map-marker-alt"></i> View Pickup & Destination</h2>
+                            <button class="close-btn" onclick="closeLocationViewModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <div class="booking-summary">
+                                <h3><i class="fas fa-info-circle"></i> Booking Summary</h3>
+                                <div class="booking-details">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Vehicle</span>
+                                        <span class="detail-value">${booking.vehicle.name}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Date</span>
+                                        <span class="detail-value">${booking.trip.date}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Time</span>
+                                        <span class="detail-value">${booking.trip.time}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Status</span>
+                                        <span class="detail-value">${booking.status}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="location-display">
+                                <h3><i class="fas fa-map"></i> Location Details</h3>
+                                
+                                <div class="location-info">
+                                    <div class="location-card pickup">
+                                        <div class="location-title">
+                                            <i class="fas fa-map-marker-alt" style="color: #28a745;"></i>
+                                            Pickup Location
+                                        </div>
+                                        <div class="location-address">${booking.trip.pickup || 'Not specified'}</div>
+                                    </div>
+
+                                    <div class="location-card destination">
+                                        <div class="location-title">
+                                            <i class="fas fa-flag-checkered" style="color: #dc3545;"></i>
+                                            Destination Location
+                                        </div>
+                                        <div class="location-address">${booking.trip.destination || 'Not specified'}</div>
+                                    </div>
+                                </div>
+
+                                <div class="route-info">
+                                    <h4><i class="fas fa-route"></i> Route Information</h4>
+                                    <div class="route-details">
+                                        <div class="route-item">
+                                            <div class="route-value">${booking.trip.distance || 'N/A'}</div>
+                                            <div class="route-label">Distance (km)</div>
+                                        </div>
+                                        <div class="route-item">
+                                            <div class="route-value">${booking.trip.duration || 'N/A'}</div>
+                                            <div class="route-label">Duration</div>
+                                        </div>
+                                        <div class="route-item">
+                                            <div class="route-value">${booking.totalAmount || 'N/A'}</div>
+                                            <div class="route-label">Total Cost</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="map-container" id="viewMap" style="height: 300px; border-radius: 8px; overflow: hidden; margin: 1rem 0;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeLocationViewModal()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Initialize map after modal is added
+            setTimeout(() => {
+                initializeLocationViewMap(booking);
+            }, 100);
+        }
+
+        function closeLocationViewModal() {
+            const modal = document.getElementById('locationViewModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function initializeLocationViewMap(booking) {
+            // Initialize Google Maps centered on South Africa
+            const map = new google.maps.Map(document.getElementById('viewMap'), {
+                center: { lat: -26.2041, lng: 28.0475 }, // Johannesburg, South Africa
+                zoom: 10,
+                mapTypeId: 'roadmap'
+            });
+
+            const bounds = new google.maps.LatLngBounds();
+            let hasMarkers = false;
+
+            // Add markers for pickup and destination
+            if (booking.trip.pickup) {
+                // This would typically geocode the address to get coordinates
+                // For demo purposes, we'll use approximate coordinates
+                const pickupCoords = { lat: -26.2041, lng: 28.0475 }; // Johannesburg area
+                
+                const pickupMarker = new google.maps.Marker({
+                    position: pickupCoords,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#28a745',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 3
+                    },
+                    title: 'Pickup Location'
+                });
+
+                const pickupInfoWindow = new google.maps.InfoWindow({
+                    content: `<b>Pickup Location</b><br>${booking.trip.pickup}`
+                });
+                pickupMarker.addListener('click', () => pickupInfoWindow.open(map, pickupMarker));
+                
+                bounds.extend(pickupCoords);
+                hasMarkers = true;
+            }
+
+            if (booking.trip.destination) {
+                // This would typically geocode the address to get coordinates
+                // For demo purposes, we'll use approximate coordinates
+                const destCoords = { lat: -33.9249, lng: 18.4241 }; // Cape Town area
+                
+                const destinationMarker = new google.maps.Marker({
+                    position: destCoords,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: '#dc3545',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 3
+                    },
+                    title: 'Destination Location'
+                });
+
+                const destInfoWindow = new google.maps.InfoWindow({
+                    content: `<b>Destination Location</b><br>${booking.trip.destination}`
+                });
+                destinationMarker.addListener('click', () => destInfoWindow.open(map, destinationMarker));
+                
+                bounds.extend(destCoords);
+                hasMarkers = true;
+            }
+
+            // Fit map to show both markers if both exist
+            if (hasMarkers) {
+                map.fitBounds(bounds);
+            }
+        }
+        
+        // Create sample bookings for demo
+        function createSampleBookings() {
+            console.log('Creating sample bookings with realistic passenger counts...');
+            const sampleBookings = [
+                {
+                    id: 'BK001',
+                    vehicle: {
+                        name: 'Golden Arrow Minibus',
+                        type: 'minibus',
+                        registration: 'CA 123-456',
+                        capacity: 16
+                    },
+                    trip: {
+                        pickup: '123 Main Street, Johannesburg',
+                        destination: '456 Oak Avenue, Pretoria',
+                        date: '2024-01-15',
+                        time: '14:30',
+                        distance: 45.5,
+                        duration: '1h 15min'
+                    },
+                    passengers: [
+                        { firstName: 'John', lastName: 'Doe', idNumber: '1234567890123', phone: '0821234567' },
+                        { firstName: 'Sarah', lastName: 'Wilson', idNumber: '2345678901234', phone: '0831234567' },
+                        { firstName: 'Mike', lastName: 'Brown', idNumber: '3456789012345', phone: '0841234567' },
+                        { firstName: 'Lisa', lastName: 'Davis', idNumber: '4567890123456', phone: '0851234567' },
+                        { firstName: 'Tom', lastName: 'Miller', idNumber: '5678901234567', phone: '0861234567' },
+                        { firstName: 'Emma', lastName: 'Garcia', idNumber: '6789012345678', phone: '0871234567' },
+                        { firstName: 'David', lastName: 'Martinez', idNumber: '7890123456789', phone: '0881234567' },
+                        { firstName: 'Anna', lastName: 'Anderson', idNumber: '8901234567890', phone: '0891234567' },
+                        { firstName: 'Chris', lastName: 'Taylor', idNumber: '9012345678901', phone: '0901234567' },
+                        { firstName: 'Maria', lastName: 'Thomas', idNumber: '0123456789012', phone: '0911234567' },
+                        { firstName: 'James', lastName: 'Jackson', idNumber: '1234567890124', phone: '0921234567' },
+                        { firstName: 'Linda', lastName: 'White', idNumber: '2345678901235', phone: '0931234567' },
+                        { firstName: 'Robert', lastName: 'Harris', idNumber: '3456789012346', phone: '0941234567' },
+                        { firstName: 'Susan', lastName: 'Martin', idNumber: '4567890123457', phone: '0951234567' }
+                    ],
+                    totalAmount: 'R 720.50',
+                    paidAmount: 0,
+                    status: 'pending',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    id: 'BK002',
+                    vehicle: {
+                        name: 'City Express Bus',
+                        type: 'bus',
+                        registration: 'GP 789-012',
+                        capacity: 22
+                    },
+                    trip: {
+                        pickup: '789 Business District, Cape Town',
+                        destination: '321 Airport Road, Cape Town',
+                        date: '2024-01-16',
+                        time: '09:00',
+                        distance: 25.3,
+                        duration: '45min'
+                    },
+                    passengers: [
+                        { firstName: 'Jane', lastName: 'Smith', idNumber: '9876543210987', phone: '0834567890' },
+                        { firstName: 'Mike', lastName: 'Johnson', idNumber: '4567891234567', phone: '0845678901' },
+                        { firstName: 'Sarah', lastName: 'Williams', idNumber: '1112223334445', phone: '0856789012' },
+                        { firstName: 'David', lastName: 'Brown', idNumber: '2223334445556', phone: '0867890123' },
+                        { firstName: 'Lisa', lastName: 'Jones', idNumber: '3334445556667', phone: '0878901234' },
+                        { firstName: 'Tom', lastName: 'Garcia', idNumber: '4445556667778', phone: '0889012345' },
+                        { firstName: 'Emma', lastName: 'Miller', idNumber: '5556667778889', phone: '0890123456' },
+                        { firstName: 'Chris', lastName: 'Davis', idNumber: '6667778889990', phone: '0901234567' },
+                        { firstName: 'Anna', lastName: 'Rodriguez', idNumber: '7778889990001', phone: '0912345678' },
+                        { firstName: 'Mark', lastName: 'Martinez', idNumber: '8889990001112', phone: '0923456789' },
+                        { firstName: 'Helen', lastName: 'Hernandez', idNumber: '9990001112223', phone: '0934567890' },
+                        { firstName: 'Paul', lastName: 'Lopez', idNumber: '0001112223334', phone: '0945678901' },
+                        { firstName: 'Karen', lastName: 'Gonzalez', idNumber: '1112223334446', phone: '0956789012' },
+                        { firstName: 'Steve', lastName: 'Wilson', idNumber: '2223334445557', phone: '0967890123' },
+                        { firstName: 'Amy', lastName: 'Anderson', idNumber: '3334445556668', phone: '0978901234' },
+                        { firstName: 'Kevin', lastName: 'Thomas', idNumber: '4445556667779', phone: '0989012345' },
+                        { firstName: 'Rachel', lastName: 'Taylor', idNumber: '5556667778880', phone: '0990123456' },
+                        { firstName: 'Daniel', lastName: 'Moore', idNumber: '6667778889991', phone: '1001234567' },
+                        { firstName: 'Michelle', lastName: 'Jackson', idNumber: '7778889990002', phone: '1012345678' },
+                        { firstName: 'Brian', lastName: 'Martin', idNumber: '8889990001113', phone: '1023456789' }
+                    ],
+                    totalAmount: 'R 318.60',
+                    paidAmount: 318.60,
+                    status: 'confirmed',
+                    timestamp: new Date(Date.now() - 86400000).toISOString()
+                },
+                {
+                    id: 'BK003',
+                    vehicle: {
+                        name: 'Metro Transport',
+                        type: 'minibus',
+                        registration: 'KZN 345-678',
+                        capacity: 18
+                    },
+                    trip: {
+                        pickup: '555 University Road, Durban',
+                        destination: '777 Shopping Mall, Durban',
+                        date: '2024-01-10',
+                        time: '16:00',
+                        distance: 12.8,
+                        duration: '30min'
+                    },
+                    passengers: [
+                        { firstName: 'Sarah', lastName: 'Wilson', idNumber: '1112223334445', phone: '0856789012' },
+                        { firstName: 'David', lastName: 'Brown', idNumber: '5556667778889', phone: '0867890123' },
+                        { firstName: 'Lisa', lastName: 'Davis', idNumber: '9998887776665', phone: '0878901234' },
+                        { firstName: 'Tom', lastName: 'Miller', idNumber: '1112223334446', phone: '0889012345' },
+                        { firstName: 'Emma', lastName: 'Garcia', idNumber: '2223334445557', phone: '0890123456' },
+                        { firstName: 'Chris', lastName: 'Martinez', idNumber: '3334445556668', phone: '0901234567' },
+                        { firstName: 'Anna', lastName: 'Anderson', idNumber: '4445556667779', phone: '0912345678' },
+                        { firstName: 'Mark', lastName: 'Taylor', idNumber: '5556667778880', phone: '0923456789' },
+                        { firstName: 'Helen', lastName: 'Thomas', idNumber: '6667778889991', phone: '0934567890' },
+                        { firstName: 'Paul', lastName: 'Hernandez', idNumber: '7778889990002', phone: '0945678901' },
+                        { firstName: 'Karen', lastName: 'Moore', idNumber: '8889990001113', phone: '0956789012' },
+                        { firstName: 'Steve', lastName: 'Jackson', idNumber: '9990001112224', phone: '0967890123' },
+                        { firstName: 'Amy', lastName: 'Martin', idNumber: '0001112223335', phone: '0978901234' },
+                        { firstName: 'Kevin', lastName: 'Lee', idNumber: '1112223334447', phone: '0989012345' },
+                        { firstName: 'Rachel', lastName: 'Perez', idNumber: '2223334445558', phone: '0990123456' }
+                    ],
+                    totalAmount: 'R 245.40',
+                    paidAmount: 245.40,
+                    status: 'completed',
+                    timestamp: new Date(Date.now() - 432000000).toISOString(),
+                    completedAt: new Date(Date.now() - 360000000).toISOString()
+                }
+            ];
+            
+            // Store sample bookings
+            localStorage.setItem('pendingBookings', JSON.stringify([sampleBookings[0]]));
+            localStorage.setItem('confirmedBookings', JSON.stringify([sampleBookings[1]]));
+            localStorage.setItem('historyBookings', JSON.stringify([sampleBookings[2]]));
+            
+            console.log('Sample bookings created:');
+            console.log('Golden Arrow passengers:', sampleBookings[0].passengers.length, '/', sampleBookings[0].vehicle.capacity);
+            console.log('City Express passengers:', sampleBookings[1].passengers.length, '/', sampleBookings[1].vehicle.capacity);
+            console.log('Metro Transport passengers:', sampleBookings[2].passengers.length, '/', sampleBookings[2].vehicle.capacity);
+        }
+        
+        // Clear existing data and create fresh sample bookings
+        localStorage.removeItem('pendingBookings');
+        localStorage.removeItem('confirmedBookings');
+        localStorage.removeItem('historyBookings');
+        createSampleBookings();
+    </script>
+</body>
+</html>

@@ -5,36 +5,28 @@ import auth from './routes/AuthRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import helpRoutes from './routes/helpRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
-import publicRoutes from './routes/publicRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import vehicleRoutes from './routes/vehicleRoutes.js';
+import driverRoutes from './routes/driverRoutes.js';
+import ownerRoutes from './routes/ownerRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
+import trackingRoutes from './routes/trackingRoutes.js';
+import paymentController from "./controllers/paymentController.js";
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
 import config from "./config/configurations.js"; 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { sanitizeInput } from './Middleware/sanitizeMiddleware.js';
+import "./config/jobs/bookingJob.js"
 
 
 const port = config.port || 3000 ;
 const app = express();
 
-// Security middleware - must be first
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://api.mapbox.com", "https://cdnjs.cloudflare.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://api.mapbox.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://api.mapbox.com"],
-      fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-  crossOriginEmbedderPolicy: false, // Allow Mapbox iframes
-}));
+//webhook endpoint
+app.post('/api/payments/yoco/webhook', express.raw({ type: 'application/json' }), paymentController.handleYocoWebhook);
 
 //middleware
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -44,9 +36,6 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
-
-// Input sanitization middleware - sanitize all incoming data
-app.use(sanitizeInput);
 
 // Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
@@ -64,20 +53,37 @@ app.get('/health', (req, res) => {
 });
 
 //route
-app.use("/public", publicRoutes); // Public routes (no authentication)
 app.use("/admin", adminRoutes);
 app.use("/client" , clientRoutes);
 app.use("/auth",auth );
 app.use("/feedback", feedbackRoutes);
 app.use("/help", helpRoutes);
 app.use("/contact", contactRoutes);
+// Booking system routes
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/vehicles", vehicleRoutes);
+app.use("/api/drivers", driverRoutes);
+app.use("/api/owners", ownerRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/tracking", trackingRoutes);
 
+// Create HTTP server (needed for Socket.io)
+import { createServer } from 'http';
+const httpServer = createServer(app);
 
+// Initialize Socket.io WebSocket server
+import { initSocket } from './config/socket.js';
+initSocket(httpServer);
 
-app.listen(port , ()=>{
+// Initialize Redis connection
+import './config/redis.js';
+
+httpServer.listen(port , ()=>{
     console.log(`🚀 Server running on port ${port}`);
     console.log(`🌍 Environment: ${config.env}`);
     console.log(`🔗 Frontend URL: ${config.frontend.url}`);
     console.log(`📊 Database: ${config.database.host}:${config.database.port}/${config.database.name}`);
     console.log('✅ Server is ready to handle requests!');
+    console.log('🔌 WebSocket server is ready!');
 })
