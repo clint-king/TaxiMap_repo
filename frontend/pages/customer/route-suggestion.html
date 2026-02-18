@@ -141,7 +141,7 @@
       </div>
 
       <div class="route-type-selection">
-        <div class="route-type-card" onclick="selectRouteType('Straight')">
+        <div class="route-type-card" data-route-type="Straight" onclick="selectRouteType('Straight', event)">
           <div class="route-type-icon">
             <i class="fas fa-arrow-right"></i>
           </div>
@@ -154,7 +154,7 @@
           </div>
         </div>
 
-        <div class="route-type-card" onclick="selectRouteType('Loop')">
+        <div class="route-type-card" data-route-type="Loop" onclick="selectRouteType('Loop', event)">
           <div class="route-type-icon">
             <i class="fas fa-sync-alt"></i>
           </div>

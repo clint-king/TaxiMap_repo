@@ -92,7 +92,7 @@ class Route {
 }
 
 // Select route type (Straight or Loop)
-function selectRouteType(type) {
+function selectRouteType(type, evt) {
   selectedRouteType = type;
   isStraightRoute = type === 'Straight';
   
@@ -101,7 +101,8 @@ function selectRouteType(type) {
     card.classList.remove('selected');
   });
   
-  event.currentTarget.classList.add('selected');
+  const target = evt?.currentTarget ?? document.querySelector(`.route-type-card[data-route-type="${type}"]`);
+  target?.classList.add('selected');
   
   // Update step 2 description
   const step2Description = document.getElementById('step2Description');
